@@ -2,6 +2,8 @@
 
 #include "core/common.h"
 #include "core/system.h"
+#include "graphics/renderer.h"
+
 #include "state.h"
 #include "game.h"
 #include "game_detection.h"
@@ -25,8 +27,10 @@ i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     state->game_type = detect_game();
 
     system_t *system = &state->system;
+    renderer_t *renderer = &state->renderer;
 
     system_init(system, "DKE: Dark Earth", 640, 480, 4);
+    renderer_init(renderer, system);
     game_init(state);
 
     while(!system->quit) {
@@ -37,7 +41,7 @@ i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         game_draw(state);
         game_flip(state);
 
-        // system_blit(system, renderer->front_buffer);
+        system_blit(system, renderer->front_buffer);
         system_flip(system);
 
         system->timer.frame_count++;
@@ -64,6 +68,7 @@ i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     }
 
     game_release(state);
+    renderer_release(renderer);
     system_release(system);
     state_release(state);
 

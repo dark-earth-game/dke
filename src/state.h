@@ -2,11 +2,14 @@
 
 #include "core/common.h"
 #include "core/system.h"
+#include "graphics/renderer.h"
+
 #include "game_detection.h"
 
 typedef struct {
-    system_t system;
     game_type_e game_type;
+    system_t system;
+    renderer_t renderer;
 } state_t;
 
 extern state_t *state;

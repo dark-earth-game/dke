@@ -31,8 +31,5 @@ dke:
 run:
 	$(BIN)/dke
 
-clean-all:
-	find bin ! -name 'src' ! -name 'util' -type d -maxdepth 1 -mindepth 1 -exec rm -rf {} +
-
 clean:
 	rm -f $(BIN)/dke
