@@ -1,11 +1,11 @@
-#include "core/file_system.h"
+#include "libsys/file_system.h"
 #include "game_detection.h"
 
-inline game_type_e detect_game() {
+game_type_e detect_game() {
     return DKE_UK;
 }
 
-inline const c8* get_game_title(game_type_e game) {
+const c8* get_game_title(game_type_e game) {
     switch (game) {
         case DKE_FR: return "DKE: Dark Earth (French)";
         case DKE_UK: return "DKE: Dark Earth (English)";

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/common.h"
+#include "libsys/common.h"
 
 #define FPS_LIMIT 60
 
@@ -17,8 +17,8 @@ typedef enum {
     DKE_IT = 0x04,
     DKE_SP = 0x05,
     DKE_JP = 0x06,
-    DKE_PL = 0x07,
     // community translations
+    DKE_PL = 0x07,
     DKE_RU = 0x10,
     DKE_CZ = 0x11,
     DKE_PT = 0x12,

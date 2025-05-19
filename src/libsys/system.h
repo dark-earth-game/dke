@@ -23,11 +23,11 @@ typedef struct {
     i32 prev_motion_y;
 } system_t;
 
-void system_init(system_t *system, c8 *game_title, i32 width, i32 height, i32 bpp);
-void system_events(system_t *system);
-u32 system_tick();
-void system_delay(u32 delay);
-void system_set_title(system_t *system, c8 *title);
-void system_blit(system_t *system, u32 *front_buffer);
-void system_flip(system_t *system);
-void system_release(system_t *system);
+i32 ls_init_instance(system_t *system, i32 width, i32 height, i32 bpp);
+void ls_update_events(system_t *system);
+u32 ls_tick();
+void ls_delay(u32 delay);
+void ls_set_title(system_t *system, c8 *title);
+void ls_blit(system_t *system, u32 *front_buffer);
+void ls_flip(system_t *system);
+void ls_release(system_t *system);

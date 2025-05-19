@@ -1,7 +1,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "../core/common.h"
+#include "../common.h"
 #include "renderer.h"
 
 

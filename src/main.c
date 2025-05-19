@@ -1,11 +1,10 @@
 #include <stdio.h>
 
-#include "core/common.h"
-#include "core/system.h"
-#include "graphics/renderer.h"
+#include "libsys/common.h"
+#include "libsys/system.h"
+#include "libsys/graphics/renderer.h"
 
 #include "state.h"
-#include "game.h"
 #include "game_detection.h"
 
 
@@ -14,40 +13,23 @@ state_t *state;
 
 b8 lock_fps = false;
 
-#ifndef _WIN32
-i32 main(i32 argc, c8 **argv) {
-#else
-#include <windows.h>
-i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i32 nCmdShow) {
-#endif
-    print("Initializing...\n");
-    state = memory_calloc(sizeof(state_t));
-    state_init(state);
-    print("Detecting Game...\n");
-    state->game_type = detect_game();
-
-    system_t *system = &state->system;
+i32 ls_main(system_t *system, c8 **argv) {
     renderer_t *renderer = &state->renderer;
-
-    system_init(system, "DKE: Dark Earth", 640, 480, 4);
     renderer_init(renderer, system);
-    game_init(state);
 
     while(!system->quit) {
-        system->timer.tick = system_tick();
-        system_events(system);
+        system->timer.tick = ls_tick();
+        ls_update_events(system);
 
-        game_update(state);
-        game_draw(state);
-        game_flip(state);
+        //
 
-        system_blit(system, renderer->front_buffer);
-        system_flip(system);
+        ls_blit(system, renderer->front_buffer);
+        ls_flip(system);
 
         system->timer.frame_count++;
         if (system->timer.tick - system->timer.last_tick_fps >= 1000) {
             snprintf(title, 64, "%s - fps: %d", system->title, system->timer.frame_count);
-            system_set_title(system, title);
+            ls_set_title(system, title);
             system->timer.frame_count = 0;
             system->timer.last_tick_fps = system->timer.tick;
         }
@@ -56,21 +38,39 @@ i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             lock_fps = !lock_fps;
         }
         if (lock_fps) {
-            system->timer.last_tick = system_tick();
+            system->timer.last_tick = ls_tick();
             // limit fps to 40
             if (system->timer.last_tick - system->timer.tick < 25) {
-                system_delay(25 - (system->timer.last_tick - system->timer.tick));
+                ls_delay(25 - (system->timer.last_tick - system->timer.tick));
             }
         }
         else {
-            system_delay(1);
+            ls_delay(1);
         }
     }
+    return 0;
+}
 
-    game_release(state);
-    renderer_release(renderer);
-    system_release(system);
+#ifndef _WIN32
+i32 main(i32 argc, c8 **argv) {
+#else
+#include <windows.h>
+i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i32 nCmdShow) {
+#endif
+    state = memory_calloc(sizeof(state_t));
+    state_init(state);
+    state->game_type = detect_game();
+    state->system.title = (c8*)get_game_title(state->game_type);
+
+    system_t *system = &state->system;
+
+    if (ls_init_instance(system, 640, 480, 4)) {
+        // TODO: hide cursor
+        ls_main(system, argv);
+    }
+    
+    ls_release(system);
     state_release(state);
-
+    
     return 0;
 }

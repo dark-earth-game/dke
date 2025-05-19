@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/common.h"
-#include "core/system.h"
+#include "libsys/common.h"
+#include "libsys/system.h"
 #include "graphics/renderer.h"
 
 #include "game_detection.h"

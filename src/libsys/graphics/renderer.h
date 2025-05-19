@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/common.h"
-#include "../core/system.h"
+#include "../libsys/common.h"
+#include "../libsys/system.h"
 
 typedef struct {
     i32 width;

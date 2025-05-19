@@ -2,8 +2,8 @@
 #define NOMINMAX
 #include <windows.h>
 
-#include "../core/system.h"
-#include "../core/common.h"
+#include "../system.h"
+#include "../common.h"
 
 
 static HWND window;
@@ -60,12 +60,12 @@ static void create_window(system_t *system) {
     WNDCLASS wc = {0};
     wc.lpfnWndProc = DefWindowProc;
     wc.hInstance = GetModuleHandle(NULL);
-    wc.lpszClassName = "DKE: Dark Earth";
+    wc.lpszClassName = "";
     RegisterClass(&wc);
 
     window = CreateWindow(
         wc.lpszClassName,
-        "DKE: Dark Earth";,
+        "",
         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
@@ -100,10 +100,8 @@ static void create_window(system_t *system) {
 }
 
 
-void system_init(system_t *system, c8 *title, i32 width, i32 height, i32 bpp) {
-    print("Initializing system...\n");
+i32 ls_init_instance(system_t *system, i32 width, i32 height, i32 bpp) {
     system->quit = false;
-    system->title = title;
     system->width = width;
     system->height = height;
     system->bpp = bpp;
@@ -111,9 +109,11 @@ void system_init(system_t *system, c8 *title, i32 width, i32 height, i32 bpp) {
     surface = (u8 *)malloc(width * height * bpp);
 
     create_window(system);
+
+    return TRUE;
 }
 
-void system_events(system_t *system) {
+void ls_update_events(system_t *system) {
     MSG msg;
     while (PeekMessage(&msg, window, 0, 0, PM_REMOVE)) {
         switch (msg.message) {
@@ -135,28 +135,28 @@ void system_events(system_t *system) {
     }
 }
 
-inline u32 system_tick() {
+inline u32 ls_tick() {
     return GetTickCount();
 }
 
-inline void system_delay(u32 delay) {
+inline void ls_delay(u32 delay) {
     Sleep(delay);
 }
 
-void system_set_title(system_t *system, c8 *title) {
+void ls_set_title(system_t *system, c8 *title) {
     SetWindowText(window, title);
 }
 
-void system_blit(system_t *system, u32 *front_buffer) {
+void ls_blit(system_t *system, u32 *front_buffer) {
     memcpy(surface, (u8*)front_buffer, system->width * system->height * system->bpp);
 }
 
-void system_flip(system_t *system) {
+void ls_flip(system_t *system) {
     HDC window_dc = GetDC(window);
     BitBlt(window_dc, 0, 0, system->width, system->height, memory_dc, 0, 0, SRCCOPY);
     ReleaseDC(window, window_dc);
 }
 
-void system_release(system_t *system) {
+void ls_release(system_t *system) {
     free(surface);
 }

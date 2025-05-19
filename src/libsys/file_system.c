@@ -3,46 +3,46 @@
 #include "file_system.h"
 #include "common.h"
 
-inline bool file_exists(const char* path) {
+inline bool ls_exists(const char* path) {
     struct stat buffer;
     return (stat(path, &buffer) == 0);
 }
 
-inline i32 file_size(const char* path) {
+inline i32 ls_get_filesize(const char* path) {
     struct stat buffer;
     stat(path, &buffer);
     return buffer.st_size;
 }
 
-inline FILE* file_open(const char* path, const char* mode) {
+inline FILE* ls_open(const char* path, const char* mode) {
     return fopen(path, mode);
 }
 
-inline void file_close(FILE* file) {
+inline void ls_close(FILE* file) {
     fclose(file);
 }
 
-inline void file_seek(FILE* file, i32 offset, i32 origin) {
+inline void ls_seek(FILE* file, i32 offset, i32 origin) {
     fseek(file, offset, origin);
 }
 
 // read number of bytes
-inline void file_read_buffer(FILE* file, void* buffer, i32 size) {
+inline void ls_read_buffer(FILE* file, void* buffer, i32 size) {
     fread(buffer, size, 1, file);
 }
 
-inline u8 file_read_i8(FILE* file) {
+inline u8 ls_read_i8(FILE* file) {
     return fgetc(file);
 }
 
-inline u16 file_read_i16(FILE* file) {
+inline u16 ls_read_i16(FILE* file) {
     u16 value = 0;
     value |= fgetc(file);
     value |= fgetc(file) << 8;
     return value;
 }
 
-inline u32 file_read_i32(FILE* file) {
+inline u32 ls_read_i32(FILE* file) {
     u32 value = 0;
     value |= fgetc(file);
     value |= fgetc(file) << 8;
@@ -51,14 +51,14 @@ inline u32 file_read_i32(FILE* file) {
     return value;
 }
 
-inline i8 file_read_u8(FILE* file) {
-    return (i8)file_read_i8(file);
+inline i8 ls_read_u8(FILE* file) {
+    return (i8)ls_read_i8(file);
 }
 
-inline i16 file_read_u16(FILE* file) {
-    return (i16)file_read_i16(file);
+inline i16 ls_read_u16(FILE* file) {
+    return (i16)ls_read_i16(file);
 }
 
-inline i32 file_read_u32(FILE* file) {
-    return (i32)file_read_i32(file);
+inline i32 ls_read_u32(FILE* file) {
+    return (i32)ls_read_i32(file);
 }
