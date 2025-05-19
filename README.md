@@ -31,6 +31,10 @@ The project tries to be cross-platform with minimal dependencies to facilitate t
 
 > make run
 
+## Disassembly
+
+In the disassembly folder you will find the IDA Free v8.4 project files for the game. The executable used was the patched version of the game with no CD protection.
+
 
 ## Authors
 
