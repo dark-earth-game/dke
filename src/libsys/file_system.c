@@ -1,20 +1,26 @@
 #include <sys/stat.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "file_system.h"
 #include "common.h"
 
-inline bool ls_exists(const char* path) {
+inline const c8* ls_get_base_path() {
+    return getcwd(NULL, 0);
+}
+
+inline bool ls_exists(const c8* path) {
     struct stat buffer;
     return (stat(path, &buffer) == 0);
 }
 
-inline i32 ls_get_filesize(const char* path) {
+inline i32 ls_get_filesize(const c8* path) {
     struct stat buffer;
     stat(path, &buffer);
     return buffer.st_size;
 }
 
-inline FILE* ls_open(const char* path, const char* mode) {
+inline FILE* ls_open(const c8* path, const c8* mode) {
     return fopen(path, mode);
 }
 

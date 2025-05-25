@@ -1,0 +1,14 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug DKE",
+            "program": "${workspaceFolder}/bin/game/dke",
+            "args": [],
+            "cwd": "${workspaceFolder}/bin/game",
+            "preLaunchTask": "build-dke",
+        }
+    ]
+}

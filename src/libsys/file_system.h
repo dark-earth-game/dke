@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+const c8* ls_get_base_path();
 bool ls_exists(const char* path);
 i32 ls_get_filesize(const char* path);
 

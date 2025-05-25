@@ -27,7 +27,7 @@ i32 ls_init_instance(system_t *system, i32 width, i32 height, i32 bpp);
 void ls_update_events(system_t *system);
 u32 ls_tick();
 void ls_delay(u32 delay);
-void ls_set_title(system_t *system, c8 *title);
+void ls_set_title(system_t *system, c8 *title); // 00480C30
 void ls_blit(system_t *system, u32 *front_buffer);
 void ls_flip(system_t *system);
 void ls_release(system_t *system);
