@@ -335,6 +335,22 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     if (zb) {
         print("scene: Z loaded -> %dx%d (stored for later occlusion)\n",
               (i32)zb->width, zb->height);
+        /* One-shot histogram probe so we can guess the near/far
+         * convention: sample four fixed screen points and log their raw
+         * u8 depth. Combined with the DAT zfar, this tells us whether
+         * the bmap is linear 0..zfar (0=near) or inverse (0=far). */
+        if (zb->pixels && zb->width > 0 && zb->height > 0) {
+            i32 zw = (i32)zb->width;
+            i32 zh = zb->height;
+            i32 cx = zw / 2, cy = zh / 2;
+            u8 zc = zb->pixels[cy * zw + cx];
+            u8 ztl = zb->pixels[0];
+            u8 zbr = zb->pixels[(zh - 1) * zw + (zw - 1)];
+            u8 ztop = zb->pixels[(zh / 4) * zw + cx];
+            i32 zfar = scene_get_camera_zfar(camera);
+            print("scene:   Z sample: centre=%u top=%u tl=%u br=%u  zfar=%d\n",
+                  zc, ztop, ztl, zbr, zfar);
+        }
     } else {
         print("scene: Z absent — no depth buffer for this camera\n");
     }
