@@ -16,9 +16,11 @@
 #include "libsys/movie.h"
 #include "libsys/lsys_startup.h"
 #include "libsys/graphics/font.h"
+#include "libsys/graphics/palette.h"
 
 #include "state.h"
 #include "game_detection.h"
+#include "game_init.h"
 
 
 state_t *state;
@@ -209,11 +211,22 @@ i32 ls_main(system_t *system, c8 **argv) {
 
     // skip memory check
 
-    // sub_4843F0(v13, v14);
-    // sub_4953B0();
+    // sub_4843F0(v13, v14); — CPU/memory check
+    cpu_info_t cpu_info;
+    ls_measure_cpu_speed(&cpu_info);
+    print("ls_main: CPU speed ~%u MHz, perf_freq=%llu\n",
+          cpu_info.cpu_speed_mhz, (unsigned long long)cpu_info.perf_counter_freq);
+
+    // sub_4953B0(); — copy unknown buffers a→b
+    ls_copy_unknown_a_to_b();
+
     ls_set_title(system, state->title);
-    // sub_491450();
-    // sub_495390();
+
+    // sub_491450(); — copy alternative palette data to palette target buffer
+    palette_copy_alternative();
+
+    // sub_495390(); — install default error/warn handlers
+    ls_install_default_error_handlers();
 
     if (state->audio_enabled) {
         // Initialize audio system
@@ -225,6 +238,10 @@ i32 ls_main(system_t *system, c8 **argv) {
     }
 
     init_all_systems(system);
+
+    if (!game_init(state)) {
+        print("game_init failed — cannot start game\n");
+    }
 
     /* ls_main debug text — mirrors original ls_main reference:
      *   set_position_coordinates(0, 32); draw_text(aInitLibsysFini); */

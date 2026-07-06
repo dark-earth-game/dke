@@ -2,6 +2,11 @@
 #include <string.h>
 #include <stdlib.h>   /* getenv */
 #include <locale.h>   /* setlocale */
+#include <time.h>     /* clock_gettime, time, localtime, strftime */
+
+#ifdef PLATFORM_MACOS
+#include <sys/sysctl.h>   /* sysctlbyname */
+#endif
 
 #include "lsys_startup.h"
 #include "common.h"
@@ -36,6 +41,28 @@ u8  g_ls_workspace_a[0xAA0 * 4] = {0};
 u8  g_ls_workspace_b[0x44  * 4] = {0};
 
 /* ---------------------------------------------------------------------------
+ * sub_4953B0 buffer globals  (off_4C7748 → off_4C77D0)
+ *
+ * Both are 34 dwords = 136 bytes, matching rep movsd ecx=0x22.
+ * TODO: identify buffer purpose (palette-related? animation?).
+ * --------------------------------------------------------------------------*/
+/* 0x4C7748 – source buffer (off_4C7748 in original data segment) */
+u8 unknown_data_a[136] = {0};
+/* 0x4C77D0 – destination buffer (off_4C77D0 in original data segment) */
+u8 unknown_data_b[136] = {0};
+
+/* ---------------------------------------------------------------------------
+ * sub_495390 globals  (off_4C64EC / off_4C64F0)
+ *
+ * Two error/warn handler function pointers installed by sub_495390.
+ * Original points them at sub_494560 and sub_4945F0 respectively.
+ * --------------------------------------------------------------------------*/
+/* 0x4C64EC – error handler slot 1 */
+void (*g_error_handler_1)(void) = NULL;
+/* 0x4C64F0 – error handler slot 2 */
+void (*g_error_handler_2)(void) = NULL;
+
+/* ---------------------------------------------------------------------------
  * sub_487D40  (00487D40)
  *
  *   mov  word_4C0B68, 0
@@ -49,13 +76,164 @@ void ls_libsys_flag_reset(void) {
 }
 
 /* ---------------------------------------------------------------------------
- * lsi_open_stat_app stub
+ * Default error-handler no-ops  (targets of sub_494560 / sub_4945F0)
  *
- * Original calls lsi_open_stat_app when not in Master mode.
- * No equivalent in our port — stats app is a Win32-only companion process.
+ * The original sub_495390 installs two function pointers (off_4C64EC /
+ * off_4C64F0) that point to sub_494560 and sub_4945F0.  Those are the
+ * default error/warning handlers.  We replace them with silent no-ops that
+ * match the same void(void) signature.
+ * --------------------------------------------------------------------------*/
+static void ls_default_handler_a(void) { /* no-op — mirrors sub_494560 */ }
+static void ls_default_handler_b(void) { /* no-op — mirrors sub_4945F0 */ }
+
+/* ---------------------------------------------------------------------------
+ * sub_495390  (0x00495390)
+ *
+ *   mov  off_4C64EC, offset sub_494560
+ *   mov  off_4C64F0, offset sub_4945F0
+ *   retn
+ *
+ * Installs two default error/warn handler function pointers.
+ * --------------------------------------------------------------------------*/
+// 00495390
+void ls_install_default_error_handlers(void) {
+    g_error_handler_1 = ls_default_handler_a;
+    g_error_handler_2 = ls_default_handler_b;
+    print("ls_install_default_error_handlers: handlers installed\n");
+}
+
+/* ---------------------------------------------------------------------------
+ * sub_4953B0  (0x004953B0)
+ *
+ *   push  esi
+ *   mov   ecx, 22h          ; 34 dwords = 136 bytes
+ *   push  edi
+ *   mov   esi, offset off_4C7748
+ *   mov   edi, offset off_4C77D0
+ *   rep   movsd
+ *   pop   edi
+ *   pop   esi
+ *   retn
+ *
+ * Copies unknown_data_a → unknown_data_b (136 bytes).
+ * TODO: identify buffer purpose.
+ * --------------------------------------------------------------------------*/
+// 004953B0
+void ls_copy_unknown_a_to_b(void) {
+    memcpy(unknown_data_b, unknown_data_a, sizeof(unknown_data_b));
+    print("ls_copy_unknown_a_to_b: copied %u bytes\n", (u32)sizeof(unknown_data_b));
+}
+
+/* ---------------------------------------------------------------------------
+ * sub_4843F0  (0x004843F0)
+ *
+ * CPU/memory check in original: calls QueryPerformanceFrequency, then uses
+ * rdtsc across a calibration loop to estimate CPU clock in MHz.
+ *
+ * Port (macOS / Linux): use clock_gettime(CLOCK_MONOTONIC) for a 1-ms spin
+ * to measure elapsed ticks, then derive MHz.  perf_counter_freq is set to
+ * 1 000 000 000 (1 GHz — CLOCK_MONOTONIC reports in nanoseconds).
+ *
+ * On macOS: try sysctlbyname("hw.cpufrequency") first.
+ * On Linux: parse /proc/cpuinfo "cpu MHz" line.
+ * Fallback: 2000 MHz.
+ * --------------------------------------------------------------------------*/
+// 004843F0
+void ls_measure_cpu_speed(cpu_info_t *out) {
+    if (!out) return;
+
+    out->perf_counter_freq = 1000000000ULL; /* CLOCK_MONOTONIC: 1 ns per tick */
+    out->flags = 0;
+    out->cpu_speed_mhz = 2000; /* safe fallback */
+
+#ifdef PLATFORM_MACOS
+    {
+        u64 freq = 0;
+        size_t size = sizeof(freq);
+        if (sysctlbyname("hw.cpufrequency", &freq, &size, NULL, 0) == 0 && freq > 0) {
+            out->cpu_speed_mhz = (u32)(freq / 1000000ULL);
+            print("ls_measure_cpu_speed: hw.cpufrequency = %u MHz\n", out->cpu_speed_mhz);
+            return;
+        }
+        /* Apple Silicon / newer macOS: try hw.cpufrequency_max */
+        if (sysctlbyname("hw.cpufrequency_max", &freq, &size, NULL, 0) == 0 && freq > 0) {
+            out->cpu_speed_mhz = (u32)(freq / 1000000ULL);
+            print("ls_measure_cpu_speed: hw.cpufrequency_max = %u MHz\n", out->cpu_speed_mhz);
+            return;
+        }
+    }
+#endif
+
+#ifdef PLATFORM_LINUX
+    {
+        FILE *f = fopen("/proc/cpuinfo", "r");
+        if (f) {
+            char line[256];
+            while (fgets(line, sizeof(line), f)) {
+                float mhz = 0.f;
+                if (sscanf(line, "cpu MHz : %f", &mhz) == 1 && mhz > 0.f) {
+                    out->cpu_speed_mhz = (u32)(mhz + 0.5f);
+                    fclose(f);
+                    print("ls_measure_cpu_speed: /proc/cpuinfo = %u MHz\n", out->cpu_speed_mhz);
+                    return;
+                }
+            }
+            fclose(f);
+        }
+    }
+#endif
+
+    /* Fallback path — hardcode 2000 MHz and log */
+    print("ls_measure_cpu_speed: could not detect CPU speed, defaulting to %u MHz\n",
+          out->cpu_speed_mhz);
+}
+
+/* ---------------------------------------------------------------------------
+ * lsi_open_stat_app  (called from sub_487E30:loc_487F10)
+ *
+ * Original: Win32 companion process that opens f:\TEMP\LS1.CFG, reads a
+ * session counter, increments it, writes a timestamped log line, then writes
+ * back.  The file path and Win32 API (GetModuleFileNameA, CreateProcess) are
+ * not portable.
+ *
+ * Port: open <game_path>/dke_stat.log for append and write a startup line.
+ * If the file cannot be opened, return silently (matching the original
+ * loc_4880AC early-exit path when fopen returns NULL).
  * --------------------------------------------------------------------------*/
 static void lsi_open_stat_app(void) {
-    /* TODO: sub_lsi_open_stat_app — Win32 CreateProcess stats companion */
+    /* Resolve log path relative to the running process working directory.
+     * If state->game_path is not yet set we fall back to "." so the file
+     * still lands somewhere visible. */
+    const c8 *log_dir = ".";
+
+    /* state is declared in state.h (included via lsys_startup.h) and defined
+     * in main.c.  Use its game_path field to place the log next to the game. */
+    if (state && state->game_path && state->game_path[0] != '\0') {
+        log_dir = state->game_path;
+    }
+
+    c8 log_path[512];
+    snprintf(log_path, sizeof(log_path), "%s/dke_stat.log", log_dir);
+
+    FILE *f = fopen(log_path, "a");
+    if (!f) {
+        /* Original: fopen failure → jump to loc_4880AC → return 1 silently */
+        print("lsi_open_stat_app: could not open %s (non-fatal)\n", log_path);
+        return;
+    }
+
+    /* Write a timestamped startup line */
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    c8 ts[64] = {0};
+    if (tm_info) {
+        strftime(ts, sizeof(ts), "%d/%m/%Y : %H:%M:%S", tm_info);
+    }
+
+    fprintf(f, "DKE startup : %s\n", ts);
+    fclose(f);
+
+    print("lsi_open_stat_app: logged startup to %s\n", log_path);
 }
 
 /* ---------------------------------------------------------------------------

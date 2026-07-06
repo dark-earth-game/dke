@@ -46,6 +46,30 @@ extern u8  g_ls_workspace_a[0xAA0 * 4];
 /* 0x55C638 – workspace buffer B (0x44 dwords = 272 bytes) */
 extern u8  g_ls_workspace_b[0x44  * 4];
 
+/* 0x4C7748 – unknown source buffer (off_4C7748), 34 dwords = 136 bytes */
+extern u8 unknown_data_a[136];
+/* 0x4C77D0 – unknown destination buffer (off_4C77D0), 34 dwords = 136 bytes */
+extern u8 unknown_data_b[136];
+
+/* 0x4C64EC – error handler slot 1 (off_4C64EC) */
+extern void (*g_error_handler_1)(void);
+/* 0x4C64F0 – error handler slot 2 (off_4C64F0) */
+extern void (*g_error_handler_2)(void);
+
+/*
+ * cpu_info_t — result of ls_measure_cpu_speed (ported from sub_4843F0).
+ *
+ *   perf_counter_freq  : ticks-per-second of the platform monotonic clock
+ *                        (CLOCK_MONOTONIC → 1 000 000 000, i.e. nanoseconds)
+ *   cpu_speed_mhz      : estimated CPU clock in MHz
+ *   flags              : platform-specific bits (0 on non-Win32 port)
+ */
+typedef struct {
+    u64 perf_counter_freq;   /* QueryPerformanceFrequency equivalent */
+    u32 cpu_speed_mhz;       /* estimated */
+    u16 flags;               /* platform-specific bits */
+} cpu_info_t;
+
 /* 00487D40 – reset LIBSYS pause-state flag */
 void ls_libsys_flag_reset(void);
 
@@ -54,3 +78,12 @@ void ls_libsys_init_flags(state_t *state);
 
 /* 00485840 – build virtual root path into g_virtual_root */
 void ls_build_virtual_root(void);
+
+/* 004843F0 – measure CPU speed and fill cpu_info_t */
+void ls_measure_cpu_speed(cpu_info_t *out);
+
+/* 004953B0 – copy unknown_data_a → unknown_data_b (136 bytes) */
+void ls_copy_unknown_a_to_b(void);
+
+/* 00495390 – install default error/warn handler function pointers */
+void ls_install_default_error_handlers(void);

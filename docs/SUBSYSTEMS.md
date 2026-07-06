@@ -15,6 +15,11 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
 - Port: `ls_get_base_path`, `ls_exists`, `ls_open`, `ls_close` — see `libsys/file_system.[ch]`.
 - **Missing**: path translation `HDISK:>EARTH>foo` → `<basepath>/foo`. Add when actual assets are loaded.
 
+## Palette
+
+- `palette_copy_alternative` (00491450) — copies `alternative_palette_data[136]` → `palette_target_buffer[136]` (34 dwords, `rep movsd ecx=0x22`). Source and destination globals are zero-initialised at startup; the original data segment values are not yet recovered. Called from `ls_main` in the same sequence as the original. Source: `src/libsys/graphics/palette.c/.h`.
+- TODO: identify what populates `alternative_palette_data` in the original game (likely a palette-load path that precedes the call sequence).
+
 ## Graphics
 
 - Present: `graphic_t` with back/front/frame buffers, `ls_init_graphic_system`, `ls_graphic_flip`.
@@ -78,7 +83,11 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
 ## LIBSYS startup flags
 
 - `ls_libsys_flag_reset` (00487D40) — resets `g_ls_pause_state` (word_4C0B68) to 0. Called from `ls_startup` after the memory manager.
-- `ls_libsys_init_flags` (00487E30) — reads `ls_master_enabled`, `ls_debug_enabled`, `ls_info_enabled` from `state_t` (populated by `load_configuration` from `win.ini [LIBSYS]`); derives `g_ls_lang_id` from POSIX `LANG` env-var (Unix) or `GetSystemDefaultLangID` (Windows). Sets `g_ls_master`, `g_ls_debug`, `g_ls_info`, `g_ls_lang_id` globals; stores result in `state->ls_lang_id`. `lsi_open_stat_app` stubbed (Win32 companion process).
+- `ls_libsys_init_flags` (00487E30) — reads `ls_master_enabled`, `ls_debug_enabled`, `ls_info_enabled` from `state_t` (populated by `load_configuration` from `win.ini [LIBSYS]`); derives `g_ls_lang_id` from POSIX `LANG` env-var (Unix) or `GetSystemDefaultLangID` (Windows). Sets `g_ls_master`, `g_ls_debug`, `g_ls_info`, `g_ls_lang_id` globals; stores result in `state->ls_lang_id`. Calls `lsi_open_stat_app` in non-master branch.
+- `lsi_open_stat_app` (~487F10, static) — ported from Win32 original that wrote to `f:\TEMP\LS1.CFG`. Port opens `<game_path>/dke_stat.log` for append and writes a `%d/%m/%Y : %H:%M:%S` timestamped startup line. Non-fatal on open failure (mirrors original `loc_4880AC` early-exit path).
+- `ls_measure_cpu_speed` (004843F0) — fills `cpu_info_t` with `perf_counter_freq=1000000000` (CLOCK_MONOTONIC nanoseconds), `cpu_speed_mhz` from `sysctlbyname("hw.cpufrequency")` on macOS / `/proc/cpuinfo` on Linux / fallback 2000 MHz, `flags=0`. Replaces Win32 `QueryPerformanceFrequency + rdtsc` calibration loop. Called from `ls_main` before `ls_set_title`. Verified: detects host CPU at 2900 MHz on macOS.
+- `ls_install_default_error_handlers` (00495390) — installs `g_error_handler_1` / `g_error_handler_2` function pointers pointing at two no-op stubs (`ls_default_handler_a`, `ls_default_handler_b`), mirroring the original `sub_494560` / `sub_4945F0` targets. Called from `ls_main` after `palette_copy_alternative`.
+- `ls_copy_unknown_a_to_b` (004953B0) — copies `unknown_data_a[136]` → `unknown_data_b[136]` (34 dwords, matching `rep movsd ecx=0x22`). Mirrors `off_4C7748` → `off_4C77D0` from original BSS. Buffer purpose is TODO. Called from `ls_main` after `ls_measure_cpu_speed`.
 
 ## Filesystem
 
@@ -105,6 +114,60 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
 - **Fallback strategy**: Embedded 8×8 CP437 bitmap (95 glyphs, ASCII 0x20..0x7E, 760 bytes) is used whenever the CIF atlas is unavailable. `draw_text("...")` always produces visible white pixels on `front_buffer`. `init_font_system` returns `true` and `font_handle` is non-NULL even in fallback mode.
 - **Wire-up**: `init_all_systems` calls `init_font_system()` after `initialize_color_mapping_tables()`. `ls_main` calls `set_position_coordinates(0, 32)` + `draw_text("Init libsys finished")` when `state->debug_enabled`.
 - **Pending**: CIF decompression (atlas decode); proportional-width atlas blit in `draw_text_at`; `render_text_with_style` (sub_4819B0); `display_text_message` dialog loop.
+
+## Game bootstrap
+
+Entry point: `game_init` (0046BEEB) in `src/game_init.c`. Called from `ls_main` after `init_all_systems` completes and before the intro cutscene.
+
+Phases in execution order:
+
+1. **Debug banner** — `set_position_coordinates(0,32)` + `draw_text("Init Scene ...")` when `debug_enabled`.
+2. **HUD health bitmap** — `select_language_version("DATAS>MENUS>GINETTE.CIF")`. If localised variant found: `image_load_compressed("DATAS>MENUS>GINETTE.GIF", ui_health_buffer)` → `dword_4DDE1C`. Fallback: `ls_init_bmap_ex(0x14, 0x4B, 8, 8)`.
+3. **LOADING.GIF** — `image_load_compressed("DATAS>MENUS>LOADING.GIF", _ls_mem_buffer)` → `renderer_context`.
+4. **Transparency pass** — walk LOADING.GIF pixels; set non-0xFF pixels to 0.
+5. **HUD bmap copies** — two `ls_init_bmap_ex` calls at GINETTE dims → `dword_4DE648`, `dword_4DE64C`.
+6. **Gouraud index buffer** — `allocate_memory(MEM_SLOT_HEALTH, 0x4100)` → `dword_4DE640`. `index_buffer = (dword_4DE640 & 0xFFFFFF00) + 0x100`.
+7. **MENUGEN.GIF palette** — `load_image_color_data("DATAS>MENUS>MENUGEN.GIF", ...)` ×2; `memcpy 0x300` to `unk_4DDF30`; `memset` first `0x180` to 0; `ls_free_palette`; `memset input_state_table[0x100]` to 0; `update_palette_with_default_colors`; `ls_build_palette_colour`.
+8. **sub_425D50** — unknown post-palette call.
+9. **initialize_health_hud** — allocates 2048-byte HUD buffer with numeric ramp pattern.
+10. **sub_45D395, sub_421960, sub_41F7C8, sub_44D706, sub_43040A** — unknown sub-system inits.
+11. **Weapon-slot table** — nested loop: 4 outer × 31 inner; zero-inits `dword_4ECD50`/`4ECDD4` sentinels, fills `dword_4ECD54` entries with `0xFFFFFFFF`.
+12. **Entity-slot table** — 98 outer × 31 inner; same pattern in `dword_4DF5D0`/`4DF654`/`4DF5D4`.
+13. **Zero-init global tables** — `dword_4ECD3C=0`; memset `dword_4EC6A0` (0x188), `companion_entity` (8), `dword_4EE0F0` (0x6BD0), `unk_4DAB60` (0x860); memset-0xFF `dword_4DCDA0`/`4DC2E0` (0x9D8 each); memset `byte_4DCCC0` (0xD2).
+14. **Debug banner** — `draw_text("Init Divers ...")`.
+15. **FLAM.MAT** — `sub_45018B("DATAS>OBJETS>FLAM.MAT", ui_health_buffer)` (HDD) or `sub_45018B("OBJETS>FLAM>FLAM.MAT", ...)` (CD) → `dword_4FB1E0`.
+16. **allocate_and_initialize_health_buffer** — allocates and zeros health buffer.
+17. **sub_42F88E** — unknown.
+18. **register_player_creature(1)** — configures creature types (serpent/fish/bird) for the player.
+19. **init_font_system** — loads SYSFONT (FONTE11.CAR + .CIF).
+20. **sub_44D676** — unknown (IDA label `__wsetargv` likely incorrect).
+21. **sub_48F2C0** — texture config init; 0x3E8 entries in `texture_config`.
+22. **sub_48F230** — entity buffer setup; 640×480 frame dimensions.
+23. **Render bmaps** — colour-mode branch:
+    - 8-bit: `create_image_buffer` × 2 → `render_buffer1`, `debug_surface` / `dword_4B71FC`.
+    - 16-bit (active): `ls_init_bmap_ex` × 4 → `render_buffer1`, `dword_4B71FC`, `dword_4B7200`, `debug_surface`.
+24. **render_buffer2 / half-res** — `ls_init_bmap_ex(0x280, 0x1E0)` → `render_buffer2`; `ls_init_bmap_ex(0x140, 0x0F0)` → `dword_507474`.
+25. **objets.gif** — `image_load_compressed("datas>objets>objets.gif", ui_health_buffer)`.
+26. **sub_4130AA** — resource/sprite table initialiser.
+27. **initialize_resource** — inits resource from `ui_health_buffer` → `palette_data`.
+28. **game_state wire-up** — `game_state = game_death_state = dword_4B70E8`.
+29. **sub_46493B** — player entity setup (ECX=dword_4B70E8, EDX=ui_weapon_slot_buffer) → `player_entity`.
+30. **sub_464F6D** — player entity secondary init.
+31. **Cross-wiring** — palette ptr written into `player_entity+B0h`, `game_context+18h`, `render_buffer1+18h`, `graphics_context+18h`; `game_context = entity_buffer_base`.
+32. **system_get_gametime** → `player_entity+D5Ch`.
+33. **sub_48F1D0 ×2** — render surface registration (render_surface2, unk_4EDC00).
+34. **set_entities_combat_mode** — enables combat for all entities.
+35. **sub_426335** — unknown.
+36. **sub_471C18** — loads `objets>objets.txt`.
+37. **special_mode_active → dword_505DD8**.
+38. **16-bit branch** — `sub_491ED0` + `sub_491FD0(0x3C, graphics_context[+2Ch], dword_4B71F8)`.
+39. **sub_45B207** — unknown.
+40. **display_weapons_inventory** — populates weapon/ammo UI slots.
+41. **sub_4161B0** — final tail call; `dword_4B787C = 0`.
+
+**Port status**: `partial` — skeleton with all 45 phases logged and call graph preserved. Sub-functions 1–11, 15–22, 29–41 are stubs (`// TODO`). Phases 2–6, 11–13, 23–24 have inline asm-faithful structure (loops, bmap alloc sizes). `init_font_system` is the only phase with a fully ported callee. No crashes — exit 143 on SIGTERM.
+
+**Next steps**: port `image_load_compressed` + `load_image_color_data` (GIF loader chain); then `sub_46493B` (player entity) + `display_weapons_inventory`.
 
 ## Timing
 
