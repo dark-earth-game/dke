@@ -125,12 +125,14 @@ void *player_entity = NULL;
  * ------------------------------------------------------------------------- */
 
 /* Per-camera assets. Loaded together by scene_load_camera_backdrop:
- *   F (foreground) — 640×480 8bpp CIF, the coloured room image.
- *   L (light map)  — 320×240 8bpp CIF, grayscale palette; each pixel
- *                    modulates F brightness (128 = neutral, 0 = black,
- *                    255 = 2× bright).  Nearest-upscaled ×2 at blit.
- *   Z (depth)      — 640×480 8bpp CIF, depth per pixel (0=near, 255=far).
- *                    Held for future entity-vs-background occlusion.
+ *   F (foreground) — 640×480 8bpp CIF, the coloured room image; blit
+ *                    directly to the framebuffer as the scene backdrop.
+ *   L (light map)  — 320×240 grayscale CIF (palette[i]=(i,i,i)); used
+ *                    later to shade 3D models placed in the scene, NOT
+ *                    applied to F.
+ *   Z (depth)      — 640×480 8bpp CIF, per-pixel depth of the F image;
+ *                    used to depth-test 3D models against the 2.5D
+ *                    background (per-pixel occlusion).
  * Any of L/Z may be NULL if the CIF is absent; F is required to render.
  * All freed in scene_release. */
 static bmap_t *g_scene_bg_bmap = NULL;   /* F */
@@ -675,10 +677,18 @@ i32 scene_load_level(i32 level_id) {
     /* dword_505C58 = g_world_state; dword_4B2AB8 = 0; TODO globals */
 
     /* -----------------------------------------------------------------
-     * Read L%02d.INF header into heap buffer
-     * Not in the asm for this proc (owned by sub_46D0EA), but included here
-     * as a skeleton demonstration of file access so /tmp/dke.log confirms the
-     * path and can be inspected before sub_46D0EA is ported.
+     * Parse L%02d.INF header (32 bytes decoded so far).
+     * Not in the asm for this proc (owned by sub_46D0EA), but done here
+     * so scene_render / scene_load_camera_backdrop can honour the real
+     * camera count instead of a hard-coded 6.
+     *
+     * Layout inferred from bin/game/datas/L01/L01.INF:
+     *   +00 u32  camera_count      ; L01 → 7
+     *   +04 u32  version_or_magic  ; 0x3348F894 in L01
+     *   +08 u32  flag              ; 1 in L01
+     *   +0C u32  zone_tag ASCII    ; "sol\0" in L01
+     *   +10..+1B  zero pad
+     *   +1C u32  data_offset       ; 0x1780 in L01
      * ----------------------------------------------------------------- */
     {
         c8 inf_vpath[64];
@@ -689,14 +699,23 @@ i32 scene_load_level(i32 level_id) {
             print("scene: INF path = '%s'\n", inf_host);
             FILE *f = ls_open(inf_host, "rb");
             if (f) {
-                /* Read up to 256 bytes as a header sample */
-                u8 *hdr = (u8 *)malloc(256);
-                if (hdr) {
-                    i32 n = (i32)fread(hdr, 1, 256, f);
-                    print("scene: L%02d.INF — read %d header bytes\n", level_id, n);
-                    free(hdr);
+                u8 hdr[32] = {0};
+                i32 n = (i32)fread(hdr, 1, sizeof(hdr), f);
+                if (n >= 16) {
+                    u32 cam_count = (u32)hdr[0]
+                                  | ((u32)hdr[1] << 8)
+                                  | ((u32)hdr[2] << 16)
+                                  | ((u32)hdr[3] << 24);
+                    c8 zone[5] = {0};
+                    memcpy(zone, hdr + 12, 4);
+                    print("scene: L%02d.INF — %d bytes; cameras=%u zone='%s'\n",
+                          level_id, n, cam_count, zone);
+                    if (cam_count > 0 && cam_count <= 64) {
+                        g_scene_camera_max = (i32)cam_count - 1;
+                    }
                 } else {
-                    print("scene: L%02d.INF — malloc failed\n", level_id);
+                    print("scene: L%02d.INF — read %d bytes (short header)\n",
+                          level_id, n);
                 }
                 ls_close(f);
             } else {
@@ -771,53 +790,19 @@ i32 scene_render(system_t *sys) {
     i32  fb_h = state->graphic.height;
     if (!fb) return 0;
 
+    /* F = plain foreground blit.  L (light map) is NOT applied to the
+     * background — it's used to shade 3D models when they get rendered
+     * on top.  Z (depth) will be sampled per pixel during model blit to
+     * decide model-vs-background occlusion in the 2.5D pipeline.  For
+     * this pass we only draw F. */
     if (g_scene_bg_bmap && g_scene_bg_bmap->pixels && g_scene_bg_bmap->palette) {
         i32 bw = (i32)g_scene_bg_bmap->width;
         i32 bh = g_scene_bg_bmap->height;
         i32 ox = (fb_w > bw) ? (fb_w - bw) / 2 : 0;
         i32 oy = (fb_h > bh) ? (fb_h - bh) / 2 : 0;
-
-        if (g_scene_l_bmap && g_scene_l_bmap->pixels) {
-            /* Light-modulated blit.  L is grayscale (palette[i]=(i,i,i)),
-             * quarter-res (320×240 vs 640×480 → each L pixel covers a
-             * 2×2 F block via nearest upscale).  Convention: L=128
-             * neutral, <128 darken, >128 brighten.  Formula:
-             *   out.c = clamp((F.c * L) >> 7, 0, 255)
-             * matches the multiply-by-2× light convention used in the
-             * Dark Earth era 2.5D pipeline. */
-            const u8 *lpx = g_scene_l_bmap->pixels;
-            i32       lw  = (i32)g_scene_l_bmap->width;
-            i32       lh  = g_scene_l_bmap->height;
-            const u8 *pal = g_scene_bg_bmap->palette;
-            const u8 *fpx = g_scene_bg_bmap->pixels;
-
-            for (i32 y = 0; y < bh; y++) {
-                i32 dy = oy + y;
-                if (dy < 0 || dy >= fb_h) continue;
-                i32 ly = (y * lh) / bh;
-                const u8 *frow = fpx + y * bw;
-                const u8 *lrow = lpx + ly * lw;
-                u32      *drow = fb  + dy * fb_w;
-                for (i32 x = 0; x < bw; x++) {
-                    i32 dx = ox + x;
-                    if (dx < 0 || dx >= fb_w) continue;
-                    u8 idx = frow[x];
-                    u32 l  = lrow[(x * lw) / bw];
-                    u32 r  = pal[idx * 3 + 0];
-                    u32 g  = pal[idx * 3 + 1];
-                    u32 b  = pal[idx * 3 + 2];
-                    r = (r * l) >> 7;   if (r > 255) r = 255;
-                    g = (g * l) >> 7;   if (g > 255) g = 255;
-                    b = (b * l) >> 7;   if (b > 255) b = 255;
-                    /* Byte order matches blit_bmap_to_framebuffer. */
-                    drow[dx] = 0xFF000000u | (b << 16) | (g << 8) | r;
-                }
-            }
-        } else {
-            blit_bmap_to_framebuffer(fb, fb_w, fb_h,
-                                     g_scene_bg_bmap, g_scene_bg_bmap->palette,
-                                     ox, oy);
-        }
+        blit_bmap_to_framebuffer(fb, fb_w, fb_h,
+                                 g_scene_bg_bmap, g_scene_bg_bmap->palette,
+                                 ox, oy);
     }
     return 0;
 }
