@@ -106,10 +106,30 @@ Still pending (pass 5):
 
 **Discovered blocker (2026-07)**: LIEU%02d.DLL are compiled x86 code, not data blobs. Each exports one `@FonctionEditor@16` (`__stdcall` 16-byte stack args) that runs level init. `.data` (~40 KB) holds identifier strings — dialog codes (`SG01DIA01`..`SG03DIA02`), action codes (`SP01ACT17`..`SP03ACT17`), LCOD (`LCOD666`..), SAR / SOB / character IDs. `.rdata` = 2 KB constants. `.text` = ~136 KB compiled code. Verified via `tools/src/dump_lieu.py --list LIEU01.DLL`.
 
-Options to unlock LIEU execution:
-- (a) Static analysis + hand-port each `FonctionEditor` to C.
-- (b) Integrate x86 emulator (unicorn engine) — run LIEU exports natively.
-- (c) Reconstruct level structure from `.data` strings + known engine API call graph.
+**LIEU DLL analysis landed 2026-07 (docs/functions/lieu_dll.md)**:
+- Engine loader: `sub_448F4D @ 0x448F4D`. Loads DLL via `LoadLibraryA`,
+  looks up `@FonctionEditor@16` via `GetProcAddress`, calls with 4 stdcall
+  args: `(opcode=1, state_buf=&dword_505C40, cb_table=&dword_4D6198,
+  reload_flag)`. Result at `dword_4B53FC`.
+- Callback table: 40 slots at `dword_4D6198..dword_4D6234`, each = pointer
+  to engine scripting primitive (populated at asm 0x449259..0x4493E3).
+  Primitives: NamedObject action, cinematic dispatch, KillPerso, dialogue
+  spawn, plus ~35 unnamed API fns (per-object state / trigger / animation).
+- DLL entry (LIEU01): `FonctionEditor@16` at RVA 0x1046 = JMP thunk →
+  real code at 0x18C60. On first call: ingests all 40 callback ptrs into
+  DLL-local globals (0x1002c*). Then dispatch table[opcode+1] at 0x100192F9
+  jumps to per-opcode handler. Engine invokes with opcode=1 (init).
+- Action struct: primitives write `dword_4F4CC0` (48 bytes) with action_id +
+  string/int args, then call `sub_45D560` (queue) + `sub_4441A5` (alloc node).
+- `.data` strings = ARGUMENTS to primitive calls (SG..DIA, SP..ACT, LCOD,
+  SOB, Sar, L..B / L..D refs).
+
+Options to unlock LIEU execution (see lieu_dll.md for detail):
+- (a) Per-level static hand-port (~55 × 40 KB = 2 MB of asm to port).
+- (b) Unicorn x86 emulator + native callback bridge (~1 week setup).
+- (c) One-time bytecode extraction via emulator → LIEU%02d.script tables →
+  native engine replay in shipping build. Prefer (c) if init is pure
+  sequence (no runtime-conditional branching); needs verification harness.
 
 **Pass 1b landed 2026-07 (first playable frame):**
 - `scene_load_level` now loads `DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF` (camera 0 by default) via `game_init_load_cursor` and stashes it in `g_scene_bg_bmap`. Each CIF ships its own 256-colour palette so the .GRD parse is deferred.
