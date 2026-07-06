@@ -358,32 +358,32 @@ void menu_init(menu_t *menu) {
             print("menu: overlay loaded MENU_%d.CIF -> %dx%d\n",
                   lang, (i32)ob->width, ob->height);
 
-            /* Quick pixel-density scan: log row ranges where non-zero pixels are
-             * dense — these correspond to menu-button text rows in the sprite.
-             * Threshold: >10% of row width must be non-zero. */
+            /* Intro-fade fill-in (mirrors sub_4374B0 side effect at asm 76664):
+             * per row, from the first index-0 pixel to the row end, replace
+             * every remaining index-0 with index 1.  Asm treats this as
+             * "fill the transparent right-hand curtain with palette entry 1"
+             * — after the reveal animation lands on fraction=1.0, the MENU
+             * sprite is fully opaque and covers MENUGEN completely.  We
+             * always render the post-fade state, so we do the fill once at
+             * load time and then blit the overlay unmasked.  Without this,
+             * transparent regions of MENU_<lang>.CIF let MENUGEN artwork
+             * (red border strip on the right) leak through the frame. */
             if (ob->pixels && ob->width > 0 && ob->height > 0) {
-                i32 threshold = (i32)(ob->width / 10);
-                i32 in_band = 0;
-                i32 band_start = 0;
+                i32 filled_rows = 0;
                 for (i32 row = 0; row < ob->height; row++) {
-                    i32 nz = 0;
-                    const u8 *rowp = ob->pixels + row * (i32)ob->width;
-                    for (i32 col = 0; col < (i32)ob->width; col++) {
-                        if (rowp[col] != 0) nz++;
+                    u8 *rowp = ob->pixels + row * (i32)ob->width;
+                    /* Find first index-0 pixel from the left. */
+                    i32 col = 0;
+                    while (col < (i32)ob->width && rowp[col] != 0) col++;
+                    if (col >= (i32)ob->width) continue;   /* row is opaque */
+                    /* From here to end of row, promote 0 → 1. */
+                    for (; col < (i32)ob->width; col++) {
+                        if (rowp[col] == 0) rowp[col] = 1;
                     }
-                    if (nz > threshold && !in_band) {
-                        in_band = 1;
-                        band_start = row;
-                    } else if (nz <= threshold && in_band) {
-                        in_band = 0;
-                        print("menu: overlay band y=%d..%d (button region)\n",
-                              band_start, row - 1);
-                    }
+                    filled_rows++;
                 }
-                if (in_band) {
-                    print("menu: overlay band y=%d..%d (button region)\n",
-                          band_start, ob->height - 1);
-                }
+                print("menu: overlay fill-in complete (%d rows patched)\n",
+                      filled_rows);
             }
         } else {
             print("menu: overlay MENU_%d.CIF load failed — using text fallback\n", lang);
@@ -643,19 +643,21 @@ void menu_render(menu_t *menu, system_t *sys) {
                                  off_x, off_y);
     }
 
-    /* ---- Pass 3 refinement: blit language-specific menu overlay sprite ----
-     *
-     * Mirrors: draw_image(var_4C78, game_context) in the asm main loop.
-     * The overlay is blitted with index-0 transparency over the MENUGEN backdrop.
-     * When the overlay is present it IS the visual menu — suppress plain text. */
+    /* Blit MENU_<lang>.CIF overlay opaque — mirrors asm main-loop
+     * draw_image(var_4C78 → game_context) which is a mode-0 (no colour key)
+     * blit.  MENU sprite covers the full 640×480 after the intro fade
+     * completes; MENUGEN is only visible during the reveal transition.
+     * We patched the sprite's index-0 pixels to index 1 at load time (see
+     * menu_init), so a non-masked blit produces the same steady-state look
+     * as the original engine's post-fade state. */
     if (menu->overlay_bmap && menu->overlay_bmap->pixels) {
         const u8 *opal = menu->overlay_bmap->palette
                          ? menu->overlay_bmap->palette
                          : menu->backdrop_palette;
         if (opal) {
-            blit_bmap_masked_to_framebuffer(fb, fb_w, fb_h,
-                                             menu->overlay_bmap, opal,
-                                             0, 0, 0 /* index 0 = transparent */);
+            blit_bmap_to_framebuffer(fb, fb_w, fb_h,
+                                     menu->overlay_bmap, opal,
+                                     0, 0);
         }
     }
 

@@ -105,6 +105,13 @@ void menu_render(menu_t *menu, system_t *sys);
 - launch: yes — exit 143 on SIGTERM, no crash
 - behavior: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor frame=N` present in `/tmp/dke.log`. All 7 GENICO frames loaded (720×116 each). CURS128 blits at (motion_x, motion_y); GENICO blits at (item.x-20, item.y+2) with index-0 transparency.
 
+**Pass 4b (overlay opacity fix, 2026-07):**
+- build: yes; launch: exit 143 clean.
+- changes:
+  - `menu_init`: after loading `MENU_<lang>.CIF`, replace index-0 pixels with index 1 on every row (matches `sub_4374B0` fill at asm 76664). Sprite becomes fully opaque post-fade.
+  - `menu_render`: overlay now blit via `blit_bmap_to_framebuffer` (non-masked). MENU sprite covers the full 640×480 — no MENUGEN leakage through transparent border regions, so the red edge strip from the backdrop no longer shows.
+  - Pixel-density band scan removed; replaced with row-fill counter log.
+
 **Pass 4 (real hitboxes + GENICO crop + palette fix, 2026-07):**
 - build: yes — `make dke` exit 0
 - launch: yes — exit 143 on SIGTERM

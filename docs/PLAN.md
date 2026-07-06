@@ -82,8 +82,11 @@ For every landed port:
 - `menu->genico_frames[7]` replaced by single `menu->genico_bmap`; `MENU_GENICO_FRAME_COUNT` removed.
 - Render log guards `hovered_item == -1` case.
 
+**Pass 4b (landed 2026-07):**
+- Intro-fade fill-in (asm `sub_4374B0` side effect only): `menu_init` now walks `MENU_<lang>.CIF` rows and promotes index-0 pixels after the first index-0 column to index 1. Sprite is then blitted opaque via `blit_bmap_to_framebuffer` (not masked). Result: MENU sprite covers MENUGEN fully in steady state, so the red border strip previously visible through transparent overlay regions is gone. Reveal-wave animation (`sub_4375DF`) still skipped; we render directly at fraction=1.0.
+
 Still pending (pass 5):
-- Intro fade animation: `sub_4374B0` (row-scan setup), `sub_4375DF` (0..350 ms tick, sine-driven), `sub_4378EA` (200 ms post-fade). MENUPERS.GRD palette load into stack buffer (var_489C). May be what leaves the transient red band on the backdrop.
+- Intro reveal animation: `sub_4374B0` full row-scan (currently only side effect ported), `sub_4375DF` (0..350 ms tick, sine-driven wave), `sub_4378EA` (200 ms post-fade palette pulse). MENUPERS.GRD palette load into stack buffer (var_489C) — feeds palette cycling during the pulse.
 - Save/load slot panel (SAVE.GIF, DKEGAME.CFG slot check, `sub_437ADC`).
 - Options sub-menu (`sub_438CA5` — brightness/contrast/shadow sliders).
 - CREDITS panel — entries 6/7 of `var_4AE0[8]` (bigger hitboxes, `var_4B40[2]` sub-table).
