@@ -397,6 +397,6 @@ void cif_to_xrgb(const cif_image_t *img, u32 *dst) {
         u8 r   = pal[idx * 3 + 0];
         u8 g   = pal[idx * 3 + 1];
         u8 b   = pal[idx * 3 + 2];
-        dst[i] = 0xFF000000u | ((u32)r << 16) | ((u32)g << 8) | (u32)b;
+        dst[i] = 0xFF000000u | ((u32)b << 16) | ((u32)g << 8) | (u32)r;
     }
 }

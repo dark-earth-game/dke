@@ -37,23 +37,18 @@ For every landed port:
 
 ## In flight (background)
 
-*(none — Slice A up next)*
+*(none — Slice B up next)*
 
 ## Recently landed
 
+- **Slice A** (Sonnet, 2026-07): Real bmap → framebuffer blit landed. `ls_bit_move` (0x0047DC3C), `ls_box` (stub), `draw_image` (0x00453FA3), `blit_bmap_to_framebuffer`, `game_init_get_menu_backdrop`. After intro CRH, LOADING.GIF (512×64) now blits centred into the 640×480 front_buffer using the MENUGEN.GIF palette every frame. Confirmed via log: `blit_bmap_to_framebuffer: 512x64 src -> fb offset (64,208)`. Build clean, exit 143 on SIGTERM. ls_box: stub (1-px outline); lsi_remap_bmap (cross-format) and lsi_bit_move_alpha (mode==2) are TODO.
 - **Task #15** (Sonnet): `select_language_version`, `image_load_compressed` (CIF wrapper w/ `.GIF → .CIF` ext fallback), `image_load_compressed_free`, `sub_415FB0` font finalize, `load_image_color_data`. Real bytes now hit `g_loading_bmap` (512×64), `g_menugen_palette`, `g_objets_gif` (256×512), `INTFANI3` (189×119), FONTE11 atlas (691×224). Confirmed via log.
 
 ## Next slices (priority order)
 
-### Slice A — Real menu backdrop rendering (unlocks visible UI)
+### ~~Slice A~~ — Real menu backdrop rendering ✅ DONE
 
-**Blocker for**: seeing anything on screen besides intro cutscene.
-
-1. **`draw_image` / `ls_blit_bmap`** — real bmap → framebuffer blit with palette lookup. Currently only `draw_text_at` writes to `front_buffer`. Blit needs to handle: 8bpp indexed + palette → XRGB; 16bpp direct copy; source clip; dest offset.
-2. Wire loaded CIF images (`g_menugen_palette`, `g_loading_bmap`) into `ls_main`'s main loop so something shows up after `game_init`.
-3. Idle main-loop state: display a splash while waiting for user input.
-
-Scope: 1 Sonnet delegation. Address anchor `~40C0XX` blit helpers in asm.
+**Landed 2026-07.** `ls_bit_move`, `draw_image`, `ls_box` (stub), `blit_bmap_to_framebuffer`, `game_init_get_menu_backdrop` all in `src/libsys/graphics/graphic.c` + `src/game_init.c`. LOADING.GIF blits every frame after intro. See SUBSYSTEMS.md Graphics section.
 
 ### Slice B — Main menu (`process_mainmenu_437EB7`)
 

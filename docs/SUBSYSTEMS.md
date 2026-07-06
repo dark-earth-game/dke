@@ -30,6 +30,13 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
 - Two colour modes: `colour_mode = 0` → 8-bit palette, `colour_mode = 1` → 16-bit hicolor. `main.c` forces 16-bit.
 - **M5 ported**: `initialize_color_mapping_tables` (00407D49) → `src/libsys/graphics/colour_tables.c`. Fills `primary_color_table[32×32]` and `secondary_color_table[33×32]` with Bresenham shading LUTs. Sets `color_transform_function` to `transform_color_6bit` (565 RGB, since `colour_mode != 4`). Both transform functions (`lookup_color_mapping` for 555, `transform_color_6bit` for 565) ported. Called from `init_all_systems` when `state->colour_mode` is set.
 - **M1 ported**: `ls_init_bmap_ex` (0x0047CEBE) → `src/libsys/graphics/graphic.c` — allocates `bmap_t` (0x34-byte header + pixel buffer); surface-backed paths stubbed to raw alloc (status: `partial`). `ls_set_video_mode` (0x0048418A) → same file — tears down and recreates `g_graphics_context` + `g_back_screen`; DirectDraw mode-set skipped (status: `partial`). New types: `bmap_t`, globals `g_graphics_context`, `g_back_screen`, `g_bmap_count`.
+- **Slice A landed (2026-07)**: Bit-blit primitive pipeline now live.
+  - `ls_bit_move` (0x0047DC3C) → `src/libsys/graphics/graphic.c`: rect blit src→dst bmap with source+dest clipping. Mode 0 = opaque `memcpy` row-by-row; mode 1 = colour-key (skip zero pixels). Mode 2 (alpha) and cross-format `lsi_remap_bmap` path are TODO stubs.
+  - `ls_box` (0x0047D466) → same file: debug outline rectangle (1-pixel border, colour byte 0xFF). Original ls_fill_rect/ls_invert_rect sub-paths stubbed; sufficient for current debug use.
+  - `draw_image` (0x00453FA3) → same file: thin wrapper — optional ls_box outline (TODO: wire debug_surface global), then ls_bit_move mode=0. Logs every invocation.
+  - `blit_bmap_to_framebuffer` (new, no asm addr) → same file: expand 8bpp indexed bmap → u32 XRGB front_buffer using 768-byte palette lookup. Clips to fb bounds.
+  - `game_init_get_menu_backdrop` (new) → `src/game_init.c`: accessor returning g_loading_bmap + color_table to ls_main.
+  - `ls_main` wired: after intro CRH, fetches LOADING.GIF (512×64) + MENUGEN palette, calls `blit_bmap_to_framebuffer` centred in the 640×480 front_buffer every main-loop iteration. Confirmed firing via log (`blit_bmap_to_framebuffer: 512x64 src -> fb offset (64,208) copy 512x64`).
 
 ## CIF image format
 

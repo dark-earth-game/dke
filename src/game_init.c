@@ -82,6 +82,7 @@ static void *g_gouraud_table       = NULL;   /* dword_4DE640 @ 004DE640 */
 
 /* Palette / colour handles */
 static void *g_menugen_palette     = NULL;   /* dword_4B71F8 @ 004B71F8 */
+static void *g_menugen_bmap        = NULL;   /* full 640x480 backdrop (port-only) */
 static void *g_palette_data        = NULL;   /* palette_data (asm sym) */
 
 /* Render / scratch bmaps */
@@ -764,6 +765,15 @@ b8 game_init(state_t *state) {
             "DATAS>MENUS>MENUGEN.GIF",
             state->game.ui_health_buffer);      /* ui_health_buffer */
 
+        /* Port-only extra: keep the full MENUGEN bmap around so we can use
+         * it as the menu backdrop until the real main-menu renderer lands. */
+        g_menugen_bmap = image_load_compressed("DATAS>MENUS>MENUGEN.GIF", NULL);
+        if (g_menugen_bmap) {
+            bmap_t *bm = (bmap_t *)g_menugen_bmap;
+            print("game_init: MENUGEN backdrop bmap loaded -> %dx%d\n",
+                  (i32)bm->width, bm->height);
+        }
+
         /* TODO: update_palette_with_default_colors @ 46C088 */
         /* TODO: ls_build_palette_colour @ 46C08E */
     }
@@ -1106,4 +1116,26 @@ b8 game_init(state_t *state) {
 
     print("game_init: done\n");
     return true;
+}
+
+/* -------------------------------------------------------------------------
+ * game_init_get_menu_backdrop — accessor for backdrop bmap + palette.
+ *
+ * Returns pointers to the LOADING.GIF bmap (g_loading_bmap) and the
+ * MENUGEN.GIF palette (g_menugen_palette / color_table).  Either or both
+ * may be NULL if their respective load phases failed.
+ * ---------------------------------------------------------------------- */
+void game_init_get_menu_backdrop(bmap_t **out_bmap, u8 **out_palette) {
+    /* Prefer full-screen MENUGEN backdrop (640×480); fall back to LOADING
+     * banner (512×64) if MENUGEN failed to load. */
+    void *bmap = g_menugen_bmap ? g_menugen_bmap : g_loading_bmap;
+    if (out_bmap) {
+        *out_bmap = (bmap_t *)bmap;
+    }
+    if (out_palette) {
+        /* color_table is always available (zeroed at startup, written in phase 7) */
+        *out_palette = color_table;
+    }
+    print("game_init_get_menu_backdrop: bmap=%p palette=%p\n",
+          (void *)bmap, (void *)color_table);
 }

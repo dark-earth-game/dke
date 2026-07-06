@@ -103,5 +103,10 @@ Sorted by address.
 | — | system_get_gametime | — | — | todo | reads system game timer |
 | — | update_palette_with_default_colors | — | — | todo | applies default colour adjustments to palette |
 | — | ls_build_palette_colour | — | — | todo | builds display palette from data |
+| 0047DC3C | ls_bit_move | `ls_bit_move` | src/libsys/graphics/graphic.c | ported | rect blit src→dst bmap with clip; mode 0=opaque, mode 1=colour-key; mode 2 (alpha) TODO; cross-format (lsi_remap_bmap) TODO |
+| 0047D466 | ls_box | `ls_box` | src/libsys/graphics/graphic.c | stub | 1-pixel outline rectangle in dst pixel buffer; original ls_fill_rect/ls_invert_rect sub-paths not ported |
+| 00453FA3 | draw_image | `draw_image` | src/libsys/graphics/graphic.c | ported | thin wrapper: optional ls_box debug outline (TODO: wire debug_surface), then ls_bit_move mode=0; logs invocation |
+| — | blit_bmap_to_framebuffer | `blit_bmap_to_framebuffer` | src/libsys/graphics/graphic.c | ported | expand 8bpp indexed bmap → u32 XRGB front_buffer via palette lookup; clips to fb bounds; fires every frame in main loop |
+| — | game_init_get_menu_backdrop | `game_init_get_menu_backdrop` | src/game_init.c | ported | returns g_loading_bmap + color_table pointers for ls_main backdrop blit |
 
 Update this table whenever a function's status changes.

@@ -100,3 +100,57 @@ void ls_clear_bmap(bmap_t *bmap);
  *   ECX = width, EDX = height, arg_0 = bit_depth, arg_4 = bpp_flags
  */
 i32 ls_set_video_mode(i32 width, i32 height, i32 bit_depth, i32 bpp_flags);
+
+/* -------------------------------------------------------------------------
+ * Blit primitives (Slice A)
+ * ------------------------------------------------------------------------- */
+
+/*
+ * ls_box — draw a debug outline rectangle (0x0047D466 area).
+ *
+ * Ported as stub: the original has complex fill/invert sub-paths depending on
+ * flag bits in arg_10.  For now draws a 1-pixel solid outline in the dst bmap
+ * pixel buffer (colour byte 0xFF), sufficient for debug purposes.
+ *
+ * TODO: port ls_fill_rect / ls_invert_rect sub-paths when needed.
+ */
+void ls_box(bmap_t *dst, i32 x, i32 y, i32 w, i32 h, u8 color, i32 flags);
+
+/*
+ * ls_bit_move — rectangular blit from src bmap to dst bmap (0x0047DC3C).
+ *
+ * Clips source and destination rectangles, then copies pixel rows.
+ * mode 0 = opaque copy; mode 1 = colour-key (skip zero pixels);
+ * mode 2 = alpha-blend (TODO stub).
+ */
+void ls_bit_move(bmap_t *dst, bmap_t *src,
+                 i32 sx, i32 sy, i32 sw, i32 sh,
+                 i32 dx, i32 dy, i32 mode);
+
+/*
+ * draw_image — thin wrapper around ls_bit_move (0x00453FA3).
+ *
+ * Calls ls_box for debug outline when debug surface is active,
+ * then calls ls_bit_move with mode=0.
+ */
+void draw_image(bmap_t *dst, bmap_t *src,
+                i32 sx, i32 sy, i32 sw, i32 sh,
+                i32 dx, i32 dy);
+
+/*
+ * blit_bmap_to_framebuffer — expand 8bpp indexed bmap into 32-bit XRGB front_buffer.
+ *
+ * Palette entry i -> 0xFF000000 | (r<<16) | (g<<8) | b from palette[i*3+0..2].
+ * Clips to framebuffer bounds.  Palette must be 768 bytes (256 x RGB triplets).
+ *
+ * @param fb       u32 XRGB framebuffer (row-major, fb_w x fb_h)
+ * @param fb_w     framebuffer width in pixels
+ * @param fb_h     framebuffer height in pixels
+ * @param src      8-bit indexed source bmap
+ * @param palette  768-byte RGB palette (color_table layout)
+ * @param dx       destination X offset in framebuffer
+ * @param dy       destination Y offset in framebuffer
+ */
+void blit_bmap_to_framebuffer(u32 *fb, i32 fb_w, i32 fb_h,
+                               const bmap_t *src, const u8 *palette,
+                               i32 dx, i32 dy);

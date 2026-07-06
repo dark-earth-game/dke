@@ -17,8 +17,8 @@ inline bool ls_exists(const c8* path) {
 
 inline i32 ls_get_filesize(const c8* path) {
     struct stat buffer;
-    stat(path, &buffer);
-    return buffer.st_size;
+    if (stat(path, &buffer) != 0) return -1;
+    return (i32)buffer.st_size;
 }
 
 inline FILE* ls_open(const c8* path, const c8* mode) {

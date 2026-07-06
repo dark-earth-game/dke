@@ -412,7 +412,7 @@ void draw_text_at(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb) {
                                 u8 r = font->palette[idx * 3 + 0];
                                 u8 g = font->palette[idx * 3 + 1];
                                 u8 b = font->palette[idx * 3 + 2];
-                                dst[gx] = 0xFF000000u | ((u32)r << 16) | ((u32)g << 8) | (u32)b;
+                                dst[gx] = 0xFF000000u | ((u32)b << 16) | ((u32)g << 8) | (u32)r;
                             } else {
                                 dst[gx] = color;
                             }

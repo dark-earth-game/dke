@@ -254,7 +254,8 @@ void ls_play_movie(const c8 *path) {
             u8 rr = rgb_buf[i * 3 + 0];
             u8 gg = rgb_buf[i * 3 + 1];
             u8 bb = rgb_buf[i * 3 + 2];
-            pix_buf[i] = 0xFF000000u | ((u32)rr << 16) | ((u32)gg << 8) | (u32)bb;
+            /* NSBitmapImageRep expects byte[0]=R on little-endian */
+            pix_buf[i] = 0xFF000000u | ((u32)bb << 16) | ((u32)gg << 8) | (u32)rr;
         }
 
         /* Scale movie into front_buffer preserving aspect ratio.
