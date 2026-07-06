@@ -283,7 +283,13 @@ i32 ls_main(system_t *system, c8 **argv) {
          * state to LOADING; from that frame on we blit the level's
          * camera-0 backdrop instead of the menu backdrop. */
         if (menu.state == MENU_STATE_LOADING) {
-            scene_render(system);
+            /* scene_render returns 1 when Esc is pressed; flip back to
+             * the main menu so the user can pick another action. */
+            if (scene_render(system) == 1) {
+                menu.state = MENU_STATE_MAIN;
+                menu.dirty = 1;
+                menu.startup_frames_remaining = 15;  /* re-arm click grace */
+            }
 
             /* Slice D: keep polling WASD + mouse_left so the input path is
              * exercised.  No entity movement wired yet. */

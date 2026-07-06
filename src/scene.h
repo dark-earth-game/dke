@@ -28,15 +28,15 @@ i32 scene_load_level(i32 level_id);
 /*
  * scene_render — per-frame render of the currently loaded scene.
  *
- * First-camera pass: blits the level's FL<lvl>C0L0.CIF backdrop into the
- * front buffer using its embedded CIF palette.  No entities, no fade —
- * just a static room.  Enough to prove NEW GAME reaches level data instead
- * of stalling on the "LOADING LEVEL N" text.
+ * Blits the current camera's foreground CIF into the front buffer.
+ * Handles input: Left/Right arrows cycle camera 0..6; Esc requests a
+ * return to the main menu.
  *
- * Camera index (0..6 per L01) can later be switched by input.  For now the
- * scene always displays camera 0.
+ * Return value:
+ *   0 — stay in scene state
+ *   1 — user pressed Esc; caller should flip menu.state back to MAIN
  */
-void scene_render(system_t *sys);
+i32 scene_render(system_t *sys);
 
 /*
  * scene_release — free any bmaps loaded by scene_load_level / scene_render.

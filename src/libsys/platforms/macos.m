@@ -239,6 +239,14 @@ static void handle_events(system_t *system, i32 type, i32 key) {
         case 0x7D:
             system->actions[40] = type;
             break;
+        // Left arrow (keyCode 123) → actions[37] (VK_LEFT)
+        case 0x7B:
+            system->actions[37] = type;
+            break;
+        // Right arrow (keyCode 124) → actions[39] (VK_RIGHT)
+        case 0x7C:
+            system->actions[39] = type;
+            break;
         // F12 (keyCode 111) → actions[111] for screenshot
         case 0x6F:
             system->actions[111] = type;

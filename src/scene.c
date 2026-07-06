@@ -131,8 +131,48 @@ static bmap_t *g_scene_bg_bmap = NULL;
 /* Level id whose backdrop is currently in g_scene_bg_bmap.  -1 = none. */
 static i32 g_scene_bg_level = -1;
 
-/* Camera index within the level (0..6 for L01). Fixed at 0 for the first pass. */
+/* Camera index within the level (0..6 for L01). Runtime-cycled via
+ * scene_render input handling (Left/Right arrow keys). */
 static i32 g_scene_camera = 0;
+
+/* Highest camera index we've successfully loaded so far, used to cap
+ * cycling. Updated by scene_load_camera_backdrop on the first successful
+ * load. -1 = unknown; we'll probe on wrap. */
+static i32 g_scene_camera_max = 6;   /* L01 has cameras 0..6 */
+
+/*
+ * scene_load_camera_backdrop — load DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF
+ * into g_scene_bg_bmap, freeing any previously-loaded backdrop.  Called by
+ * scene_load_level (initial) and scene_render (camera cycle).
+ *
+ * Returns 1 on success, 0 on failure (bmap left untouched).
+ */
+static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
+    c8 bg_vpath[80];
+    snprintf(bg_vpath, sizeof(bg_vpath),
+             "DATAS>L%02d>IMAGES>FL%02dC%dL0.CIF",
+             level_id, level_id, camera);
+    print("scene: loading backdrop '%s'\n", bg_vpath);
+    bmap_t *bg = game_init_load_cursor(bg_vpath);
+    if (!bg) {
+        print("scene: backdrop load failed for '%s'\n", bg_vpath);
+        return 0;
+    }
+
+    if (g_scene_bg_bmap) {
+        if (g_scene_bg_bmap->owns_buffer && g_scene_bg_bmap->pixels)
+            free(g_scene_bg_bmap->pixels);
+        if (g_scene_bg_bmap->owns_palette && g_scene_bg_bmap->palette)
+            free(g_scene_bg_bmap->palette);
+        free(g_scene_bg_bmap);
+    }
+    g_scene_bg_bmap  = bg;
+    g_scene_bg_level = level_id;
+    g_scene_camera   = camera;
+    print("scene: backdrop loaded -> %dx%d palette=%p (cam=%d)\n",
+          (i32)bg->width, bg->height, (void *)bg->palette, camera);
+    return 1;
+}
 
 /* -------------------------------------------------------------------------
  * Stub declarations for sub-functions called by scene_load_level_46DFEC.
@@ -631,38 +671,11 @@ i32 scene_load_level(i32 level_id) {
         print("scene: state->current_level_id = %d\n", level_id);
     }
 
-    /* -----------------------------------------------------------------
-     * Post-skeleton: load the first-camera backdrop so scene_render has
-     * something to blit. Path pattern derived from bin/game/datas/L<lvl>/
-     * IMAGES/: `FL<lvl:02>C<cam>L0.CIF` is the foreground layer.  Each CIF
-     * carries its own 256-colour palette, so no separate .GRD parse is
-     * needed for this pass.
-     * ----------------------------------------------------------------- */
-    {
-        c8 bg_vpath[80];
-        snprintf(bg_vpath, sizeof(bg_vpath),
-                 "DATAS>L%02d>IMAGES>FL%02dC%dL0.CIF",
-                 level_id, level_id, g_scene_camera);
-        print("scene: loading backdrop '%s'\n", bg_vpath);
-        bmap_t *bg = game_init_load_cursor(bg_vpath);
-        if (bg) {
-            /* Replace any previously-loaded backdrop. */
-            if (g_scene_bg_bmap) {
-                if (g_scene_bg_bmap->owns_buffer && g_scene_bg_bmap->pixels)
-                    free(g_scene_bg_bmap->pixels);
-                if (g_scene_bg_bmap->owns_palette && g_scene_bg_bmap->palette)
-                    free(g_scene_bg_bmap->palette);
-                free(g_scene_bg_bmap);
-            }
-            g_scene_bg_bmap = bg;
-            g_scene_bg_level = level_id;
-            print("scene: backdrop loaded -> %dx%d palette=%p\n",
-                  (i32)bg->width, bg->height, (void *)bg->palette);
-        } else {
-            print("scene: backdrop load failed for '%s' — scene will show blank\n",
-                  bg_vpath);
-        }
-    }
+    /* Post-skeleton: load camera 0 backdrop so scene_render has something
+     * to blit.  Each CIF ships its own 256-colour palette (no .GRD parse
+     * needed for this pass). */
+    g_scene_camera = 0;
+    scene_load_camera_backdrop(level_id, g_scene_camera);
 
     print("scene: scene_load_level(%d) — complete\n", level_id);
     return 0;
@@ -674,14 +687,45 @@ i32 scene_load_level(i32 level_id) {
  * Falls back to a "SCENE (no bmap)" text banner if the backdrop failed
  * to load, so the loop stays alive and the user can quit cleanly.
  */
-void scene_render(system_t *sys) {
-    (void)sys;
-    if (!state) return;
+i32 scene_render(system_t *sys) {
+    if (!state) return 0;
 
+    /* --- Input: camera cycling + Esc-to-menu ------------------------- */
+    /* Left arrow (keyCode 123 → actions[37]) — previous camera */
+    if (sys->actions[37] == 1) {
+        sys->actions[37] = 0;
+        i32 next = g_scene_camera - 1;
+        if (next < 0) next = g_scene_camera_max;
+        print("scene: cam prev %d -> %d\n", g_scene_camera, next);
+        if (!scene_load_camera_backdrop(g_scene_bg_level, next)) {
+            /* Failed — the previous cam may not exist; try wrapping to 0. */
+            if (next != 0) scene_load_camera_backdrop(g_scene_bg_level, 0);
+        }
+    }
+    /* Right arrow (keyCode 124 → actions[39]) — next camera */
+    if (sys->actions[39] == 1) {
+        sys->actions[39] = 0;
+        i32 next = g_scene_camera + 1;
+        if (next > g_scene_camera_max) next = 0;
+        print("scene: cam next %d -> %d\n", g_scene_camera, next);
+        if (!scene_load_camera_backdrop(g_scene_bg_level, next)) {
+            /* Cap discovered — remember it and wrap. */
+            g_scene_camera_max = g_scene_camera;
+            scene_load_camera_backdrop(g_scene_bg_level, 0);
+        }
+    }
+    /* Esc (keyCode 53 → actions[27]) — request return to main menu */
+    if (sys->actions[27] == 1) {
+        sys->actions[27] = 0;
+        print("scene: ESC -> back to menu\n");
+        return 1;
+    }
+
+    /* --- Blit current camera backdrop ------------------------------- */
     u32 *fb   = state->graphic.front_buffer;
     i32  fb_w = state->graphic.width;
     i32  fb_h = state->graphic.height;
-    if (!fb) return;
+    if (!fb) return 0;
 
     if (g_scene_bg_bmap && g_scene_bg_bmap->pixels && g_scene_bg_bmap->palette) {
         i32 bw = (i32)g_scene_bg_bmap->width;
@@ -692,6 +736,7 @@ void scene_render(system_t *sys) {
                                  g_scene_bg_bmap, g_scene_bg_bmap->palette,
                                  ox, oy);
     }
+    return 0;
 }
 
 void scene_release(void) {
