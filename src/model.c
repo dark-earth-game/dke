@@ -93,7 +93,11 @@ static inline u32 sample_light(const bmap_t *l_bmap, i32 fb_x, i32 fb_y,
     i32 lx = (fb_x * lw) / fb_w;
     i32 ly = (fb_y * lh) / fb_h;
     if ((u32)lx >= (u32)lw || (u32)ly >= (u32)lh) return 128;
-    return l_bmap->pixels[ly * lw + lx];
+    u32 l = l_bmap->pixels[ly * lw + lx];
+    /* Floor at 48 so the model doesn't vanish in unlit corners.
+     * Removed once we understand the L semantics per real .OME mesh. */
+    if (l < 48) l = 48;
+    return l;
 }
 
 /*
@@ -274,9 +278,13 @@ void model_render(const model_t *m, system_t *sys,
     }
 
     /* Solid triangle fill with backface culling. Winding: model faces are
-     * CCW when viewed from outside; screen Y goes DOWN, so a front face
-     * ends up CW in screen space. Cross-z of screen edges (b-a)×(c-a) is
-     * positive for CW → keep. */
+     * CCW in model space. Our projection flips Y (screen down), which
+     * inverts winding, so a front face is CCW in screen space and its
+     * signed area (cross_z / 2) is NEGATIVE. Trace: face {4,5,6} at
+     * angle=0, scale=80, centre=(320,240) →
+     *   a=(240,320) b=(400,320) c=(400,160)
+     *   cross_z = (400-240)(160-320) - (320-320)(400-240) = -25600
+     * so keep cross_z < 0 and cull cross_z >= 0 as back faces. */
     for (i32 f = 0; f < m->face_count; f++) {
         const model_face_t *face = &m->faces[f];
         const proj_vertex_t *a = &projected[face->i0];
@@ -285,7 +293,7 @@ void model_render(const model_t *m, system_t *sys,
 
         i64 cross_z = (i64)(b->sx - a->sx) * (i64)(c->sy - a->sy)
                     - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
-        if (cross_z <= 0) continue;   /* back face — skip */
+        if (cross_z >= 0) continue;   /* back face — skip */
 
         fill_triangle(fb, fb_w, fb_h,
                       a->sx, a->sy, a->depth,

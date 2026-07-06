@@ -802,20 +802,22 @@ i32 scene_render(system_t *sys) {
                                  ox, oy);
     }
 
-    /* Step 2 — placeholder 3D model (wireframe cube) so the L + Z sample
-     * paths are exercised on top of the real backdrop. Sits at screen
-     * centre, rotates around Y using system tick.  When a real .OME
-     * loader lands, swap model_test_cube() for the parsed model.  Colours
-     * modulate through the L bmap; per-pixel depth compares against the
-     * Z bmap so the cube goes behind any nearer scene geometry (0=near,
-     * 255=far). */
+    /* Step 2 — placeholder 3D model at the screen centre, rotating on Y.
+     * Depth-test against g_scene_z_bmap is DISABLED for this pass —
+     * we don't know the Z bmap's near/far convention yet, and enabling
+     * it would cull most of the cube in L01 cam 0.  Pass NULL so the
+     * fallback in sample_depth() treats every pixel as "far scene" and
+     * the model always wins the depth test.  L shading still runs so
+     * you can see the light-map response.  Replace with the real Z
+     * bmap once we've decoded the per-camera projection matrix from
+     * .DAT / .OME. */
     model_render(model_test_cube(),
                  sys,
                  fb_w / 2, fb_h / 2,
                  80 /* pixels per model unit */,
                  sys ? sys->timer.tick : 0,
                  g_scene_l_bmap,
-                 g_scene_z_bmap);
+                 NULL /* g_scene_z_bmap disabled until Z convention decoded */);
     return 0;
 }
 
