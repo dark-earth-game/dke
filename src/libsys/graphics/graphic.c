@@ -410,8 +410,8 @@ void blit_bmap_to_framebuffer(u32 *fb, i32 fb_w, i32 fb_h,
     if (dst_y0 + copy_h > fb_h) copy_h = fb_h - dst_y0;
     if (copy_w <= 0 || copy_h <= 0) return;
 
-    print("blit_bmap_to_framebuffer: %dx%d src -> fb offset (%d,%d) copy %dx%d\n",
-          src_w, src_h, dx, dy, copy_w, copy_h);
+    // print("blit_bmap_to_framebuffer: %dx%d src -> fb offset (%d,%d) copy %dx%d\n",
+    //       src_w, src_h, dx, dy, copy_w, copy_h);
 
     const u8 *src_row = src->pixels + src_y0 * src_stride + src_x0;
           u32 *dst_row = fb + dst_y0 * fb_w + dst_x0;

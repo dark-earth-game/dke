@@ -45,6 +45,25 @@ typedef struct {
 const model_t *model_test_cube(void);
 
 /*
+ * model_from_ome_atom — build a render-ready model_t from a decoded ome_atom_t.
+ *
+ * Quad faces (vcnt==4) are split into 2 triangles.
+ * Vertex coords are scaled from raw .OME units to Q16.16 by OME_VERT_SCALE
+ * (shift left 1 bit: max ~30000 → ~60000 ≈ ONE), keeping them compatible
+ * with model_render's perspective divide.
+ * Face colour is looked up via matr (may be NULL; falls back to built-in
+ * placeholder palette when NULL or mat_id is out of range).
+ *
+ * Returns a heap-allocated model_t; call model_free() to release.
+ * Returns NULL on alloc failure.
+ */
+#include "model_ome.h"
+model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr);
+
+/* model_free — release a model_t built by model_from_ome_atom. */
+void model_free(model_t *m);
+
+/*
  * model_render — draw a model into the front buffer.
  *
  * Rotation is applied on the Y axis using tick-driven angle (spins the cube
@@ -61,6 +80,15 @@ const model_t *model_test_cube(void);
  *
  * Wireframe pass 1: draws each face as three Bresenham line segments.
  * Triangle-fill rasteriser lands in pass 2.
+ *
+ * When rx_override is non-zero the rx/ry/rz values are used as explicit
+ * rotation angles (cosine_table index 0..4095 = 0..360°) instead of the
+ * tick-driven yaw+fixed-pitch.  Pass rx_override=0 to use tick spin.
+ *
+ * atom_tx/ty/tz — character-relative translation of this atom's pivot
+ * (raw model units, same scale as vertices).  The camera rotation is
+ * applied to this translation so the atom is offset correctly in world
+ * space.  Pass (0,0,0) to render at the screen centre (e.g. test cube).
  */
 void model_render(const model_t   *m,
                   system_t        *sys,
@@ -72,4 +100,10 @@ void model_render(const model_t   *m,
                   i32              world_size,/* model half-extent world units */
                   i32              z_far,     /* scene camera zfar (units) */
                   const bmap_t    *l_bmap,    /* optional light map, may be NULL */
-                  const bmap_t    *z_bmap);   /* optional depth bmap, may be NULL */
+                  const bmap_t    *z_bmap,    /* optional depth bmap, may be NULL */
+                  i32              rx_override, /* 0 = use tick, else explicit rx */
+                  i32              ry_override, /* explicit ry (cosine_table index) */
+                  i32              rz_override, /* explicit rz */
+                  i32              atom_tx,   /* character-relative translation X */
+                  i32              atom_ty,   /* character-relative translation Y */
+                  i32              atom_tz);  /* character-relative translation Z */

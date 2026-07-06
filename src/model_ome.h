@@ -55,6 +55,49 @@ typedef struct {
     i32              raw_size;
 } ome_file_t;
 
+/* -------------------------------------------------------------------------
+ * MATR material colour table
+ *
+ * Empirical layout (verified on P00.OME):
+ *   MATR body header: "3Ditor v1.1 material library.\0" at body+0x0D0.
+ *   Material count (i32 LE) at body+0x230 (may be garbage — scan instead).
+ *   Records start at body+0x240; each record is 72 bytes (0x48):
+ *     [0..3]   i32  diffuse R (low byte = u8 value, upper 3 bytes = 0)
+ *     [4..7]   i32  diffuse G
+ *     [8..11]  i32  diffuse B
+ *     [12..19] 8 bytes unknown / padding
+ *     [20..31] char name[12] (null-terminated material name, Latin-1)
+ *     [32..47] secondary colour fields (mirrors of R/G, often)
+ *     [48..59] 12 bytes unknown
+ *     [60..63] heap ptr (ignored)
+ *     [64..67] heap ptr (ignored)
+ *     [68..71] heap ptr (ignored)
+ *
+ * Record is considered valid when:
+ *   R ≤ 255, G ≤ 255, B ≤ 255, AND (R|G|B) != 0 OR name[0] is printable.
+ * Scan stops at the first all-zero record (up to OME_MATR_MAX_MATS).
+ * ------------------------------------------------------------------------- */
+
+#define OME_MATR_MAX_MATS 24
+
+typedef struct {
+    u8   r, g, b;       /* diffuse colour (raw from record) */
+    c8   name[12];      /* null-terminated material name */
+} ome_mat_t;
+
+typedef struct {
+    ome_mat_t mats[OME_MATR_MAX_MATS];
+    i32       mat_count;
+} ome_matr_t;
+
+/*
+ * ome_parse_matr — decode the MATR chunk body into a colour table.
+ * raw = pointer to sig_offset + 0x60 in the raw file buffer.
+ * raw_len = bytes from raw to end of chunk (span - 0x60).
+ * Returns 1 on success (at least one material parsed), 0 on failure.
+ */
+i32 ome_parse_matr(const u8 *raw, i32 raw_len, ome_matr_t *out);
+
 /*
  * model_ome_open — load an .OME file from a real host path and populate
  * the chunk table. Returns 1 on success, 0 on failure. Frees any prior
@@ -66,3 +109,71 @@ i32 model_ome_open(const c8 *host_path, ome_file_t *out);
  * model_ome_free — release the chunk table and raw buffer owned by *f.
  */
 void model_ome_free(ome_file_t *f);
+
+/* -------------------------------------------------------------------------
+ * ATOMF body decoder (Slice F pass 3)
+ * -------------------------------------------------------------------------
+ *
+ * Empirical layout (verified on OB98.OME and P00.OME):
+ *
+ *   body header (16 bytes):
+ *     +0x00  i32 = 0
+ *     +0x04  i32 = 0
+ *     +0x08  i32 = heap ptr (original process face-list head, ignored)
+ *     +0x0C  i32 = heap ptr (ignored)
+ *
+ *   vertex records (32 bytes each):
+ *     [0] x   [1] y   [2] z          — position (signed, raw units)
+ *     [3] nx  [4] ny  [5] nz         — per-vertex normal (same units)
+ *     [6] next_ptr (heap, ignored)
+ *     [7] flag: 0x00200000 if ptr present, else 0
+ *     → last vertex record has flag == 0.
+ *     → scan until field[7] is neither 0 nor 0x200000 to find face section.
+ *
+ *   face records (96 bytes each, preceded by a 4-byte heap ptr for faces 1+
+ *   and followed by a 4-byte tail ptr; n_faces = remaining_bytes / 100):
+ *     [0]  face type  (always 100 = 0x64)
+ *     [1]  vcnt       (3 = triangle, 4 = quad)
+ *     [2]  idx[0]
+ *     [3]  idx[1]
+ *     [4]  idx[2]
+ *     [5]  idx[3]     (valid only when vcnt == 4)
+ *     [6]  face_nx    (Q14: 16384 == 1.0)
+ *     [7]  face_ny
+ *     [8]  face_nz
+ *     [9]  mat_id     (index into MATR material table)
+ *     [10..23]        material params + UV data (not decoded in pass 3)
+ * ------------------------------------------------------------------------- */
+
+typedef struct {
+    i32 x, y, z;     /* vertex position (raw .OME signed integers) */
+    i32 nx, ny, nz;  /* per-vertex normal (raw, Q14-ish) */
+} ome_vert_t;
+
+typedef struct {
+    u8  vcnt;        /* 3 = triangle, 4 = quad */
+    u8  idx[4];      /* vertex indices (vcnt entries valid) */
+    i32 nx, ny, nz;  /* face normal, Q14 */
+    i32 mat_id;      /* material index */
+} ome_face_t;
+
+typedef struct {
+    ome_vert_t *verts;
+    i32         vert_count;
+    ome_face_t *faces;
+    i32         face_count;
+} ome_atom_t;
+
+/*
+ * ome_decode_atomf — decode one ATOMF chunk body into verts + faces.
+ *
+ * raw     = pointer to sig_offset + 0x60 in the raw file buffer.
+ * raw_len = bytes from raw to end of chunk (span - 0x60).
+ * out     = caller-provided struct; filled on success.
+ *
+ * out->verts and out->faces are heap-allocated with malloc.
+ * Call ome_atom_free() to release.
+ * Returns 1 on success, 0 on failure (bad data or alloc error).
+ */
+i32  ome_decode_atomf(const u8 *raw, i32 raw_len, ome_atom_t *out);
+void ome_atom_free(ome_atom_t *atom);

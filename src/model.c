@@ -6,10 +6,12 @@
  * (Q14, 4096 entries) from libsys/graphics/shading.h.
  */
 
+#include <stdlib.h>
 #include "libsys/common.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/shading.h"
 #include "state.h"
+#include "model_ome.h"
 #include "model.h"
 
 
@@ -237,7 +239,9 @@ static void fill_triangle(u32 *fb, i32 fb_w, i32 fb_h,
 void model_render(const model_t *m, system_t *sys,
                   i32 mx, i32 my, i32 scale, u32 tick,
                   i32 world_z, i32 world_size, i32 z_far,
-                  const bmap_t *l_bmap, const bmap_t *z_bmap) {
+                  const bmap_t *l_bmap, const bmap_t *z_bmap,
+                  i32 rx_override, i32 ry_override, i32 rz_override,
+                  i32 atom_tx, i32 atom_ty, i32 atom_tz) {
     (void)sys;
     if (!m || !state) return;
 
@@ -246,17 +250,42 @@ void model_render(const model_t *m, system_t *sys,
     i32  fb_h = state->graphic.height;
     if (!fb) return;
 
-    /* Rotate around Y (yaw) and slightly around X (pitch) so the cube
-     * doesn't just spin as a flat rectangle when viewed from a straight
-     * angle. Angles in 12-bit trig-table units (0..4095 = full period).
-     * Yaw does a full rotation every ~4 s at 60 fps; pitch tips by ~20°
-     * (constant offset) for a more scene-like camera-down look. */
-    i32 yaw   = (i32)((tick / 4u) & 0xFFF);
-    i32 pitch = 300;                        /* ~26° camera tilt down */
+    /* Rotation angles in cosine_table index units (0..4095 = 360°).
+     * When rx_override != 0, use explicit per-atom angles from CAN keyframe.
+     * Otherwise use tick-driven spin + fixed pitch camera tilt. */
+    i32 yaw, pitch, roll;
+    if (rx_override) {
+        yaw   = ry_override & 0xFFF;   /* Y rotation = yaw */
+        pitch = rx_override & 0xFFF;   /* X rotation = pitch */
+        roll  = rz_override & 0xFFF;   /* Z rotation = roll */
+    } else {
+        yaw   = (i32)((tick / 4u) & 0xFFF);
+        pitch = 300;                    /* ~26° fixed camera tilt */
+        roll  = 0;
+    }
+    (void)roll; /* roll not yet applied in projection */
+
     i32 cy = cosine_table[yaw];
     i32 sy = cosine_table[(yaw   + 1024) & 0xFFF];
     i32 cp = cosine_table[pitch];
     i32 sp = cosine_table[(pitch + 1024) & 0xFFF];
+
+    /* Apply camera rotation to the atom translation, then project to
+     * a screen offset and adjust the render centre.
+     * Matches the vertex-transform path: rotY → rotX → perspective.
+     * All values are Q14 fixed-point from cosine_table. */
+    if (atom_tx | atom_ty | atom_tz) {
+        i64 rx = ((i64)cy * atom_tx + (i64)sy * atom_tz) >> 14;
+        i64 rz = (-(i64)sy * atom_tx + (i64)cy * atom_tz) >> 14;
+        i64 ry = atom_ty;
+        i64 py = ( (i64)cp * ry - (i64)sp * rz) >> 14;
+        i64 pz = ( (i64)sp * ry + (i64)cp * rz) >> 14;
+        const i32 CAM_D_local = 4 * ONE;
+        i32 denom = CAM_D_local - (i32)pz;
+        if (denom < ONE / 8) denom = ONE / 8;
+        mx += (i32)(((i64)rx * scale) / denom);
+        my -= (i32)(((i64)py * scale) / denom);
+    }
 
     /* Perspective projection.
      * Camera sits at (0, 0, +CAM_D) in Q16.16 model space, looking down -Z.
@@ -352,4 +381,102 @@ void model_render(const model_t *m, system_t *sys,
                       c->sx, c->sy, c->depth,
                       face->colour, l_bmap, z_bmap);
     }
+}
+
+/* -------------------------------------------------------------------------
+ * model_from_ome_atom — build a render-ready model_t from ome_atom_t.
+ * See model.h for contract.
+ * ------------------------------------------------------------------------- */
+
+/* Scale raw .OME vertex coords to Q16.16: shift left 1 bit.
+ * Max raw value ~30000 → ~60000 ≈ ONE (65536), keeping proportions intact. */
+#define OME_VERT_SCALE(v) ((v) << 1)
+
+/* Placeholder colour palette indexed by mat_id & 0x0F. */
+static const u32 MAT_COLOURS[16] = {
+    RGB_TO_XRGB(180, 160, 140), /* 0  default tan    */
+    RGB_TO_XRGB(200, 180, 160), /* 1  skin / light   */
+    RGB_TO_XRGB(100,  80,  60), /* 2  dark leather   */
+    RGB_TO_XRGB(140, 120, 100), /* 3  leather (CUIR) */
+    RGB_TO_XRGB(160, 160, 170), /* 4  steel (ACIER)  */
+    RGB_TO_XRGB(110,  90,  70), /* 5  rust  (ROUIL)  */
+    RGB_TO_XRGB( 80, 100,  60), /* 6  green cloth    */
+    RGB_TO_XRGB(200, 200, 210), /* 7  silver         */
+    RGB_TO_XRGB( 60,  60,  80), /* 8  dark metal     */
+    RGB_TO_XRGB(220, 200, 180), /* 9  pale skin      */
+    RGB_TO_XRGB(120,  80,  40), /* 10 dark leather   */
+    RGB_TO_XRGB(170, 140, 110), /* 11 mid leather    */
+    RGB_TO_XRGB(190, 170, 150), /* 12 light leather  */
+    RGB_TO_XRGB(140, 130, 120), /* 13 grey cloth     */
+    RGB_TO_XRGB(100, 110, 130), /* 14 blue-grey      */
+    RGB_TO_XRGB(160,  50,  50), /* 15 red accent     */
+};
+
+model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
+    if (!atom || atom->vert_count <= 0 || atom->face_count <= 0) return NULL;
+
+    /* Quads become 2 triangles; pre-compute max triangle count. */
+    i32 max_tris = 0;
+    for (i32 i = 0; i < atom->face_count; i++) {
+        max_tris += (atom->faces[i].vcnt == 4) ? 2 : 1;
+    }
+
+    model_vec3_t *verts = (model_vec3_t *)malloc(
+        (size_t)atom->vert_count * sizeof(model_vec3_t));
+    model_face_t *faces = (model_face_t *)malloc(
+        (size_t)max_tris * sizeof(model_face_t));
+    model_t      *m     = (model_t      *)malloc(sizeof(model_t));
+
+    if (!verts || !faces || !m) {
+        free(verts); free(faces); free(m);
+        return NULL;
+    }
+
+    for (i32 i = 0; i < atom->vert_count; i++) {
+        verts[i].x = OME_VERT_SCALE(atom->verts[i].x);
+        verts[i].y = OME_VERT_SCALE(atom->verts[i].y);
+        verts[i].z = OME_VERT_SCALE(atom->verts[i].z);
+    }
+
+    i32 tri = 0;
+    for (i32 i = 0; i < atom->face_count; i++) {
+        const ome_face_t *f = &atom->faces[i];
+        u32 colour;
+        if (matr && f->mat_id >= 0 && f->mat_id < matr->mat_count) {
+            const ome_mat_t *m = &matr->mats[f->mat_id];
+            colour = 0xFF000000u | ((u32)m->b << 16) | ((u32)m->g << 8) | (u32)m->r;
+        } else {
+            i32 mat_idx = (f->mat_id >= 0) ? (f->mat_id & 0x0F) : 0;
+            colour = MAT_COLOURS[mat_idx];
+        }
+
+        faces[tri].colour = colour;
+        faces[tri].i0     = f->idx[0];
+        faces[tri].i1     = f->idx[1];
+        faces[tri].i2     = f->idx[2];
+        faces[tri]._pad   = 0;
+        tri++;
+
+        if (f->vcnt == 4) {
+            faces[tri].colour = colour;
+            faces[tri].i0     = f->idx[0];
+            faces[tri].i1     = f->idx[2];
+            faces[tri].i2     = f->idx[3];
+            faces[tri]._pad   = 0;
+            tri++;
+        }
+    }
+
+    m->vertices     = verts;
+    m->vertex_count = atom->vert_count;
+    m->faces        = faces;
+    m->face_count   = tri;
+    return m;
+}
+
+void model_free(model_t *m) {
+    if (!m) return;
+    free((void *)m->vertices);
+    free((void *)m->faces);
+    free(m);
 }

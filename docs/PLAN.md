@@ -32,7 +32,7 @@ For every landed port:
 | M4 | Game bootstrap (`game_init_46BEEB` skeleton + top stubs) | ✅ done (skeleton + real image loaders + font finalize) |
 | M5 | Main menu (`process_mainmenu_437EB7`) | 🔄 pass 3 landed (overlay + INVENT1.WAV; hitboxes/sub-panels pending) |
 | M6 | Level loader + first LIEU DLL | ⏳ queued |
-| M7 | Entity / combat / render pipeline | ⏳ deferred |
+| M7 | Entity / combat / render pipeline | 🔄 pass 1-5 landed (OME static mesh, MATR colours, 19-atom multi-render, CAN keyframe decode, OBJC translations, ANI env sprites) |
 | M8 | Interactive gameplay | ⏳ deferred |
 
 ## In flight (background)
@@ -166,38 +166,65 @@ Scope: 3-5 Sonnet passes. Big surface area. Defer until Slice C provides world c
   in screen because we flip Y in project).
 - Per-pixel `plot_pixel` samples the scene L bmap (nearest ×2
   upscale) and modulates face colour: `out.c = clamp((c * L) >> 7)`.
-  Per-pixel Z-test against g_scene_z_bmap wired but currently
-  bypassed (NULL passed from scene.c) until the near/far convention
-  is decoded.
 - Perspective projection: camera at (0,0,+4·ONE) looking down -Z,
-  focal_len = fb_w gives ~55° FOV. Yaw drives animation; ~26° pitch
-  tilt for scene-like framing.
-- scene.c calls `model_render(model_test_cube(), ...)` after F blit.
+  focal_len = fb_w, ~26° pitch tilt.
 
-**Pass 3 — .OME loader (in progress):**
-- `tools/src/dump_ome.py` landed — structural walker for the
-  "3DITOR v1.3 / v2.0" mesh container. Confirmed layout: outer MATR
-  chunk (materials CUIR, CUIVR, ACIER, ROUIL, ...), nested OBJC and
-  ATOMF chunks (object + geometry). Each chunk starts with 16b sig
-  + 16b dashes + 16b name + 48b path.
-- Blocker: ATOMF records contain 32-bit values ~0x008F0000 that
-  exceed the file size — these are original-process heap pointers
-  serialised as-is. Loader will need a pointer-fix-up pass to walk
-  the atom graph, plus record-type discrimination via the trailing
-  0x00200000 flag word.
+**Pass 3+4 landed 2026-07 (OME static mesh + MATR colours):**
+- `src/model_ome.[ch]` — `ome_decode_atomf` (greedy ATOMF decoder,
+  verified on 227 files): vertex records discriminated by field[7] flag
+  (0 or 0x200000); face records 96 bytes each with 4-byte heap-ptr
+  separator. `ome_parse_matr` decodes MATR body at sig+0x240 (72-byte
+  records, R/G/B at offsets 0/4/8). Both verified against P00.OME +
+  OB98.OME.
+- `model_from_ome_atom(atom, matr)` builds render-ready model_t: quads
+  split to 2 triangles, vertices scaled ×2 (Q16.16), face colours from
+  MATR table or fallback palette.
+- `scene.c` loads all 19 geometry ATOMFs from PERSOS/P00.OME; each atom
+  renders separately (model_face_t uses u8 indices, combined vert count
+  >255 prevents merging).
 
-**Remaining:**
-- Per-model depth buffer for correct self-occlusion (currently
-  overdraw-order only; backface cull hides most issues).
-- Per-camera projection matrix decode from L%02d.INF / L%02d.DAT
-  so the cube (and eventually the entity meshes) sit in scene world
-  space instead of the fixed (0,0,+4·ONE) screen-centre placement.
-  Without this the perspective doesn't match the F backdrop's
-  camera framing.
-- Z bmap near/far convention decode → re-enable per-pixel scene
-  occlusion in `sample_depth`.
-- `render_entity_with_ui`, `apply_palette_transformation` — top of
-  the pipeline (deferred until per-model + per-camera above land).
+**Pass 5 landed 2026-07 (CAN animation + OBJC translations):**
+- `src/can.[ch]` — CAN file loader: ptr table (640×8-byte entries,
+  hash+offset), animation blocks (0x110-byte header + n_frames×0xCE
+  keyframes). Keyframe format decoded via IDA (sub_415021): 2-byte
+  header + 34 atom slots × 6 bytes (u16 rx,ry,rz each). Angle encoding:
+  u16 0..65535 = 0..360°, convert to cosine_table index via >>4.
+- `model_render` extended with per-atom override angles (rx/ry/rz) and
+  character-relative translation (atom_tx/ty/tz). Camera rotation is
+  applied to the translation vector before perspective projection.
+- OBJC hierarchy decoded via IDA (sub_4228E0) + binary parse of P00.OME:
+  29 Object structs (each 0xB4 bytes at sig+0x30), translations at
+  struct[0x3C..0x44], h2[0] field (struct[0x78]) = upward hierarchy link.
+  Character model lies along X axis: head (+44000) → spine → feet
+  (-121000). 26° pitch projects X → vertical on screen.
+  20 atom translations hardcoded in `G_P00_TRANS[20][3]` in scene.c.
+- `src/anim2d.[ch]` — ANI 2D sprite loader: format decoded via IDA
+  (sub_41333A, sub_4780B4). Per-frame bounding box (x1,y1,x2,y2,
+  uncomp_size, comp_size) + LZSS-compressed pixel data. Footer: 12
+  bytes at EOF (direction, loop, timing, visible_frames, format_type,
+  n_frames). ANI sprites are environmental overlays (fire, levers etc.),
+  NOT characters — characters are real-time 3D.
+- scene.c loads P00.CAN (walk anim "p00mar14", 14 frames), cycles frames
+  at 10 fps, feeds per-atom rx/ry to model_render for each of 19 atoms.
+
+**Architecture clarified (IDA + user correction):**
+- Characters: real-time 3D (OME mesh + CAN pose + camera projection).
+- Background: pre-rendered CIF images.
+- ANI sprites: small environmental animations layered over background.
+
+**Remaining (pass 6+):**
+- CAN slot→atom mapping: OBJC second-loop name records (body at sig +
+  n_objs×0xB4) identify 20 ATOMF slots by name ("basdos", "tete", etc.).
+  CAN keyframe slot j maps to Object whose name matches CAN atom name j.
+  Currently atom render_index == CAN slot (approximate).
+- Full OBJC hierarchy traversal for world-space transforms (port
+  `sub_41FDC2`): accumulate T+R along parent chain for each atom.
+  Currently using pre-computed h2-accumulated character-relative T only.
+- Texture loading from MAT/TGA files (face UV data already decoded at
+  face[0x3C..0x5B]; texture atlas offset fixup at load done by sub_422E31).
+- Z-bmap near/far → re-enable per-pixel scene occlusion.
+- Per-camera projection matrix from L%02d.INF so character sits in
+  scene world space vs fixed screen centre.
 
 ## Small parallel work (Haiku)
 
@@ -223,7 +250,9 @@ Ordered by unlock value:
 | TXT | game-side text tables (INVENT.TXT, objets.txt) | asm | partial (INVENT.TXT parse) |
 | GRD | palette gradient | `bin/game/datas/global/PAL/*.GRD` | ⏳ queued |
 | MAP | palette map | `bin/game/datas/global/PAL/*.MAP` | ⏳ queued |
-| CAN | anim (`bin/game/anm/P*.CAN`) | asm | ⏳ queued |
+| CAN | anim (`bin/game/anm/P*.CAN`) | asm sub_41DE86, sub_415021 | 🔄 partial — ptr table + keyframe decoded; CAN slot→atom name mapping pending |
+| ANI | 2D env sprites (`DATAS/L*/ANIM2D/N*.ANI`) | asm sub_41333A, sub_4780B4 | ✅ ported — LZSS + bounding box per frame |
+| OME | 3D character mesh | asm sub_4228E0, sub_422E31 | 🔄 partial — ATOMF + MATR decoded; OBJC full hierarchy pending |
 | CJR | big anim (`bin/game/biganims/ANIM*.CJR`) | asm | ⏳ queued |
 | OFF | anim offset table | asm | ⏳ queued |
 | DLL | level (LIEU01..LIEU55, INVENT, HOTEL) | asm + `tools/src/dump_lieu.py` | ⚠ blocker — LIEU DLLs are compiled x86 code (single export `@FonctionEditor@16`), not data blobs. Options: (a) rewrite each LIEU in C by static analysis; (b) integrate x86 emulator (unicorn); (c) reconstruct from strings + `.data` heuristics. `dump_lieu.py --list \| --all` extracts sections + exports + strings. |
@@ -241,8 +270,10 @@ Ordered by unlock value:
 ## Reference docs
 
 - IDA Pro 8.4 project: `disassembly/dkev.i64`.
+- IDA MCP server: available as `mcp__ida-mcp__*` tools in Claude Code sessions
+  for live decompile/disasm/xref queries against the open IDA database.
 - Full asm dump: `disassembly/dkev.asm` (~970k lines, 1404 procs).
-- Python tooling: `tools/src/*.py` (CRH, CIF, PCX, CTX dumpers).
+- Python tooling: `tools/src/*.py` (CRH, CIF, PCX, CTX, OME dumpers).
 - Original executable: `disassembly/dkev.exe` (patched no-CD).
 
 ## When to update this doc

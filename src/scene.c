@@ -53,6 +53,8 @@
 #include "state.h"
 #include "scene.h"
 #include "game_init.h"
+#include "anim2d.h"
+#include "can.h"
 #include "model.h"
 #include "model_ome.h"
 #include "player.h"
@@ -165,6 +167,59 @@ static u32 g_scene_prev_tick = 0;
  * cycling. Updated by scene_load_camera_backdrop on the first successful
  * load. -1 = unknown; we'll probe on wrap. */
 static i32 g_scene_camera_max = 6;   /* L01 has cameras 0..6 */
+
+/* CAN character animation for P00 (player character).
+ * Frame advances at ~10 fps via g_can_last_tick. */
+static can_anim_t g_scene_can;
+static i32        g_scene_can_loaded  = 0;
+static i32        g_scene_can_frame   = 0;
+static u32        g_scene_can_last    = 0;
+#define CAN_FRAME_MS 100   /* ~10 fps anim cycle */
+
+/* ANI sprite loaded for animation 1 of the current level/camera.
+ * Cycled in scene_render to show a character walking. */
+static ani_t   g_scene_ani;
+static i32     g_scene_ani_loaded   = 0;
+static i32     g_scene_ani_frame    = 0;
+static u32     g_scene_ani_last_tick = 0;
+#define ANI_FRAME_MS 100  /* ~10 fps sprite cycle */
+
+/* Per-atom character-relative translations (from P00.OME OBJC hierarchy).
+ * ATOMF order: basdos handro gendro piedro hangau gengau piegau
+ *              acces4 acces3 mildos haudos bascou epadro coudro
+ *              poidro epagau cougau poigau tete   acces0
+ * X = forward/back (head→feet), Y = height, Z = left/right. */
+static const i32 G_P00_TRANS[20][3] = {
+    /*[ 0] basdos  */ {     222,    100,     22 },
+    /*[ 1] handro  */ {   -4911,     98,  -2775 },
+    /*[ 2] gendro  */ {  -32863,   -851,  -6050 },
+    /*[ 3] piedro  */ {  -60556,   -975,  -5736 },
+    /*[ 4] hangau  */ {  -65612,   -871,  -2580 },
+    /*[ 5] gengau  */ {  -93419,  -1878,    497 },
+    /*[ 6] piegau  */ { -121123,  -1953,    282 },
+    /*[ 7] acces4  */ {   -6621,  -7636,     29 },
+    /*[ 8] acces3  */ {   -6799,   6772,      3 },
+    /*[ 9] mildos  */ {    2292,     49,     51 },
+    /*[10] haudos  */ {    7914,   -124,     76 },
+    /*[11] bascou  */ {   28127,    256,    247 },
+    /*[12] epadro  */ {   22272,   -601,  -9468 },
+    /*[13] coudro  */ {    4483,  -1024, -15754 },
+    /*[14] poidro  */ {  -12355,     37, -16283 },
+    /*[15] epagau  */ {    2003,   -440,  -6953 },
+    /*[16] cougau  */ {  -15721,   -726,   -679 },
+    /*[17] poigau  */ {  -32786,    405,   -398 },
+    /*[18] tete    */ {   32444,   1589,    155 },
+    /*[19] acces0  */ {   34416,  -3103,    320 },
+};
+#define ATOM_SCALE 2  /* OME_VERT_SCALE factor applied in model_from_ome_atom */
+
+/* All geometry ATOMFs decoded from P00.OME, one model_t per ATOMF.
+ * model_face_t uses u8 indices so we can't merge atoms into one model_t
+ * (combined vertex count > 255); each atom renders separately instead.
+ * Populated by scene_load_level; freed in scene_release. */
+#define SCENE_OME_MAX_ATOMS 32
+static model_t *g_scene_ome_atoms[SCENE_OME_MAX_ATOMS];
+static i32      g_scene_ome_atom_count = 0;
 
 /* -------------------------------------------------------------------------
  * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
@@ -926,9 +981,47 @@ i32 scene_load_level(i32 level_id) {
             model_ome_open(host, &ome)) {
             model_ome_free(&ome);
         }
-        /* Player mesh. */
+        /* Player mesh — decode MATR colours then all geometry ATOMFs. */
         if (ls_resolve_path(base, "PERSOS>P00.OME", host, (i32)sizeof(host)) &&
             model_ome_open(host, &ome)) {
+            /* Free any previous atoms. */
+            for (i32 k = 0; k < g_scene_ome_atom_count; k++) {
+                model_free(g_scene_ome_atoms[k]);
+                g_scene_ome_atoms[k] = NULL;
+            }
+            g_scene_ome_atom_count = 0;
+
+            /* Parse material colours from the MATR chunk. */
+            ome_matr_t matr = {0};
+            ome_matr_t *matr_ptr = NULL;
+            for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+                if (ome.chunks[ci].kind != OME_CHUNK_MATR) continue;
+                const u8 *mbody = ome.raw + ome.chunks[ci].offset + 0x60;
+                i32 mbody_len   = ome.chunks[ci].length - 0x60;
+                if (ome_parse_matr(mbody, mbody_len, &matr)) {
+                    matr_ptr = &matr;
+                }
+                break; /* only one MATR per file */
+            }
+
+            for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+                if (ome.chunks[ci].kind != OME_CHUNK_ATOMF) continue;
+                if (g_scene_ome_atom_count >= SCENE_OME_MAX_ATOMS) break;
+
+                const u8 *body = ome.raw + ome.chunks[ci].offset + 0x60;
+                i32 body_len   = ome.chunks[ci].length - 0x60;
+                ome_atom_t atom = {0};
+                if (ome_decode_atomf(body, body_len, &atom) &&
+                    atom.vert_count > 0 && atom.face_count > 0) {
+                    model_t *m = model_from_ome_atom(&atom, matr_ptr);
+                    if (m) {
+                        g_scene_ome_atoms[g_scene_ome_atom_count++] = m;
+                    }
+                }
+                ome_atom_free(&atom);
+            }
+            print("scene: P00 loaded %d geometry atoms (%d materials)\n",
+                  g_scene_ome_atom_count, matr.mat_count);
             model_ome_free(&ome);
         }
     }
@@ -941,6 +1034,42 @@ i32 scene_load_level(i32 level_id) {
      * needed for this pass). */
     g_scene_camera = 0;
     scene_load_camera_backdrop(level_id, g_scene_camera);
+
+    /* Load P00.CAN for player character animation. */
+    {
+        c8 vpath[64];
+        c8 host[512];
+        g_scene_can_loaded = 0;
+        g_scene_can_frame  = 0;
+        const c8 *base = (state && state->game_path) ? state->game_path : ".";
+        snprintf(vpath, sizeof(vpath), "ANM>P00.CAN");
+        if (ls_resolve_path(base, vpath, host, (i32)sizeof(host))) {
+            g_scene_can_loaded = can_load_first(host, &g_scene_can);
+        }
+    }
+
+    /* Load ANI sprite for entity animation 1 at current level/camera 0.
+     * Path: DATAS>L{level:02d}>ANIM2D>N{level:02d}C{cam}A1.ANI */
+    {
+        c8 vpath[64];
+        c8 host[512];
+        ani_free(&g_scene_ani);
+        g_scene_ani_loaded = 0;
+        g_scene_ani_frame  = 0;
+        const c8 *base = (state && state->game_path) ? state->game_path : ".";
+        snprintf(vpath, sizeof(vpath),
+                 "DATAS>L%02d>ANIM2D>N%02dC%dA1.ANI",
+                 level_id, level_id, g_scene_camera);
+        if (ls_resolve_path(base, vpath, host, (i32)sizeof(host))) {
+            if (ani_load(host, &g_scene_ani)) {
+                g_scene_ani_loaded = 1;
+            }
+        }
+        if (!g_scene_ani_loaded) {
+            print("scene: no ANI sprite for level %d cam %d\n",
+                  level_id, g_scene_camera);
+        }
+    }
 
     print("scene: scene_load_level(%d) — complete\n", level_id);
     return 0;
@@ -1003,6 +1132,36 @@ i32 scene_render(system_t *sys) {
                                  ox, oy);
     }
 
+    /* Step 1b — ANI sprite overlay.
+     * Blit the current animation frame at its screen position.
+     * Each pixel is a palette index; use the backdrop's palette (same level). */
+    if (g_scene_ani_loaded && g_scene_ani.n_frames > 0 &&
+        g_scene_bg_bmap && g_scene_bg_bmap->palette) {
+        u32 tick = sys ? sys->timer.tick : 0;
+        if (tick - g_scene_ani_last_tick >= ANI_FRAME_MS) {
+            g_scene_ani_frame = (g_scene_ani_frame + 1) % g_scene_ani.n_frames;
+            g_scene_ani_last_tick = tick;
+        }
+        const ani_frame_t *fr = &g_scene_ani.frames[g_scene_ani_frame];
+        if (fr->pixels) {
+            /* Build a temporary bmap_t pointing at the decompressed pixels. */
+            i32 w = (i32)(fr->x2 - fr->x1 + 1);
+            i32 h = (i32)(fr->y2 - fr->y1 + 1);
+            bmap_t tmp = {0};
+            tmp.width      = (i16)w;
+            tmp.height     = h;
+            tmp.stride     = w;
+            tmp.bit_depth  = 8;
+            tmp.pixels     = fr->pixels;
+            tmp.first_pixel = fr->pixels;
+            tmp.owns_buffer = 0;
+            /* Blit at (x1,y1) with palette index 0 transparent. */
+            blit_bmap_masked_to_framebuffer(fb, fb_w, fb_h,
+                                            &tmp, g_scene_bg_bmap->palette,
+                                            (i32)fr->x1, (i32)fr->y1, 0);
+        }
+    }
+
     /* Step 2 — player-controlled placeholder cube.
      *
      * Movement: poll WASD via player_input_update, integrate against dt
@@ -1051,16 +1210,63 @@ i32 scene_render(system_t *sys) {
     i32 screen_y = fb_h / 2;
 
     i32 cube_world_size = 60;
-    model_render(model_test_cube(),
-                 sys,
-                 screen_x, screen_y,
-                 focal,
-                 sys ? sys->timer.tick : 0,
-                 g_cube_world_z,
-                 cube_world_size,
-                 z_far,
-                 g_scene_l_bmap,
-                 g_scene_z_bmap);
+    u32 tick = sys ? sys->timer.tick : 0;
+    if (g_scene_ome_atom_count > 0) {
+        /* Render all geometry atoms at the same world position — they share
+         * a common coordinate system so layering at the same pivot gives a
+         * complete character in its default (T-pose) orientation. */
+        /* Advance CAN animation frame. */
+        if (g_scene_can_loaded && tick - g_scene_can_last >= CAN_FRAME_MS) {
+            g_scene_can_frame = (g_scene_can_frame + 1) % g_scene_can.n_frames;
+            g_scene_can_last  = tick;
+        }
+
+        for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
+            /* Map atom render index to CAN slot.
+             * Atom chunks in the OME start at ATOMF index 2 (chunks 0=MATR,
+             * 1=OBJC, 2..=ATOMF).  CAN slot 0 corresponds to OBJC atom 0
+             * which maps to the first ATOMF = render atom 0.
+             * Fine-grained OBJC→slot mapping deferred until hierarchy port. */
+            i32 rx = 0, ry = 0;
+            if (g_scene_can_loaded && ai < CAN_MAX_ATOMSLOTS) {
+                const can_frame_t *kf = &g_scene_can.frames[g_scene_can_frame];
+                /* Convert u16 game angle (0..65535=360°) to
+                 * cosine_table index (0..4095=360°): >> 4. */
+                rx = (i32)(kf->atoms[ai].rx >> 4) & 0xFFF;
+                ry = (i32)(kf->atoms[ai].ry >> 4) & 0xFFF;
+            }
+            /* Translation: table values are in OME raw units; vertices
+             * were scaled ×2 in model_from_ome_atom, so scale here too. */
+            i32 tx = (ai < 20) ? G_P00_TRANS[ai][0] * ATOM_SCALE : 0;
+            i32 ty = (ai < 20) ? G_P00_TRANS[ai][1] * ATOM_SCALE : 0;
+            i32 tz = (ai < 20) ? G_P00_TRANS[ai][2] * ATOM_SCALE : 0;
+            model_render(g_scene_ome_atoms[ai],
+                         sys,
+                         screen_x, screen_y,
+                         focal,
+                         tick,
+                         g_cube_world_z,
+                         cube_world_size,
+                         z_far,
+                         g_scene_l_bmap,
+                         g_scene_z_bmap,
+                         rx ? 1 : 0, ry, rx,
+                         tx, ty, tz);
+        }
+    } else {
+        model_render(model_test_cube(),
+                     sys,
+                     screen_x, screen_y,
+                     focal,
+                     tick,
+                     g_cube_world_z,
+                     cube_world_size,
+                     z_far,
+                     g_scene_l_bmap,
+                     g_scene_z_bmap,
+                     0, 0, 0,
+                     0, 0, 0);
+    }
 
     /* HUD — current level, camera, and cube world position so testers
      * can see WASD input landing without staring at the log. */
@@ -1079,5 +1285,12 @@ void scene_release(void) {
     scene_free_bmap(&g_scene_bg_bmap);
     scene_free_bmap(&g_scene_l_bmap);
     scene_free_bmap(&g_scene_z_bmap);
-    g_scene_bg_level = -1;
+    for (i32 k = 0; k < g_scene_ome_atom_count; k++) {
+        model_free(g_scene_ome_atoms[k]);
+        g_scene_ome_atoms[k] = NULL;
+    }
+    g_scene_ome_atom_count = 0;
+    ani_free(&g_scene_ani);
+    g_scene_ani_loaded = 0;
+    g_scene_bg_level   = -1;
 }
