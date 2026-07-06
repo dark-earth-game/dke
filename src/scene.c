@@ -51,6 +51,7 @@
 #include "libsys/file_system.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/font.h"
+#include "libsys/graphics/shading.h"
 #include "state.h"
 #include "scene.h"
 #include "game_init.h"
@@ -1134,6 +1135,118 @@ i32 scene_load_level(i32 level_id) {
     return 0;
 }
 
+/* -----------------------------------------------------------------------
+ * 3×3 rotation matrix in Q14 (16384 = 1.0), flat row-major [9] array.
+ * Used for per-frame bone hierarchy propagation in scene_update_bone_positions.
+ * ----------------------------------------------------------------------- */
+typedef struct { i32 m[9]; } scene_mat3_t;
+
+static scene_mat3_t scene_mat3_identity(void) __attribute__((unused));
+static scene_mat3_t scene_mat3_identity(void) {
+    scene_mat3_t r;
+    i32 i;
+    for (i = 0; i < 9; i++) r.m[i] = 0;
+    r.m[0] = 16384; r.m[4] = 16384; r.m[8] = 16384;
+    return r;
+}
+
+/* Build Ry×Rx rotation matrix from cosine_table indices. */
+static scene_mat3_t scene_mat3_from_rx_ry(i32 rx_idx, i32 ry_idx) {
+    i32 cx = cosine_table[rx_idx & 0xFFF];
+    i32 sx = cosine_table[(rx_idx + 1024) & 0xFFF];
+    i32 cy = cosine_table[ry_idx & 0xFFF];
+    i32 sy = cosine_table[(ry_idx + 1024) & 0xFFF];
+    scene_mat3_t r;
+    r.m[0] = cy;
+    r.m[1] = (i32)(((i64)sy * sx) >> 14);
+    r.m[2] = (i32)(((i64)sy * cx) >> 14);
+    r.m[3] = 0;
+    r.m[4] = cx;
+    r.m[5] = -sx;
+    r.m[6] = -sy;
+    r.m[7] = (i32)(((i64)cy * sx) >> 14);
+    r.m[8] = (i32)(((i64)cy * cx) >> 14);
+    return r;
+}
+
+/* Multiply two 3×3 Q14 matrices: result = a × b. */
+static scene_mat3_t scene_mat3_mul(const scene_mat3_t *a, const scene_mat3_t *b) {
+    scene_mat3_t r;
+    i32 row, col, k;
+    for (row = 0; row < 3; row++) {
+        for (col = 0; col < 3; col++) {
+            i64 s = 0;
+            for (k = 0; k < 3; k++)
+                s += (i64)a->m[row*3+k] * b->m[k*3+col];
+            r.m[row*3+col] = (i32)(s >> 14);
+        }
+    }
+    return r;
+}
+
+/* Apply Q14 rotation matrix r to translation vector (tx,ty,tz) → (ox,oy,oz). */
+static void scene_mat3_apply(const scene_mat3_t *r, i32 tx, i32 ty, i32 tz,
+                              i32 *ox, i32 *oy, i32 *oz) {
+    *ox = (i32)(((i64)r->m[0]*tx + (i64)r->m[1]*ty + (i64)r->m[2]*tz) >> 14);
+    *oy = (i32)(((i64)r->m[3]*tx + (i64)r->m[4]*ty + (i64)r->m[5]*tz) >> 14);
+    *oz = (i32)(((i64)r->m[6]*tx + (i64)r->m[7]*ty + (i64)r->m[8]*tz) >> 14);
+}
+
+/*
+ * Compute per-bone world positions for the current CAN animation frame.
+ * Processes bones in index order 0..n_bones-1, which is topologically sorted
+ * (parents always have lower indices than children) for P00.OME.
+ * Updates g_scene_objc.world_tx/ty/tz[render_atom] in place.
+ * kf may be NULL (T-pose: all rotations = identity).
+ */
+static void scene_update_bone_positions(const can_frame_t *kf) {
+    if (!g_scene_objc_loaded) return;
+    i32 n = g_scene_objc.n_bones;
+    if (n <= 0 || n > OME_MAX_BONES) return;
+
+    /* Per-bone accumulated world position (OME raw units, relative to root) */
+    i32       bone_wx[OME_MAX_BONES];
+    i32       bone_wy[OME_MAX_BONES];
+    i32       bone_wz[OME_MAX_BONES];
+    /* Per-bone accumulated rotation (product of all ancestors' rotations) */
+    scene_mat3_t bone_rot[OME_MAX_BONES];
+
+    i32 j;
+    for (j = 0; j < n; j++) {
+        const ome_bone_t *b = &g_scene_objc.bones[j];
+        i32 rx_idx = 0, ry_idx = 0;
+        if (kf && j < CAN_MAX_ATOMSLOTS) {
+            rx_idx = (i32)((u32)kf->atoms[j].rx >> 4) & 0xFFF;
+            ry_idx = (i32)((u32)kf->atoms[j].ry >> 4) & 0xFFF;
+        }
+        scene_mat3_t local_rot = scene_mat3_from_rx_ry(rx_idx, ry_idx);
+
+        i32 parent = b->h2;
+        if (parent < 0 || parent >= n) {
+            /* Root bone: world position = (0,0,0), accum rot = local */
+            bone_wx[j] = 0; bone_wy[j] = 0; bone_wz[j] = 0;
+            bone_rot[j] = local_rot;
+        } else {
+            /* Rotate this bone's local translation by parent's accumulated rot */
+            i32 rx, ry, rz;
+            scene_mat3_apply(&bone_rot[parent], b->tx, b->ty, b->tz,
+                             &rx, &ry, &rz);
+            bone_wx[j] = bone_wx[parent] + rx;
+            bone_wy[j] = bone_wy[parent] + ry;
+            bone_wz[j] = bone_wz[parent] + rz;
+            bone_rot[j] = scene_mat3_mul(&bone_rot[parent], &local_rot);
+        }
+
+        /* Write to render atom world position if this bone has geometry */
+        i32 ai = g_scene_objc.can_to_render[j];
+        if (ai >= 0 && ai < g_scene_objc.n_atomslots) {
+            g_scene_objc.world_tx[ai] = bone_wx[j];
+            g_scene_objc.world_ty[ai] = bone_wy[j];
+            g_scene_objc.world_tz[ai] = bone_wz[j];
+        }
+    }
+}
+
 /*
  * scene_render — blit the current camera's backdrop and poll input.
  * Called from the main loop while state == MENU_STATE_LOADING.
@@ -1278,6 +1391,13 @@ i32 scene_render(system_t *sys) {
         if (g_scene_can_loaded && tick - g_scene_can_last >= CAN_FRAME_MS) {
             g_scene_can_frame = (g_scene_can_frame + 1) % g_scene_can.n_frames;
             g_scene_can_last  = tick;
+        }
+
+        /* Update bone world positions for current animation frame */
+        {
+            const can_frame_t *kf = g_scene_can_loaded
+                ? &g_scene_can.frames[g_scene_can_frame] : NULL;
+            scene_update_bone_positions(kf);
         }
 
         /* Build per-render-atom rotation table from CAN keyframe + OBJC slot mapping */

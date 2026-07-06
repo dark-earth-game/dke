@@ -235,6 +235,21 @@ Scope: 3-5 Sonnet passes. Big surface area. Defer until Slice C provides world c
   (extern in model.h) replaces literal 300. Reset to 300 in scene_release.
 - L01 camera 0: param[5]=2187 → ~7.7° pitch (was 26°).
 
+**Pass 6d landed 2026-07 (per-frame bone hierarchy propagation):**
+- `scene_update_bone_positions(kf)` added to `scene.c`. Each CAN frame:
+  iterates bones 0..n_bones-1 (topologically sorted in P00.OME — parents
+  always have lower index than children). For each bone j: reads rx_idx/ry_idx
+  from kf->atoms[j] (or 0 if no CAN), builds Ry×Rx rotation matrix via
+  cosine_table, accumulates parent_rot→child_rot via mat3_mul, rotates
+  local translation by parent_accum_rot via mat3_apply, adds to parent world
+  pos. Writes final world pos to g_scene_objc.world_tx/ty/tz[ai].
+  Called in scene_render() after CAN frame advance, before atom loop.
+  T-pose verify: CAN angles=0 → identity rot → pure translation accumulation
+  → matches static ome_parse_objc output (basdos=(222,100,22), tete=(32444,
+  1589,155) etc.) ✓. Arms/legs now swing through world space during walk cycle.
+- Helpers: scene_mat3_t (Q14 3×3), scene_mat3_from_rx_ry, scene_mat3_mul,
+  scene_mat3_apply. All static in scene.c, no new headers.
+
 **Remaining (pass 7+):**
 - Per-camera screen anchor: character world position needed to project
   via sub_4915C0 (ortho: scale=param[25]/param[26]/16=1/128 for L01,
@@ -242,9 +257,6 @@ Scope: 3-5 Sonnet passes. Big surface area. Defer until Slice C provides world c
   Blocked on entity spawn / level world-position system (LIEU DLL or
   equivalent). INF format fully decoded; byte_5110C0[cam_idx×120] holds
   per-camera projection matrices populated from INF extra section.
-- Full OBJC hierarchy traversal with rotation (port `sub_41FDC2`):
-  T-only currently exact (all OME bone resting rotations = 0); per-frame
-  positional correction during CAN animation not yet done.
 - Texture loading from MAT/TGA files (face UV at face[0x3C..0x5B];
   sub_422E31 does texture atlas offset fixup at load).
 - Z-bmap near/far → re-enable per-pixel scene occlusion.
