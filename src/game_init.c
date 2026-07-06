@@ -54,10 +54,12 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 
 #include "libsys/common.h"
 #include "libsys/memory.h"
 #include "libsys/graphics/graphic.h"
+#include "libsys/graphics/palette.h"
 #include "libsys/graphics/font.h"
 #include "state.h"
 #include "game_init.h"
@@ -114,6 +116,30 @@ static i32 g_dword_4B787C        = 0;       /* dword_4B787C @ 004B787C  */
 /* Index buffer computed from gouraud table */
 static void *g_index_buffer       = NULL;   /* index_buffer (asm sym)   */
 
+/* Resource / sprite bmap used by initialize_resource_slots (sub_4130AA) */
+static bmap_t *g_dword_4B297C    = NULL;   /* dword_4B297C @ 004B297C  */
+
+/* Mouse state globals zeroed by initialize_mouse_and_animation (sub_45D395) */
+static i32 g_dword_4D7F0C        = 0;      /* dword_4D7F0C @ 004D7F0C  */
+static i32 g_dword_4D7F24        = 0;      /* dword_4D7F24 @ 004D7F24  */
+static i32 g_dword_4D7F10        = 0;      /* dword_4D7F10 @ 004D7F10  */
+static i32 g_dword_4D7F20        = 0;      /* dword_4D7F20 @ 004D7F20  */
+static i32 g_dword_4D7F14        = 0;      /* dword_4D7F14 @ 004D7F14 (mouse range X) */
+static i32 g_dword_4D7F18        = 0;      /* dword_4D7F18 @ 004D7F18 (mouse range Y) */
+static bmap_t *g_dword_4D7F2C   = NULL;   /* dword_4D7F2C @ 004D7F2C (animation bmap) */
+static void   *g_dword_4F4DF4   = NULL;   /* dword_4F4DF4 @ 004F4DF4 (INTFANI3 bmap) */
+
+/*
+ * unk_4CFE40 — font descriptor block for FONTE11 (used by game_finalize /
+ * sub_4161B0 → sub_415FB0).  The block holds up to 0x260 font entries
+ * (each 0x13 = 19 bytes wide, as in sub_415FB0 inner loop: edx += 0x13,
+ * compare eax < offset unk_4D0A44).  Total: at least 0x260 * 0x13 = ~7K.
+ * Sub_415FB0 writes the glyph bmap ptr at [unk_4CFE40+0], height 0x13 at
+ * [+0BF8h], and walks unk_4CFFC4 .. unk_4D0A44 (stride 0x0Ch entries).
+ * Conservative allocation: 0x2000 bytes (matches IDA data-segment layout).
+ */
+static u8 g_unk_4CFE40[0x2000]  = {0};    /* unk_4CFE40 @ 004CFE40  */
+
 /* -------------------------------------------------------------------------
  * Forward declarations for sub-functions not yet ported.
  * Each has the original address in its comment.
@@ -160,6 +186,157 @@ static void ls_free_palette(void *palette) {
 }
 
 /* -------------------------------------------------------------------------
+ * 004130AA — initialize_resource_slots
+ *
+ * Allocates a sprite/resource bmap (640 wide × 800 high, 8-bit) and stores
+ * a pointer to the global color_table into [bmap+18h] (reserved_18 field,
+ * used as a palette-pointer by rendering code).
+ *
+ * Original asm:
+ *   mov  eax, ui_health_buffer
+ *   push eax
+ *   mov  edx, 320h          ; height = 0x320 = 800
+ *   mov  ecx, 280h          ; width  = 0x280 = 640
+ *   call create_image_buffer
+ *   mov  dword_4B297C, eax
+ *   mov  eax, dword_4B297C
+ *   mov  dword ptr [eax+18h], offset color_table
+ *   retn
+ *
+ * Note: create_image_buffer (ECX=width, EDX=height, push=slot) is a thin
+ * wrapper around ls_init_bmap_ex; ported here as ls_init_bmap_ex with
+ * bpp_flags = MEM_SLOT_HEALTH (matching push eax / ui_health_buffer).
+ * ---------------------------------------------------------------------- */
+
+// 004130AA
+static void initialize_resource_slots(void) {
+    g_dword_4B297C = ls_init_bmap_ex(
+        0x280,           /* width  = 640 */
+        0x320,           /* height = 800 */
+        8,               /* bit_depth */
+        MEM_SLOT_HEALTH  /* bpp_flags / memory slot (= ui_health_buffer) */
+    );
+
+    if (g_dword_4B297C) {
+        /* Store color_table pointer in [bmap+18h] (reserved_18 / palette ptr) */
+        g_dword_4B297C->reserved_18 = (i32)(intptr_t)color_table; /* 004130AA+20 */
+        print("initialize_resource_slots: bmap 640×800 @ %p, color_table @ %p\n",
+              (void *)g_dword_4B297C, (void *)color_table);
+    } else {
+        print("initialize_resource_slots: ls_init_bmap_ex failed\n");
+    }
+}
+
+/* -------------------------------------------------------------------------
+ * 0045D395 — initialize_mouse_and_animation
+ *
+ * Sets the mouse cursor type and input range, zeroes six mouse-state globals,
+ * loads the INTFANI3.GIF cursor animation bmap, then creates a small image
+ * buffer matching the animation frame dimensions + 1.
+ *
+ * Original asm:
+ *   xor  edx, edx; xor ecx, ecx
+ *   call ls_set_mouse          ; hide/reset mouse cursor (ecx=0, edx=0)
+ *   push 1E0h; push 280h
+ *   xor  edx, edx; xor ecx, ecx
+ *   call ls_set_mouse_range    ; set range to 640×480 (push h=0x1E0, w=0x280)
+ *   mov  dword_4D7F0C, 0
+ *   mov  dword_4D7F24, 0
+ *   mov  dword_4D7F10, 0
+ *   mov  dword_4D7F20, 0
+ *   mov  dword_4D7F14, 32h    ; mouse X min = 50
+ *   mov  dword_4D7F18, 62h    ; mouse Y min = 98
+ *   mov  ecx, offset "DATAS>GLOBAL>IMAGES>INTFANI3.GIF"
+ *   mov  edx, ui_health_buffer
+ *   call image_load_compressed
+ *   mov  dword_4F4DF4, eax
+ *   push 8
+ *   mov  edx, dword_4D7F18    ; height = dword_4D7F18 + 1 = 0x63
+ *   mov  ecx, dword_4D7F14    ; width  = dword_4D7F14 + 1 = 0x33
+ *   inc  edx; inc ecx
+ *   call create_image_buffer
+ *   mov  dword_4D7F2C, eax
+ *   retn
+ *
+ * Unported: ls_set_mouse, ls_set_mouse_range (mouse platform layer not yet
+ * implemented); image_load_compressed (image loader not yet ported).
+ * ---------------------------------------------------------------------- */
+
+// 0045D395
+static void initialize_mouse_and_animation(void) {
+    /* TODO: ls_set_mouse(ecx=0, edx=0) @ 45D395+9 — hide/reset cursor */
+    /* TODO: ls_set_mouse_range(0, 0, 0x280, 0x1E0) @ 45D395+16 — set 640×480 range */
+
+    /* Zero mouse-state globals */
+    g_dword_4D7F0C = 0;  /* 45D39B */
+    g_dword_4D7F24 = 0;  /* 45D3A1 */
+    g_dword_4D7F10 = 0;  /* 45D3A7 */
+    g_dword_4D7F20 = 0;  /* 45D3AD */
+    g_dword_4D7F14 = 0x32; /* 45D3B3 — mouse X offset = 50 */
+    g_dword_4D7F18 = 0x62; /* 45D3B9 — mouse Y offset = 98 */
+
+    /* TODO: image_load_compressed @ 45D3BF —
+     *   ecx = "DATAS>GLOBAL>IMAGES>INTFANI3.GIF"
+     *   edx = ui_health_buffer
+     *   result → dword_4F4DF4
+     */
+    g_dword_4F4DF4 = image_load_compressed(
+        "DATAS>GLOBAL>IMAGES>INTFANI3.GIF",
+        NULL /* ui_health_buffer — asm global, not yet threaded here */
+    ); /* 45D3C9 */
+
+    /* Allocate animation frame bmap: width = 4D7F14+1, height = 4D7F18+1 */
+    g_dword_4D7F2C = ls_init_bmap_ex(
+        g_dword_4D7F14 + 1,  /* ecx = dword_4D7F14+1 = 0x33 = 51 */
+        g_dword_4D7F18 + 1,  /* edx = dword_4D7F18+1 = 0x63 = 99 */
+        8,                   /* bit_depth (push 8) */
+        MEM_SLOT_HEALTH      /* bpp_flags (= ui_health_buffer slot) */
+    ); /* 45D3D2 */
+
+    print("initialize_mouse_and_animation: mouse range 640×480, "
+          "anim bmap %dx%d @ %p\n",
+          g_dword_4D7F14 + 1, g_dword_4D7F18 + 1,
+          (void *)g_dword_4D7F2C);
+}
+
+/* -------------------------------------------------------------------------
+ * 004161B0 — game_finalize
+ *
+ * Sets up the font descriptor table (g_unk_4CFE40) and loads the FONTE11
+ * font atlas by tail-calling sub_415FB0 (ecx="DATAS>MENUS>FONTE11",
+ * edx=&unk_4CFE40).
+ *
+ * Original asm (entire body):
+ *   mov  edx, offset unk_4CFE40
+ *   mov  ecx, offset aDatasMenusFont ; "DATAS>MENUS>FONTE11"
+ *   jmp  sub_415FB0
+ *
+ * sub_415FB0 (~186 asm lines): opens "DATAS>MENUS>FONTE11.CAR" via ls_open,
+ * reads 0xBF4 bytes of glyph data into [edx+4], reads 4 trailing bytes, then
+ * opens "DATAS>MENUS>FONTE11.GIF" via image_load_compressed and walks the
+ * glyph table to populate bit-flags in word_4D0A40.  Callee is >200 asm
+ * lines — stubbed per task rules; will be ported when image_load_compressed
+ * and the ls_open/ls_read chain are available.
+ *
+ * Side-effect preserved here: g_dword_4B787C = 0 is done by game_init after
+ * this call (phase 45).
+ * ---------------------------------------------------------------------- */
+
+// 004161B0
+static void game_finalize(void) {
+    /* TODO: sub_415FB0 @ 00415FB0 (>200 asm lines) — font CAR+GIF loader.
+     *   ecx = "DATAS>MENUS>FONTE11"  (base name; .CAR and .GIF suffixed internally)
+     *   edx = &g_unk_4CFE40          (font descriptor block)
+     * Loads glyph metrics from FONTE11.CAR into [g_unk_4CFE40+4..+0xBF8] and
+     * stores the bmap ptr at [g_unk_4CFE40+0].  Populates word_4D0A40 bitmask
+     * table from the GIF pixel data.  Requires image_load_compressed + ls_open
+     * chain; stubbed until those are ported.
+     */
+    print("game_finalize: sub_415FB0 TODO — FONTE11 CAR+GIF load (ecx=\"DATAS>MENUS>FONTE11\", edx=&unk_4CFE40)\n");
+    /* g_unk_4CFE40 stays zeroed; bmap ptr at [0] remains NULL. */
+}
+
+/* -------------------------------------------------------------------------
  * 0046BEEB — game-side bootstrap
  * ---------------------------------------------------------------------- */
 
@@ -172,6 +349,16 @@ b8 game_init(state_t *state) {
     (void)g_player_entity;
     (void)g_game_context;
     (void)g_entity_buffer_base;
+    /* New globals populated by ported functions — suppress read-before-use
+     * warnings from -Wall until callers of these values are ported. */
+    (void)g_dword_4B297C;
+    (void)g_dword_4D7F0C;
+    (void)g_dword_4D7F24;
+    (void)g_dword_4D7F10;
+    (void)g_dword_4D7F20;
+    (void)g_dword_4D7F2C;
+    (void)g_dword_4F4DF4;
+    (void)g_unk_4CFE40;
 
     /* ------------------------------------------------------------------ */
     /* Phase 1 — debug banner                                               */
@@ -305,10 +492,10 @@ b8 game_init(state_t *state) {
     }
 
     /* ------------------------------------------------------------------ */
-    /* Phase 8 — sub_425D50 (unknown — after palette wire-up)             */
+    /* Phase 8 — sub_425D50 (palette post-process / persona inventory)    */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_425D50 (palette post-process)\n");
-    /* TODO: sub_425D50 @ 004625D50 — purpose unknown, called after palette */
+    palette_postprocess_configure(state->game_path, g_is_using_hdd); /* sub_425D50 */
 
     /* ------------------------------------------------------------------ */
     /* Phase 9 — initialize_health_hud                                     */
@@ -317,10 +504,10 @@ b8 game_init(state_t *state) {
     /* TODO: initialize_health_hud @ 0046C092 — allocates 2048-byte HUD buffer */
 
     /* ------------------------------------------------------------------ */
-    /* Phase 10 — sub_45D395                                               */
+    /* Phase 10 — sub_45D395 (mouse + animation init)                     */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_45D395\n");
-    /* TODO: sub_45D395 @ 0045D395 */
+    initialize_mouse_and_animation(); /* sub_45D395 */
 
     /* ------------------------------------------------------------------ */
     /* Phase 11 — sub_421960                                               */
@@ -528,7 +715,7 @@ b8 game_init(state_t *state) {
     /* Phase 30 — sub_4130AA — resource/sprite table initialiser           */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_4130AA resource init\n");
-    /* TODO: sub_4130AA @ 004130AA — ECX=ui_health_buffer slot            */
+    initialize_resource_slots(); /* sub_4130AA */
 
     /* ------------------------------------------------------------------ */
     /* Phase 31 — initialize_resource + palette_data wire-up               */
@@ -634,7 +821,7 @@ b8 game_init(state_t *state) {
     /* Phase 45 — sub_4161B0 + dword_4B787C = 0 (tail cleanup)            */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_4161B0 (final init)\n");
-    /* TODO: sub_4161B0 @ 004161B0 */
+    game_finalize();                           /* sub_4161B0 @ 004161B0 */
     g_dword_4B787C = 0;                       /* 46C57E */
 
     print("game_init: done\n");

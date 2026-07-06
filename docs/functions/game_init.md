@@ -29,9 +29,9 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 | 5 | Two HUD bmap copies from GINETTE dims | inline | `ls_init_bmap_ex` calls wired with fallback sizes |
 | 6 | Gouraud index buffer (0x4100 bytes) | inline | `allocate_memory(MEM_SLOT_HEALTH, 0x4100)` |
 | 7 | MENUGEN.GIF palette load + input_state_table zero-init | stub | `load_image_color_data` + `ls_free_palette` stubbed |
-| 8 | sub_425D50 (post-palette) | stub | purpose unknown |
+| 8 | sub_425D50 (post-palette) | **partial** | `palette_postprocess_configure` in palette.c; ls_switch_memory/ls_load_file_at stubbed |
 | 9 | initialize_health_hud | stub | 2048-byte HUD buffer with numeric ramp |
-| 10 | sub_45D395 | stub | |
+| 10 | sub_45D395 | **partial** | `initialize_mouse_and_animation`; mouse platform calls + image_load_compressed stubbed |
 | 11 | sub_421960 | stub | |
 | 12 | sub_41F7C8 | stub | |
 | 13 | sub_44D706 | stub | |
@@ -51,7 +51,7 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 | 27 | Render bmaps (colour-mode branch) | inline | `ls_init_bmap_ex` calls with correct dims/bpp; both branches |
 | 28 | render_buffer2 (640×480) + dword_507474 (320×240) | inline | `ls_init_bmap_ex` calls |
 | 29 | objets.gif load | stub | `image_load_compressed` stubbed |
-| 30 | sub_4130AA (resource init) | stub | |
+| 30 | sub_4130AA (resource init) | **ported** | `initialize_resource_slots` in game_init.c |
 | 31 | initialize_resource + palette_data wire-up | stub | |
 | 32 | game_state / game_death_state from dword_4B70E8 | inline skeleton | assignment preserved; dword_4B70E8 is NULL (global not ported) |
 | 33 | sub_46493B (player entity setup) | stub | |
@@ -66,7 +66,7 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 | 42 | 16-bit colour: sub_491ED0 + sub_491FD0 | stub | branch wired; callees stubbed |
 | 43 | sub_45B207 | stub | |
 | 44 | display_weapons_inventory | stub | |
-| 45 | sub_4161B0 + dword_4B787C=0 | inline | dword_4B787C zero-write ported |
+| 45 | sub_4161B0 + dword_4B787C=0 | **partial** | `game_finalize` ported; sub_415FB0 (FONTE11 CAR+GIF, >200 lines) deferred as TODO |
 
 ## Key data addresses
 

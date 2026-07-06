@@ -75,8 +75,8 @@ Sorted by address.
 | — | allocate_and_initialize_health_buffer | — | — | todo | allocates health buffer, logs if flag set, zeros it |
 | — | register_player_creature | — | — | todo | ECX=1; configures serpent/fish/bird creature types |
 | — | display_weapons_inventory | — | — | todo | displays ammo/items in game UI |
-| 00425D50 | sub_425D50 | — | — | todo | unknown; called after MENUGEN palette wire-up |
-| 0045D395 | sub_45D395 | — | — | todo | unknown; called from game_init phase 10 |
+| 00425D50 | sub_425D50 | `palette_postprocess_configure` | src/libsys/graphics/palette.c | partial | loads persona/inventory slot data into word_509B40 from PERSOS>INVENT.CTX cache or PERSOS>INVENT.TXT; ls_switch_memory/ls_load_file_at/ls_get_filedate stubbed |
+| 0045D395 | sub_45D395 | `initialize_mouse_and_animation` | src/game_init.c | partial | zeros mouse-state globals (4D7F0C/24/10/20/14/18); allocates animation bmap 51×99; ls_set_mouse/ls_set_mouse_range stubbed; image_load_compressed stubbed |
 | 00421960 | sub_421960 | — | — | todo | unknown; called from game_init phase 11 |
 | 0041F7C8 | sub_41F7C8 | — | — | todo | unknown; called from game_init phase 12 |
 | 0044D706 | sub_44D706 | — | — | todo | unknown; called from game_init phase 13 |
@@ -88,8 +88,8 @@ Sorted by address.
 | 0048F1D0 | sub_48F1D0 | — | — | todo | render surface setup; called twice |
 | 00464930 | sub_46493B | — | — | todo | player entity setup; ECX=dword_4B70E8, EDX=ui_weapon_slot_buffer |
 | 00464F6D | sub_464F6D | — | — | todo | player entity secondary init |
-| 004130AA | sub_4130AA | — | — | todo | resource/sprite table initialiser |
-| 004161B0 | sub_4161B0 | — | — | todo | final game_init tail call |
+| 004130AA | sub_4130AA | `initialize_resource_slots` | src/game_init.c | ported | allocates 640×800 8-bit bmap (dword_4B297C); stores color_table ptr at [bmap+18h] |
+| 004161B0 | sub_4161B0 | `game_finalize` | src/game_init.c | partial | outer flow ported: sets up unk_4CFE40 block + calls sub_415FB0 TODO stub; sub_415FB0 (FONTE11 CAR+GIF loader, >200 asm lines) deferred |
 | 00426335 | sub_426335 | — | — | todo | unknown; called from game_init phase 39 |
 | 00471C18 | sub_471C18 | — | — | todo | loads objets>objets.txt |
 | 0045B207 | sub_45B207 | — | — | todo | unknown; called from game_init phase 43 |

@@ -18,6 +18,9 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
 ## Palette
 
 - `palette_copy_alternative` (00491450) — copies `alternative_palette_data[136]` → `palette_target_buffer[136]` (34 dwords, `rep movsd ecx=0x22`). Source and destination globals are zero-initialised at startup; the original data segment values are not yet recovered. Called from `ls_main` in the same sequence as the original. Source: `src/libsys/graphics/palette.c/.h`.
+- `palette_postprocess_configure` (00425D50) — loads persona/inventory slot data into `word_509B40[0x310]` from `PERSOS>INVENT.CTX` (cached binary) or `PERSOS>INVENT.TXT` (parsed text, 98 entries × 8 i16 slots). Writes CTX cache after parsing. Status: `partial` (`ls_switch_memory`, `ls_load_file_at`, `ls_get_filedate` stubbed). Source: `src/libsys/graphics/palette.c/.h`.
+- `color_table[0x300]` — 256-entry RGB palette table written by game_init phase 7 (MENUGEN.GIF palette); read by `configure_game_palette` / rendering paths. Ptr stored at `[bmap+18h]` by `initialize_resource_slots`.
+- `word_509B40[0x310]` — 98-persona × 8-slot inventory table; populated by `palette_postprocess_configure`.
 - TODO: identify what populates `alternative_palette_data` in the original game (likely a palette-load path that precedes the call sequence).
 
 ## Graphics
@@ -166,6 +169,16 @@ Phases in execution order:
 41. **sub_4161B0** — final tail call; `dword_4B787C = 0`.
 
 **Port status**: `partial` — skeleton with all 45 phases logged and call graph preserved. Sub-functions 1–11, 15–22, 29–41 are stubs (`// TODO`). Phases 2–6, 11–13, 23–24 have inline asm-faithful structure (loops, bmap alloc sizes). `init_font_system` is the only phase with a fully ported callee. No crashes — exit 143 on SIGTERM.
+
+**M6 ported** (four additional phase functions):
+- Phase 8 / **sub_425D50** → `palette_postprocess_configure` (`src/libsys/graphics/palette.c`): loads persona/inventory slot data (98 × 8 i16 = `word_509B40`) from `PERSOS>INVENT.CTX` cache or parses `PERSOS>INVENT.TXT` and writes the cache. Status: `partial` — `ls_switch_memory`, `ls_load_file_at`, `ls_get_filedate` stubbed.
+- Phase 10 / **sub_45D395** → `initialize_mouse_and_animation` (`src/game_init.c`): zeros six mouse-state globals (4D7F0C/24/10/20/14/18 = offsets/ranges), loads INTFANI3.GIF animation, allocates 51×99 animation bmap. Status: `partial` — `ls_set_mouse`, `ls_set_mouse_range`, `image_load_compressed` stubbed.
+- Phase 30 / **sub_4130AA** → `initialize_resource_slots` (`src/game_init.c`): allocates `dword_4B297C` bmap (640×800, 8-bit) and writes `color_table` pointer into `[bmap+18h]` (palette pointer field used by rendering). Status: `ported`.
+- Phase 45 / **sub_4161B0** → `game_finalize` (`src/game_init.c`): outer flow ported — sets up the FONTE11 font descriptor block (`unk_4CFE40`) and queues a call to `sub_415FB0` (FONTE11 CAR+GIF loader). `sub_415FB0` is >200 asm lines and is deferred as a TODO stub. Status: `partial`.
+
+New globals added:
+- `color_table[0x300]` and `word_509B40[0x310]` in `src/libsys/graphics/palette.c` / `palette.h`.
+- `g_dword_4B297C`, `g_dword_4D7F0C/24/10/20/14/18`, `g_dword_4D7F2C`, `g_dword_4F4DF4`, `g_unk_4CFE40` in `src/game_init.c`.
 
 **Next steps**: port `image_load_compressed` + `load_image_color_data` (GIF loader chain); then `sub_46493B` (player entity) + `display_weapons_inventory`.
 

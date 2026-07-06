@@ -62,6 +62,7 @@ typedef struct {
     i32  atlas_width;
     i32  atlas_height;
     i32  band_height;    /* row stride in atlas (from CAR trailing dword) */
+    u8  *palette;        /* 256 * 3 bytes RGB from CIF, NULL if unavailable */
 
     b8   use_fallback;   /* true → render via embedded CP437 8×8 table */
 } font_t;

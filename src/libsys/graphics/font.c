@@ -153,6 +153,7 @@ static void install_fallback_font(font_t *f) {
     f->atlas_width    = 0;
     f->atlas_height   = 0;
     f->band_height    = 8;
+    f->palette        = NULL;
     f->use_fallback   = true;
 }
 
@@ -244,9 +245,8 @@ b8 init_font(font_t *out, const c8 *name) {
                 out->atlas_pixels = atlas_img.pixels;   /* font_t takes ownership */
                 out->atlas_width  = atlas_img.width;
                 out->atlas_height = atlas_img.height;
-                /* palette not stored on font_t — caller can use cif_to_xrgb if needed */
-                memory_free(atlas_img.palette);
-                atlas_img.palette = NULL;
+                out->palette = atlas_img.palette;       /* take ownership from cif_image_t */
+                atlas_img.palette = NULL;               /* prevent cif_free from releasing */
                 /* do NOT call cif_free — we transferred ownership of pixels */
 
                 /* atlas successfully decoded — disable CP437 fallback */
@@ -406,7 +406,17 @@ void draw_text_at(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb) {
                     for (i32 gx = 0; gx < gw; gx++) {
                         i32 fx = cx + gx;
                         if (fx < 0 || fx >= fb_w) continue;
-                        if (src[gx]) dst[gx] = color;
+                        u8 idx = src[gx];
+                        if (idx) {
+                            if (font->palette) {
+                                u8 r = font->palette[idx * 3 + 0];
+                                u8 g = font->palette[idx * 3 + 1];
+                                u8 b = font->palette[idx * 3 + 2];
+                                dst[gx] = 0xFF000000u | ((u32)r << 16) | ((u32)g << 8) | (u32)b;
+                            } else {
+                                dst[gx] = color;
+                            }
+                        }
                     }
                 }
                 cx += gw;
