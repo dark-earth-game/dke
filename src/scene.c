@@ -152,6 +152,139 @@ static i32 g_scene_camera = 0;
  * load. -1 = unknown; we'll probe on wrap. */
 static i32 g_scene_camera_max = 6;   /* L01 has cameras 0..6 */
 
+/* -------------------------------------------------------------------------
+ * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
+ *
+ * Example L01.DAT block:
+ *   ncamera : 7
+ *   zbuffer0 : 1000        // per-camera Z-buffer far plane (world units)
+ *   ...
+ *   lightx0 : 8967         // per-camera key-light position
+ *   lighty0 : 30000
+ *   lightz0 : 34040
+ *   redAmbiant : 256       // global ambient RGB (0..256 for Q8)
+ *
+ * We keep only the fields the model renderer will consume: per-camera
+ * zbuffer (needed to un-normalise the 8-bit Z bmap into world depth) and
+ * per-camera light position (needed for L-map correction / model shading).
+ * ------------------------------------------------------------------------- */
+#define SCENE_MAX_CAMERAS 32
+
+typedef struct {
+    i32 zbuffer[SCENE_MAX_CAMERAS];   /* far plane per camera, world units */
+    i32 lightx [SCENE_MAX_CAMERAS];   /* key light X per camera            */
+    i32 lighty [SCENE_MAX_CAMERAS];   /* key light Y per camera            */
+    i32 lightz [SCENE_MAX_CAMERAS];   /* key light Z per camera            */
+    i32 ncamera;                       /* number of cameras (echoes INF)   */
+    i32 r_amb, g_amb, b_amb;           /* global ambient (Q8, 256=identity)*/
+    i32 multilights;                   /* per-camera light on/off          */
+    i32 loaded;                        /* 1 if L<lvl>.DAT parsed cleanly   */
+} scene_config_t;
+
+static scene_config_t g_scene_cfg = {0};
+
+i32 scene_get_camera_zfar(i32 camera) {
+    if (!g_scene_cfg.loaded) return 1000;   /* sane default for L01-ish rooms */
+    if (camera < 0 || camera >= SCENE_MAX_CAMERAS) return 1000;
+    return g_scene_cfg.zbuffer[camera] > 0 ? g_scene_cfg.zbuffer[camera] : 1000;
+}
+
+/*
+ * parse_dat_int — locate "key : <int>" in a null-terminated buffer and
+ * write the integer into *out. Whitespace-tolerant. Returns 1 on match.
+ */
+static i32 parse_dat_int(const c8 *buf, const c8 *key, i32 *out) {
+    const c8 *p = strstr(buf, key);
+    if (!p) return 0;
+    p += strlen(key);
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p != ':') return 0;
+    p++;
+    while (*p == ' ' || *p == '\t') p++;
+    i32 sign = 1;
+    if (*p == '-') { sign = -1; p++; }
+    else if (*p == '+') p++;
+    i32 v = 0;
+    if (*p < '0' || *p > '9') return 0;
+    while (*p >= '0' && *p <= '9') {
+        v = v * 10 + (*p - '0');
+        p++;
+    }
+    *out = sign * v;
+    return 1;
+}
+
+/*
+ * scene_load_dat_config — read L<lvl>.DAT into memory and pull out the
+ * per-camera zbuffer + light fields plus global ambient / multilights.
+ * Non-fatal on any error; leaves g_scene_cfg.loaded=0 so callers fall
+ * back to defaults.
+ */
+static void scene_load_dat_config(i32 level_id) {
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    c8 vpath[64];
+    snprintf(vpath, sizeof(vpath), "DATAS>L%02d>L%02d.DAT",
+             level_id, level_id);
+    c8 host[512];
+    if (!ls_resolve_path(base, vpath, host, (i32)sizeof(host))) {
+        print("scene: DAT resolve failed for '%s'\n", vpath);
+        return;
+    }
+    FILE *f = ls_open(host, "rb");
+    if (!f) {
+        print("scene: DAT '%s' not found\n", host);
+        return;
+    }
+    /* Whole file is ~1 KB of plain ASCII — read it all. */
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (sz <= 0 || sz > 65536) {
+        print("scene: DAT '%s' size %ld out of range\n", host, sz);
+        ls_close(f);
+        return;
+    }
+    c8 *buf = (c8 *)malloc((size_t)sz + 1);
+    if (!buf) { ls_close(f); return; }
+    fread(buf, 1, (size_t)sz, f);
+    buf[sz] = '\0';
+    ls_close(f);
+
+    memset(&g_scene_cfg, 0, sizeof(g_scene_cfg));
+    parse_dat_int(buf, "ncamera",      &g_scene_cfg.ncamera);
+    parse_dat_int(buf, "multilights",  &g_scene_cfg.multilights);
+    parse_dat_int(buf, "redAmbiant",   &g_scene_cfg.r_amb);
+    parse_dat_int(buf, "greenAmbiant", &g_scene_cfg.g_amb);
+    parse_dat_int(buf, "blueAmbiant",  &g_scene_cfg.b_amb);
+
+    for (i32 c = 0; c < SCENE_MAX_CAMERAS; c++) {
+        c8 key[24];
+        snprintf(key, sizeof(key), "zbuffer%d", c);
+        parse_dat_int(buf, key, &g_scene_cfg.zbuffer[c]);
+        snprintf(key, sizeof(key), "lightx%d", c);
+        parse_dat_int(buf, key, &g_scene_cfg.lightx[c]);
+        snprintf(key, sizeof(key), "lighty%d", c);
+        parse_dat_int(buf, key, &g_scene_cfg.lighty[c]);
+        snprintf(key, sizeof(key), "lightz%d", c);
+        parse_dat_int(buf, key, &g_scene_cfg.lightz[c]);
+    }
+
+    g_scene_cfg.loaded = 1;
+    free(buf);
+
+    print("scene: DAT loaded — ncamera=%d ambient=(%d,%d,%d) multilights=%d\n",
+          g_scene_cfg.ncamera,
+          g_scene_cfg.r_amb, g_scene_cfg.g_amb, g_scene_cfg.b_amb,
+          g_scene_cfg.multilights);
+    for (i32 c = 0; c < g_scene_cfg.ncamera && c < SCENE_MAX_CAMERAS; c++) {
+        print("scene:   cam %d  zfar=%d  light=(%d,%d,%d)\n",
+              c, g_scene_cfg.zbuffer[c],
+              g_scene_cfg.lightx[c],
+              g_scene_cfg.lighty[c],
+              g_scene_cfg.lightz[c]);
+    }
+}
+
 static void scene_free_bmap(bmap_t **pb) {
     if (!pb || !*pb) return;
     bmap_t *b = *pb;
@@ -733,6 +866,14 @@ i32 scene_load_level(i32 level_id) {
     if (state) {
         state->current_level_id = level_id;
         print("scene: state->current_level_id = %d\n", level_id);
+    }
+
+    /* Parse L<lvl>.DAT plain-text config (per-camera zbuffer + lights,
+     * global ambient). Populates g_scene_cfg so model_render can later
+     * do proper depth un-normalisation and light-position shading. */
+    scene_load_dat_config(level_id);
+    if (g_scene_cfg.loaded && g_scene_cfg.ncamera > 0) {
+        g_scene_camera_max = g_scene_cfg.ncamera - 1;
     }
 
     /* Post-skeleton: load camera 0 backdrop so scene_render has something

@@ -43,3 +43,11 @@ i32 scene_render(system_t *sys);
  * Call before returning to the menu or on shutdown.
  */
 void scene_release(void);
+
+/*
+ * scene_get_camera_zfar — far-plane world distance for a camera as read
+ * from L<lvl>.DAT (zbufferN). Returns 1000 (a sane default for L01-ish
+ * rooms) when the DAT config wasn't loaded or the index is out of range.
+ * Callers use this to un-normalise the 8-bit Z bmap into world depth.
+ */
+i32 scene_get_camera_zfar(i32 camera);
