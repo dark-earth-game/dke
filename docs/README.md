@@ -4,6 +4,7 @@ Living documentation for the Dark Earth (Kalisto Entertainment, 1997) reverse-en
 
 ## Index
 
+- [PLAN.md](PLAN.md) — live plan: milestones, in-flight work, next slices, delegation policy.
 - [ARCHITECTURE.md](ARCHITECTURE.md) — high-level engine layout (libsys / game / platform split).
 - [ROADMAP.md](ROADMAP.md) — prioritized porting order and milestones.
 - [CONVENTIONS.md](CONVENTIONS.md) — naming, asm→C style rules, verification workflow.

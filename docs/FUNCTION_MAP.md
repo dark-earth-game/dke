@@ -67,8 +67,9 @@ Sorted by address.
 | 00495390 | sub_495390 | `ls_install_default_error_handlers` | src/libsys/lsys_startup.c | ported | installs g_error_handler_1/2 → no-op stubs (mirrors sub_494560/sub_4945F0) |
 | 004953B0 | sub_4953B0 | `ls_copy_unknown_a_to_b` | src/libsys/lsys_startup.c | ported | rep movsd 34 dwords: unknown_data_a (off_4C7748) → unknown_data_b (off_4C77D0); purpose TODO |
 | 0046BEEB | game_init_46BEEB | `game_init` | src/game_init.c | partial | 45-phase skeleton: call graph preserved; all sub-functions stubbed; bmap allocs wired; font init wired; logs all phases |
-| — | select_language_version | — (stub in game_init.c) | src/game_init.c | stub | returns NULL (no language CIF variant logic yet) |
-| — | image_load_compressed | — (stub in game_init.c) | src/game_init.c | stub | returns NULL; real impl loads GIF/compressed image into bmap |
+| — | select_language_version | `select_language_version` (static) | src/game_init.c | partial | resolves virtual path → host; tries .GIF then .CIF; returns path if file exists, NULL otherwise; no language-prefix substitution yet |
+| — | image_load_compressed | `image_load_compressed` (static) | src/game_init.c | ported | wraps cif_load; accepts .GIF names, retries with .CIF; returns heap-owned bmap_t; buf_ignored (allocates internally) |
+| — | image_load_compressed_free | `image_load_compressed_free` (static) | src/game_init.c | ported | releases bmap_t and pixel buffer returned by image_load_compressed; TODO: wire to cleanup paths |
 | — | load_image_color_data | — (stub in game_init.c) | src/game_init.c | stub | returns NULL; real impl extracts palette from image |
 | — | ls_free_palette | — (stub in game_init.c) | src/game_init.c | stub | no-op; real impl frees palette handle |
 | — | initialize_health_hud | — | — | todo | allocates 2048-byte HUD buffer w/ numeric pattern |
@@ -89,7 +90,8 @@ Sorted by address.
 | 00464930 | sub_46493B | — | — | todo | player entity setup; ECX=dword_4B70E8, EDX=ui_weapon_slot_buffer |
 | 00464F6D | sub_464F6D | — | — | todo | player entity secondary init |
 | 004130AA | sub_4130AA | `initialize_resource_slots` | src/game_init.c | ported | allocates 640×800 8-bit bmap (dword_4B297C); stores color_table ptr at [bmap+18h] |
-| 004161B0 | sub_4161B0 | `game_finalize` | src/game_init.c | partial | outer flow ported: sets up unk_4CFE40 block + calls sub_415FB0 TODO stub; sub_415FB0 (FONTE11 CAR+GIF loader, >200 asm lines) deferred |
+| 00415FB0 | sub_415FB0 | `sub_415FB0` (static) | src/game_init.c | partial | loads FONTE11.CAR (0xBF4 glyph bytes into desc+4) + FONTE11.GIF→.CIF atlas via image_load_compressed; stores bmap ptr at desc+0, height 0x13 at desc+0BF8h; glyph bitmask walk (word_4D0A40) deferred |
+| 004161B0 | sub_4161B0 | `game_finalize` | src/game_init.c | ported | calls sub_415FB0("DATAS>MENUS>FONTE11", &g_unk_4CFE40); font descriptor fully built |
 | 00426335 | sub_426335 | — | — | todo | unknown; called from game_init phase 39 |
 | 00471C18 | sub_471C18 | — | — | todo | loads objets>objets.txt |
 | 0045B207 | sub_45B207 | — | — | todo | unknown; called from game_init phase 43 |

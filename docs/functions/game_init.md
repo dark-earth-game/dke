@@ -24,11 +24,11 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 |---|-------|---------|-------|
 | 1 | Debug banner "Init Scene ..." | inline | conditional on `debug_enabled` |
 | 2 | HUD health bitmap (GINETTE.CIF/GIF or fallback bmap) | stub | `select_language_version` + `image_load_compressed` stubbed |
-| 3 | LOADING.GIF compressed image load | stub | `image_load_compressed` stubbed |
+| 3 | LOADING.GIF compressed image load | **ported** | `image_load_compressed` wraps `cif_load`; resolves .GIF→.CIF; logs `LOADING.GIF -> 512x64` |
 | 4 | LOADING.GIF transparency pass (non-0xFF → 0) | inline | loop ported; skipped when bmap is NULL (stub returns NULL) |
 | 5 | Two HUD bmap copies from GINETTE dims | inline | `ls_init_bmap_ex` calls wired with fallback sizes |
 | 6 | Gouraud index buffer (0x4100 bytes) | inline | `allocate_memory(MEM_SLOT_HEALTH, 0x4100)` |
-| 7 | MENUGEN.GIF palette load + input_state_table zero-init | stub | `load_image_color_data` + `ls_free_palette` stubbed |
+| 7 | MENUGEN.GIF palette load + input_state_table zero-init | **ported** | `load_image_color_data` wraps `cif_load`; copies 768-byte palette to `color_table`; input_state_table memset TODO |
 | 8 | sub_425D50 (post-palette) | **partial** | `palette_postprocess_configure` in palette.c; ls_switch_memory/ls_load_file_at stubbed |
 | 9 | initialize_health_hud | stub | 2048-byte HUD buffer with numeric ramp |
 | 10 | sub_45D395 | **partial** | `initialize_mouse_and_animation`; mouse platform calls + image_load_compressed stubbed |
@@ -50,7 +50,7 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 | 26 | sub_48F230 (entity buffer 640×480) | stub | |
 | 27 | Render bmaps (colour-mode branch) | inline | `ls_init_bmap_ex` calls with correct dims/bpp; both branches |
 | 28 | render_buffer2 (640×480) + dword_507474 (320×240) | inline | `ls_init_bmap_ex` calls |
-| 29 | objets.gif load | stub | `image_load_compressed` stubbed |
+| 29 | objets.gif load | **ported** | `image_load_compressed` wraps `cif_load`; resolves .gif→.CIF; logs `objets.gif -> 256x512` |
 | 30 | sub_4130AA (resource init) | **ported** | `initialize_resource_slots` in game_init.c |
 | 31 | initialize_resource + palette_data wire-up | stub | |
 | 32 | game_state / game_death_state from dword_4B70E8 | inline skeleton | assignment preserved; dword_4B70E8 is NULL (global not ported) |
@@ -66,7 +66,7 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 | 42 | 16-bit colour: sub_491ED0 + sub_491FD0 | stub | branch wired; callees stubbed |
 | 43 | sub_45B207 | stub | |
 | 44 | display_weapons_inventory | stub | |
-| 45 | sub_4161B0 + dword_4B787C=0 | **partial** | `game_finalize` ported; sub_415FB0 (FONTE11 CAR+GIF, >200 lines) deferred as TODO |
+| 45 | sub_4161B0 + dword_4B787C=0 | **ported** | `game_finalize` calls `sub_415FB0`; FONTE11.CAR + FONTE11.GIF→.CIF atlas loaded; descriptor built at `g_unk_4CFE40`; glyph bitmask walk (word_4D0A40) deferred |
 
 ## Key data addresses
 
@@ -94,4 +94,4 @@ Big game-side bootstrap that runs once after LIBSYS is up. Sets up:
 - **build**: compiles clean, zero warnings (`-Wall`).
 - **launch**: game starts, logs all 45 phases, exits 143 on SIGTERM. No `Abort trap` / `Segmentation fault`.
 - **log**: `grep game_init /tmp/dke.log` shows all 45 `game_init: ...` lines.
-- **untested**: actual resource loads (all image/palette/entity sub-functions are stubs).
+- **real loads confirmed**: `LOADING.GIF -> 512x64`, `MENUGEN.GIF palette loaded`, `objets.gif -> 256x512`, `sub_415FB0: FONTE11 atlas -> 691x224`, `sub_415FB0: font descriptor built`.

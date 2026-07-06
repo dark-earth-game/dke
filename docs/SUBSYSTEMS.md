@@ -168,7 +168,7 @@ Phases in execution order:
 40. **display_weapons_inventory** — populates weapon/ammo UI slots.
 41. **sub_4161B0** — final tail call; `dword_4B787C = 0`.
 
-**Port status**: `partial` — skeleton with all 45 phases logged and call graph preserved. Sub-functions 1–11, 15–22, 29–41 are stubs (`// TODO`). Phases 2–6, 11–13, 23–24 have inline asm-faithful structure (loops, bmap alloc sizes). `init_font_system` is the only phase with a fully ported callee. No crashes — exit 143 on SIGTERM.
+**Port status**: `partial` — skeleton with all 45 phases logged and call graph preserved. Sub-functions 1–11, 15–22, 29–41 are stubs (`// TODO`). Phases 2–6, 11–13, 23–24 have inline asm-faithful structure (loops, bmap alloc sizes). `init_font_system` is fully ported. **Real image loading now active**: phases 3, 7, 29, 45 load real bytes via `image_load_compressed` → `cif_load`. No crashes — exit 143 on SIGTERM.
 
 **M6 ported** (four additional phase functions):
 - Phase 8 / **sub_425D50** → `palette_postprocess_configure` (`src/libsys/graphics/palette.c`): loads persona/inventory slot data (98 × 8 i16 = `word_509B40`) from `PERSOS>INVENT.CTX` cache or parses `PERSOS>INVENT.TXT` and writes the cache. Status: `partial` — `ls_switch_memory`, `ls_load_file_at`, `ls_get_filedate` stubbed.
@@ -180,7 +180,14 @@ New globals added:
 - `color_table[0x300]` and `word_509B40[0x310]` in `src/libsys/graphics/palette.c` / `palette.h`.
 - `g_dword_4B297C`, `g_dword_4D7F0C/24/10/20/14/18`, `g_dword_4D7F2C`, `g_dword_4F4DF4`, `g_unk_4CFE40` in `src/game_init.c`.
 
-**Next steps**: port `image_load_compressed` + `load_image_color_data` (GIF loader chain); then `sub_46493B` (player entity) + `display_weapons_inventory`.
+**Image loading landed (M7)**:
+- `select_language_version(vpath, out, size)` — resolves virtual path → host path via `ls_resolve_path`; tries `.GIF` then `.CIF` extension; returns path if file exists. Single-language passthrough (no language-prefix substitution yet).
+- `image_load_compressed(vpath, buf_ignored)` — wraps `cif_load`; accepts `.GIF` virtual paths, retries with `.CIF` on disk; returns heap-owned `bmap_t` on success, `NULL` on failure.
+- `load_image_color_data(vpath, buf)` — uses `cif_load` directly; copies 768-byte palette to `color_table`; returns heap-owned palette buffer (`ls_free_palette` to release).
+- `sub_415FB0(base_name, desc)` — loads `FONTE11.CAR` (0xBF4 glyph bytes into `desc+4`) + `FONTE11.GIF`→`.CIF` atlas via `image_load_compressed`; stores bmap ptr at `desc+0` and `0x13` at `desc+0BF8h`. Glyph bitmask walk (word_4D0A40) deferred.
+- Verified log output: `LOADING.GIF -> 512x64`, `MENUGEN.GIF palette loaded`, `objets.gif -> 256x512`, `sub_415FB0: FONTE11 atlas -> 691x224`.
+
+**Next steps**: port `sub_46493B` (player entity) + `display_weapons_inventory`; wire `word_4D0A40` for font bitmask walk in `sub_415FB0`.
 
 ## Timing
 
