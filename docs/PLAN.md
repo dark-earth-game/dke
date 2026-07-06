@@ -158,12 +158,46 @@ Scope: 3-5 Sonnet passes. Big surface area. Defer until Slice C provides world c
 
 ### Slice F — 3D render pipeline
 
-- `graphics_triangle_rasteriser` — software rasteriser.
-- `create_model_render_data` — model → triangle list.
-- `render_entity_with_ui` — top-level scene render.
-- `apply_palette_transformation` — palette-per-face shading.
+**Pass 1+2 landed 2026-07 (placeholder cube):**
+- `src/model.[ch]` — model_t (verts + faces), model_test_cube() as a
+  stand-in until .OME loads.
+- Software rasteriser: scanline triangle fill with linear depth
+  interpolation. Backface cull uses cross_z sign (front face is CCW
+  in screen because we flip Y in project).
+- Per-pixel `plot_pixel` samples the scene L bmap (nearest ×2
+  upscale) and modulates face colour: `out.c = clamp((c * L) >> 7)`.
+  Per-pixel Z-test against g_scene_z_bmap wired but currently
+  bypassed (NULL passed from scene.c) until the near/far convention
+  is decoded.
+- Perspective projection: camera at (0,0,+4·ONE) looking down -Z,
+  focal_len = fb_w gives ~55° FOV. Yaw drives animation; ~26° pitch
+  tilt for scene-like framing.
+- scene.c calls `model_render(model_test_cube(), ...)` after F blit.
 
-Scope: massive. Defer.
+**Pass 3 — .OME loader (in progress):**
+- `tools/src/dump_ome.py` landed — structural walker for the
+  "3DITOR v1.3 / v2.0" mesh container. Confirmed layout: outer MATR
+  chunk (materials CUIR, CUIVR, ACIER, ROUIL, ...), nested OBJC and
+  ATOMF chunks (object + geometry). Each chunk starts with 16b sig
+  + 16b dashes + 16b name + 48b path.
+- Blocker: ATOMF records contain 32-bit values ~0x008F0000 that
+  exceed the file size — these are original-process heap pointers
+  serialised as-is. Loader will need a pointer-fix-up pass to walk
+  the atom graph, plus record-type discrimination via the trailing
+  0x00200000 flag word.
+
+**Remaining:**
+- Per-model depth buffer for correct self-occlusion (currently
+  overdraw-order only; backface cull hides most issues).
+- Per-camera projection matrix decode from L%02d.INF / L%02d.DAT
+  so the cube (and eventually the entity meshes) sit in scene world
+  space instead of the fixed (0,0,+4·ONE) screen-centre placement.
+  Without this the perspective doesn't match the F backdrop's
+  camera framing.
+- Z bmap near/far convention decode → re-enable per-pixel scene
+  occlusion in `sample_depth`.
+- `render_entity_with_ui`, `apply_palette_transformation` — top of
+  the pipeline (deferred until per-model + per-camera above land).
 
 ## Small parallel work (Haiku)
 
