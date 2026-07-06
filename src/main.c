@@ -23,6 +23,7 @@
 #include "game_init.h"
 #include "menu.h"
 #include "player.h"
+#include "scene.h"
 #include "libsys/graphics/graphic.h"
 
 
@@ -277,29 +278,25 @@ i32 ls_main(system_t *system, c8 **argv) {
         /* Update hover / keyboard nav state */
         menu_update(&menu, system);
 
-        /* Render backdrop + text overlay */
-        menu_render(&menu, system);
+        /* Render menu vs scene depending on state. Once the user picks
+         * NEW GAME, menu_dispatch calls scene_load_level and flips the
+         * state to LOADING; from that frame on we blit the level's
+         * camera-0 backdrop instead of the menu backdrop. */
+        if (menu.state == MENU_STATE_LOADING) {
+            scene_render(system);
+
+            /* Slice D: keep polling WASD + mouse_left so the input path is
+             * exercised.  No entity movement wired yet. */
+            static player_input_t pinput;
+            player_input_update(&pinput, system);
+        } else {
+            menu_render(&menu, system);
+        }
 
         /* Exit main loop when user selects QUIT */
         if (menu.state == MENU_STATE_QUIT) {
             print("ls_main: menu QUIT selected, breaking loop\n");
             break;
-        }
-
-        /* Loading state — display "LOADING LEVEL N" until scene main loop
-         * takes over (not yet ported). For now, keep showing menu backdrop
-         * with an overlay.  Poll player input so the skeleton is exercised
-         * once the scene has been entered. */
-        if (menu.state == MENU_STATE_LOADING) {
-            c8 loading_msg[64];
-            snprintf(loading_msg, sizeof(loading_msg),
-                     "LOADING LEVEL %d", state->current_level_id);
-            set_position_coordinates(220, 420);
-            draw_text(loading_msg);
-
-            /* Slice D: poll WASD + mouse_left → player_input_t */
-            static player_input_t pinput;
-            player_input_update(&pinput, system);
         }
 
         /* Overlay debug text if enabled */
@@ -334,6 +331,8 @@ i32 ls_main(system_t *system, c8 **argv) {
         }
     }
     ls_shut_movie();
+    scene_release();
+    menu_release();
     return 0;
 }
 

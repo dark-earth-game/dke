@@ -8,6 +8,7 @@
  */
 
 #include "libsys/common.h"
+#include "libsys/system.h"
 
 /*
  * 0046DFEC — scene_load_level_46DFEC
@@ -23,3 +24,22 @@
  * heavy sub-function calls with TODO comments.
  */
 i32 scene_load_level(i32 level_id);
+
+/*
+ * scene_render — per-frame render of the currently loaded scene.
+ *
+ * First-camera pass: blits the level's FL<lvl>C0L0.CIF backdrop into the
+ * front buffer using its embedded CIF palette.  No entities, no fade —
+ * just a static room.  Enough to prove NEW GAME reaches level data instead
+ * of stalling on the "LOADING LEVEL N" text.
+ *
+ * Camera index (0..6 per L01) can later be switched by input.  For now the
+ * scene always displays camera 0.
+ */
+void scene_render(system_t *sys);
+
+/*
+ * scene_release — free any bmaps loaded by scene_load_level / scene_render.
+ * Call before returning to the menu or on shutdown.
+ */
+void scene_release(void);

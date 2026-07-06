@@ -111,6 +111,13 @@ Options to unlock LIEU execution:
 - (b) Integrate x86 emulator (unicorn engine) — run LIEU exports natively.
 - (c) Reconstruct level structure from `.data` strings + known engine API call graph.
 
+**Pass 1b landed 2026-07 (first playable frame):**
+- `scene_load_level` now loads `DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF` (camera 0 by default) via `game_init_load_cursor` and stashes it in `g_scene_bg_bmap`. Each CIF ships its own 256-colour palette so the .GRD parse is deferred.
+- New `scene_render(sys)` — blits the loaded backdrop centred into `state->graphic.front_buffer` via `blit_bmap_to_framebuffer`.
+- New `scene_release()` — frees the backdrop bmap + palette. Called from `ls_main` on exit alongside `menu_release`.
+- `ls_main`: when `menu.state == MENU_STATE_LOADING`, call `scene_render` instead of `menu_render`. NEW GAME click now flips the screen to the level's camera-0 room image rather than a "LOADING LEVEL N" text banner.
+- No entities, no fade, no camera switch. `.INF` / `.OME` / `.ANI` still unread. First playable frame = static room image with cursor/HUD path still stubbed.
+
 **Remaining (pass 2+):**
 
 1. `tools/src/dump_lieu.py` — ✅ landed. Extracts sections + exports + strings + `.bin` files. See `docs/SUBSYSTEMS.md` Scene section.

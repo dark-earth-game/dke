@@ -48,8 +48,10 @@
 
 #include "libsys/common.h"
 #include "libsys/file_system.h"
+#include "libsys/graphics/graphic.h"
 #include "state.h"
 #include "scene.h"
+#include "game_init.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols.
@@ -112,6 +114,25 @@ static i32 g_dword_505C54 = 0;
 void *player_entity = NULL;
 
 /* state singleton — defined in main.c; extern declared in state.h (already included) */
+
+/* -------------------------------------------------------------------------
+ * Scene render state — first-camera backdrop only for now.
+ *
+ * The real engine loads seven per-camera images (FL01C0L0..FL01C6L0),
+ * plus L (mid) and Z (depth) layers per camera, driven by sub_46D0EA.
+ * We haven't ported the asset loader yet, so the first playable frame just
+ * blits camera 0's foreground image full-screen.
+ * ------------------------------------------------------------------------- */
+
+/* Loaded backdrop for the current camera. NULL until the first successful
+ * scene_load_level → scene_load_camera_backdrop call. Freed in scene_release. */
+static bmap_t *g_scene_bg_bmap = NULL;
+
+/* Level id whose backdrop is currently in g_scene_bg_bmap.  -1 = none. */
+static i32 g_scene_bg_level = -1;
+
+/* Camera index within the level (0..6 for L01). Fixed at 0 for the first pass. */
+static i32 g_scene_camera = 0;
 
 /* -------------------------------------------------------------------------
  * Stub declarations for sub-functions called by scene_load_level_46DFEC.
@@ -610,6 +631,77 @@ i32 scene_load_level(i32 level_id) {
         print("scene: state->current_level_id = %d\n", level_id);
     }
 
+    /* -----------------------------------------------------------------
+     * Post-skeleton: load the first-camera backdrop so scene_render has
+     * something to blit. Path pattern derived from bin/game/datas/L<lvl>/
+     * IMAGES/: `FL<lvl:02>C<cam>L0.CIF` is the foreground layer.  Each CIF
+     * carries its own 256-colour palette, so no separate .GRD parse is
+     * needed for this pass.
+     * ----------------------------------------------------------------- */
+    {
+        c8 bg_vpath[80];
+        snprintf(bg_vpath, sizeof(bg_vpath),
+                 "DATAS>L%02d>IMAGES>FL%02dC%dL0.CIF",
+                 level_id, level_id, g_scene_camera);
+        print("scene: loading backdrop '%s'\n", bg_vpath);
+        bmap_t *bg = game_init_load_cursor(bg_vpath);
+        if (bg) {
+            /* Replace any previously-loaded backdrop. */
+            if (g_scene_bg_bmap) {
+                if (g_scene_bg_bmap->owns_buffer && g_scene_bg_bmap->pixels)
+                    free(g_scene_bg_bmap->pixels);
+                if (g_scene_bg_bmap->owns_palette && g_scene_bg_bmap->palette)
+                    free(g_scene_bg_bmap->palette);
+                free(g_scene_bg_bmap);
+            }
+            g_scene_bg_bmap = bg;
+            g_scene_bg_level = level_id;
+            print("scene: backdrop loaded -> %dx%d palette=%p\n",
+                  (i32)bg->width, bg->height, (void *)bg->palette);
+        } else {
+            print("scene: backdrop load failed for '%s' — scene will show blank\n",
+                  bg_vpath);
+        }
+    }
+
     print("scene: scene_load_level(%d) — complete\n", level_id);
     return 0;
+}
+
+/*
+ * scene_render — blit the current camera's backdrop and poll input.
+ * Called from the main loop while state == MENU_STATE_LOADING.
+ * Falls back to a "SCENE (no bmap)" text banner if the backdrop failed
+ * to load, so the loop stays alive and the user can quit cleanly.
+ */
+void scene_render(system_t *sys) {
+    (void)sys;
+    if (!state) return;
+
+    u32 *fb   = state->graphic.front_buffer;
+    i32  fb_w = state->graphic.width;
+    i32  fb_h = state->graphic.height;
+    if (!fb) return;
+
+    if (g_scene_bg_bmap && g_scene_bg_bmap->pixels && g_scene_bg_bmap->palette) {
+        i32 bw = (i32)g_scene_bg_bmap->width;
+        i32 bh = g_scene_bg_bmap->height;
+        i32 ox = (fb_w > bw) ? (fb_w - bw) / 2 : 0;
+        i32 oy = (fb_h > bh) ? (fb_h - bh) / 2 : 0;
+        blit_bmap_to_framebuffer(fb, fb_w, fb_h,
+                                 g_scene_bg_bmap, g_scene_bg_bmap->palette,
+                                 ox, oy);
+    }
+}
+
+void scene_release(void) {
+    if (g_scene_bg_bmap) {
+        if (g_scene_bg_bmap->owns_buffer && g_scene_bg_bmap->pixels)
+            free(g_scene_bg_bmap->pixels);
+        if (g_scene_bg_bmap->owns_palette && g_scene_bg_bmap->palette)
+            free(g_scene_bg_bmap->palette);
+        free(g_scene_bg_bmap);
+        g_scene_bg_bmap = NULL;
+        g_scene_bg_level = -1;
+    }
 }
