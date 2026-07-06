@@ -30,18 +30,19 @@ For every landed port:
 | M2 | Intro cutscenes (movie SEB + CRH decoder + CoreAudio) | ✅ done |
 | M3 | Font system + CIF decoder + palette-aware text | ✅ done |
 | M4 | Game bootstrap (`game_init_46BEEB` skeleton + top stubs) | ✅ done (skeleton + real image loaders + font finalize) |
-| M5 | Main menu (`process_mainmenu_437EB7`) | 🔄 pass 2 landed |
+| M5 | Main menu (`process_mainmenu_437EB7`) | 🔄 pass 3 landed (overlay + INVENT1.WAV; hitboxes/sub-panels pending) |
 | M6 | Level loader + first LIEU DLL | ⏳ queued |
 | M7 | Entity / combat / render pipeline | ⏳ deferred |
 | M8 | Interactive gameplay | ⏳ deferred |
 
 ## In flight (background)
 
-*(none — Slice B pass 3 cursor subitem landed; real hitboxes + sub-menu panels still pending)*
+*(none — Slice B pass 3 fully landed: overlay sprite + INVENT1.WAV + log suppression; real hitboxes + sub-menu panels deferred to pass 4)*
 
 ## Recently landed
 
-- **Slice B pass 3 cursor** (Sonnet, 2026-07): Animated mouse cursor sprite overlay landed. `CURS128.CIF` (65×35 pointer) + `GENICO_0..6.CIF` (7-frame animated icon) loaded in `menu_init`. `blit_bmap_masked_to_framebuffer` added (index-0 transparent). `bmap_t` extended with `palette`/`owns_palette` fields; `image_load_compressed` preserves per-image CIF palette. `game_init_load_cursor` exported. GENICO drawn at (item.x-20, item.y+2) next to hovered item; CURS128 drawn at (motion_x, motion_y). Build clean, exit 143 confirmed. Smoke log: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor at (0,0) frame=N`.
+- **Slice B pass 3 refinement** (Sonnet, 2026-07): Real menu image overlay + INVENT1.WAV path fix. `MENU_1.CIF` (640×480 full-screen sprite) loaded in `menu_init` → `menu->overlay_bmap`; blitted with `blit_bmap_masked_to_framebuffer` after MENUGEN backdrop; plain text suppressed when overlay present. `menu_load_click_sfx` search order fixed — `wav/ANIMS/INVENT1.WAV` first (real asm path). Per-frame cursor log noise suppressed (log only on frame_idx change). `overlay_bmap` field added to `menu_t`; freed by `menu_release_cursors`. Build clean, exit 143 confirmed. Smoke log: `menu: overlay loaded MENU_1.CIF -> 640x480`, `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711`.
+- **Slice B pass 3 cursor** (Sonnet, 2026-07): Animated mouse cursor sprite overlay landed. `CURS128.CIF` (65×35 pointer) + `GENICO_0..6.CIF` (7-frame animated icon) loaded in `menu_init`. `blit_bmap_masked_to_framebuffer` added (index-0 transparent). `bmap_t` extended with `palette`/`owns_palette` fields; `image_load_compressed` preserves per-image CIF palette. `game_init_load_cursor` exported. GENICO drawn at (item.x-20, item.y+2) next to hovered item; CURS128 drawn at (motion_x, motion_y). Build clean, exit 143 confirmed. Smoke log: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor frame=N`.
 - **Slice B pass 2** (Sonnet, 2026-07): Mouse click routing + action dispatch wired. `menu_dispatch` centralises click/keyboard resolution. `MENU_ACTION_QUIT` → `MENU_STATE_QUIT`, `MENU_ACTION_TRAILER` → `pending_trailer` → `ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH")`. `LOAD`/`OPTIONS`/`NEW_GAME` log stubs. Keyboard nav (Up/Down/Return/Esc) keycodes wired in `macos.m` (keyCodes 126/125/36/53 → actions[38/40/13/27]). Mouse Y-flip applied (Cocoa bottom-origin → top-left framebuffer). Build clean, exit 143 confirmed, `menu: click` + `menu: hover` log lines present.
 - **Slice A** (Sonnet, 2026-07): Real bmap → framebuffer blit landed. `ls_bit_move` (0x0047DC3C), `ls_box` (stub), `draw_image` (0x00453FA3), `blit_bmap_to_framebuffer`, `game_init_get_menu_backdrop`. After intro CRH, LOADING.GIF (512×64) now blits centred into the 640×480 front_buffer using the MENUGEN.GIF palette every frame. Confirmed via log: `blit_bmap_to_framebuffer: 512x64 src -> fb offset (64,208)`. Build clean, exit 143 on SIGTERM. ls_box: stub (1-px outline); lsi_remap_bmap (cross-format) and lsi_bit_move_alpha (mode==2) are TODO.
 - **Task #15** (Sonnet): `select_language_version`, `image_load_compressed` (CIF wrapper w/ `.GIF → .CIF` ext fallback), `image_load_compressed_free`, `sub_415FB0` font finalize, `load_image_color_data`. Real bytes now hit `g_loading_bmap` (512×64), `g_menugen_palette`, `g_objets_gif` (256×512), `INTFANI3` (189×119), FONTE11 atlas (691×224). Confirmed via log.
@@ -65,12 +66,15 @@ For every landed port:
 - Mouse Y-flip: Cocoa bottom-origin → top-left framebuffer coordinates.
 - `menu->pending_trailer` field added to `menu_t`.
 
-**Pass 3 (partial — cursor landed):**
-- **LANDED**: Animated mouse cursor sprite overlay. `CURS128.CIF` (65×35) loaded in `menu_init` → stored in `menu->cursor_bmap`. `GENICO_0..6.CIF` (7 frames, 720×116 each) loaded → `menu->genico_frames[7]`. `blit_bmap_masked_to_framebuffer` added to `graphic.c` (index-0 transparent). `bmap_t` extended with `palette` + `owns_palette` fields; `image_load_compressed` now preserves per-image CIF palette. `game_init_load_cursor` exported from `game_init.[ch]`. Confirmed: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor at (mx,my) frame=N` in smoke log.
-- Sound feedback: **LANDED** — `wav_load`/`wav_free`/`sfx_play` in `src/libsys/audio/wav.[ch]`; `sfx_click` cached in `menu_init`; `menu_dispatch` calls `sfx_play` on every click. Falls back to first `.WAV` in `wav/NORMAL/` when INVENT1.WAV absent.
+**Pass 3 (landed 2026-07):**
+- **LANDED (cursor subitem)**: Animated mouse cursor sprite overlay. `CURS128.CIF` (65×35) loaded in `menu_init` → stored in `menu->cursor_bmap`. `GENICO_0..6.CIF` (7 frames, 720×116 each) loaded → `menu->genico_frames[7]`. `blit_bmap_masked_to_framebuffer` added to `graphic.c` (index-0 transparent). `bmap_t` extended with `palette` + `owns_palette` fields; `image_load_compressed` preserves per-image CIF palette. `game_init_load_cursor` exported from `game_init.[ch]`.
+- **LANDED (pass 3 refinement)**: Real menu image overlay + INVENT1.WAV path fix.
+  - `MENU_<lang>.CIF` (640×480 full-screen) loaded in `menu_init` → `menu->overlay_bmap`. Language from `state->language_id` (default 1 = English UK). Blitted in `menu_render` with `blit_bmap_masked_to_framebuffer` (index-0 transparent) after MENUGEN backdrop. Plain text labels suppressed when overlay present — sprite IS the visual menu. Pixel-density scan logs button regions. Freed by `menu_release_cursors`.
+  - `INVENT1.WAV` path fixed: `menu_load_click_sfx` now searches `wav/ANIMS/INVENT1.WAV` first (real asm path `"%sINVENT1.WAV"` at line 78082). Confirmed: `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711`.
+  - Per-frame verbose log suppressed: `menu: render cursor at (X,Y) frame=N` replaced with `menu: render cursor frame=N` emitted only on frame index change.
+  - Smoke: exit 143 confirmed. Log: `menu: overlay loaded MENU_1.CIF -> 640x480`, `menu: click sfx using '.../wav/ANIMS/INVENT1.WAV'`.
 - Still pending (pass 4):
   - Real hitboxes from asm `var_4AE0[8]` table (sub_43F7BD)
-  - CIF sprite overlay (MENU_%01d.CIF overlay images)
   - Save/load slot panel (SAVE.GIF, DKEGAME.CFG slot check)
   - Options sub-menu (brightness/contrast/shadow sliders)
 

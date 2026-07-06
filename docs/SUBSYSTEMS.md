@@ -48,6 +48,18 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
 - Both use per-image CIF palette from `bmap->palette` (falls back to backdrop palette if NULL).
 - `menu_release_cursors(menu)` frees all cursor bmaps on menu exit.
 
+### Menu overlay sprite pipeline (Slice B pass 3 refinement, 2026-07)
+
+- **MENU_<lang>.CIF** (640×480 full-screen) — language-specific menu sprite with real button artwork.
+  - Loaded in `menu_init` after cursor sprites. Path: `DATAS>MENUS>MENU_<language_id>.GIF` (ext-swapped to `.CIF` by `image_load_compressed`). Language defaults to 1 (English UK) when `state->language_id == 0`.
+  - Stored as `menu->overlay_bmap` in `menu_t`.
+  - Blitted in `menu_render` immediately after the MENUGEN backdrop via `blit_bmap_masked_to_framebuffer(..., mask_idx=0)` — index-0 pixels are transparent.
+  - When overlay is present, plain text label rendering is **suppressed** — the sprite IS the visual menu. Text falls back only if `menu->overlay_bmap == NULL` (load failure).
+  - Pixel-density scan performed at init: logs `menu: overlay band y=Y..Z (button region)` for non-trivial non-zero rows (threshold >10% of width).
+  - Freed by `menu_release_cursors(menu)` alongside cursor sprites.
+- **INVENT1.WAV path corrected** (Slice B pass 3 refinement): `menu_load_click_sfx` now searches `wav/ANIMS/INVENT1.WAV` first (real asm path from `"%sINVENT1.WAV"` at asm line 78082). Confirmed in log: `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711`.
+- **Per-frame log suppressed**: `menu: render cursor at (X,Y) frame=N` was logged every frame. Now replaced with `menu: render cursor frame=N` emitted only when `frame_idx` changes (once per 100 ms animation tick).
+
 ## CIF image format
 
 - Format: proprietary compressed still-image format used for font atlases (`.CAR` + `.CIF` pairs) and backdrop sprites (`biganims/`, menus).
@@ -95,12 +107,17 @@ New module: `src/libsys/audio/wav.[ch]`.
 
 **Menu click hook (`src/menu.c`):**
 - `static wav_t sfx_click = {0}` — file-local cache.
-- `menu_load_click_sfx(game_path)` — static helper searches `wav/NORMAL/` in priority: `INVENT1.WAV` → `MENU.WAV` → `CLICK.WAV` → `SELECT.WAV` → first `.WAV` found. Logs chosen file.
+- `menu_load_click_sfx(game_path)` — static helper. Search order (pass 3 refinement):
+  1. `wav/ANIMS/INVENT1.WAV` — real asm path (`"%sINVENT1.WAV"` at asm line 78082, confirmed on disk at `bin/game/wav/ANIMS/INVENT1.WAV`).
+  2. `wav/NORMAL/INVENT1.WAV` — secondary location.
+  3. `wav/NORMAL/MENU.WAV`, `CLICK.WAV`, `SELECT.WAV`.
+  4. First `.WAV` in `wav/NORMAL/` (via popen ls).
+  Logs chosen file via `printf`.
 - `menu_init` calls `menu_load_click_sfx(state->game_path)`.
 - `menu_dispatch` calls `sfx_play(&sfx_click)` before any action routing.
 - `menu_release` calls `wav_free(&sfx_click)`.
 
-**Verified:** `wav_load: .../357.WAV -> 1ch/11025Hz/16bit/samples=9096` appears in `/tmp/dke.log` (357.WAV is the first alphabetical WAV; INVENT1.WAV absent from this dump).
+**Verified (pass 3 refinement):** `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711` appears in `/tmp/dke.log`. INVENT1.WAV is a 11025 Hz mono 16-bit WAV (click sound).
 
 ## Movie playback (SEB codec)
 

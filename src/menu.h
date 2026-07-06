@@ -76,15 +76,14 @@ typedef enum {
  */
 typedef struct {
     const c8    *label;       /* display label (port addition) */
-    i32          x;           /* hitbox left edge in screen pixels */
-    i32          y;           /* hitbox top edge in screen pixels */
-    i32          w;           /* hitbox width */
-    i32          h;           /* hitbox height */
+    i32          x;           /* hitbox left = GENICO blit dst_x  (asm +10) */
+    i32          y;           /* hitbox top  = GENICO blit dst_y  (asm +14) */
+    i32          w;           /* hitbox / icon width              (asm +8)  */
+    i32          h;           /* hitbox / icon height             (asm +C)  */
+    i32          src_x;       /* icon source x within GENICO sprite (asm +0) */
+    i32          src_y;       /* icon source y within GENICO sprite (asm +4) */
     menu_action_e action_code;
 } menu_item_t;
-
-/* Number of animated GENICO frames (GENICO_0.CIF .. GENICO_6.CIF) */
-#define MENU_GENICO_FRAME_COUNT 7
 
 /*
  * menu_t — live menu state.
@@ -105,18 +104,31 @@ typedef struct {
      * passed, so a spurious click at frame 0 doesn't trigger QUIT. */
     i32           startup_frames_remaining;
 
-    /* Pass 3: cursor sprites loaded in menu_init.
+    /* Cursor + hover-icon sprites loaded in menu_init.
      *
-     * cursor_bmap    — CURS128.CIF: the OS mouse pointer sprite.
-     *                  Drawn at (motion_x, motion_y) every frame.
-     * genico_frames  — GENICO_0..6.CIF: 7-frame animated hover icon.
-     *                  Cycled every 100 ms; drawn next to the hovered item.
+     * cursor_bmap  — CURS128.CIF: OS mouse pointer. Blit at (motion_x, motion_y).
+     * genico_bmap  — GENICO_<language_id>.CIF: single sprite sheet holding one
+     *                icon per menu item. Sub-rect (item.src_x, item.src_y, w, h)
+     *                is blitted at (item.x, item.y) for the hovered item only.
+     *                Mirrors asm image_load_compressed("DATAS>MENUS>GENICO_%01d.CIF")
+     *                with format arg = language_id. Not animated.
      *
-     * Either or both may be NULL if the CIF failed to load (graceful skip).
-     * Both are freed in menu_release.
+     * Either may be NULL if the CIF failed to load (graceful skip).
      */
-    bmap_t       *cursor_bmap;                          /* CURS128.CIF */
-    bmap_t       *genico_frames[MENU_GENICO_FRAME_COUNT]; /* GENICO_0..6.CIF */
+    bmap_t       *cursor_bmap;   /* CURS128.CIF */
+    bmap_t       *genico_bmap;   /* GENICO_<lang>.CIF */
+
+    /* Pass 3 refinement: language-specific menu overlay sprite.
+     *
+     * overlay_bmap — MENU_<lang>.CIF: full-size menu sprite with button artwork.
+     *                Loaded from DATAS>MENUS>MENU_<language_id>.CIF.
+     *                When non-NULL, this sprite IS the visual text — the plain
+     *                text label overlay is suppressed and the sprite is blitted
+     *                with index-0 transparency over the MENUGEN backdrop.
+     *                NULL if the CIF failed to load (falls back to text rendering).
+     *                Freed in menu_release_cursors.
+     */
+    bmap_t       *overlay_bmap;  /* MENU_<lang>.CIF menu sprite (buttons drawn as image) */
 } menu_t;
 
 /* -------------------------------------------------------------------------

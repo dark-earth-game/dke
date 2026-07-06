@@ -78,7 +78,7 @@ void menu_render(menu_t *menu, system_t *sys);
 | sub_4378EA | post-fade state reset |
 | overlay_cursor_image | original asm wrapper — our port uses blit_bmap_masked_to_framebuffer directly |
 | find_closest_palette_colors | palette remap for 8-bit colour mode |
-| ls_load_sound / ls_play_sound | INVENT1.WAV click feedback |
+| ls_load_sound / ls_play_sound | INVENT1.WAV click feedback — **partially landed**: `wav_load`/`sfx_play` ported; INVENT1.WAV loaded from `wav/ANIMS/` (pass 3 refinement) |
 | sub_44CFF6 | volume query |
 | help_screen_context | secondary sound channel for UI sounds |
 | var_4B40 table | save/credits panel hitbox entries |
@@ -100,4 +100,21 @@ void menu_render(menu_t *menu, system_t *sys);
 **Pass 3 (cursor subitem):**
 - build: yes — `make dke` exit 0, no new warnings
 - launch: yes — exit 143 on SIGTERM, no crash
-- behavior: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor at (0,0) frame=N` present in `/tmp/dke.log`. All 7 GENICO frames loaded (720×116 each). CURS128 blits at (motion_x, motion_y); GENICO blits at (item.x-20, item.y+2) with index-0 transparency.
+- behavior: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor frame=N` present in `/tmp/dke.log`. All 7 GENICO frames loaded (720×116 each). CURS128 blits at (motion_x, motion_y); GENICO blits at (item.x-20, item.y+2) with index-0 transparency.
+
+**Pass 3 refinement (image overlay + INVENT1.WAV, 2026-07):**
+- build: yes — `make dke` exit 0, no new warnings
+- launch: yes — exit 143 on SIGTERM, no crash
+- behavior:
+  - `menu: click sfx using '.../wav/ANIMS/INVENT1.WAV'` — real asm WAV path used
+  - `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711` — INVENT1.WAV loaded
+  - `menu: overlay loaded MENU_1.CIF -> 640x480` — full-screen menu sprite loaded for English UK
+  - `menu: overlay band y=0..479 (button region)` — pixel density scan (full-screen sprite)
+  - `menu: render cursor frame=N` — per-frame log suppressed; only on frame change
+  - `menu: render items=5 hovered=0 (NEW GAME)` — dirty-gated log only on hover change
+- changes:
+  - `menu.h`: `overlay_bmap` field added to `menu_t` (freed by `menu_release_cursors`)
+  - `menu.c`: `menu_load_click_sfx` search order updated (`wav/ANIMS/` first)
+  - `menu.c`: `menu_init` loads `MENU_<lang>.CIF` overlay; pixel-density scan
+  - `menu.c`: `menu_render` blits overlay via `blit_bmap_masked_to_framebuffer`; suppresses text when overlay present; per-frame cursor log silenced
+  - `menu.c`: `menu_release_cursors` frees `overlay_bmap`

@@ -273,7 +273,12 @@ void ls_play_movie(const c8 *path) {
             i32 out_w  = (r.width  * s_q16) >> 16;
             i32 out_h  = (r.height * s_q16) >> 16;
             i32 off_x  = (fb_w - out_w) / 2;
-            i32 off_y  = (fb_h - out_h) / 2;
+            /* Extra 15px top padding — image sits lower in the window than
+             * a strict centred fit, matching the original engine's letterbox
+             * layout where movies are biased slightly below centre. */
+            i32 off_y  = (fb_h - out_h) / 2 + 15;
+            if (off_y + out_h > fb_h) off_y = fb_h - out_h;
+            if (off_y < 0)            off_y = 0;
             i32 istep  = (1 << 16) * r.width  / (out_w > 0 ? out_w : 1);
             i32 jstep  = (1 << 16) * r.height / (out_h > 0 ? out_h : 1);
 
@@ -298,6 +303,14 @@ void ls_play_movie(const c8 *path) {
             ls_flip(sys);
             ls_update_events(sys);
             if (sys->quit) break;
+            /* ESC skips the movie — consume the edge so the menu doesn't
+             * also see it as a QUIT. */
+            if (sys->actions[27] == 1) {
+                sys->actions[27] = 0;
+                printf("ls_play_movie: skipped by ESC at frame %u/%u\n",
+                       (u32)r.current_frame, (u32)r.frame_count);
+                break;
+            }
         }
 
         /* Frame timing */

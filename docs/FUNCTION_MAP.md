@@ -14,7 +14,7 @@ Sorted by address.
 | — | — | `menu_init` | src/menu.c | ported | inits menu_t: state=MAIN, hovered=0, pending_trailer=0, fetches backdrop bmap+palette from game_init |
 | — | — | `menu_dispatch` | src/menu.c | partial | routes menu_action_e → QUIT state / pending_trailer / log stubs; called from mouse click and keyboard confirm paths |
 | — | — | `menu_update` | src/menu.c | partial | mouse hover (motion_x/y) + click (mouse_left==2) + keyboard nav (actions[38/40/13/27]); sub_43F7BD exact hitboxes TODO (pass 3) |
-| — | — | `menu_render` | src/menu.c | partial | blits MENUGEN backdrop; draws text labels (YELLOW=hovered); plays EADKE.CRH if pending_trailer; blits GENICO animated icon next to hovered item; blits CURS128 at (motion_x,motion_y) with mask_idx=0 transparency |
+| — | — | `menu_render` | src/menu.c | partial | blits MENUGEN backdrop; blits MENU_<lang>.CIF overlay (masked, index-0 transparent); skips text labels when overlay present (sprite IS the menu); plays EADKE.CRH if pending_trailer; blits GENICO animated icon next to hovered item; blits CURS128 at (motion_x,motion_y) with mask_idx=0 transparency; per-frame cursor log suppressed (emits only on frame_idx change) |
 | 0046091B | load_configuration | `load_configuration` | src/main.c | partial | ini parser broken (see [ROADMAP.md](ROADMAP.md) M0) |
 | 00460B6C | ls_main | `ls_main` | src/main.c | partial | main loop OK, many subsystem calls still commented out |
 | 0047CEBE | ls_init_bmap_ex | `ls_init_bmap_ex` | src/libsys/graphics/graphic.c | partial | raw-buffer path ported; DirectDraw surface-backed cases (bpp_flags 1/2/4/8) stubbed to raw alloc |

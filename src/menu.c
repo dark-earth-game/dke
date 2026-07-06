@@ -77,16 +77,24 @@ static wav_t sfx_click = {0};
  * full MENU_*.CIF image pipeline lands.
  * ------------------------------------------------------------------------- */
 
-/* Number of items in main menu */
-#define MAIN_MENU_ITEM_COUNT 5
+/* Number of items in main menu. Matches var_4AE0[8] entries used by asm — we
+ * expose the 6 primary buttons (idx 0..5). Entries 6/7 (CREDITS panel) are
+ * TODO — they require sub-menu wiring. */
+#define MAIN_MENU_ITEM_COUNT 6
 
+/* Real hitboxes + GENICO sub-rects decoded from process_mainmenu_437EB7
+ * prologue (asm 77770..77834). Each var_4AE0[N] stores:
+ *   +0 src_x, +4 src_y, +8 w, +C h, +10 dst_x, +14 dst_y, +1C action
+ * Blit dst equals hitbox origin; GENICO icon (76×77 for buttons 0..5) is drawn
+ * on top of the MENU_<lang>.CIF backdrop button at the same position. */
 static const menu_item_t MAIN_MENU_ITEMS[MAIN_MENU_ITEM_COUNT] = {
-    /* label        x    y    w    h    action               */
-    { "NEW GAME",  240, 180, 200, 30,  MENU_ACTION_NEW_GAME },
-    { "LOAD",      240, 220, 200, 30,  MENU_ACTION_LOAD     },
-    { "OPTIONS",   240, 260, 200, 30,  MENU_ACTION_OPTIONS  },
-    { "TRAILER",   240, 300, 200, 30,  MENU_ACTION_TRAILER  },
-    { "QUIT",      240, 340, 200, 30,  MENU_ACTION_QUIT     },
+    /* label        x    y    w   h  sx   sy  action               */
+    { "NEW GAME",  111,  20,  76, 77,   0, 0, MENU_ACTION_NEW_GAME },
+    { "QUIT",      112, 137,  76, 77,  77, 0, MENU_ACTION_QUIT     },
+    { "LOAD",      111, 252,  76, 77, 154, 0, MENU_ACTION_LOAD     },
+    { "OPTIONS",   453,  20,  76, 77, 231, 0, MENU_ACTION_OPTIONS  },
+    { "SAVE",      453, 136,  76, 77, 308, 0, MENU_ACTION_SAVE     },
+    { "TRAILER",   452, 251,  76, 77, 385, 0, MENU_ACTION_TRAILER  },
 };
 
 /*
@@ -106,6 +114,51 @@ static const menu_item_t MAIN_MENU_ITEMS[MAIN_MENU_ITEM_COUNT] = {
 static i32 menu_item_hit(const menu_item_t *item, i32 mx, i32 my) {
     return (mx >= item->x && mx < item->x + item->w &&
             my >= item->y && my < item->y + item->h) ? 1 : 0;
+}
+
+/*
+ * blit_bmap_subrect_masked — copy an (sw, sh) rect from src starting at
+ * (sx, sy) to the framebuffer at (dx, dy), skipping pixels whose palette
+ * index equals mask_idx.  Mirrors the overlay_cursor_image → ls_bit_move
+ * path in the original asm, which takes a source sub-rectangle rather than
+ * the whole bmap. The existing blit_bmap_masked_to_framebuffer draws the
+ * entire src bmap; GENICO packs several icons into one sheet, so we need
+ * per-item sub-rects.
+ */
+static void blit_bmap_subrect_masked(u32 *fb, i32 fb_w, i32 fb_h,
+                                     const bmap_t *src, const u8 *palette,
+                                     i32 sx, i32 sy, i32 sw, i32 sh,
+                                     i32 dx, i32 dy, u8 mask_idx) {
+    if (!fb || !src || !src->pixels || !palette) return;
+
+    i32 src_w = (i32)src->width;
+    i32 src_h = src->height;
+    if (sx < 0) { sw += sx; dx -= sx; sx = 0; }
+    if (sy < 0) { sh += sy; dy -= sy; sy = 0; }
+    if (sx + sw > src_w) sw = src_w - sx;
+    if (sy + sh > src_h) sh = src_h - sy;
+    if (sw <= 0 || sh <= 0) return;
+
+    if (dx < 0) { sw += dx; sx -= dx; dx = 0; }
+    if (dy < 0) { sh += dy; sy -= dy; dy = 0; }
+    if (dx + sw > fb_w) sw = fb_w - dx;
+    if (dy + sh > fb_h) sh = fb_h - dy;
+    if (sw <= 0 || sh <= 0) return;
+
+    for (i32 row = 0; row < sh; row++) {
+        const u8 *srow = src->pixels + (sy + row) * src_w + sx;
+        u32      *drow = fb + (dy + row) * fb_w + dx;
+        for (i32 col = 0; col < sw; col++) {
+            u8 idx = srow[col];
+            if (idx == mask_idx) continue;
+            u8 r = palette[idx * 3 + 0];
+            u8 g = palette[idx * 3 + 1];
+            u8 b = palette[idx * 3 + 2];
+            /* Byte order matches blit_bmap_to_framebuffer: byte0=R, byte1=G,
+             * byte2=B — NSBitmapImageRep expects R in low byte. */
+            drow[col] = 0xFF000000u | ((u32)b << 16) | ((u32)g << 8) | (u32)r;
+        }
+    }
 }
 
 /*
@@ -165,26 +218,34 @@ static void menu_screenshot(system_t *sys) {
 /*
  * menu_load_click_sfx — resolve and load the menu click WAV.
  *
- * Search order (game_path/wav/NORMAL/):
- *   1. INVENT1.WAV  — original game click sound
- *   2. MENU.WAV
- *   3. CLICK.WAV
- *   4. SELECT.WAV
- *   5. First .WAV found in directory (alphabetical order from ls)
+ * Search order:
+ *   1. wav/ANIMS/INVENT1.WAV — real game path confirmed from asm string "%sINVENT1.WAV"
+ *                               and on-disk at bin/game/wav/ANIMS/INVENT1.WAV
+ *   2. wav/NORMAL/INVENT1.WAV — secondary location searched in original engine
+ *   3. wav/NORMAL/MENU.WAV
+ *   4. wav/NORMAL/CLICK.WAV
+ *   5. wav/NORMAL/SELECT.WAV
+ *   6. First .WAV found in wav/NORMAL/ (alphabetical order from ls)
  *
  * Logs which file was chosen. No-ops if none found.
  */
 static void menu_load_click_sfx(const c8 *game_path) {
-    /* Priority list of preferred filenames. */
-    static const c8 *preferred[] = {
-        "INVENT1.WAV", "MENU.WAV", "CLICK.WAV", "SELECT.WAV", NULL
+    /* Priority list: subdir/filename pairs. */
+    static const struct { const c8 *subdir; const c8 *fname; } candidates[] = {
+        { "wav/ANIMS",  "INVENT1.WAV" },   /* real asm path — "%sINVENT1.WAV" in wav/ANIMS */
+        { "wav/NORMAL", "INVENT1.WAV" },   /* secondary location */
+        { "wav/NORMAL", "MENU.WAV"    },
+        { "wav/NORMAL", "CLICK.WAV"   },
+        { "wav/NORMAL", "SELECT.WAV"  },
+        { NULL, NULL }
     };
 
     c8 path[512];
 
     /* Try priority list first. */
-    for (i32 i = 0; preferred[i]; i++) {
-        snprintf(path, sizeof(path), "%s/wav/NORMAL/%s", game_path, preferred[i]);
+    for (i32 i = 0; candidates[i].subdir; i++) {
+        snprintf(path, sizeof(path), "%s/%s/%s",
+                 game_path, candidates[i].subdir, candidates[i].fname);
         if (ls_exists(path)) {
             printf("menu: click sfx using '%s'\n", path);
             if (wav_load(&sfx_click, path)) return;
@@ -259,20 +320,75 @@ void menu_init(menu_t *menu) {
         }
     }
 
-    /* GENICO_0..6.CIF — 7-frame animated hover icon.
-     * Virtual path pattern mirrors asm "DATAS>MENUS>GENICO_%01d.GIF". */
-    i32 genico_loaded = 0;
-    for (i32 fi = 0; fi < MENU_GENICO_FRAME_COUNT; fi++) {
-        c8 vpath[64];
-        snprintf(vpath, sizeof(vpath), "DATAS>MENUS>GENICO_%d.GIF", fi);
-        menu->genico_frames[fi] = game_init_load_cursor(vpath);
-        if (menu->genico_frames[fi]) {
-            genico_loaded++;
+    /* GENICO_<language_id>.CIF — single hover-icon sprite sheet.
+     * Asm: image_load_compressed(sprintf("DATAS>MENUS>GENICO_%01d.GIF", language_id)).
+     * NOT animation frames — GENICO_0..6.CIF are language variants (0..6).
+     * Icons for each menu button are sub-rects within the single sheet
+     * (see MAIN_MENU_ITEMS.src_x/src_y). */
+    menu->genico_bmap = NULL;
+    {
+        i32 lang = (state && state->language_id > 0) ? state->language_id : 1;
+        c8 gpath[64];
+        snprintf(gpath, sizeof(gpath), "DATAS>MENUS>GENICO_%d.GIF", lang);
+        bmap_t *gb = game_init_load_cursor(gpath);
+        if (gb) {
+            menu->genico_bmap = gb;
+            print("menu: GENICO loaded GENICO_%d.CIF -> %dx%d\n",
+                  lang, (i32)gb->width, gb->height);
         } else {
-            print("menu: GENICO_%d.CIF load failed\n", fi);
+            print("menu: GENICO_%d.CIF load failed — hover icon disabled\n", lang);
         }
     }
-    print("menu: GENICO frames loaded %d/%d\n", genico_loaded, MENU_GENICO_FRAME_COUNT);
+
+    /* ---- Pass 3 refinement: load language-specific menu overlay sprite ----
+     *
+     * Asm: image_load_compressed("DATAS>MENUS>MENU_%01d.CIF") → var_4C78.
+     * Language id from state->language_id (0 = default/French, 1 = English UK).
+     * Default to 1 if language_id is 0 so we get a real sprite.
+     * Gracefully skip on failure — falls back to text overlay.
+     */
+    menu->overlay_bmap = NULL;
+    {
+        i32 lang = (state && state->language_id > 0) ? state->language_id : 1;
+        c8 ovpath[64];
+        snprintf(ovpath, sizeof(ovpath), "DATAS>MENUS>MENU_%d.GIF", lang);
+        bmap_t *ob = game_init_load_cursor(ovpath);
+        if (ob) {
+            menu->overlay_bmap = ob;
+            print("menu: overlay loaded MENU_%d.CIF -> %dx%d\n",
+                  lang, (i32)ob->width, ob->height);
+
+            /* Quick pixel-density scan: log row ranges where non-zero pixels are
+             * dense — these correspond to menu-button text rows in the sprite.
+             * Threshold: >10% of row width must be non-zero. */
+            if (ob->pixels && ob->width > 0 && ob->height > 0) {
+                i32 threshold = (i32)(ob->width / 10);
+                i32 in_band = 0;
+                i32 band_start = 0;
+                for (i32 row = 0; row < ob->height; row++) {
+                    i32 nz = 0;
+                    const u8 *rowp = ob->pixels + row * (i32)ob->width;
+                    for (i32 col = 0; col < (i32)ob->width; col++) {
+                        if (rowp[col] != 0) nz++;
+                    }
+                    if (nz > threshold && !in_band) {
+                        in_band = 1;
+                        band_start = row;
+                    } else if (nz <= threshold && in_band) {
+                        in_band = 0;
+                        print("menu: overlay band y=%d..%d (button region)\n",
+                              band_start, row - 1);
+                    }
+                }
+                if (in_band) {
+                    print("menu: overlay band y=%d..%d (button region)\n",
+                          band_start, ob->height - 1);
+                }
+            }
+        } else {
+            print("menu: overlay MENU_%d.CIF load failed — using text fallback\n", lang);
+        }
+    }
 
     print("menu: init state=MAIN hovered=%d backdrop_bmap=%p palette=%p\n",
           menu->hovered_item,
@@ -306,16 +422,22 @@ static void menu_release_cursors(menu_t *menu) {
         free(menu->cursor_bmap);
         menu->cursor_bmap = NULL;
     }
-    for (i32 fi = 0; fi < MENU_GENICO_FRAME_COUNT; fi++) {
-        bmap_t *gf = menu->genico_frames[fi];
-        if (gf) {
-            if (gf->owns_buffer && gf->pixels)
-                free(gf->pixels);
-            if (gf->owns_palette && gf->palette)
-                free(gf->palette);
-            free(gf);
-            menu->genico_frames[fi] = NULL;
-        }
+    if (menu->genico_bmap) {
+        if (menu->genico_bmap->owns_buffer && menu->genico_bmap->pixels)
+            free(menu->genico_bmap->pixels);
+        if (menu->genico_bmap->owns_palette && menu->genico_bmap->palette)
+            free(menu->genico_bmap->palette);
+        free(menu->genico_bmap);
+        menu->genico_bmap = NULL;
+    }
+    /* Free overlay sprite (pass 3 refinement) */
+    if (menu->overlay_bmap) {
+        if (menu->overlay_bmap->owns_buffer && menu->overlay_bmap->pixels)
+            free(menu->overlay_bmap->pixels);
+        if (menu->overlay_bmap->owns_palette && menu->overlay_bmap->palette)
+            free(menu->overlay_bmap->palette);
+        free(menu->overlay_bmap);
+        menu->overlay_bmap = NULL;
     }
 }
 
@@ -521,43 +643,65 @@ void menu_render(menu_t *menu, system_t *sys) {
                                  off_x, off_y);
     }
 
-    /* Text overlay — iterate MAIN_MENU_ITEMS, draw each label.
-     * Highlighted item renders in YELLOW, others in WHITE.
-     * TODO: replace with sprite blit from MENU_%01d.CIF when image pipeline
-     *       lands (sub_4374B0 / sub_4375DF sprite animator). */
-    for (i32 i = 0; i < MAIN_MENU_ITEM_COUNT; i++) {
-        const menu_item_t *item = &MAIN_MENU_ITEMS[i];
-        u32 colour = (i == menu->hovered_item) ? COLOR_YELLOW : COLOR_WHITE;
-        draw_text_at(font_handle, item->x, item->y, item->label, colour);
-    }
-
-    /* ---- Pass 3: cursor sprite rendering ---- */
-
-    /* Animated GENICO hover icon — draw next to currently hovered item.
-     * Frame advances every 100 ms via sys->timer.tick.
-     * Positioned at approx (item.x - 20, item.y + 2) — 20 px left of text
-     * so the icon sits beside the label without overlapping it.
-     * Only renders when hovered_item >= 0 and at least frame 0 loaded. */
-    i32 frame_idx = (i32)((sys->timer.tick / 100u) % (u32)MENU_GENICO_FRAME_COUNT);
-    if (menu->hovered_item >= 0 && menu->hovered_item < MAIN_MENU_ITEM_COUNT) {
-        bmap_t *gf = menu->genico_frames[frame_idx];
-        if (gf && gf->pixels) {
-            const u8 *pal = gf->palette ? gf->palette : menu->backdrop_palette;
-            if (pal) {
-                const menu_item_t *hitem = &MAIN_MENU_ITEMS[menu->hovered_item];
-                i32 gx = hitem->x - 20;   /* 16–20 px left of text baseline */
-                i32 gy = hitem->y + 2;    /* align with text top + 2 px */
-                blit_bmap_masked_to_framebuffer(fb, fb_w, fb_h,
-                                                gf, pal,
-                                                gx, gy, 0 /* index 0 = transparent */);
-                print("menu: render genico frame=%d at (%d,%d)\n", frame_idx, gx, gy);
-            }
+    /* ---- Pass 3 refinement: blit language-specific menu overlay sprite ----
+     *
+     * Mirrors: draw_image(var_4C78, game_context) in the asm main loop.
+     * The overlay is blitted with index-0 transparency over the MENUGEN backdrop.
+     * When the overlay is present it IS the visual menu — suppress plain text. */
+    if (menu->overlay_bmap && menu->overlay_bmap->pixels) {
+        const u8 *opal = menu->overlay_bmap->palette
+                         ? menu->overlay_bmap->palette
+                         : menu->backdrop_palette;
+        if (opal) {
+            blit_bmap_masked_to_framebuffer(fb, fb_w, fb_h,
+                                             menu->overlay_bmap, opal,
+                                             0, 0, 0 /* index 0 = transparent */);
         }
     }
 
-    /* Raw mouse cursor — draw CURS128 at (motion_x, motion_y).
-     * Hotspot: top-left = (0,0) for a pointer arrow shape.
-     * Skips pixel index 0 (transparent background). */
+    /* Text overlay — rendered only when the real sprite overlay is absent.
+     * When overlay_bmap is loaded, the sprite IS the text so we skip labels.
+     * Highlighted item renders in YELLOW, others in WHITE (fallback only). */
+    if (!menu->overlay_bmap) {
+        for (i32 i = 0; i < MAIN_MENU_ITEM_COUNT; i++) {
+            const menu_item_t *item = &MAIN_MENU_ITEMS[i];
+            u32 colour = (i == menu->hovered_item) ? COLOR_YELLOW : COLOR_WHITE;
+            draw_text_at(font_handle, item->x, item->y, item->label, colour);
+        }
+    }
+
+    /* GENICO hover icon — blit the sub-rect that corresponds to the currently
+     * hovered menu button. Mirrors asm process_mainmenu_437EB7+B?? →
+     * overlay_cursor_image(genico, ctx, src_x, src_y, src_x+w, src_y+h,
+     *                      dst_x, dst_y). Only the hovered item is drawn.
+     * No animation — GENICO is a single sprite sheet, not a frame strip. */
+    /* Each CIF carries its own 768-byte palette; since we render at 32bpp we
+     * don't need find_closest_palette_colors — use the sprite's own palette
+     * so its authored colours land in the framebuffer verbatim.  Fall back
+     * to the backdrop palette only when the sprite lacks one. */
+    if (menu->hovered_item >= 0 &&
+        menu->hovered_item < MAIN_MENU_ITEM_COUNT &&
+        menu->genico_bmap && menu->genico_bmap->pixels) {
+        const menu_item_t *hitem = &MAIN_MENU_ITEMS[menu->hovered_item];
+        const u8 *pal = menu->genico_bmap->palette
+                        ? menu->genico_bmap->palette
+                        : menu->backdrop_palette;
+        if (pal) {
+            blit_bmap_subrect_masked(fb, fb_w, fb_h,
+                                     menu->genico_bmap, pal,
+                                     hitem->src_x, hitem->src_y,
+                                     hitem->w, hitem->h,
+                                     hitem->x, hitem->y,
+                                     0 /* index 0 = transparent */);
+        }
+    }
+
+    /* Mouse cursor — CURS128.CIF is a 65×35 sheet holding TWO cursor shapes
+     * side-by-side. Asm process_mainmenu_437EB7+2351/+237E picks the crop:
+     *   var_4AF0 != 0 (hovering a menu item) → src rect (0, 0, 29, 32)
+     *   var_4AF0 == 0 (idle)                 → src rect (30, 0, 32, 32)
+     * Previously we blit the entire sheet, so both cursors rendered as one
+     * garbled sprite next to the pointer.  Blit only the current shape. */
     i32 mx = sys->motion_x;
     i32 my = sys->motion_y;
     if (menu->cursor_bmap && menu->cursor_bmap->pixels) {
@@ -565,14 +709,20 @@ void menu_render(menu_t *menu, system_t *sys) {
                          ? menu->cursor_bmap->palette
                          : menu->backdrop_palette;
         if (cpal) {
-            blit_bmap_masked_to_framebuffer(fb, fb_w, fb_h,
-                                             menu->cursor_bmap, cpal,
-                                             mx, my, 0 /* index 0 = transparent */);
-            print("menu: render cursor at (%d,%d) frame=%d\n", mx, my, frame_idx);
+            i32 cur_sx, cur_sw;
+            if (menu->hovered_item >= 0) {
+                cur_sx = 0;  cur_sw = 29;   /* "over-item" cursor */
+            } else {
+                cur_sx = 30; cur_sw = 32;   /* "idle" cursor */
+            }
+            blit_bmap_subrect_masked(fb, fb_w, fb_h,
+                                     menu->cursor_bmap, cpal,
+                                     cur_sx, 0, cur_sw, 32,
+                                     mx, my, 0 /* index 0 = transparent */);
         }
     }
 
-    /* Log render once per dirty cycle */
+    /* Log render once per dirty cycle (hover state change gate) */
     if (menu->dirty) {
         print("menu: render items=%d hovered=%d (%s)\n",
               MAIN_MENU_ITEM_COUNT, menu->hovered_item,
