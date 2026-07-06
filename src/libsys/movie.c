@@ -6,6 +6,8 @@
 #include "movie.h"
 #include "movie_decoder.h"
 #include "system.h"
+#include "file_system.h"
+#include "audio/audio.h"
 #include "../state.h"
 
 /* seb_* sub-allocator state (originals: _allocation_size, _number_allocations,
@@ -166,18 +168,27 @@ void ls_play_movie(const c8 *path) {
         return;
     }
 
-    /* Build resolved path */
+    /* Build resolved path. Accepts:
+     *   "HDISK:>EARTH>sc>SC08.CRH" (LIBSYS virtual — original engine style)
+     *   "sc/SC08.CRH"              (relative from game_path)
+     *   "SC08.CRH"                 (bare name — assume in sc/)
+     *   absolute host path         (pass through)
+     */
     c8 resolved[512];
-    b8 has_separator = false;
+    const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+    b8 is_virtual = (strchr(path, ':') && strchr(path, '>')) != 0;
+    b8 has_sep    = false;
     for (const c8 *p = path; *p; p++) {
-        if (*p == '/' || *p == '\\') { has_separator = true; break; }
+        if (*p == '/' || *p == '\\') { has_sep = true; break; }
     }
-    if (has_separator) {
-        /* already rooted */
-        snprintf(resolved, sizeof(resolved), "%s", path);
+
+    if (is_virtual || path[0] == '/' || has_sep) {
+        if (!ls_resolve_path(gp, path, resolved, (i32)sizeof(resolved))) {
+            printf("ls_play_movie: path overflow: %s\n", path);
+            return;
+        }
     } else {
-        /* prepend game_path/sc/ */
-        const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+        /* Bare filename — assume cutscene folder. */
         snprintf(resolved, sizeof(resolved), "%s/sc/%s", gp, path);
     }
 
@@ -193,18 +204,50 @@ void ls_play_movie(const c8 *path) {
     u8  *rgb_buf  = (u8 *)malloc((size_t)(r.width * r.height * 3));
     u32 *pix_buf  = (u32 *)malloc((size_t)(r.width * r.height) * sizeof(u32));
 
+    /* Audio: raw CRH_A_BYTES block + decoded i16 PCM */
+    b8   do_audio      = (state && state->audio_enabled);
+    i32  ach           = (r.channels > 0 && r.channels <= 2) ? (i32)r.channels : 2;
+    /* samples_per_ch = (CRH_A_BYTES - 2*ach) / ach  (seed bytes excluded) */
+    i32  samples_per_ch = (CRH_A_BYTES - 2 * ach) / ach;
+    /* pcm_frames = 1 (seed) + samples_per_ch; output = frames * channels i16 */
+    i32  pcm_buf_samples = (1 + samples_per_ch) * ach;
+    u8  *audio_raw  = do_audio ? (u8 *)malloc(CRH_A_BYTES) : NULL;
+    i16 *audio_pcm  = do_audio ? (i16 *)malloc((size_t)pcm_buf_samples * sizeof(i16)) : NULL;
+
+    if (do_audio && (!audio_raw || !audio_pcm)) {
+        printf("ls_play_movie: audio buffer alloc failed — disabling audio for this movie\n");
+        free(audio_raw); free(audio_pcm);
+        audio_raw = NULL; audio_pcm = NULL;
+        do_audio = false;
+    }
+
     if (!rgb_buf || !pix_buf) {
         printf("ls_play_movie: out of memory (rgb=%p pix=%p)\n", (void*)rgb_buf, (void*)pix_buf);
-        free(rgb_buf); free(pix_buf);
+        free(rgb_buf); free(pix_buf); free(audio_raw); free(audio_pcm);
         crh_close(&r);
         return;
     }
 
     system_t *sys      = state ? &state->system : NULL;
     graphic_t *graphic = state ? &state->graphic : NULL;
+    audio_t   *audio   = state ? &state->audio   : NULL;
     u32 frame_ms       = (r.fps > 0) ? (1000u / r.fps) : 66u;
 
-    while (crh_next_frame(&r, rgb_buf)) {
+    /* Clear letterbox bars once at start of playback. Scale loop overwrites
+     * the fitted region every frame; the black bars stay untouched. */
+    if (graphic && graphic->front_buffer) {
+        memset(graphic->front_buffer, 0,
+               (size_t)graphic->width * graphic->height * sizeof(u32));
+    }
+
+    while (crh_next_frame_ex(&r, rgb_buf, do_audio ? audio_raw : NULL)) {
+        /* Decode and push audio for this frame */
+        if (do_audio && audio && audio_raw && audio_pcm) {
+            i32 pcm_bytes = crh_decode_audio(audio_raw, CRH_A_BYTES, ach, audio_pcm);
+            if (pcm_bytes > 0) {
+                ls_audio_push(audio, audio_pcm, pcm_bytes);
+            }
+        }
         /* Convert RGB triples to u32 XRGB */
         i32 n_pixels = r.width * r.height;
         for (i32 i = 0; i < n_pixels; i++) {
@@ -214,25 +257,36 @@ void ls_play_movie(const c8 *path) {
             pix_buf[i] = 0xFF000000u | ((u32)rr << 16) | ((u32)gg << 8) | (u32)bb;
         }
 
-        /* Copy into front_buffer if we have a graphics context */
-        if (graphic && graphic->front_buffer) {
+        /* Scale movie into front_buffer preserving aspect ratio.
+         * Nearest-neighbour up/downscale, centred. For 320x200 in 640x480
+         * this picks the largest integer factor that fits both dims (2×),
+         * yielding a 640x400 image centred with 40px vertical margin. */
+        if (graphic && graphic->front_buffer && r.width > 0 && r.height > 0) {
             i32 fb_w = graphic->width;
             i32 fb_h = graphic->height;
 
-            if (r.width > fb_w || r.height > fb_h) {
-                /* Movie bigger than window — log once per movie, skip blit */
-                static b8 warned = false;
-                if (!warned) {
-                    printf("ls_play_movie: movie %dx%d > framebuffer %dx%d — skipping blit\n",
-                           r.width, r.height, fb_w, fb_h);
-                    warned = true;
-                }
-            } else {
-                /* Copy top-left r.width × r.height into front_buffer */
-                for (i32 row = 0; row < r.height; row++) {
-                    u32 *dst = graphic->front_buffer + row * fb_w;
-                    u32 *src = pix_buf + row * r.width;
-                    memcpy(dst, src, (size_t)r.width * sizeof(u32));
+            /* Fractional fit — pick min of fb_w/w and fb_h/h in fixed 16.16. */
+            i32 sx_q16 = (fb_w << 16) / r.width;
+            i32 sy_q16 = (fb_h << 16) / r.height;
+            i32 s_q16  = sx_q16 < sy_q16 ? sx_q16 : sy_q16;
+            i32 out_w  = (r.width  * s_q16) >> 16;
+            i32 out_h  = (r.height * s_q16) >> 16;
+            i32 off_x  = (fb_w - out_w) / 2;
+            i32 off_y  = (fb_h - out_h) / 2;
+            i32 istep  = (1 << 16) * r.width  / (out_w > 0 ? out_w : 1);
+            i32 jstep  = (1 << 16) * r.height / (out_h > 0 ? out_h : 1);
+
+            for (i32 dy = 0; dy < out_h; dy++) {
+                i32 sy = (dy * jstep) >> 16;
+                if (sy >= r.height) sy = r.height - 1;
+                u32 *src_row = pix_buf + sy * r.width;
+                u32 *dst_row = graphic->front_buffer + (off_y + dy) * fb_w + off_x;
+                i32 sx_frac = 0;
+                for (i32 dx = 0; dx < out_w; dx++) {
+                    i32 sx = sx_frac >> 16;
+                    if (sx >= r.width) sx = r.width - 1;
+                    dst_row[dx] = src_row[sx];
+                    sx_frac += istep;
                 }
             }
         }
@@ -262,6 +316,8 @@ void ls_play_movie(const c8 *path) {
 
     free(rgb_buf);
     free(pix_buf);
+    free(audio_raw);
+    free(audio_pcm);
     crh_close(&r);
     printf("ls_play_movie: done (%u frames)\n", (u32)r.current_frame);
 }

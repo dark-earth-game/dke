@@ -39,6 +39,9 @@ typedef struct {
 typedef struct {
     game_type_e game_type;
     b8 ls_debug_enabled;
+    b8 ls_master_enabled;   /* LIBSYS.Master — mirrors dword_55C768 source flag */
+    b8 ls_info_enabled;     /* LIBSYS.Info   — mirrors dword_55C760 source flag */
+    i32 ls_lang_id;         /* system language LCID (GetSystemDefaultLangID & 0x3FF) */
     b8 debug_enabled;
     b8 is_demo;
     b8 use_key;

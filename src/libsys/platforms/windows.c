@@ -4,6 +4,7 @@
 
 #include "../system.h"
 #include "../common.h"
+#include "../audio/audio.h"
 
 
 static HWND window;
@@ -159,4 +160,14 @@ void ls_flip(system_t *system) {
 
 void ls_release(system_t *system) {
     free(surface);
+}
+
+/* Audio platform stubs — WASAPI not implemented */
+b8   ls_platform_audio_open(i32 sr, i32 ch, i32 bd)   { (void)sr; (void)ch; (void)bd; return true; }
+i32  ls_platform_audio_push(const i16 *p, i32 n)      { (void)p; return n; }
+void ls_platform_audio_close(void)                    { }
+
+/* Language ID — mirrors GetSystemDefaultLangID() used in sub_487E30 */
+unsigned short ls_platform_get_lang_id(void) {
+    return GetSystemDefaultLangID();
 }

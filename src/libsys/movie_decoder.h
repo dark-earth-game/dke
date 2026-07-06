@@ -91,3 +91,37 @@ b8   crh_next_frame(crh_reader_t *r, u8 *rgb_out);
  * Safe to call even if crh_open failed (checks fp != NULL).
  */
 void crh_close(crh_reader_t *r);
+
+/*
+ * crh_next_frame_ex — decode the next frame into rgb_out.
+ * If audio_out is non-NULL, the raw CRH_A_BYTES audio block is copied there
+ * instead of being skipped.  Caller must provide a buffer of at least
+ * CRH_A_BYTES bytes.  Pass NULL to skip (identical to crh_next_frame).
+ * Returns true if a frame was decoded, false on EOF or error.
+ */
+b8   crh_next_frame_ex(crh_reader_t *r, u8 *rgb_out, u8 *audio_out);
+
+/*
+ * crh_decode_audio — port of Python decode_audio_block.
+ *
+ * Decodes a raw CRH audio block (CRH_A_BYTES bytes) to signed 16-bit PCM.
+ *
+ * Encoding:
+ *   Head: channels × i16 LE seed values → emitted as first sample per channel.
+ *   Remainder: interleaved per-channel bytes.
+ *     b = next byte for channel ch.
+ *     step  = (b & 1) ? 16 : 512   (LSB=1 → FINE_STEP, LSB=0 → COARSE_STEP)
+ *     delta = sign7(b >> 1) * step
+ *     sign7(v): (v & 0x40) ? v - 128 : v
+ *     accumulate prev[ch] += delta, clamp to i16 range, emit.
+ *
+ * raw     — pointer to raw audio block (CRH_A_BYTES bytes)
+ * raw_len — number of valid bytes in raw (pass CRH_A_BYTES)
+ * channels — 1 or 2 (taken from crh_reader_t.channels)
+ * dst     — output buffer for interleaved i16 PCM samples.
+ *           Must be sized for: channels * (1 + samples_per_ch) * sizeof(i16)
+ *           where samples_per_ch = max(0, raw_len - 2*channels) / max(1, channels)
+ *
+ * Returns total bytes written to dst.
+ */
+i32  crh_decode_audio(const u8 *raw, i32 raw_len, i32 channels, i16 *dst);

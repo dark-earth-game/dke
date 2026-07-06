@@ -497,14 +497,67 @@ b8 crh_open(crh_reader_t *r, const c8 *path) {
 }
 
 /* -------------------------------------------------------------------------
- * crh_next_frame — decode one frame into rgb_out
+ * crh_decode_audio — port of Python decode_audio_block
+ * Returns bytes written to dst.
  * ------------------------------------------------------------------------- */
-b8 crh_next_frame(crh_reader_t *r, u8 *rgb_out) {
+i32 crh_decode_audio(const u8 *raw, i32 raw_len, i32 channels, i16 *dst) {
+    if (!raw || !dst || channels <= 0 || raw_len < 2 * channels) return 0;
+
+    /* Read channel seed values (i16 LE) from head */
+    i32 prev[2] = {0, 0};  /* supports up to 2 channels */
+    i32 ch_clamp = channels > 2 ? 2 : channels;
+    for (i32 ch = 0; ch < ch_clamp; ch++) {
+        i32 byte_pos = ch * 2;
+        i16 seed = (i16)((u16)raw[byte_pos] | ((u16)raw[byte_pos + 1] << 8));
+        prev[ch] = (i32)seed;
+    }
+
+    /* Emit seed samples (interleaved) */
+    i32 out_idx = 0;
+    for (i32 ch = 0; ch < ch_clamp; ch++) {
+        dst[out_idx++] = (i16)prev[ch];
+    }
+
+    /* Decode remaining bytes — interleaved per channel */
+    i32 data_start = ch_clamp * 2;
+    i32 data_len   = raw_len - data_start;
+    i32 samples_per_ch = (data_len > 0) ? (data_len / ch_clamp) : 0;
+
+    for (i32 s = 0; s < samples_per_ch; s++) {
+        for (i32 ch = 0; ch < ch_clamp; ch++) {
+            i32 byte_pos = data_start + s * ch_clamp + ch;
+            if (byte_pos >= raw_len) break;
+            u8 b = raw[byte_pos];
+            /* step: LSB=1 → FINE_STEP=16, LSB=0 → COARSE_STEP=512 */
+            i32 step  = (b & 1) ? 16 : 512;
+            /* sign7: interpret bits [7:1] as 7-bit signed */
+            i32 sv    = (i32)(b >> 1);
+            i32 delta = ((sv & 0x40) ? sv - 128 : sv) * step;
+            i32 val   = prev[ch] + delta;
+            /* clamp to i16 range */
+            if (val >  32767) val =  32767;
+            if (val < -32768) val = -32768;
+            prev[ch] = val;
+            dst[out_idx++] = (i16)val;
+        }
+    }
+
+    return out_idx * (i32)sizeof(i16);
+}
+
+/* -------------------------------------------------------------------------
+ * crh_next_frame_ex — decode one frame; optionally capture raw audio block
+ * ------------------------------------------------------------------------- */
+b8 crh_next_frame_ex(crh_reader_t *r, u8 *rgb_out, u8 *audio_out) {
     if (!r->fp || !rgb_out) return false;
     if (r->current_frame >= r->frame_count) return false;
 
-    /* Skip audio block (TODO: decode and stream when audio is wired) */
-    if (fseek(r->fp, CRH_A_BYTES, SEEK_CUR) != 0) return false;
+    /* Read or skip the audio block */
+    if (audio_out) {
+        if (fread(audio_out, 1, CRH_A_BYTES, r->fp) != CRH_A_BYTES) return false;
+    } else {
+        if (fseek(r->fp, CRH_A_BYTES, SEEK_CUR) != 0) return false;
+    }
 
     /* Read 16-byte video header */
     u8 h16[16];
@@ -584,6 +637,13 @@ b8 crh_next_frame(crh_reader_t *r, u8 *rgb_out) {
 
     if (ok) r->current_frame++;
     return ok;
+}
+
+/* -------------------------------------------------------------------------
+ * crh_next_frame — wrapper: skip audio block, decode video
+ * ------------------------------------------------------------------------- */
+b8 crh_next_frame(crh_reader_t *r, u8 *rgb_out) {
+    return crh_next_frame_ex(r, rgb_out, NULL);
 }
 
 /* -------------------------------------------------------------------------

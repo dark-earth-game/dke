@@ -1,5 +1,6 @@
 #include <sys/stat.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "file_system.h"
@@ -35,6 +36,42 @@ inline void ls_seek(FILE* file, i32 offset, i32 origin) {
 // read number of bytes
 inline void ls_read_buffer(FILE* file, void* buffer, i32 size) {
     fread(buffer, size, 1, file);
+}
+
+c8* ls_resolve_path(const c8 *base_path, const c8 *vpath, c8 *dst, i32 dst_size) {
+    if (!vpath || !dst || dst_size <= 0) return NULL;
+
+    /* Absolute host path — pass through. */
+    if (vpath[0] == '/' || vpath[0] == '\\') {
+        if ((i32)strlen(vpath) >= dst_size) return NULL;
+        strcpy(dst, vpath);
+        return dst;
+    }
+
+    /* LIBSYS virtual path form: "<VOL>:><ROOT>><rest>".
+     * In the original, game_path is "HDISK:>EARTH>" and file loads concatenate
+     * it with a relative path. In the port, base_path is already the game root
+     * directory on the host, so strip both the volume AND the root component. */
+    const c8 *p = vpath;
+    const c8 *colon = strchr(vpath, ':');
+    if (colon && colon[1] == '>') {
+        p = colon + 2;
+        /* Skip one more '>' separated component ("EARTH>"). */
+        const c8 *next = strchr(p, '>');
+        if (next) p = next + 1;
+    }
+
+    /* Emit base_path + '/' + translated path (with '>' -> '/'). */
+    const c8 *base = base_path ? base_path : ".";
+    i32 n = snprintf(dst, dst_size, "%s/%s", base, p);
+    if (n < 0 || n >= dst_size) return NULL;
+
+    /* Translate '>' -> '/' in the appended portion only. */
+    i32 base_len = (i32)strlen(base) + 1; /* + '/' */
+    for (i32 i = base_len; i < n; i++) {
+        if (dst[i] == '>') dst[i] = '/';
+    }
+    return dst;
 }
 
 inline u8 ls_read_i8(FILE* file) {

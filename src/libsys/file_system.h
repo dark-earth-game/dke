@@ -12,6 +12,16 @@ void ls_seek(FILE* file, i32 offset, i32 origin);
 
 void ls_read_buffer(FILE* file, void* buffer, i32 size);
 
+/*
+ * Translate LIBSYS virtual path (e.g. "HDISK:>EARTH>sc>SC08.CRH")
+ * into a host filesystem path relative to base_path.
+ *   "HDISK:>" prefix is stripped.
+ *   ">" separators become "/".
+ *   Non-virtual paths pass through with base_path prefix (if not absolute).
+ * Returns dst on success, NULL on overflow.
+ */
+c8* ls_resolve_path(const c8 *base_path, const c8 *vpath, c8 *dst, i32 dst_size);
+
 u8 ls_read_i8(FILE* file);
 u16 ls_read_i16(FILE* file);
 u32 ls_read_i32(FILE* file);

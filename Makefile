@@ -11,7 +11,7 @@ BASE_SRCS = src/libsys/*.c \
 ifeq ($(shell uname),Darwin)
 	CC = $(shell brew --prefix llvm)/bin/clang
 	CFLAGS += -DPLATFORM_MACOS -fopenmp=libomp -mllvm -force-vector-width=8
-	LDFLAGS = -framework Cocoa
+	LDFLAGS = -framework Cocoa -framework AudioToolbox
 
 	SRCS = src/libsys/platforms/macos.m $(BASE_SRCS)
 endif

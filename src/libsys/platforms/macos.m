@@ -1,11 +1,178 @@
 #include <Cocoa/Cocoa.h>
+#include <AudioToolbox/AudioQueue.h>
 #include <mach-o/dyld.h>
 #include <mach/mach_time.h>
+#include <pthread.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "../system.h"
 #include "../common.h"
+#include "../audio/audio.h"
 // #include "platform.h"
+
+/* =========================================================================
+ * CoreAudio AudioQueue streaming backend
+ * =========================================================================
+ *
+ * 4 queue buffers of AQ_BUF_SIZE bytes each.  A free-list protected by a
+ * pthread_mutex + condvar hands buffers to ls_platform_audio_push.
+ * The AudioQueue callback (aq_callback) returns finished buffers to the
+ * free-list.  If no buffer is free within a short spin, the push drops
+ * the block and returns 0 (caller retries on the next frame).
+ * ========================================================================= */
+
+#define AQ_NUM_BUFS   8
+#define AQ_BUF_SIZE   16384   /* bytes per buffer (~186 ms @ 22050 Hz stereo i16) —
+                                  large enough to hold one CRH movie frame's PCM
+                                  (~5880 bytes) plus headroom */
+
+static AudioQueueRef        aq_queue   = NULL;
+static AudioQueueBufferRef  aq_bufs[AQ_NUM_BUFS];
+
+/* Free-list */
+static AudioQueueBufferRef  aq_free[AQ_NUM_BUFS];
+static i32                  aq_free_count = 0;
+static pthread_mutex_t      aq_mutex  = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t       aq_cond   = PTHREAD_COND_INITIALIZER;
+
+static b8 aq_open = false;
+
+/* AudioQueue callback — called from CoreAudio's internal thread */
+static void aq_callback(void *user_data,
+                        AudioQueueRef queue,
+                        AudioQueueBufferRef buf)
+{
+    (void)user_data;
+    (void)queue;
+    pthread_mutex_lock(&aq_mutex);
+    if (aq_free_count < AQ_NUM_BUFS) {
+        aq_free[aq_free_count++] = buf;
+    }
+    pthread_cond_signal(&aq_cond);
+    pthread_mutex_unlock(&aq_mutex);
+}
+
+b8 ls_platform_audio_open(i32 sample_rate, i32 channels, i32 bit_depth)
+{
+    if (aq_open) return true;   /* already open */
+
+    AudioStreamBasicDescription fmt;
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.mSampleRate       = (Float64)sample_rate;
+    fmt.mFormatID         = kAudioFormatLinearPCM;
+    fmt.mFormatFlags      = kAudioFormatFlagIsSignedInteger
+                          | kAudioFormatFlagIsPacked;
+    /* Little-endian on all Apple silicon / x86 hosts — no endian flag needed */
+    fmt.mBitsPerChannel   = (UInt32)bit_depth;
+    fmt.mChannelsPerFrame = (UInt32)channels;
+    fmt.mBytesPerFrame    = (UInt32)(channels * (bit_depth / 8));
+    fmt.mFramesPerPacket  = 1;
+    fmt.mBytesPerPacket   = fmt.mBytesPerFrame;
+
+    OSStatus err = AudioQueueNewOutput(&fmt, aq_callback, NULL,
+                                       NULL, NULL, 0, &aq_queue);
+    if (err != noErr) {
+        printf("ls_platform_audio_open: AudioQueueNewOutput failed (%d)\n", (int)err);
+        aq_queue = NULL;
+        return false;
+    }
+
+    /* Allocate buffers and pre-fill with silence */
+    pthread_mutex_lock(&aq_mutex);
+    aq_free_count = 0;
+    for (i32 i = 0; i < AQ_NUM_BUFS; i++) {
+        err = AudioQueueAllocateBuffer(aq_queue, AQ_BUF_SIZE, &aq_bufs[i]);
+        if (err != noErr) {
+            printf("ls_platform_audio_open: AllocateBuffer[%d] failed (%d)\n", i, (int)err);
+            pthread_mutex_unlock(&aq_mutex);
+            AudioQueueDispose(aq_queue, true);
+            aq_queue = NULL;
+            return false;
+        }
+        /* Pre-fill with silence to avoid initial underrun */
+        memset(aq_bufs[i]->mAudioData, 0, AQ_BUF_SIZE);
+        aq_bufs[i]->mAudioDataByteSize = AQ_BUF_SIZE;
+        AudioQueueEnqueueBuffer(aq_queue, aq_bufs[i], 0, NULL);
+    }
+    pthread_mutex_unlock(&aq_mutex);
+
+    err = AudioQueueStart(aq_queue, NULL);
+    if (err != noErr) {
+        printf("ls_platform_audio_open: AudioQueueStart failed (%d)\n", (int)err);
+        AudioQueueDispose(aq_queue, true);
+        aq_queue = NULL;
+        return false;
+    }
+
+    aq_open = true;
+    printf("ls_platform_audio_open: CoreAudio queue started (%d Hz, %d ch, %d bit)\n",
+           sample_rate, channels, bit_depth);
+    return true;
+}
+
+i32 ls_platform_audio_push(const i16 *pcm, i32 bytes)
+{
+    if (!aq_open || !aq_queue || !pcm || bytes <= 0) return 0;
+
+    const u8 *src = (const u8 *)pcm;
+    i32 remaining = bytes;
+    i32 total_queued = 0;
+
+    while (remaining > 0) {
+        pthread_mutex_lock(&aq_mutex);
+
+        /* Wait up to ~250 ms for a free buffer — long enough for CoreAudio
+         * to drain a queued buffer at any typical sample rate. */
+        if (aq_free_count == 0) {
+            struct timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            ts.tv_nsec += 250 * 1000000L;
+            while (ts.tv_nsec >= 1000000000L) { ts.tv_sec++; ts.tv_nsec -= 1000000000L; }
+            pthread_cond_timedwait(&aq_cond, &aq_mutex, &ts);
+        }
+
+        if (aq_free_count == 0) {
+            /* Queue still full — drop the remainder rather than block forever. */
+            pthread_mutex_unlock(&aq_mutex);
+            return total_queued;
+        }
+
+        AudioQueueBufferRef buf = aq_free[--aq_free_count];
+        pthread_mutex_unlock(&aq_mutex);
+
+        i32 chunk = remaining < AQ_BUF_SIZE ? remaining : AQ_BUF_SIZE;
+        memcpy(buf->mAudioData, src, (size_t)chunk);
+        buf->mAudioDataByteSize = (UInt32)chunk;
+
+        OSStatus err = AudioQueueEnqueueBuffer(aq_queue, buf, 0, NULL);
+        if (err != noErr) {
+            pthread_mutex_lock(&aq_mutex);
+            aq_free[aq_free_count++] = buf;
+            pthread_mutex_unlock(&aq_mutex);
+            return total_queued;
+        }
+
+        src           += chunk;
+        remaining     -= chunk;
+        total_queued  += chunk;
+    }
+
+    return total_queued;
+}
+
+void ls_platform_audio_close(void)
+{
+    if (!aq_open || !aq_queue) return;
+    AudioQueueStop(aq_queue, true);   /* true = synchronous drain */
+    AudioQueueDispose(aq_queue, true);
+    aq_queue = NULL;
+    aq_open  = false;
+    pthread_mutex_lock(&aq_mutex);
+    aq_free_count = 0;
+    pthread_mutex_unlock(&aq_mutex);
+    printf("ls_platform_audio_close: CoreAudio queue stopped.\n");
+}
 
 
 static NSWindow *window = NULL;
@@ -213,6 +380,11 @@ static void create_window(system_t *system) {
 
 
 i32 ls_init_instance(system_t *system, i32 width, i32 height, i32 bpp) {
+    /* Line-buffer stdout so print() output reaches the shell when the app
+     * runs backgrounded (Cocoa apps otherwise leave stdout fully buffered). */
+    setvbuf(stdout, NULL, _IOLBF, 0);
+    setvbuf(stderr, NULL, _IOLBF, 0);
+
     system->quit = false;
     system->width = width;
     system->height = height;

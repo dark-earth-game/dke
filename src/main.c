@@ -7,12 +7,15 @@
 #include "libsys/file_system.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/shading.h"
+#include "libsys/graphics/colour_tables.h"
 #include "libsys/audio/audio.h"
 #include "libsys/mouse.h"
 #include "libsys/sound.h"
 #include "libsys/cd.h"
 #include "libsys/joy.h"
 #include "libsys/movie.h"
+#include "libsys/lsys_startup.h"
+#include "libsys/graphics/font.h"
 
 #include "state.h"
 #include "game_detection.h"
@@ -53,6 +56,10 @@ void load_configuration(state_t *state) {
                     if (strcmp(current_section, "LIBSYS") == 0) {
                         if (strcmp(key, "DEBUG") == 0) {
                             state->ls_debug_enabled = (strcmp(value, "TRUE") == 0);
+                        } else if (strcmp(key, "Master") == 0) {
+                            state->ls_master_enabled = (strcmp(value, "TRUE") == 0);
+                        } else if (strcmp(key, "Info") == 0) {
+                            state->ls_info_enabled = (strcmp(value, "TRUE") == 0);
                         }
                     } else if (strcmp(current_section, "DKE") == 0) {
                         if (strcmp(key, "HICOLOR") == 0) {
@@ -152,10 +159,10 @@ void load_dke_config(state_t *state) {
 // 0047CBA0
 void ls_startup(system_t *system) {
     // dword_55C790 = 0;
-    // sub_487E30();
+    ls_libsys_init_flags(state);   /* sub_487E30 — apply LIBSYS flags, detect lang */
     ls_init_memory_manager();
-    // sub_485840();
-    // sub_487D40();
+    ls_build_virtual_root();       /* sub_485840 — build g_virtual_root */
+    ls_libsys_flag_reset();        /* sub_487D40 — reset g_ls_pause_state */
     lsys_init_mouse_system();
     ls_init_graphic_system(&state->graphic, system);
     ls_init_sound_system();
@@ -179,6 +186,14 @@ void init_all_systems(system_t *system) {
     ls_set_video_mode(system->width, system->height, bit_depth, 0x200);
 
     preload_shading_table();
+
+    /* ls_main+138: 16-bit colour path — build colour mapping tables */
+    if (state->colour_mode) {
+        initialize_color_mapping_tables();
+    }
+
+    /* Font subsystem — must follow colour table init */
+    init_font_system();
 }
 
 // 00460B6C
@@ -211,7 +226,22 @@ i32 ls_main(system_t *system, c8 **argv) {
 
     init_all_systems(system);
 
+    /* ls_main debug text — mirrors original ls_main reference:
+     *   set_position_coordinates(0, 32); draw_text(aInitLibsysFini); */
+    if (state->debug_enabled) {
+        set_position_coordinates(0, 32);
+        draw_text("Init libsys finished");
+    }
+
     ls_init_movie(0, 0);
+
+    /* Play intro cutscene chain. Original engine has multiple entry paths
+     * (game_play_intro_469F32 does CD-drive detection first; sub_437DDD plays
+     * EADKE.CRH from the main-menu "trailer" option). For now, play the
+     * publisher/title splash (EADKE) at boot so we exercise the CRH decoder
+     * + CoreAudio streaming end-to-end. ls_play_movie skips gracefully if
+     * the file is missing rather than crash. */
+    ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
 
     while(!system->quit) {
         system->timer.tick = ls_tick();
