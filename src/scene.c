@@ -49,10 +49,12 @@
 #include "libsys/common.h"
 #include "libsys/file_system.h"
 #include "libsys/graphics/graphic.h"
+#include "libsys/graphics/font.h"
 #include "state.h"
 #include "scene.h"
 #include "game_init.h"
 #include "model.h"
+#include "model_ome.h"
 #include "player.h"
 
 /* -------------------------------------------------------------------------
@@ -906,6 +908,30 @@ i32 scene_load_level(i32 level_id) {
      * global ambient). Populates g_scene_cfg so model_render can later
      * do proper depth un-normalisation and light-position shading. */
     scene_load_dat_config(level_id);
+
+    /* Inventory pass: log the level's object mesh + player mesh. Doesn't
+     * decode geometry yet — just proves the .OME chunk walker is happy
+     * and shows us how many atoms (body parts, objects) each mesh will
+     * need once the ATOMF decoder lands. */
+    {
+        c8 vpath[64];
+        c8 host[512];
+        const c8 *base = (state && state->game_path) ? state->game_path : ".";
+        ome_file_t ome = {0};
+
+        /* Level object mesh. */
+        snprintf(vpath, sizeof(vpath),
+                 "DATAS>L%02d>IM%02d.OME", level_id, level_id);
+        if (ls_resolve_path(base, vpath, host, (i32)sizeof(host)) &&
+            model_ome_open(host, &ome)) {
+            model_ome_free(&ome);
+        }
+        /* Player mesh. */
+        if (ls_resolve_path(base, "PERSOS>P00.OME", host, (i32)sizeof(host)) &&
+            model_ome_open(host, &ome)) {
+            model_ome_free(&ome);
+        }
+    }
     if (g_scene_cfg.loaded && g_scene_cfg.ncamera > 0) {
         g_scene_camera_max = g_scene_cfg.ncamera - 1;
     }
@@ -1035,6 +1061,17 @@ i32 scene_render(system_t *sys) {
                  z_far,
                  g_scene_l_bmap,
                  g_scene_z_bmap);
+
+    /* HUD — current level, camera, and cube world position so testers
+     * can see WASD input landing without staring at the log. */
+    if (state && state->debug_enabled) {
+        c8 hud[96];
+        snprintf(hud, sizeof(hud),
+                 "L%02d cam=%d  x=%d z=%d  zfar=%d",
+                 g_scene_bg_level, g_scene_camera,
+                 g_cube_world_x, g_cube_world_z, z_far);
+        draw_text_at(font_handle, 6, 6, hud, 0xFFFFFFFFu);
+    }
     return 0;
 }
 
