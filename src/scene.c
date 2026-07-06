@@ -814,7 +814,10 @@ i32 scene_render(system_t *sys) {
     model_render(model_test_cube(),
                  sys,
                  fb_w / 2, fb_h / 2,
-                 80 /* pixels per model unit */,
+                 /* Perspective focal length in pixels. Approx equal to fb_w
+                  * gives a ~55° horizontal FOV, comparable to the game's
+                  * camera setup. Cube subtends ~1/4 screen at rest. */
+                 fb_w,
                  sys ? sys->timer.tick : 0,
                  g_scene_l_bmap,
                  NULL /* g_scene_z_bmap disabled until Z convention decoded */);

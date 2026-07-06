@@ -245,14 +245,26 @@ void model_render(const model_t *m, system_t *sys,
     i32  fb_h = state->graphic.height;
     if (!fb) return;
 
-    /* Rotation on Y axis. Angle in 12-bit trig table units (0..4095 = full
-     * period). One rotation every ~4 seconds at 60 fps. */
-    i32 angle = (i32)((tick / 4u) & 0xFFF);
-    i32 cos_y = cosine_table[angle];                          /* Q14 */
-    i32 sin_y = cosine_table[(angle + 1024) & 0xFFF];         /* Q14 */
+    /* Rotate around Y (yaw) and slightly around X (pitch) so the cube
+     * doesn't just spin as a flat rectangle when viewed from a straight
+     * angle. Angles in 12-bit trig-table units (0..4095 = full period).
+     * Yaw does a full rotation every ~4 s at 60 fps; pitch tips by ~20°
+     * (constant offset) for a more scene-like camera-down look. */
+    i32 yaw   = (i32)((tick / 4u) & 0xFFF);
+    i32 pitch = 300;                        /* ~26° camera tilt down */
+    i32 cy = cosine_table[yaw];
+    i32 sy = cosine_table[(yaw   + 1024) & 0xFFF];
+    i32 cp = cosine_table[pitch];
+    i32 sp = cosine_table[(pitch + 1024) & 0xFFF];
 
-    /* Project each vertex once. Q16.16 model × Q14 trig → Q30 → shift 14
-     * back to Q16 → shift 16 down to integer pixels with `scale`. */
+    /* Perspective projection.
+     * Camera sits at (0, 0, +CAM_D) in Q16.16 model space, looking down -Z.
+     * screen_x = mx + (vx * scale) / (CAM_D - vz)
+     * screen_y = my - (vy * scale) / (CAM_D - vz)
+     * CAM_D chosen so a unit cube fills a comfortable centre area. Larger
+     * CAM_D → flatter perspective; smaller → more foreshortening. */
+    const i32 CAM_D = 4 * ONE;   /* 4 units back from origin */
+
     proj_vertex_t projected[64];
     if (m->vertex_count > (i32)(sizeof(projected)/sizeof(projected[0]))) return;
 
@@ -260,18 +272,36 @@ void model_render(const model_t *m, system_t *sys,
         i32 vx = m->vertices[i].x;
         i32 vy = m->vertices[i].y;
         i32 vz = m->vertices[i].z;
-        /* rotY: x' = cos*x + sin*z; z' = -sin*x + cos*z */
-        i64 rx = ((i64)cos_y * vx + (i64)sin_y * vz) >> 14;
-        i64 rz = (-(i64)sin_y * vx + (i64)cos_y * vz) >> 14;
-        i32 ix = (i32)rx;
-        i32 iy = vy;
-        i32 iz = (i32)rz;
 
-        /* Orthographic project: screen = center + (model * scale / Q). */
-        projected[i].sx = mx + (i32)((i64)ix * scale >> 16);
-        projected[i].sy = my - (i32)((i64)iy * scale >> 16);  /* Y up → screen down */
-        /* Depth: map z from [-Q, +Q] into [0, 255]. Nearer = smaller u8. */
-        i32 d = 128 - ((i32)((i64)iz * 127 >> 16));
+        /* rotY (yaw): x' =  cy*x + sy*z ; z' = -sy*x + cy*z */
+        i64 rx = ((i64)cy * vx + (i64)sy * vz) >> 14;
+        i64 rz = (-(i64)sy * vx + (i64)cy * vz) >> 14;
+        i64 ry = vy;
+
+        /* rotX (pitch): y' = cp*y - sp*z ; z' =  sp*y + cp*z */
+        i64 py = ( (i64)cp * ry - (i64)sp * rz) >> 14;
+        i64 pz = ( (i64)sp * ry + (i64)cp * rz) >> 14;
+
+        i32 mx_v = (i32)rx;
+        i32 my_v = (i32)py;
+        i32 mz_v = (i32)pz;
+
+        /* Perspective divide. Keep everything Q16.16 while dividing so the
+         * projected pixel stays integer at the end. Guard against
+         * degenerate depth (should not happen for a unit cube with
+         * CAM_D >= 3).  Nearer verts (larger mz_v) → bigger denom
+         * reciprocal → bigger projected offset. */
+        i32 denom = CAM_D - mz_v;
+        if (denom < ONE / 8) denom = ONE / 8;   /* clamp very-near */
+        i64 proj_x = ((i64)mx_v * scale) / denom;
+        i64 proj_y = ((i64)my_v * scale) / denom;
+
+        projected[i].sx = mx + (i32)proj_x;
+        projected[i].sy = my - (i32)proj_y;
+        /* Depth (0=near, 255=far): normalise mz_v from [-ONE..+ONE] into
+         * [255..0] so a vertex closer to the camera (larger mz_v) gets a
+         * smaller depth. */
+        i32 d = 128 - ((i32)((i64)mz_v * 127 >> 16));
         if (d < 0)   d = 0;
         if (d > 255) d = 255;
         projected[i].depth = d;
