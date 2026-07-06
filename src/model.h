@@ -64,9 +64,12 @@ const model_t *model_test_cube(void);
  */
 void model_render(const model_t   *m,
                   system_t        *sys,
-                  i32              mx,      /* screen centre X */
-                  i32              my,      /* screen centre Y */
-                  i32              scale,   /* pixels per model unit */
-                  u32              tick,    /* animation clock ms */
-                  const bmap_t    *l_bmap,  /* optional light map, may be NULL */
-                  const bmap_t    *z_bmap); /* optional depth bmap, may be NULL */
+                  i32              mx,        /* screen centre X */
+                  i32              my,        /* screen centre Y */
+                  i32              scale,     /* focal length in pixels */
+                  u32              tick,      /* animation clock ms */
+                  i32              world_z,   /* model centre world depth (units) */
+                  i32              world_size,/* model half-extent world units */
+                  i32              z_far,     /* scene camera zfar (units) */
+                  const bmap_t    *l_bmap,    /* optional light map, may be NULL */
+                  const bmap_t    *z_bmap);   /* optional depth bmap, may be NULL */

@@ -959,25 +959,32 @@ i32 scene_render(system_t *sys) {
                                  ox, oy);
     }
 
-    /* Step 2 — placeholder 3D model at the screen centre, rotating on Y.
-     * Depth-test against g_scene_z_bmap is DISABLED for this pass —
-     * we don't know the Z bmap's near/far convention yet, and enabling
-     * it would cull most of the cube in L01 cam 0.  Pass NULL so the
-     * fallback in sample_depth() treats every pixel as "far scene" and
-     * the model always wins the depth test.  L shading still runs so
-     * you can see the light-map response.  Replace with the real Z
-     * bmap once we've decoded the per-camera projection matrix from
-     * .DAT / .OME. */
+    /* Step 2 — placeholder 3D model with real per-pixel depth test.
+     * Z bmap convention (confirmed from load-time sample):
+     *   0   = near  (br corner of L01 cam 0 → floor at camera)
+     *   255 = far   (tl corner → distant wall)
+     * DAT gives zfar (world units) per camera. Model depth is
+     * normalised into the same 0..255 space so sample_depth can
+     * compare directly against Z bmap pixels.
+     *
+     * Cube placement: sit at world_z = zfar/3 (roughly a third of the
+     * way into the room) with a world_size of 60 units — big enough
+     * to see, small enough to fit under low ceilings. Once real
+     * character positions come from LIEU / .INF, replace these with
+     * per-entity world coords. */
+    i32 z_far = scene_get_camera_zfar(g_scene_camera);
+    i32 cube_world_z    = z_far / 3;
+    i32 cube_world_size = 60;
     model_render(model_test_cube(),
                  sys,
                  fb_w / 2, fb_h / 2,
-                 /* Perspective focal length in pixels. Approx equal to fb_w
-                  * gives a ~55° horizontal FOV, comparable to the game's
-                  * camera setup. Cube subtends ~1/4 screen at rest. */
-                 fb_w,
+                 fb_w,               /* focal length ≈ 55° FOV        */
                  sys ? sys->timer.tick : 0,
+                 cube_world_z,
+                 cube_world_size,
+                 z_far,
                  g_scene_l_bmap,
-                 NULL /* g_scene_z_bmap disabled until Z convention decoded */);
+                 g_scene_z_bmap);
     return 0;
 }
 

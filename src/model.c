@@ -236,6 +236,7 @@ static void fill_triangle(u32 *fb, i32 fb_w, i32 fb_h,
 
 void model_render(const model_t *m, system_t *sys,
                   i32 mx, i32 my, i32 scale, u32 tick,
+                  i32 world_z, i32 world_size, i32 z_far,
                   const bmap_t *l_bmap, const bmap_t *z_bmap) {
     (void)sys;
     if (!m || !state) return;
@@ -298,12 +299,32 @@ void model_render(const model_t *m, system_t *sys,
 
         projected[i].sx = mx + (i32)proj_x;
         projected[i].sy = my - (i32)proj_y;
-        /* Depth (0=near, 255=far): normalise mz_v from [-ONE..+ONE] into
-         * [255..0] so a vertex closer to the camera (larger mz_v) gets a
-         * smaller depth. */
-        i32 d = 128 - ((i32)((i64)mz_v * 127 >> 16));
-        if (d < 0)   d = 0;
-        if (d > 255) d = 255;
+        /* Depth: map the vertex into world units, then normalise against
+         * the scene's zfar so we can compare directly against the 8-bit
+         * Z bmap. World depth = world_z - vz_world (positive mz_v =
+         * closer to camera → smaller depth). world_size is the world
+         * half-extent that model space's ±ONE covers.
+         *
+         *   vz_world     = (mz_v * world_size) / ONE
+         *   world_depth  = world_z - vz_world
+         *   pixel_depth  = clamp(world_depth * 255 / zfar, 0, 255)
+         *
+         * When z_far <= 0 or world_size <= 0 we degrade to a fixed
+         * 128-mid depth so the model still renders (behaves like the
+         * previous "Z-off" path). */
+        i32 d;
+        if (z_far > 0 && world_size > 0) {
+            i64 vz_world    = ((i64)mz_v * world_size) >> 16;
+            i64 world_depth = (i64)world_z - vz_world;
+            i64 pix         = (world_depth * 255) / (i64)z_far;
+            if (pix < 0)   pix = 0;
+            if (pix > 255) pix = 255;
+            d = (i32)pix;
+        } else {
+            d = 128 - ((i32)((i64)mz_v * 127 >> 16));
+            if (d < 0)   d = 0;
+            if (d > 255) d = 255;
+        }
         projected[i].depth = d;
     }
 
