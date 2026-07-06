@@ -722,11 +722,16 @@ void menu_render(menu_t *menu, system_t *sys) {
         }
     }
 
-    /* Log render once per dirty cycle (hover state change gate) */
+    /* Log render once per dirty cycle (hover state change gate).
+     * hovered_item may be -1 when the cursor sits outside every hitbox, so
+     * guard the array access — printing (idx=-1, label=<none>) is fine. */
     if (menu->dirty) {
+        const c8 *lbl = (menu->hovered_item >= 0 &&
+                         menu->hovered_item < MAIN_MENU_ITEM_COUNT)
+                        ? MAIN_MENU_ITEMS[menu->hovered_item].label
+                        : "<none>";
         print("menu: render items=%d hovered=%d (%s)\n",
-              MAIN_MENU_ITEM_COUNT, menu->hovered_item,
-              MAIN_MENU_ITEMS[menu->hovered_item].label);
+              MAIN_MENU_ITEM_COUNT, menu->hovered_item, lbl);
         menu->dirty = 0;
     }
 }

@@ -37,10 +37,11 @@ For every landed port:
 
 ## In flight (background)
 
-*(none — Slice B pass 3 fully landed: overlay sprite + INVENT1.WAV + log suppression; real hitboxes + sub-menu panels deferred to pass 4)*
+*(none — Slice B pass 4 landed: real hitboxes + GENICO single-sheet crop + cursor crop + palette fix. Intro fade / MENUPERS / save/options panels deferred to pass 5.)*
 
 ## Recently landed
 
+- **Slice B pass 4** (Opus, 2026-07): Real `var_4AE0[8]` hitboxes; GENICO_<lang>.CIF as single sprite sheet with per-item sub-rect crop (no more animation cycling); CURS128 shape crop per hover state; `blit_bmap_subrect_masked` helper with correct BGR-order XRGB packing (previous helper had R/B swap → blueish hover art). See Slice B section for detail.
 - **Slice B pass 3 refinement** (Sonnet, 2026-07): Real menu image overlay + INVENT1.WAV path fix. `MENU_1.CIF` (640×480 full-screen sprite) loaded in `menu_init` → `menu->overlay_bmap`; blitted with `blit_bmap_masked_to_framebuffer` after MENUGEN backdrop; plain text suppressed when overlay present. `menu_load_click_sfx` search order fixed — `wav/ANIMS/INVENT1.WAV` first (real asm path). Per-frame cursor log noise suppressed (log only on frame_idx change). `overlay_bmap` field added to `menu_t`; freed by `menu_release_cursors`. Build clean, exit 143 confirmed. Smoke log: `menu: overlay loaded MENU_1.CIF -> 640x480`, `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711`.
 - **Slice B pass 3 cursor** (Sonnet, 2026-07): Animated mouse cursor sprite overlay landed. `CURS128.CIF` (65×35 pointer) + `GENICO_0..6.CIF` (7-frame animated icon) loaded in `menu_init`. `blit_bmap_masked_to_framebuffer` added (index-0 transparent). `bmap_t` extended with `palette`/`owns_palette` fields; `image_load_compressed` preserves per-image CIF palette. `game_init_load_cursor` exported. GENICO drawn at (item.x-20, item.y+2) next to hovered item; CURS128 drawn at (motion_x, motion_y). Build clean, exit 143 confirmed. Smoke log: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor frame=N`.
 - **Slice B pass 2** (Sonnet, 2026-07): Mouse click routing + action dispatch wired. `menu_dispatch` centralises click/keyboard resolution. `MENU_ACTION_QUIT` → `MENU_STATE_QUIT`, `MENU_ACTION_TRAILER` → `pending_trailer` → `ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH")`. `LOAD`/`OPTIONS`/`NEW_GAME` log stubs. Keyboard nav (Up/Down/Return/Esc) keycodes wired in `macos.m` (keyCodes 126/125/36/53 → actions[38/40/13/27]). Mouse Y-flip applied (Cocoa bottom-origin → top-left framebuffer). Build clean, exit 143 confirmed, `menu: click` + `menu: hover` log lines present.
@@ -73,10 +74,19 @@ For every landed port:
   - `INVENT1.WAV` path fixed: `menu_load_click_sfx` now searches `wav/ANIMS/INVENT1.WAV` first (real asm path `"%sINVENT1.WAV"` at line 78082). Confirmed: `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711`.
   - Per-frame verbose log suppressed: `menu: render cursor at (X,Y) frame=N` replaced with `menu: render cursor frame=N` emitted only on frame index change.
   - Smoke: exit 143 confirmed. Log: `menu: overlay loaded MENU_1.CIF -> 640x480`, `menu: click sfx using '.../wav/ANIMS/INVENT1.WAV'`.
-- Still pending (pass 4):
-  - Real hitboxes from asm `var_4AE0[8]` table (sub_43F7BD)
-  - Save/load slot panel (SAVE.GIF, DKEGAME.CFG slot check)
-  - Options sub-menu (brightness/contrast/shadow sliders)
+**Pass 4 (landed 2026-07):**
+- Real `var_4AE0[8]` hitboxes decoded from asm 77770..77834. `menu_item_t` gains `src_x`/`src_y` for GENICO sub-rect; `MAIN_MENU_ITEMS[6]` now uses actual `(dst_x, dst_y, w, h)` per button — hover regions align with the `MENU_<lang>.CIF` backdrop art.
+- GENICO_0..6 reinterpreted: **per-language** icons, not animation frames. `menu_init` now loads a single `GENICO_<language_id>.CIF` sheet; render blits the per-item sub-rect `(src_x, src_y, w, h)` at `(dst_x, dst_y)` for the hovered item only. No more `tick/100 % 7` frame cycling.
+- `blit_bmap_subrect_masked` helper added to `menu.c` (source sub-rect + index-0 mask). Existing whole-bmap variant couldn't crop; asm's `overlay_cursor_image → ls_bit_move` needs sub-rect copy. Byte packing matches `blit_bmap_to_framebuffer` (`B<<16 | G<<8 | R` for NSBitmapImageRep byte order).
+- CURS128 cursor cropped per hover state (asm +2351/+237E): src (0,0)-(29,32) when over an item, (30,0)-(32,32) idle. Previously the whole 65×35 sheet blit as one garbled cursor.
+- `menu->genico_frames[7]` replaced by single `menu->genico_bmap`; `MENU_GENICO_FRAME_COUNT` removed.
+- Render log guards `hovered_item == -1` case.
+
+Still pending (pass 5):
+- Intro fade animation: `sub_4374B0` (row-scan setup), `sub_4375DF` (0..350 ms tick, sine-driven), `sub_4378EA` (200 ms post-fade). MENUPERS.GRD palette load into stack buffer (var_489C). May be what leaves the transient red band on the backdrop.
+- Save/load slot panel (SAVE.GIF, DKEGAME.CFG slot check, `sub_437ADC`).
+- Options sub-menu (`sub_438CA5` — brightness/contrast/shadow sliders).
+- CREDITS panel — entries 6/7 of `var_4AE0[8]` (bigger hitboxes, `var_4B40[2]` sub-table).
 
 ### Slice C — Level bootstrap (first playable frame) 🔄 pass 1 landed
 

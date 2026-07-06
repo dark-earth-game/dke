@@ -64,11 +64,14 @@ void menu_render(menu_t *menu, system_t *sys);
 - **Backdrop**: `menu_render` owns `blit_bmap_to_framebuffer`.
 - **Cursor overlay (pass 3)**: `menu_render` blits GENICO animated icon and CURS128 pointer each frame via `blit_bmap_masked_to_framebuffer` (index-0 transparent). Cursors stored in `menu_t.cursor_bmap` + `menu_t.genico_frames[7]`; loaded/freed by `menu_init`/`menu_release_cursors`.
 
-## TODO stubs (pass 4)
+## TODO stubs (pass 5)
 
 | sub | intent |
 |---|---|
-| sub_43F7BD | real hitbox hit-test against var_4AE0[8] asm table (exact coords) |
+| sub_4374B0 | intro-fade row-scan setup — writes per-row indices into `var_790` |
+| sub_4375DF | intro-fade tick (0..350 ms, sine-driven interpolation) |
+| sub_4378EA | post-fade palette reset (200 ms, sine table) |
+| MENUPERS.GRD load | 16 KB palette-animation file; role in red-band artifact TBD |
 | sub_4380F9 | new game bootstrap (Slice C) |
 | sub_437ADC | load-slot picker panel (SAVE.GIF, DKEGAME.CFG) |
 | sub_438CA5 | options panel (brightness/contrast/shadow sliders) |
@@ -101,6 +104,18 @@ void menu_render(menu_t *menu, system_t *sys);
 - build: yes — `make dke` exit 0, no new warnings
 - launch: yes — exit 143 on SIGTERM, no crash
 - behavior: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor frame=N` present in `/tmp/dke.log`. All 7 GENICO frames loaded (720×116 each). CURS128 blits at (motion_x, motion_y); GENICO blits at (item.x-20, item.y+2) with index-0 transparency.
+
+**Pass 4 (real hitboxes + GENICO crop + palette fix, 2026-07):**
+- build: yes — `make dke` exit 0
+- launch: yes — exit 143 on SIGTERM
+- changes:
+  - `menu.h`: `menu_item_t` gains `src_x`, `src_y` (GENICO source origin per item, asm +0/+4). `menu_t.genico_frames[7]` replaced by single `genico_bmap`; `MENU_GENICO_FRAME_COUNT` dropped.
+  - `menu.c`: `MAIN_MENU_ITEMS[6]` populated from `var_4AE0[8]` init decode (asm 77770..77834) — NEW_GAME, QUIT, LOAD, OPTIONS, SAVE, TRAILER at real screen coords; each 76×77 GENICO icon at `src_x = idx*77`, `src_y = 0`.
+  - `menu.c`: `menu_init` loads one `GENICO_<language_id>.CIF` (matches asm `sprintf("DATAS>MENUS>GENICO_%01d.CIF", language_id)`) — GENICO_0..6 are language variants, not animation frames.
+  - `menu.c`: `blit_bmap_subrect_masked` added (source sub-rect + index-0 mask). XRGB packing `B<<16 | G<<8 | R` matches `blit_bmap_to_framebuffer`; previous variant had R/B swap → GENICO/cursor rendered blueish.
+  - `menu.c`: `menu_render` blits ONE GENICO sub-rect at hovered item's `(x,y)` — no animation. CURS128 cropped `(0,0,29,32)` when hovered, `(30,0,32,32)` idle (asm +2351/+237E).
+  - `menu.c`: `menu_release_cursors` frees single `genico_bmap`.
+  - Render log guards `hovered_item == -1`.
 
 **Pass 3 refinement (image overlay + INVENT1.WAV, 2026-07):**
 - build: yes — `make dke` exit 0, no new warnings
