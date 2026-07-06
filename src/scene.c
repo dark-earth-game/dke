@@ -154,6 +154,9 @@ static i32 g_scene_bg_level = -1;
  * scene_render input handling (Left/Right arrow keys). */
 static i32 g_scene_camera = 0;
 
+static i32 g_scene_cam_sx = 320;  /* projected character screen X */
+static i32 g_scene_cam_sy = 240;  /* projected character screen Y */
+
 /* Player-controlled cube world position (dev handle for gameplay
  * skeleton). Reset to camera-relative default on each camera load; WASD
  * moves the cube around within the current room. Depth is world units so
@@ -591,6 +594,143 @@ static void stub_restore_display_mode(i32 ecx, i32 edx) {
  * Mirrors asm: call sub_40636D */
 static void stub_sub_40636D(void) {
     /* TODO: sub_40636D */
+}
+
+/*
+ * scene_load_camera_anchor — load INF projection params and estimate the
+ * character's screen anchor position for camera cam_idx.
+ *
+ * Uses the camera's zone centroid as world (X,Z) and solves for world Y
+ * such that the character appears at target screen (320, 350). Falls back
+ * to (320, 350) on any parse failure.
+ *
+ * Sets g_scene_cam_sx, g_scene_cam_sy.
+ */
+static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
+    g_scene_cam_sx = 320;
+    g_scene_cam_sy = 350;
+
+    c8 virt[64];
+    snprintf(virt, sizeof(virt), "DATAS>L%02d>L%02d.INF", level_id, level_id);
+    c8 host[512];
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    if (!ls_resolve_path(base, virt, host, (i32)sizeof(host))) return;
+
+    FILE *f = ls_open(host, "rb");
+    if (!f) return;
+
+    /* Validate magic */
+    i32 magic = 0;
+    if (fread(&magic, 4, 1, f) != 1 || magic != 7) { ls_close(f); return; }
+
+    /* Skip to camera zone struct for cam_idx */
+    /* Format: ts(4) + world_ctrl(0x208) + n_cam(4) + n_cam×0x208 + ... */
+    fseek(f, 4 + 0x208, SEEK_CUR);
+    i32 n_cam = 0;
+    if (fread(&n_cam, 4, 1, f) != 1 || cam_idx >= n_cam) { ls_close(f); return; }
+
+    /* Seek to cam_idx zone struct (+0x1D8 for n_verts, +0x1DC for vertices) */
+    long cam_struct_off = ftell(f) + (long)cam_idx * 0x208;
+    fseek(f, cam_struct_off + 0x1D8, SEEK_SET);
+    i32 n_verts = 0;
+    if (fread(&n_verts, 4, 1, f) != 1 || n_verts <= 0 || n_verts > 64) {
+        ls_close(f); return;
+    }
+    /* Read zone polygon vertices (3 i32 each: x, y_ignored, z) */
+    i64 sum_x = 0, sum_z = 0; i32 valid = 0;
+    for (i32 i = 0; i < n_verts && i < 32; i++) {
+        i32 vx = 0, vy_ign = 0, vz = 0;
+        if (fread(&vx, 4, 1, f) != 1) break;
+        if (fread(&vy_ign, 4, 1, f) != 1) break;
+        if (fread(&vz, 4, 1, f) != 1) break;
+        /* Filter out garbage vertices (reasonable world range) */
+        if (vx > -3000000 && vx < 3000000 && vz > -3000000 && vz < 3000000) {
+            sum_x += vx; sum_z += vz; valid++;
+        }
+    }
+    if (valid == 0) { ls_close(f); return; }
+    i32 zone_x = (i32)(sum_x / valid);
+    i32 zone_z = (i32)(sum_z / valid);
+
+    /* Skip to extra section (projection matrices).
+     * Continue reading: remaining cam structs + inexplorable + stairs + n_extra */
+    fseek(f, cam_struct_off + (long)n_cam * 0x208, SEEK_SET);
+    /* n_inex */
+    i32 n_inex = 0;
+    if (fread(&n_inex, 4, 1, f) != 1) { ls_close(f); return; }
+    fseek(f, (long)n_inex * 0x208, SEEK_CUR);
+    /* n_stairs */
+    i32 n_stairs = 0;
+    if (fread(&n_stairs, 4, 1, f) != 1) { ls_close(f); return; }
+    fseek(f, (long)n_stairs * 0x208, SEEK_CUR);
+    /* n_extra */
+    i32 n_extra = 0;
+    if (fread(&n_extra, 4, 1, f) != 1 || cam_idx >= n_extra) { ls_close(f); return; }
+
+    /* Read cam_idx projection param table (first 0x78 bytes of 0xA8 entry) */
+    fseek(f, (long)cam_idx * 0xA8, SEEK_CUR);
+    i32 param[30];
+    if (fread(param, 4, 30, f) != 30) { ls_close(f); return; }
+    ls_close(f);
+
+    /* Compute T_view = R × T >> 14 */
+    const i32 *R = param;
+    i32 T[3] = {param[9], param[10], param[11]};
+    i32 Tv[3];
+    for (i32 row = 0; row < 3; row++) {
+        i64 s = 0;
+        for (i32 col = 0; col < 3; col++) s += (i64)R[row*3+col] * T[col];
+        Tv[row] = (i32)(s >> 14);
+    }
+
+    /* Orthographic scale = param[25] / param[26] / 16.0 */
+    if (param[26] == 0) return;
+    float scale = (float)param[25] / (float)param[26] / 16.0f;
+    if (scale < 1e-6f) return;
+
+    /* Target screen (320, 350): solve for world (wx, wy) with wz = zone_z */
+    float target_vy = (240.0f - 350.0f) / scale;  /* = -14080 for L01 */
+    float rhs_x = -(float)Tv[0] * 16384.0f - (float)R[2] * (float)zone_z;
+    float rhs_y = (target_vy - (float)Tv[1]) * 16384.0f - (float)R[5] * (float)zone_z;
+    float det = (float)R[0] * (float)R[4] - (float)R[1] * (float)R[3];
+
+    i32 wx, wy;
+    if (det < -1000.0f || det > 1000.0f) {
+        wx = (i32)((rhs_x * (float)R[4] - rhs_y * (float)R[1]) / det);
+        wy = (i32)((rhs_y * (float)R[0] - rhs_x * (float)R[3]) / det);
+    } else {
+        /* Degenerate camera (≈90° rotated): use zone centroid X, fallback Y */
+        wx = zone_x;
+        if (R[4] != 0)
+            wy = (i32)((target_vy - (float)Tv[1] - (float)R[3]*(float)zone_x/16384.0f
+                         - (float)R[5]*(float)zone_z/16384.0f) * 16384.0f / (float)R[4]);
+        else
+            wy = 200000;
+    }
+
+    /* Project (wx, wy, zone_z) → screen */
+    i64 vx_raw = 0, vy_raw = 0;
+    for (i32 col = 0; col < 3; col++) {
+        i32 w[3] = {wx, wy, (i32)zone_z};
+        vx_raw += (i64)R[col] * w[col];
+        vy_raw += (i64)R[3+col] * w[col];
+    }
+    i32 vx = (i32)(vx_raw >> 14) + Tv[0];
+    i32 vy = (i32)(vy_raw >> 14) + Tv[1];
+
+    i32 sx = 320 + (i32)((float)vx * scale);
+    i32 sy = 240 - (i32)((float)vy * scale);
+
+    /* Clamp */
+    if (sx < 10)  sx = 10;
+    if (sx > 629) sx = 629;
+    if (sy < 10)  sy = 10;
+    if (sy > 469) sy = 469;
+
+    g_scene_cam_sx = sx;
+    g_scene_cam_sy = sy;
+    print("scene: camera anchor cam=%d zone=(%d,%d) world=(%d,%d,%d) screen=(%d,%d)\n",
+          cam_idx, zone_x, (i32)zone_z, wx, wy, (i32)zone_z, sx, sy);
 }
 
 /* -------------------------------------------------------------------------
@@ -1095,6 +1235,9 @@ i32 scene_load_level(i32 level_id) {
     /* Read camera pitch from the INF projection matrix and apply to rendering. */
     model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
 
+    /* Compute character screen anchor from INF projection params. */
+    scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
+
     /* Load P00.CAN for player character animation. */
     {
         c8 vpath[64];
@@ -1378,8 +1521,8 @@ i32 scene_render(system_t *sys) {
      * centre by (world_x * focal_len) / world_z so the cube slides
      * horizontally with a hint of perspective foreshortening. */
     i32 focal = fb_w;
-    i32 screen_x = fb_w / 2 + (g_cube_world_x * focal) / (g_cube_world_z > 1 ? g_cube_world_z : 1);
-    i32 screen_y = fb_h / 2;
+    i32 screen_x = g_scene_cam_sx + (g_cube_world_x * focal) / (g_cube_world_z > 1 ? g_cube_world_z : 1);
+    i32 screen_y = g_scene_cam_sy;
 
     i32 cube_world_size = 60;
     u32 tick = sys ? sys->timer.tick : 0;
@@ -1461,6 +1604,8 @@ i32 scene_render(system_t *sys) {
 
 void scene_release(void) {
     model_default_pitch = 300;
+    g_scene_cam_sx = 320;
+    g_scene_cam_sy = 240;
     scene_free_bmap(&g_scene_bg_bmap);
     scene_free_bmap(&g_scene_l_bmap);
     scene_free_bmap(&g_scene_z_bmap);
