@@ -53,6 +53,7 @@
 #include "scene.h"
 #include "game_init.h"
 #include "model.h"
+#include "player.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols.
@@ -146,6 +147,17 @@ static i32 g_scene_bg_level = -1;
 /* Camera index within the level (0..6 for L01). Runtime-cycled via
  * scene_render input handling (Left/Right arrow keys). */
 static i32 g_scene_camera = 0;
+
+/* Player-controlled cube world position (dev handle for gameplay
+ * skeleton). Reset to camera-relative default on each camera load; WASD
+ * moves the cube around within the current room. Depth is world units so
+ * the model's per-pixel Z-test against the scene Z bmap keeps working. */
+static i32 g_cube_world_x = 0;
+static i32 g_cube_world_z = 0;   /* seeded from zfar/3 on camera load */
+
+/* Tick of last scene_render call — used to derive dt for cube movement
+ * so speed stays consistent across frame rates. 0 = first frame. */
+static u32 g_scene_prev_tick = 0;
 
 /* Highest camera index we've successfully loaded so far, used to cap
  * cycling. Updated by scene_load_camera_backdrop on the first successful
@@ -364,6 +376,12 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     g_scene_z_bmap   = zb;
     g_scene_bg_level = level_id;
     g_scene_camera   = camera;
+
+    /* Reset cube world position on camera swap so it re-centres for the
+     * new room's zfar. Removed once real character world coords come
+     * from LIEU / .INF. */
+    g_cube_world_x = 0;
+    g_cube_world_z = scene_get_camera_zfar(camera) / 3;
     print("scene: camera %d loaded (F %dx%d, L=%s, Z=%s)\n",
           camera, (i32)fb->width, fb->height,
           lb ? "yes" : "no", zb ? "yes" : "no");
@@ -959,28 +977,60 @@ i32 scene_render(system_t *sys) {
                                  ox, oy);
     }
 
-    /* Step 2 — placeholder 3D model with real per-pixel depth test.
-     * Z bmap convention (confirmed from load-time sample):
-     *   0   = near  (br corner of L01 cam 0 → floor at camera)
-     *   255 = far   (tl corner → distant wall)
-     * DAT gives zfar (world units) per camera. Model depth is
-     * normalised into the same 0..255 space so sample_depth can
-     * compare directly against Z bmap pixels.
+    /* Step 2 — player-controlled placeholder cube.
      *
-     * Cube placement: sit at world_z = zfar/3 (roughly a third of the
-     * way into the room) with a world_size of 60 units — big enough
-     * to see, small enough to fit under low ceilings. Once real
-     * character positions come from LIEU / .INF, replace these with
-     * per-entity world coords. */
+     * Movement: poll WASD via player_input_update, integrate against dt
+     * derived from sys->timer.tick, apply into g_cube_world_x/z. Speed
+     * chosen so a full traverse across the room (~zfar) takes ~5 s.
+     *
+     * Rendering: model_render uses the same world_z + world_size + z_far
+     * triple as before; scene Z bmap now depth-tests per pixel, so the
+     * cube slides behind foreground scene geometry when WASD walks it
+     * toward the room's far walls. */
     i32 z_far = scene_get_camera_zfar(g_scene_camera);
-    i32 cube_world_z    = z_far / 3;
+    if (g_cube_world_z == 0) g_cube_world_z = z_far / 3;
+
+    if (sys) {
+        u32 tick = sys->timer.tick;
+        i32 dt_ms = g_scene_prev_tick > 0 ? (i32)(tick - g_scene_prev_tick) : 16;
+        if (dt_ms < 0)     dt_ms = 0;
+        if (dt_ms > 100)   dt_ms = 100;   /* clamp on long pauses */
+        g_scene_prev_tick = tick;
+
+        player_input_t pin = {0};
+        player_input_update(&pin, sys);
+
+        /* Speed: cross-room ≈ 5 s → v = zfar / 5000 units/ms. */
+        i32 speed = z_far / 5;    /* units per second */
+        if (speed < 20) speed = 20;
+        i32 step = (speed * dt_ms) / 1000;
+
+        g_cube_world_x += (i32)(pin.velocity_x * step);
+        g_cube_world_z += (i32)(pin.velocity_z * step);
+
+        /* Clamp to room roughly. Range chosen loose — refined once real
+         * walkable region comes from LIEU. */
+        i32 half_zfar = z_far / 2;
+        if (g_cube_world_x < -half_zfar) g_cube_world_x = -half_zfar;
+        if (g_cube_world_x >  half_zfar) g_cube_world_x =  half_zfar;
+        if (g_cube_world_z < 50)         g_cube_world_z = 50;
+        if (g_cube_world_z > z_far - 50) g_cube_world_z = z_far - 50;
+    }
+
+    /* Screen-space anchor from world X. Rough parallax: shift screen
+     * centre by (world_x * focal_len) / world_z so the cube slides
+     * horizontally with a hint of perspective foreshortening. */
+    i32 focal = fb_w;
+    i32 screen_x = fb_w / 2 + (g_cube_world_x * focal) / (g_cube_world_z > 1 ? g_cube_world_z : 1);
+    i32 screen_y = fb_h / 2;
+
     i32 cube_world_size = 60;
     model_render(model_test_cube(),
                  sys,
-                 fb_w / 2, fb_h / 2,
-                 fb_w,               /* focal length ≈ 55° FOV        */
+                 screen_x, screen_y,
+                 focal,
                  sys ? sys->timer.tick : 0,
-                 cube_world_z,
+                 g_cube_world_z,
                  cube_world_size,
                  z_far,
                  g_scene_l_bmap,
