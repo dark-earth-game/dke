@@ -89,13 +89,17 @@ void ls_clear_bmap(bmap_t *bmap) {
     }
 }
 
-// ls_free_bmap — release bmap pixel buffer and header
+// ls_free_bmap — release bmap pixel buffer, palette, and header
 void ls_free_bmap(bmap_t *bmap) {
     if (!bmap) return;
     if (bmap->owns_buffer && bmap->pixels) {
         free_memory(bmap->pixels);
         bmap->pixels = NULL;
         bmap->first_pixel = NULL;
+    }
+    if (bmap->owns_palette && bmap->palette) {
+        free(bmap->palette);
+        bmap->palette = NULL;
     }
     free_memory(bmap);
     if (g_bmap_count > 0) g_bmap_count--;
@@ -420,6 +424,60 @@ void blit_bmap_to_framebuffer(u32 *fb, i32 fb_w, i32 fb_h,
             u8 b   = palette[idx * 3 + 2];
             /* NSBitmapImageRep expects byte[0]=R, byte[1]=G, byte[2]=B on
              * little-endian hosts — pack accordingly. */
+            dst_row[col] = 0xFF000000u | ((u32)b << 16) | ((u32)g << 8) | (u32)r;
+        }
+        src_row += src_stride;
+        dst_row += fb_w;
+    }
+}
+
+/* blit_bmap_masked_to_framebuffer
+ *
+ * Like blit_bmap_to_framebuffer but skips pixels whose palette index equals
+ * mask_idx (transparency key).  Conventional use: mask_idx=0 → index 0 is
+ * transparent, so sprites with black backgrounds blit correctly.
+ *
+ * Mirrors the colour-key skip in ls_bit_move (mode==1) but targets the 32-bit
+ * XRGB framebuffer directly (no intermediate bmap copy needed).
+ */
+void blit_bmap_masked_to_framebuffer(u32 *fb, i32 fb_w, i32 fb_h,
+                                      const bmap_t *src, const u8 *palette,
+                                      i32 dx, i32 dy, u8 mask_idx) {
+    if (!fb || !src || !src->pixels || !palette) return;
+
+    i32 src_w = (i32)src->width;
+    i32 src_h = src->height;
+    i32 src_stride = src->stride > 0 ? src->stride : src_w;
+
+    /* Clip: skip entirely out-of-bounds sources */
+    if (dx >= fb_w || dy >= fb_h) return;
+    if (dx + src_w <= 0 || dy + src_h <= 0) return;
+
+    /* Source row/col start (clamped to 0) */
+    i32 src_x0 = (dx < 0) ? -dx : 0;
+    i32 src_y0 = (dy < 0) ? -dy : 0;
+
+    /* Destination top-left after clamping */
+    i32 dst_x0 = (dx < 0) ? 0 : dx;
+    i32 dst_y0 = (dy < 0) ? 0 : dy;
+
+    /* Number of pixels to copy per row / column */
+    i32 copy_w = src_w - src_x0;
+    i32 copy_h = src_h - src_y0;
+    if (dst_x0 + copy_w > fb_w) copy_w = fb_w - dst_x0;
+    if (dst_y0 + copy_h > fb_h) copy_h = fb_h - dst_y0;
+    if (copy_w <= 0 || copy_h <= 0) return;
+
+    const u8 *src_row = src->pixels + src_y0 * src_stride + src_x0;
+          u32 *dst_row = fb + dst_y0 * fb_w + dst_x0;
+
+    for (i32 row = 0; row < copy_h; row++) {
+        for (i32 col = 0; col < copy_w; col++) {
+            u8 idx = src_row[col];
+            if (idx == mask_idx) continue; /* transparent — skip pixel */
+            u8 r = palette[idx * 3 + 0];
+            u8 g = palette[idx * 3 + 1];
+            u8 b = palette[idx * 3 + 2];
             dst_row[col] = 0xFF000000u | ((u32)b << 16) | ((u32)g << 8) | (u32)r;
         }
         src_row += src_stride;

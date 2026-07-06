@@ -21,6 +21,10 @@ typedef struct {
     i32 motion_y;
     i32 prev_motion_x;
     i32 prev_motion_y;
+    /* Mouse buttons — 0 = up, 1 = held, 2 = pressed-this-frame edge. */
+    i32 mouse_left;
+    i32 mouse_right;
+    i32 mouse_middle;
 } system_t;
 
 i32 ls_init_instance(system_t *system, i32 width, i32 height, i32 bpp);

@@ -8,7 +8,13 @@ Sorted by address.
 
 | addr | asm name | C name | file | status | notes |
 |---|---|---|---|---|---|
+| 0046DFEC | scene_load_level_46DFEC | `scene_load_level` | src/scene.c | partial | Slice C skeleton: 25 logged phases, globals set, .INF header read attempt, all heavy sub-calls stubbed; player_entity writes NULL-guarded; state->current_level_id updated on success |
 | — | load_dke_config | `load_dke_config` | src/main.c | ported | game-side settings from DKE.CFG |
+| 00437EB7 | process_mainmenu_437EB7 | `process_mainmenu` | src/menu.c | partial | pass 2: action dispatch wired (QUIT/TRAILER real, LOAD/OPTIONS/NEW_GAME stubs); sprite overlay / sound / real hitboxes TODO (pass 3) |
+| — | — | `menu_init` | src/menu.c | ported | inits menu_t: state=MAIN, hovered=0, pending_trailer=0, fetches backdrop bmap+palette from game_init |
+| — | — | `menu_dispatch` | src/menu.c | partial | routes menu_action_e → QUIT state / pending_trailer / log stubs; called from mouse click and keyboard confirm paths |
+| — | — | `menu_update` | src/menu.c | partial | mouse hover (motion_x/y) + click (mouse_left==2) + keyboard nav (actions[38/40/13/27]); sub_43F7BD exact hitboxes TODO (pass 3) |
+| — | — | `menu_render` | src/menu.c | partial | blits MENUGEN backdrop; draws text labels (YELLOW=hovered); plays EADKE.CRH if pending_trailer; blits GENICO animated icon next to hovered item; blits CURS128 at (motion_x,motion_y) with mask_idx=0 transparency |
 | 0046091B | load_configuration | `load_configuration` | src/main.c | partial | ini parser broken (see [ROADMAP.md](ROADMAP.md) M0) |
 | 00460B6C | ls_main | `ls_main` | src/main.c | partial | main loop OK, many subsystem calls still commented out |
 | 0047CEBE | ls_init_bmap_ex | `ls_init_bmap_ex` | src/libsys/graphics/graphic.c | partial | raw-buffer path ported; DirectDraw surface-backed cases (bpp_flags 1/2/4/8) stubbed to raw alloc |
@@ -52,6 +58,14 @@ Sorted by address.
 | — | ls_platform_audio_open | `ls_platform_audio_open` | src/libsys/platforms/windows.c | stub | WASAPI not implemented; returns true |
 | — | ls_platform_audio_push | `ls_platform_audio_push` | src/libsys/platforms/windows.c | stub | no-op; returns n |
 | — | ls_platform_audio_close | `ls_platform_audio_close` | src/libsys/platforms/windows.c | stub | no-op |
+| — | — | `wav_load` | src/libsys/audio/wav.c | ported | RIFF/WAVE PCM loader; 8-bit unsigned → i16 conversion; logs path/channels/rate/bit_depth/samples on success |
+| — | — | `wav_free` | src/libsys/audio/wav.c | ported | frees samples buffer; safe on zeroed wav_t |
+| — | — | `sfx_play` | src/libsys/audio/wav.c | ported | one-shot PCM playback: mono→stereo upmix; 11025→22050 nearest-neighbour resample; drops if queue full or audio_enabled=false |
+| — | — | `menu_load_click_sfx` (static) | src/menu.c | ported | finds best click WAV in wav/NORMAL/ (INVENT1.WAV → MENU.WAV → CLICK.WAV → SELECT.WAV → first .WAV); logs chosen file |
+| — | — | `menu_release` | src/menu.c | ported | frees sfx_click wav_t; call once after menu loop exits |
+| — | — | `menu_release_cursors` (static) | src/menu.c | ported | frees cursor_bmap + genico_frames[7] bmaps; called by process_mainmenu on QUIT state |
+| — | — | `blit_bmap_masked_to_framebuffer` | src/libsys/graphics/graphic.c | ported | like blit_bmap_to_framebuffer but skips pixels with palette index == mask_idx (transparency); used by menu cursor/sprite overlay |
+| — | — | `game_init_load_cursor` | src/game_init.c | ported | wraps image_load_compressed for external callers; used by menu_init to load CURS128 and GENICO_* frames |
 | — | init_decompress | — | — | todo | replaced by crh_open for CRH files; original SEB chain may differ |
 | — | decompress_anim | — | — | todo | replaced by crh_next_frame for CRH files |
 | — | read_and_init_sbt | — | — | todo | |
@@ -87,8 +101,9 @@ Sorted by address.
 | 0048F2C0 | sub_48F2C0 | — | — | todo | texture config init; ECX=&texture_config, EDX/push=0x3E8 |
 | 0048F230 | sub_48F230 | — | — | todo | entity buffer setup; 640×480 |
 | 0048F1D0 | sub_48F1D0 | — | — | todo | render surface setup; called twice |
-| 00464930 | sub_46493B | — | — | todo | player entity setup; ECX=dword_4B70E8, EDX=ui_weapon_slot_buffer |
-| 00464F6D | sub_464F6D | — | — | todo | player entity secondary init |
+| 0046493B | sub_46493B | `player_entity_init` | src/player.c | partial | Slice D pass 1: alloc 0xEA0 bytes, zero-init, default fields (clip rect, position, bounds, type flags, current_game_time at +0xD34); nested sub-calls stubbed (setup_creature, sub_462BCC, process_scene_hierarchy_with_memory, create_single_control_point, sub_4699D9, sub_41F6BA) |
+| 00464F6D | sub_464F6D | `player_entity_init_secondary` | src/player.c | partial | Slice D pass 1: +0xCD8 dialogue buf ptr, weapon slot read at [entity+0xACh]+0x97, weapon entity load chain (sub_4648DC, sub_475BB6, sub_472C5C, sub_473756, sub_41F6BA) all stubbed |
+| — | — | `player_input_update` | src/player.c | ported | polls sys->actions[119/115/97/100] (WASD) → velocity_z/x; mouse_left==2 → want_action=1; logs when moving |
 | 004130AA | sub_4130AA | `initialize_resource_slots` | src/game_init.c | ported | allocates 640×800 8-bit bmap (dword_4B297C); stores color_table ptr at [bmap+18h] |
 | 00415FB0 | sub_415FB0 | `sub_415FB0` (static) | src/game_init.c | partial | loads FONTE11.CAR (0xBF4 glyph bytes into desc+4) + FONTE11.GIF→.CIF atlas via image_load_compressed; stores bmap ptr at desc+0, height 0x13 at desc+0BF8h; glyph bitmask walk (word_4D0A40) deferred |
 | 004161B0 | sub_4161B0 | `game_finalize` | src/game_init.c | ported | calls sub_415FB0("DATAS>MENUS>FONTE11", &g_unk_4CFE40); font descriptor fully built |

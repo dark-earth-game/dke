@@ -67,6 +67,7 @@
 #include "libsys/graphics/font.h"
 #include "state.h"
 #include "game_init.h"
+#include "player.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols not yet in state_t.
@@ -96,7 +97,7 @@ static void  *g_bmap_507474      = NULL;   /* dword_507474 @ 00507474 */
 /* Entity / game-state handles */
 static void *g_game_state         = NULL;   /* game_state (asm sym)     */
 static void *g_game_death_state   = NULL;   /* game_death_state (asm sym) */
-static void *g_player_entity      = NULL;   /* player_entity (asm sym)  */
+/* g_player_entity moved to player.c — exposed via player.h */
 static void *g_game_context       = NULL;   /* game_context (asm sym)   */
 static void *g_entity_buffer_base = NULL;   /* entity_buffer_base (asm sym) */
 static void *g_dword_4B70E8      = NULL;   /* dword_4B70E8 @ 004B70E8  */
@@ -270,8 +271,8 @@ static void *image_load_compressed(const c8 *virtual_path, void *buf_ignored) {
     }
 
     /* 4. Allocate a bmap_t and populate from cif_image_t.
-     *    The bmap_t pixel buffer comes from the cif decode (we take ownership).
-     *    Palette is stored in reserved_18 (palette ptr field). */
+     *    The bmap_t pixel buffer and palette come from the cif decode (we take
+     *    ownership of both so sprites can blit with their embedded palette). */
     bmap_t *bmap = (bmap_t *)malloc(sizeof(bmap_t));
     if (!bmap) {
         cif_free(&img);
@@ -280,25 +281,24 @@ static void *image_load_compressed(const c8 *virtual_path, void *buf_ignored) {
     }
     memset(bmap, 0, sizeof(bmap_t));
 
-    bmap->width       = (i16)img.width;
-    bmap->height      = img.height;
-    bmap->bpp_flags   = 8;
-    bmap->bit_depth   = 8;
-    bmap->stride      = img.width;   /* 8-bit: 1 byte per pixel */
-    bmap->pixels      = img.pixels;  /* transfer ownership */
-    bmap->first_pixel = img.pixels;
-    bmap->owns_buffer = 1;
-    bmap->pixel_format = 2;  /* 8bpp indexed */
-    /* NOTE: img.palette is freed here — the asm original does not expose the
-     * palette through this path (palette extraction uses load_image_color_data).
-     * reserved_18 is i32 (32-bit) so cannot hold a 64-bit pointer safely. */
-    if (img.palette) {
-        free(img.palette);
-        img.palette = NULL;
-    }
+    bmap->width        = (i16)img.width;
+    bmap->height       = img.height;
+    bmap->bpp_flags    = 8;
+    bmap->bit_depth    = 8;
+    bmap->stride       = img.width;   /* 8-bit: 1 byte per pixel */
+    bmap->pixels       = img.pixels;  /* transfer ownership */
+    bmap->first_pixel  = img.pixels;
+    bmap->owns_buffer  = 1;
+    bmap->pixel_format = 2;           /* 8bpp indexed */
+    /* Transfer palette ownership — callers can use bmap->palette for blitting
+     * without a separate load_image_color_data call.
+     * owns_palette = 1 so ls_free_bmap will release it. */
+    bmap->palette      = img.palette; /* transfer ownership (768 bytes) */
+    bmap->owns_palette = (img.palette != NULL) ? 1 : 0;
+    img.palette        = NULL;        /* detach so cif_free won't double-free */
 
-    print("image_load_compressed: loaded '%s' -> %dx%d\n",
-          resolved, img.width, img.height);
+    print("image_load_compressed: loaded '%s' -> %dx%d palette=%p\n",
+          resolved, img.width, img.height, (void *)bmap->palette);
     return (void *)bmap;
 }
 
@@ -312,6 +312,10 @@ static void image_load_compressed_free(void *handle) {
         free(bmap->pixels);
         bmap->pixels      = NULL;
         bmap->first_pixel = NULL;
+    }
+    if (bmap->owns_palette && bmap->palette) {
+        free(bmap->palette);
+        bmap->palette = NULL;
     }
     free(bmap);
 }
@@ -618,7 +622,7 @@ b8 game_init(state_t *state) {
      * ported sub-functions; they are declared here so their asm addresses
      * are documented and names are reserved for cross-reference. */
     (void)g_palette_data;
-    (void)g_player_entity;
+    /* g_player_entity is now in player.c (extern via player.h) */
     (void)g_game_context;
     (void)g_entity_buffer_base;
     /* New globals populated by ported functions — suppress read-before-use
@@ -1028,14 +1032,13 @@ b8 game_init(state_t *state) {
     /* Phase 33 — sub_46493B — player entity setup                         */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_46493B player entity setup\n");
-    /* TODO: sub_46493B @ 0046493B — ECX=dword_4B70E8, EDX=ui_weapon_slot_buffer;
-     *       result → player_entity                                        */
+    player_entity_init();
 
     /* ------------------------------------------------------------------ */
     /* Phase 34 — sub_464F6D — player entity secondary init                */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_464F6D player entity secondary init\n");
-    /* TODO: sub_464F6D @ 00464F6D — ECX=player_entity                    */
+    player_entity_init_secondary();
 
     /* ------------------------------------------------------------------ */
     /* Phase 35 — entity/context palette cross-wiring                      */
@@ -1116,6 +1119,20 @@ b8 game_init(state_t *state) {
 
     print("game_init: done\n");
     return true;
+}
+
+/* -------------------------------------------------------------------------
+ * game_init_load_cursor — load a single CIF cursor image.
+ *
+ * Wraps image_load_compressed with explicit path resolution and GIF→CIF
+ * fallback.  Returns a heap-owned bmap_t (with embedded palette) on success,
+ * NULL on failure.  The caller owns the result and must free it with
+ * image_load_compressed_free / free().
+ *
+ * Used by menu_init to load CURS128.CIF and GENICO_%01d.CIF frames.
+ * ---------------------------------------------------------------------- */
+bmap_t *game_init_load_cursor(const c8 *virtual_path) {
+    return (bmap_t *)image_load_compressed(virtual_path, NULL);
 }
 
 /* -------------------------------------------------------------------------

@@ -35,8 +35,18 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
   - `ls_box` (0x0047D466) → same file: debug outline rectangle (1-pixel border, colour byte 0xFF). Original ls_fill_rect/ls_invert_rect sub-paths stubbed; sufficient for current debug use.
   - `draw_image` (0x00453FA3) → same file: thin wrapper — optional ls_box outline (TODO: wire debug_surface global), then ls_bit_move mode=0. Logs every invocation.
   - `blit_bmap_to_framebuffer` (new, no asm addr) → same file: expand 8bpp indexed bmap → u32 XRGB front_buffer using 768-byte palette lookup. Clips to fb bounds.
+  - `blit_bmap_masked_to_framebuffer` (new, no asm addr) → same file: like above but skips pixels whose index == `mask_idx` (transparency key; conventional value: 0). Used by menu cursor and GENICO sprite overlay. Declared in `graphic.h`.
   - `game_init_get_menu_backdrop` (new) → `src/game_init.c`: accessor returning g_loading_bmap + color_table to ls_main.
+  - `game_init_load_cursor` (new) → `src/game_init.c`: public wrapper around `image_load_compressed` for loading cursor/sprite bmaps from virtual paths. Returns heap-owned `bmap_t` with embedded `palette` field populated from CIF.
   - `ls_main` wired: after intro CRH, fetches LOADING.GIF (512×64) + MENUGEN palette, calls `blit_bmap_to_framebuffer` centred in the 640×480 front_buffer every main-loop iteration. Confirmed firing via log (`blit_bmap_to_framebuffer: 512x64 src -> fb offset (64,208) copy 512x64`).
+  - **bmap_t palette extension**: `bmap_t` now carries `u8 *palette` (768-byte RGB, allocated by cif_load) and `i32 owns_palette` (freed by `ls_free_bmap`). `image_load_compressed` transfers palette ownership from `cif_image_t` → `bmap_t` so sprites can blit using their embedded palette without a separate `load_image_color_data` call.
+
+### Menu cursor overlay pipeline (Slice B pass 3, 2026-07)
+
+- **CURS128.CIF** (65×35) — main pointer cursor. Loaded in `menu_init` → `menu->cursor_bmap`. Drawn at `(motion_x, motion_y)` every `menu_render` frame via `blit_bmap_masked_to_framebuffer(..., mask_idx=0)`. Hotspot: top-left (0,0).
+- **GENICO_0..6.CIF** (7 frames, 720×116 each) — animated hover icon. Loaded in `menu_init` → `menu->genico_frames[7]`. Frame index = `(sys->timer.tick / 100) % 7` (advances every 100 ms). Drawn at `(item.x - 20, item.y + 2)` next to the currently hovered item. Only drawn when `hovered_item >= 0`.
+- Both use per-image CIF palette from `bmap->palette` (falls back to backdrop palette if NULL).
+- `menu_release_cursors(menu)` frees all cursor bmaps on menu exit.
 
 ## CIF image format
 
@@ -63,6 +73,34 @@ Notes per libsys/game subsystem. Detail intent, key entry points, and what's por
   - **Linux** (`platforms/linux.c`): stub — returns success/passthrough; ALSA deferred.
   - **Windows** (`platforms/windows.c`): stub — returns success/passthrough; WASAPI deferred.
   - `state->audio_enabled` defaults to `true` (set in `state_init`).
+
+### WAV / SFX pipeline (landed 2026-07)
+
+New module: `src/libsys/audio/wav.[ch]`.
+
+**Loader (`wav_load`):**
+- Parses RIFF/WAVE header; scans chunks for `fmt ` and `data`.
+- Accepts PCM fmt tag 1 only; rejects non-PCM.
+- Supports 8-bit unsigned and 16-bit signed LE PCM; converts 8-bit → i16 via `s16 = ((u8)b - 128) * 256`.
+- Output: heap-allocated `wav_t` with `i16 *samples` (always i16 after decode).
+- Logs `wav_load: <path> -> Nch/RateHz/BDbit/samples=X` unconditionally (`printf`).
+
+**Playback (`sfx_play`):**
+- Respects `state->audio_enabled`; drops silently if false.
+- Mono → stereo upmix by duplicating each sample.
+- 11025 Hz → 22050 Hz point-doubling (nearest-neighbour repeat).
+- 22050 Hz → pushed as-is.
+- Other rates → pushed as-is with a warning (pitch-shifted).
+- Calls `ls_audio_push(&state->audio, out, bytes)` — fire-and-forget; drops if queue full (returns 0).
+
+**Menu click hook (`src/menu.c`):**
+- `static wav_t sfx_click = {0}` — file-local cache.
+- `menu_load_click_sfx(game_path)` — static helper searches `wav/NORMAL/` in priority: `INVENT1.WAV` → `MENU.WAV` → `CLICK.WAV` → `SELECT.WAV` → first `.WAV` found. Logs chosen file.
+- `menu_init` calls `menu_load_click_sfx(state->game_path)`.
+- `menu_dispatch` calls `sfx_play(&sfx_click)` before any action routing.
+- `menu_release` calls `wav_free(&sfx_click)`.
+
+**Verified:** `wav_load: .../357.WAV -> 1ch/11025Hz/16bit/samples=9096` appears in `/tmp/dke.log` (357.WAV is the first alphabetical WAV; INVENT1.WAV absent from this dump).
 
 ## Movie playback (SEB codec)
 
@@ -195,6 +233,185 @@ New globals added:
 - Verified log output: `LOADING.GIF -> 512x64`, `MENUGEN.GIF palette loaded`, `objets.gif -> 256x512`, `sub_415FB0: FONTE11 atlas -> 691x224`.
 
 **Next steps**: port `sub_46493B` (player entity) + `display_weapons_inventory`; wire `word_4D0A40` for font bitmask walk in `sub_415FB0`.
+
+## Menu
+
+Entry point: `process_mainmenu` (00437EB7) in `src/menu.c`. Called from `ls_main` after `game_init` and intro cutscene.
+
+Architecture:
+- `menu_t` state machine: `MENU_STATE_MAIN / LOADING / QUIT / NEWGAME / LOAD / OPTIONS / TRAILER`.
+- `menu_item_t` hitbox table: `MAIN_MENU_ITEMS[5]` with label, x/y/w/h, `menu_action_e`.
+- `menu_action_e`: NONE=0, NEWGAME=1, QUIT=2, LOAD=3, OPTIONS=4, SAVE=5, TRAILER=6, CREDITS=7.
+
+**Asm findings (process_mainmenu_437EB7):**
+- Menu items are **image hitboxes** (not text) — overlay CIF: `DATAS>MENUS>MENU_%01d.CIF`.
+- Full backdrop: `DATAS>MENUS>MENUGEN.GIF` (640×480), loaded during `game_init` phase 7.
+- Animated cursor: `DATAS>GLOBAL>IMAGES>CURS128.GIF` with `sub_4374B0`/`sub_4375DF` animator.
+- Hitbox tables: `var_4AE0[8]` (8 main items, 40 bytes each), `var_4B40[2]` (ESC/enter).
+- Default hover: `var_4AEC = 6` (QUIT item in original indexing).
+- Mouse state `var_4C68`: 0=up, 1=click, 2=doubleclick.
+- Keyboard: ECX=0x25 up, ECX=0x27 down, ECX=0x0D enter, ECX=0x1B esc.
+- Return code `var_C` / `game_exit_code` communicated to `ls_main`.
+
+**Pass 1 (landed 2026-07):** Static display + hover + keyboard nav. Text labels via `draw_text_at` (YELLOW=hovered, WHITE=idle). MENUGEN backdrop via `blit_bmap_to_framebuffer`. QUIT state breaks the main loop. Confirmed via log: `menu: init`, `menu: render`.
+
+**Pass 2 (landed 2026-07):** Mouse click routing + action dispatch. Changes:
+- `menu_dispatch()` — new static function; central router for both click and keyboard confirm. Handles `QUIT` → `MENU_STATE_QUIT`, `TRAILER` → `pending_trailer=1`, others → log stubs.
+- `menu_update` — `sys->mouse_left == 2` (pressed-edge) + `hovered_item >= 0` → `menu_dispatch`. ESC → direct QUIT state.
+- `menu_render` — checks `menu->pending_trailer`; calls `ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH")`, clears flag, sets `dirty=1` for backdrop restore.
+- `macos.m` — keyCodes 126/125/36/53 (Up/Down/Return/Esc) mapped to `actions[38/40/13/27]`. Mouse Y-coord flipped (Cocoa bottom-origin → framebuffer top-left). `mouseDown` updates `motion_x/y` at click time.
+- `menu_t` — `pending_trailer b8` field added.
+- `menu_action_e` — `MENU_ACTION_NEWGAME` renamed `MENU_ACTION_NEW_GAME` for consistency.
+- Confirmed via log: `menu: click NEW GAME action=1`, `menu: NEW GAME not yet implemented`.
+
+**Pass 3 (TODO):**
+- `sub_43F7BD` — real hitbox hit-test against `var_4AE0[8]` asm table.
+- `overlay_cursor_image` — animated cursor sprite blit (GENICO.GIF).
+- `menu_process_gamma` — pre-menu brightness slider.
+- `ls_load_sound`/`ls_play_sound` — INVENT1.WAV click feedback.
+- `find_closest_palette_colors` — 8-bit mode palette remap.
+- Save/load panel (SAVE.GIF, DKEGAME.CFG slot check).
+- Options sub-menu (brightness/contrast/shadow sliders).
+- `sub_4380F9` — new game bootstrap.
+- `sub_437ADC` — load-slot picker panel.
+- `sub_438CA5` — options panel.
+
+## Scene / Level
+
+Entry point: `scene_load_level` (0046DFEC) in `src/scene.[ch]`. Called from `menu_dispatch` when `MENU_ACTION_NEW_GAME` is selected (level id = `state->first_room`, default 1 from DKE.CFG).
+
+### Level asset structure
+
+Level assets live under `DATAS/L%02d/` (virtual path `DATAS>L%02d`):
+
+| file pattern | purpose | status |
+|---|---|---|
+| `L%02d.INF` | level config header | skeleton read (header bytes only) |
+| `L%02d.DAT` | level geometry / entity data | TODO (sub_46D0EA) |
+| `IMAGES/` | level image directory | TODO (sub_46D0EA) |
+| `PAL/` | level palette directory | TODO (sub_46D0EA) |
+| `ANIM2D/` | 2-D animation directory | TODO (sub_46D0EA) |
+| `IM%02d.OME` | per-level overlay image | TODO (sub_46D0EA) |
+
+### Globals set by scene_load_level
+
+| C name | asm sym | value set |
+|---|---|---|
+| `g_world_state` | `world_state` | `level_id` |
+| `g_world_controller` | `world_controller` | allocated by sub_46D305 (TODO stub) |
+| `g_byte_4B7280` | `byte_4B7280` | 1 |
+| `g_byte_511760` | `byte_511760` | 0 |
+| `g_dword_505C54` | `dword_505C54` | 0 |
+| `g_dword_4EDC30/34/38` | `dword_4EDC30/34/38` | 0 |
+| `state->current_level_id` | — (port addition) | `level_id` |
+
+### Port status (Slice C skeleton, 2026-07)
+
+`scene_load_level` skeleton landed. 25 phases logged. `.INF` header read attempted (non-fatal if missing). All heavy sub-calls are no-op stubs. `player_entity` writes are NULL-guarded (entity not yet exported from `game_init.c`). Build clean, exit 143 confirmed. Wired into `menu_dispatch` `MENU_ACTION_NEW_GAME` case with `state->first_room` as the level ID.
+
+### LIEU%02d.DLL extractor (`tools/src/dump_lieu.py`)
+
+Discovered via extraction: LIEU DLLs contain **compiled x86 code**, not data blobs. Each exports one symbol `@FonctionEditor@16` (`__stdcall` — 16-byte stack args) that runs level init. `.data` (~40 KB) holds identifier strings only:
+
+- Dialog codes: `SG01DIA01`..`SG03DIA02`
+- Action codes: `SP01ACT17`..`SP03ACT17`
+- Level opcodes: `LCOD666`..`LCOD671`+
+- Character/object IDs: `Sar_50`, `SOB86`, etc.
+
+`.rdata` = 2 KB constants. `.text` = ~136 KB compiled code per level.
+
+CLI usage:
+- `dump_lieu.py --list LIEU01.DLL` — print sections + exports + imports + strings.
+- `dump_lieu.py LIEU01.DLL <out-dir>` — dump `.text`, `.data`, `.rdata`, `.bss`, `.rsrc` + export bytes as `.bin` files.
+- `dump_lieu.py --all <game-dir>` — batch: process every `.DLL` under `dke/level_data/<stem>/`.
+
+Dependency: `pip install pefile`.
+
+**Runtime execution options** (blocker for real gameplay):
+- (a) Static analysis of each LIEU's `FonctionEditor` → hand-port to C.
+- (b) Integrate x86 emulator (unicorn engine).
+- (c) Reconstruct level structure from `.data` strings + engine API call graph.
+
+**Next pass (Slice C pass 2):**
+- Port `sub_46D0EA` — full asset loader (DAT / IMAGES / PAL / ANIM2D / OME).
+- Port `sub_46D305` — world controller allocation.
+- Export `g_player_entity` from `game_init.c` so offset writes land.
+- Wire `dword_543C60`, `dword_4B727C`, `dword_505C58`, `dword_4B2AB8` globals.
+- Pick LIEU execution route (a/b/c) — no gameplay possible until decided.
+
+## Player entity
+
+Entry point: `player_entity_init` (0046493B) + `player_entity_init_secondary` (00464F6D) in `src/player.[ch]`. Called from `game_init` phases 33 and 34.
+
+### Entity struct
+
+- Allocation size: **0xEA0 = 3744 bytes** (from asm `mov ecx, 0EA0h; call allocate_memory`).
+- Zero-initialised after allocation (asm `_memset(ptr, 0, 0xEA0)`).
+- Global: `void *g_player_entity` in `player.c`, extern in `player.h`.
+
+### Known field offsets (identified from asm writes after memset)
+
+| offset | size | value set | purpose |
+|---|---|---|---|
+| +0x000 | u32 | 0 | mirror of position_x (+0x10) |
+| +0x004 | u32 | 0 | mirror of position_y (+0x14) |
+| +0x008 | u32 | 0x27F | mirror of bound_right (+0x18) |
+| +0x00C | u32 | 0x1DF | mirror of bound_bottom (+0x1C) |
+| +0x010 | u32 | 0 | position_x |
+| +0x014 | u32 | 0 | position_y |
+| +0x018 | u32 | 0x27F | bound_right (639) |
+| +0x01C | u32 | 0x1DF | bound_bottom (479) |
+| +0x030 | u32 | 0xFFFF4000 | (unknown signed field) |
+| +0x038 | u32 | 0xFFFFC000 | (unknown signed field) |
+| +0x064 | u32 | 0x50 (80) | (unknown) |
+| +0x070 | u32 | 1 | (flag) |
+| +0x074 | u32 | 1 | (flag) |
+| +0x078 | u32 | 0 | screen-clip left |
+| +0x07C | u32 | 0 | screen-clip top |
+| +0x080 | u32 | 0x27F | screen-clip right |
+| +0x084 | u32 | 0x1DF | screen-clip bottom |
+| +0x090 | u32 | 2 | entity type flag |
+| +0x094 | u32 | 2 | secondary type flag |
+| +0x0AC | ptr | &dword_4ECD50 | weapon-slot table ptr (TODO: not yet wired) |
+| +0xC04 | u32 | 0xFFFFFFFF | (sentinel) |
+| +0xC64 | u32 | 0x10000 | (display scale?) |
+| +0xC68 | u32 | 0x4000 | (display scale?) |
+| +0xCD8 | ptr | byte_4F60E0 | dialogue/animation buffer (TODO: not mapped) |
+| +0xD34 | u32 | current_game_time | game time at init |
+| +0xD64 | u32 | 0 | (anim state) |
+| +0xD68 | u32 | 0 | (anim state) |
+| +0xD80 | u32 | 0 | NPC squad flag (0 = player) |
+| +0xE94 | u32 | 0xFFFF | (unknown) |
+
+Other offsets seen in asm (task spec): +0x0A0 (some flag), +0x0D04/0x0D08 (anim/state pointer), +0x0D5C (game time from `system_get_gametime`).
+
+### Nested sub-calls (all stubbed — >100 asm lines each)
+
+- `sub_462BCC` — creature descriptor / persona file load
+- `setup_creature` — mesh + animation init; ECX=`"PERSOS>"`, EDX=`var_80`
+- `process_scene_hierarchy_with_memory` — control-point hierarchy builder
+- `create_single_control_point` — root control point
+- `sub_4699D9` — anim state init from `[entity+0x50h]`
+- `sub_41F6BA` — entity registration
+- `sub_42DDED` — squad/companion wiring
+
+### Port status (Slice D pass 1, 2026-07)
+
+`player_entity_init` — `partial`. Allocation, zero-init, and all identifiable default field writes are ported. All nested sub-calls are stub-logged. `g_player_entity` populated and non-NULL at runtime.
+
+`player_entity_init_secondary` — `partial`. Phase structure ported. +0xCD8 dialogue ptr, weapon slot read, and full weapon entity load chain are stub-logged.
+
+### Input routing
+
+`player_input_update` in `src/player.c` — `ported`.
+
+- `sys->actions[119]` (W) → `velocity_z = -1.0f` (forward)
+- `sys->actions[115]` (S) → `velocity_z = +1.0f` (backward)
+- `sys->actions[97]`  (A) → `velocity_x = -1.0f` (strafe left)
+- `sys->actions[100]` (D) → `velocity_x = +1.0f` (strafe right)
+- `sys->mouse_left == 2` → `want_action = 1` (attack edge)
+
+Wired in `ls_main` when `menu.state == MENU_STATE_LOADING`.
 
 ## Timing
 

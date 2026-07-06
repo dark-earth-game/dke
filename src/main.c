@@ -21,6 +21,8 @@
 #include "state.h"
 #include "game_detection.h"
 #include "game_init.h"
+#include "menu.h"
+#include "player.h"
 #include "libsys/graphics/graphic.h"
 
 
@@ -261,48 +263,49 @@ i32 ls_main(system_t *system, c8 **argv) {
      * the file is missing rather than crash. */
     ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
 
-    /* --- Slice A: blit menu backdrop into front_buffer ---
-     * After the intro CRH finishes (or is skipped), the front_buffer is zeroed
-     * (black).  Fetch the LOADING.GIF bmap and MENUGEN.GIF palette loaded during
-     * game_init, then expand the 8bpp indexed backdrop into the 32-bit XRGB
-     * front_buffer so the user sees something while the main-menu is not yet
-     * interactive. Re-blit every frame to avoid stale intro-clear artifacts. */
-    bmap_t *g_backdrop_bmap    = NULL;
-    u8     *g_backdrop_palette = NULL;
-    game_init_get_menu_backdrop(&g_backdrop_bmap, &g_backdrop_palette);
-    if (g_backdrop_bmap && g_backdrop_palette) {
-        print("ls_main: menu backdrop ready %dx%d, will blit each frame\n",
-              (i32)g_backdrop_bmap->width, g_backdrop_bmap->height);
-    } else {
-        print("ls_main: menu backdrop not available (bmap=%p palette=%p)\n",
-              (void *)g_backdrop_bmap, (void *)g_backdrop_palette);
-    }
+    /* --- Slice B: main menu state machine ---
+     * menu_init fetches the MENUGEN backdrop from game_init (same source as
+     * Slice A) and sets up the menu_t state.  menu_render owns the per-frame
+     * backdrop blit + text overlay, replacing the raw Slice A blit. */
+    menu_t menu;
+    menu_init(&menu);
 
     while(!system->quit) {
         system->timer.tick = ls_tick();
         ls_update_events(system);
 
-        /* Blit menu backdrop each frame (Slice A).
-         * Centre the backdrop horizontally; top-align vertically.
-         * If backdrop is wider/taller than the framebuffer, blit from (0,0)
-         * so it fills from the top-left corner. */
-        if (g_backdrop_bmap && g_backdrop_palette) {
-            i32 fb_w = state->graphic.width;
-            i32 fb_h = state->graphic.height;
-            i32 bmp_w = (i32)g_backdrop_bmap->width;
-            i32 bmp_h = g_backdrop_bmap->height;
-            i32 off_x = (fb_w > bmp_w) ? (fb_w - bmp_w) / 2 : 0;
-            i32 off_y = (fb_h > bmp_h) ? (fb_h - bmp_h) / 2 : 0;
-            blit_bmap_to_framebuffer(state->graphic.front_buffer,
-                                     fb_w, fb_h,
-                                     g_backdrop_bmap, g_backdrop_palette,
-                                     off_x, off_y);
+        /* Update hover / keyboard nav state */
+        menu_update(&menu, system);
+
+        /* Render backdrop + text overlay */
+        menu_render(&menu, system);
+
+        /* Exit main loop when user selects QUIT */
+        if (menu.state == MENU_STATE_QUIT) {
+            print("ls_main: menu QUIT selected, breaking loop\n");
+            break;
+        }
+
+        /* Loading state — display "LOADING LEVEL N" until scene main loop
+         * takes over (not yet ported). For now, keep showing menu backdrop
+         * with an overlay.  Poll player input so the skeleton is exercised
+         * once the scene has been entered. */
+        if (menu.state == MENU_STATE_LOADING) {
+            c8 loading_msg[64];
+            snprintf(loading_msg, sizeof(loading_msg),
+                     "LOADING LEVEL %d", state->current_level_id);
+            set_position_coordinates(220, 420);
+            draw_text(loading_msg);
+
+            /* Slice D: poll WASD + mouse_left → player_input_t */
+            static player_input_t pinput;
+            player_input_update(&pinput, system);
         }
 
         /* Overlay debug text if enabled */
         if (state->debug_enabled) {
             set_position_coordinates(4, 4);
-            draw_text("DKE - menu backdrop");
+            draw_text("DKE - main menu");
         }
 
         ls_blit(system, state->graphic.front_buffer);

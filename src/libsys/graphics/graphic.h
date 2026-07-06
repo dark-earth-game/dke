@@ -31,6 +31,13 @@ typedef struct {
  *   +28  first_pixel  (ptr copy of pixels — mirrors original [esi+28h] = [esi])
  *   +2C  pixel_format (mask / pixel-format enum; 2=8bpp,4=16bpp,0x20=24bpp,0x80=32bpp)
  *   +30  surface      (platform surface / DirectDraw ptr — NULL in our port)
+ *
+ * Port extension (beyond original 0x34 bytes):
+ *   palette      — 768-byte RGB palette transferred from cif_image_t on load.
+ *                  NULL if the image was loaded without palette preservation.
+ *                  Owned by this bmap; freed by ls_free_bmap.
+ *   owns_palette — 1 if palette was heap-allocated by image_load_compressed
+ *                  and must be freed; 0 for external / static palette refs.
  */
 typedef struct {
     i32  stride;        /* +00 */
@@ -47,6 +54,9 @@ typedef struct {
     u8  *first_pixel;   /* +28 */
     i32  pixel_format;  /* +2C */
     void *surface;      /* +30 */
+    /* Port-only extensions — not present in original 0x34-byte layout */
+    u8  *palette;       /* 768-byte RGB palette (NULL if not loaded) */
+    i32  owns_palette;  /* 1 = free palette on ls_free_bmap */
 } bmap_t;
 
 /* global graphics context — mirrors graphics_context data symbol */
@@ -154,3 +164,23 @@ void draw_image(bmap_t *dst, bmap_t *src,
 void blit_bmap_to_framebuffer(u32 *fb, i32 fb_w, i32 fb_h,
                                const bmap_t *src, const u8 *palette,
                                i32 dx, i32 dy);
+
+/*
+ * blit_bmap_masked_to_framebuffer — like blit_bmap_to_framebuffer but skips
+ * pixels whose palette index equals mask_idx (transparency convention).
+ *
+ * Common convention: mask_idx = 0 (index 0 = transparent).
+ * All other indices are expanded normally.
+ *
+ * @param fb       u32 XRGB framebuffer (row-major, fb_w x fb_h)
+ * @param fb_w     framebuffer width in pixels
+ * @param fb_h     framebuffer height in pixels
+ * @param src      8-bit indexed source bmap
+ * @param palette  768-byte RGB palette
+ * @param dx       destination X offset in framebuffer
+ * @param dy       destination Y offset in framebuffer
+ * @param mask_idx palette index treated as transparent (skip these pixels)
+ */
+void blit_bmap_masked_to_framebuffer(u32 *fb, i32 fb_w, i32 fb_h,
+                                      const bmap_t *src, const u8 *palette,
+                                      i32 dx, i32 dy, u8 mask_idx);

@@ -222,6 +222,27 @@ static void handle_events(system_t *system, i32 type, i32 key) {
         case 0x25:
             system->actions[108] = type;
             break;
+        /* Navigation keys — wired for menu_update (pass 2) */
+        // Return / Enter (keyCode 36) → actions[13] (ECX=0x0D in original asm)
+        case 0x24:
+            system->actions[13] = type;
+            break;
+        // Escape (keyCode 53) → actions[27] (ECX=0x1B in original asm)
+        case 0x35:
+            system->actions[27] = type;
+            break;
+        // Up arrow (keyCode 126) → actions[38] (ECX=0x25 / VK_UP)
+        case 0x7E:
+            system->actions[38] = type;
+            break;
+        // Down arrow (keyCode 125) → actions[40] (ECX=0x27 / VK_DOWN)
+        case 0x7D:
+            system->actions[40] = type;
+            break;
+        // F12 (keyCode 111) → actions[111] for screenshot
+        case 0x6F:
+            system->actions[111] = type;
+            break;
         default:
             break;
     }
@@ -309,15 +330,38 @@ static void handle_mouse_events(system_t *system, i32 type, i32 x, i32 y) {
 }
 
 - (void)mouseDown:(NSEvent *)event {
+    /* Update motion_x/y at click time so hitbox test uses current position.
+     * Cocoa y-origin is bottom-left; flip to match top-left framebuffer origin. */
+    NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
+    system->motion_x = (i32)point.x;
+    system->motion_y = system->height - (i32)point.y;
+    /* Edge = 2 (pressed this frame); ls_update_events downgrades to 1 next tick. */
+    system->mouse_left = 2;
 }
 
 - (void)mouseUp:(NSEvent *)event {
+    (void)event;
+    system->mouse_left = 0;
 }
 
 - (void)rightMouseDown:(NSEvent *)event {
+    (void)event;
+    system->mouse_right = 2;
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
+    (void)event;
+    system->mouse_right = 0;
+}
+
+- (void)otherMouseDown:(NSEvent *)event {
+    (void)event;
+    system->mouse_middle = 2;
+}
+
+- (void)otherMouseUp:(NSEvent *)event {
+    (void)event;
+    system->mouse_middle = 0;
 }
 
 - (void)scrollWheel:(NSEvent *)event {
@@ -346,8 +390,10 @@ static void handle_mouse_events(system_t *system, i32 type, i32 x, i32 y) {
 - (void)mouseMoved:(NSEvent *)event {
     [super mouseMoved: event];
     NSPoint point = [self convertPoint:[event locationInWindow] fromView:nil];
-    // printf("x: %f, y: %f\n", point.x, point.y);
-    handle_mouse_events(system, 1, point.x, point.y);
+    /* Cocoa y-origin is bottom-left; framebuffer y-origin is top-left.
+     * Flip y so menu hitbox tests (top-down) work correctly. */
+    i32 flipped_y = system->height - (i32)point.y;
+    handle_mouse_events(system, 1, (i32)point.x, flipped_y);
 }
 
 @end
@@ -423,6 +469,12 @@ i32 ls_init_instance(system_t *system, i32 width, i32 height, i32 bpp) {
 }
 
 void ls_update_events(system_t *system) {
+    /* Downgrade pressed-edge (2) → held (1) so consumers can distinguish
+     * a click frame from subsequent held frames. */
+    if (system->mouse_left   == 2) system->mouse_left   = 1;
+    if (system->mouse_right  == 2) system->mouse_right  = 1;
+    if (system->mouse_middle == 2) system->mouse_middle = 1;
+
     NSEvent* ev;
     do {
         ev = [NSApp nextEventMatchingMask: NSEventMaskAny
