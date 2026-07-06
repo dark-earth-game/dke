@@ -52,6 +52,7 @@
 #include "state.h"
 #include "scene.h"
 #include "game_init.h"
+#include "model.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols.
@@ -790,11 +791,7 @@ i32 scene_render(system_t *sys) {
     i32  fb_h = state->graphic.height;
     if (!fb) return 0;
 
-    /* F = plain foreground blit.  L (light map) is NOT applied to the
-     * background — it's used to shade 3D models when they get rendered
-     * on top.  Z (depth) will be sampled per pixel during model blit to
-     * decide model-vs-background occlusion in the 2.5D pipeline.  For
-     * this pass we only draw F. */
+    /* Step 1 — plain F blit as backdrop. */
     if (g_scene_bg_bmap && g_scene_bg_bmap->pixels && g_scene_bg_bmap->palette) {
         i32 bw = (i32)g_scene_bg_bmap->width;
         i32 bh = g_scene_bg_bmap->height;
@@ -804,6 +801,21 @@ i32 scene_render(system_t *sys) {
                                  g_scene_bg_bmap, g_scene_bg_bmap->palette,
                                  ox, oy);
     }
+
+    /* Step 2 — placeholder 3D model (wireframe cube) so the L + Z sample
+     * paths are exercised on top of the real backdrop. Sits at screen
+     * centre, rotates around Y using system tick.  When a real .OME
+     * loader lands, swap model_test_cube() for the parsed model.  Colours
+     * modulate through the L bmap; per-pixel depth compares against the
+     * Z bmap so the cube goes behind any nearer scene geometry (0=near,
+     * 255=far). */
+    model_render(model_test_cube(),
+                 sys,
+                 fb_w / 2, fb_h / 2,
+                 80 /* pixels per model unit */,
+                 sys ? sys->timer.tick : 0,
+                 g_scene_l_bmap,
+                 g_scene_z_bmap);
     return 0;
 }
 
