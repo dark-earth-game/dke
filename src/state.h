@@ -64,6 +64,16 @@ typedef struct {
     c8 game_temp_path[256];
     u8 colour_mode; // 0 for 8-bit, 1 for 16-bit
 
+    // DKE.CFG settings
+    i32 first_room;
+    i32 lum;
+    i32 first_perso;
+    i32 first_object;
+    i32 brightness;
+    i32 contrast;
+    i32 shadow;
+    i32 detail;
+
     // system structures
     system_t system;
     graphic_t graphic;
