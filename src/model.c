@@ -12,7 +12,6 @@
 #include "state.h"
 #include "model.h"
 
-static inline i32 iabs(i32 v) { return v < 0 ? -v : v; }
 
 /* -------------------------------------------------------------------------
  * Test cube: 8 verts, 12 triangles.
@@ -140,31 +139,94 @@ static void plot_pixel(u32 *fb, i32 fb_w, i32 fb_h,
 }
 
 /*
- * Bresenham line with per-pixel depth interpolation + Z-test + L modulation.
+ * Draw a horizontal scanline with linear depth interpolation.
+ * xL/xR are inclusive left/right edges; zL/zR are depths at those edges.
  */
-static void draw_line(u32 *fb, i32 fb_w, i32 fb_h,
-                      i32 x0, i32 y0, i32 z0,
-                      i32 x1, i32 y1, i32 z1,
-                      u32 colour,
-                      const bmap_t *l_bmap, const bmap_t *z_bmap) {
-    i32 dx =  iabs(x1 - x0);
-    i32 dy = -iabs(y1 - y0);
-    i32 sx = x0 < x1 ? 1 : -1;
-    i32 sy = y0 < y1 ? 1 : -1;
-    i32 err = dx + dy;
-    i32 steps = (dx > -dy ? dx : -dy);
-    if (steps <= 0) steps = 1;
-    i32 dz  = z1 - z0;
-    i32 acc = 0;
+static void draw_scanline(u32 *fb, i32 fb_w, i32 fb_h,
+                          i32 y, i32 xL, i32 xR, i32 zL, i32 zR,
+                          u32 colour,
+                          const bmap_t *l_bmap, const bmap_t *z_bmap) {
+    if (y < 0 || y >= fb_h) return;
+    if (xL > xR) {
+        i32 t = xL; xL = xR; xR = t;
+        i32 tz = zL; zL = zR; zR = tz;
+    }
+    i32 span = xR - xL;
+    if (span < 0) return;
+    i32 dz = zR - zL;
 
-    for (;;) {
-        i32 depth = z0 + (dz * acc) / steps;
-        plot_pixel(fb, fb_w, fb_h, x0, y0, depth, colour, l_bmap, z_bmap);
-        if (x0 == x1 && y0 == y1) break;
-        i32 e2 = err * 2;
-        if (e2 >= dy) { err += dy; x0 += sx; }
-        if (e2 <= dx) { err += dx; y0 += sy; }
-        acc++;
+    /* Clip to fb bounds while keeping z interpolation correct. */
+    i32 start = xL;
+    i32 end   = xR;
+    if (start < 0)       start = 0;
+    if (end   >= fb_w)   end   = fb_w - 1;
+    if (start > end)     return;
+
+    for (i32 x = start; x <= end; x++) {
+        i32 depth = span > 0 ? zL + (dz * (x - xL)) / span : zL;
+        plot_pixel(fb, fb_w, fb_h, x, y, depth, colour, l_bmap, z_bmap);
+    }
+}
+
+/*
+ * Solid triangle fill with linear depth interpolation.  Splits at the
+ * middle vertex into a flat-bottom + flat-top pair and walks scanlines
+ * between the interpolated left/right edges.  Depth is interpolated
+ * along each edge in Q16.16 so per-pixel Z-tests get sub-scanline
+ * accuracy on tall triangles.
+ */
+static void fill_triangle(u32 *fb, i32 fb_w, i32 fb_h,
+                          i32 x0, i32 y0, i32 z0,
+                          i32 x1, i32 y1, i32 z1,
+                          i32 x2, i32 y2, i32 z2,
+                          u32 colour,
+                          const bmap_t *l_bmap, const bmap_t *z_bmap) {
+    /* Sort by y ascending: (x0,y0,z0) top, (x1,y1,z1) middle, (x2,y2,z2) bottom. */
+    #define SWAP_VERT(A, B) do {                              \
+        i32 _t; _t = x##A; x##A = x##B; x##B = _t;             \
+                _t = y##A; y##A = y##B; y##B = _t;             \
+                _t = z##A; z##A = z##B; z##B = _t;             \
+    } while (0)
+    if (y0 > y1) SWAP_VERT(0, 1);
+    if (y0 > y2) SWAP_VERT(0, 2);
+    if (y1 > y2) SWAP_VERT(1, 2);
+    #undef SWAP_VERT
+
+    if (y2 == y0) return;   /* degenerate — collapsed triangle */
+
+    /* Edge (0→2) is the long edge that spans the whole triangle.
+     * Compute the x + z on that edge at the middle vertex's y. */
+    i32 total_dy = y2 - y0;
+    i32 mid_dy   = y1 - y0;
+    i32 mid_edge_x = x0 + ((x2 - x0) * mid_dy) / total_dy;
+    i32 mid_edge_z = z0 + ((z2 - z0) * mid_dy) / total_dy;
+
+    /* Upper half: y0..y1. */
+    if (y1 != y0) {
+        i32 dy_up = y1 - y0;
+        for (i32 y = y0; y <= y1; y++) {
+            i32 t = y - y0;
+            i32 xL = x0 + ((x1 - x0)     * t) / dy_up;
+            i32 xR = x0 + ((mid_edge_x - x0) * t) / dy_up;
+            i32 zL = z0 + ((z1 - z0)     * t) / dy_up;
+            i32 zR = z0 + ((mid_edge_z - z0) * t) / dy_up;
+            draw_scanline(fb, fb_w, fb_h, y, xL, xR, zL, zR,
+                          colour, l_bmap, z_bmap);
+        }
+    }
+
+    /* Lower half: y1..y2. */
+    if (y2 != y1) {
+        i32 dy_lo = y2 - y1;
+        for (i32 y = y1; y <= y2; y++) {
+            i32 t = y - y1;
+            i32 xL = x1        + ((x2 - x1)        * t) / dy_lo;
+            i32 xR = mid_edge_x + ((x2 - mid_edge_x) * t) / dy_lo;
+            i32 zL = z1        + ((z2 - z1)        * t) / dy_lo;
+            i32 zR = mid_edge_z + ((z2 - mid_edge_z) * t) / dy_lo;
+            draw_scanline(fb, fb_w, fb_h, y, xL, xR, zL, zR,
+                          colour, l_bmap, z_bmap);
+        }
     }
 }
 
@@ -211,24 +273,24 @@ void model_render(const model_t *m, system_t *sys,
         projected[i].depth = d;
     }
 
-    /* Wireframe: 3 edges per face. We duplicate edges across shared triangles
-     * — acceptable for a placeholder cube. Triangle fill lands next pass. */
+    /* Solid triangle fill with backface culling. Winding: model faces are
+     * CCW when viewed from outside; screen Y goes DOWN, so a front face
+     * ends up CW in screen space. Cross-z of screen edges (b-a)×(c-a) is
+     * positive for CW → keep. */
     for (i32 f = 0; f < m->face_count; f++) {
         const model_face_t *face = &m->faces[f];
         const proj_vertex_t *a = &projected[face->i0];
         const proj_vertex_t *b = &projected[face->i1];
         const proj_vertex_t *c = &projected[face->i2];
-        draw_line(fb, fb_w, fb_h,
-                  a->sx, a->sy, a->depth,
-                  b->sx, b->sy, b->depth,
-                  face->colour, l_bmap, z_bmap);
-        draw_line(fb, fb_w, fb_h,
-                  b->sx, b->sy, b->depth,
-                  c->sx, c->sy, c->depth,
-                  face->colour, l_bmap, z_bmap);
-        draw_line(fb, fb_w, fb_h,
-                  c->sx, c->sy, c->depth,
-                  a->sx, a->sy, a->depth,
-                  face->colour, l_bmap, z_bmap);
+
+        i64 cross_z = (i64)(b->sx - a->sx) * (i64)(c->sy - a->sy)
+                    - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
+        if (cross_z <= 0) continue;   /* back face — skip */
+
+        fill_triangle(fb, fb_w, fb_h,
+                      a->sx, a->sy, a->depth,
+                      b->sx, b->sy, b->depth,
+                      c->sx, c->sy, c->depth,
+                      face->colour, l_bmap, z_bmap);
     }
 }
