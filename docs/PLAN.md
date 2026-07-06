@@ -250,16 +250,31 @@ Scope: 3-5 Sonnet passes. Big surface area. Defer until Slice C provides world c
 - Helpers: scene_mat3_t (Q14 3×3), scene_mat3_from_rx_ry, scene_mat3_mul,
   scene_mat3_apply. All static in scene.c, no new headers.
 
+**Pass 6e landed 2026-07 (per-camera screen anchor from INF):**
+- `scene_load_camera_anchor(level_id, cam_idx)` added to scene.c.
+  Parses INF extra section (same format as scene_load_inf_pitch):
+  reads param[0..11] (R 3×3 Q14 + T raw), reads cam zone polygon
+  (at cam_struct[+0x1D8]=n_verts, [+0x1DC..] = vertex (x,y,z) × 12 bytes
+  each; filters garbage, computes centroid X,Z).
+  Solves 2×2 system to find world (wx, wy, zone_z) projecting to
+  screen (320, 350): T_view = (R×T)>>14; rhs_x = -T_view[0]*16384 - R[2]*zone_z;
+  rhs_y = (target_vy - T_view[1])*16384 - R[5]*zone_z; det = R[0]*R[4]-R[1]*R[3];
+  wx = (rhs_x*R[4] - rhs_y*R[1])/det; wy = (rhs_y*R[0]-rhs_x*R[3])/det.
+  Degenerate cameras (|det|<1000, ≈90° rotation) use zone_x + solved wy.
+  Projects back to screen, clamps to [10..629]×[10..469], sets
+  g_scene_cam_sx/g_scene_cam_sy. Replaces fb_w/2, fb_h/2 anchor.
+  Verified: cam0 → zone=(305083,-1802945) → world=(301k,237k,-1803k)
+  → screen=(320,350). L01 lights (lighty=30k-80k) use model-space coords,
+  INF world Y ≈ 170k-240k (different coordinate system — deferred).
+
 **Remaining (pass 7+):**
-- Per-camera screen anchor: character world position needed to project
-  via sub_4915C0 (ortho: scale=param[25]/param[26]/16=1/128 for L01,
-  dbl_4B0C20=1/16; screen_x=view_x/128+320, screen_y=240-view_y/128).
-  Blocked on entity spawn / level world-position system (LIEU DLL or
-  equivalent). INF format fully decoded; byte_5110C0[cam_idx×120] holds
-  per-camera projection matrices populated from INF extra section.
+- Correct character world spawn position (from LIEU DLL or static analysis)
+  to replace the zone-centroid estimate. Anchor currently approximate.
 - Texture loading from MAT/TGA files (face UV at face[0x3C..0x5B];
-  sub_422E31 does texture atlas offset fixup at load).
-- Z-bmap near/far → re-enable per-pixel scene occlusion.
+  sub_422E31 does texture atlas offset fixup at load). P00 uses flat
+  shading (no TGA in persos/ — MATR colours ARE the visual).
+- Z-bmap occlusion tuning: world_size=60 approximate for OME scale.
+- Menu pass 5: save/load panel, options, CREDITS, intro reveal animation.
 
 ## Small parallel work (Haiku)
 
