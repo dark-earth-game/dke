@@ -164,6 +164,33 @@ typedef struct {
     i32         face_count;
 } ome_atom_t;
 
+/* -------------------------------------------------------------------------
+ * OBJC chunk parser
+ * ------------------------------------------------------------------------- */
+
+#define OME_MAX_BONES      32
+#define OME_MAX_ATOMSLOTS  20
+
+typedef struct {
+    char name[16];
+    i32  tx, ty, tz;
+    i32  h2;               /* parent index; -1 = root */
+} ome_bone_t;
+
+typedef struct {
+    ome_bone_t  bones[OME_MAX_BONES];
+    i32         n_bones;
+    char        atomf_slot_name[OME_MAX_ATOMSLOTS][16];
+    i32         n_atomslots;
+    i32         world_tx[OME_MAX_ATOMSLOTS];
+    i32         world_ty[OME_MAX_ATOMSLOTS];
+    i32         world_tz[OME_MAX_ATOMSLOTS];
+    i32         can_to_render[OME_MAX_BONES]; /* CAN slot j → render atom (-1 = no geo) */
+} ome_objc_t;
+
+/* Parse OBJC chunk body. objc_sig_off = offset of "3DITOR v2.0 OBJC" in raw[]. */
+i32 ome_parse_objc(const u8 *raw, i32 raw_len, i32 objc_sig_off, ome_objc_t *out);
+
 /*
  * ome_decode_atomf — decode one ATOMF chunk body into verts + faces.
  *

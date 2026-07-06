@@ -212,19 +212,42 @@ Scope: 3-5 Sonnet passes. Big surface area. Defer until Slice C provides world c
 - Background: pre-rendered CIF images.
 - ANI sprites: small environmental animations layered over background.
 
-**Remaining (pass 6+):**
-- CAN slot→atom mapping: OBJC second-loop name records (body at sig +
-  n_objs×0xB4) identify 20 ATOMF slots by name ("basdos", "tete", etc.).
-  CAN keyframe slot j maps to Object whose name matches CAN atom name j.
-  Currently atom render_index == CAN slot (approximate).
-- Full OBJC hierarchy traversal for world-space transforms (port
-  `sub_41FDC2`): accumulate T+R along parent chain for each atom.
-  Currently using pre-computed h2-accumulated character-relative T only.
-- Texture loading from MAT/TGA files (face UV data already decoded at
-  face[0x3C..0x5B]; texture atlas offset fixup at load done by sub_422E31).
+**Pass 6a landed 2026-07 (OBJC hierarchy + CAN slot→atom mapping):**
+- `ome_parse_objc()` added to `model_ome.[ch]`: decodes OBJC chunk body
+  (29 bones × 0xB4 bytes each; header[0x10]=n_bones, header[0x20]=n_atomslots;
+  bone record: +0x04=name, +0x3C=tx, +0x40=ty, +0x44=tz, +0x78=h2).
+  Builds `can_to_render[j]` (CAN slot j → render atom index by name match)
+  and `world_tx/ty/tz[i]` (accumulated translation from bone up parent chain,
+  excluding root "tree" bone). Verified: slot[0] basdos→(222,100,22),
+  slot[18] tete→(32444,1589,155) match prior G_P00_TRANS values exactly.
+- `scene.c`: G_P00_TRANS hardcoded table removed; per-atom world position
+  now from `g_scene_objc.world_tx/ty/tz[]`. CAN slot→atom loop now iterates
+  j=0..n_bones using `can_to_render[j]` to drive the correct render atom;
+  bones without geometry (tree, ddpdro, talgau, etc.) silently skipped.
+
+**Pass 6c landed 2026-07 (camera pitch from INF):**
+- `scene_load_inf_pitch()` parses `L%02d.INF` binary (format: magic(4)+
+  ts(4)+world_ctrl(0x208)+n_cam(4)+n_cam×0x208+n_inex(4)+n_inex×0x208+
+  n_stairs(4)+n_stairs×0x208+n_extra(4)+n_extra×0xA8 extra section).
+  Extra section entry cam_idx contains 120-byte projection parameter table;
+  param[5]=R[1][2]=sin(camera_pitch) Q14 (16384=1.0). Converts to
+  cosine_table index via asinf. `model_default_pitch` global in model.c
+  (extern in model.h) replaces literal 300. Reset to 300 in scene_release.
+- L01 camera 0: param[5]=2187 → ~7.7° pitch (was 26°).
+
+**Remaining (pass 7+):**
+- Per-camera screen anchor: character world position needed to project
+  via sub_4915C0 (ortho: scale=param[25]/param[26]/16=1/128 for L01,
+  dbl_4B0C20=1/16; screen_x=view_x/128+320, screen_y=240-view_y/128).
+  Blocked on entity spawn / level world-position system (LIEU DLL or
+  equivalent). INF format fully decoded; byte_5110C0[cam_idx×120] holds
+  per-camera projection matrices populated from INF extra section.
+- Full OBJC hierarchy traversal with rotation (port `sub_41FDC2`):
+  T-only currently exact (all OME bone resting rotations = 0); per-frame
+  positional correction during CAN animation not yet done.
+- Texture loading from MAT/TGA files (face UV at face[0x3C..0x5B];
+  sub_422E31 does texture atlas offset fixup at load).
 - Z-bmap near/far → re-enable per-pixel scene occlusion.
-- Per-camera projection matrix from L%02d.INF so character sits in
-  scene world space vs fixed screen centre.
 
 ## Small parallel work (Haiku)
 

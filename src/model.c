@@ -25,6 +25,8 @@
 
 #define ONE  0x10000   /* 1.0 in Q16.16 */
 
+i32 model_default_pitch = 300;
+
 static const model_vec3_t CUBE_VERTS[8] = {
     { -ONE, -ONE, -ONE },   /* 0: back-bottom-left  */
     {  ONE, -ONE, -ONE },   /* 1: back-bottom-right */
@@ -260,7 +262,7 @@ void model_render(const model_t *m, system_t *sys,
         roll  = rz_override & 0xFFF;   /* Z rotation = roll */
     } else {
         yaw   = (i32)((tick / 4u) & 0xFFF);
-        pitch = 300;                    /* ~26° fixed camera tilt */
+        pitch = model_default_pitch;    /* from L%02d.INF camera projection */
         roll  = 0;
     }
     (void)roll; /* roll not yet applied in projection */

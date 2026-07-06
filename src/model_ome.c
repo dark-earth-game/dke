@@ -374,3 +374,92 @@ void ome_atom_free(ome_atom_t *atom) {
     atom->vert_count = 0;
     atom->face_count = 0;
 }
+
+/* -------------------------------------------------------------------------
+ * OBJC chunk parser
+ * See model_ome.h for the empirical layout notes.
+ * ------------------------------------------------------------------------- */
+
+i32 ome_parse_objc(const u8 *raw, i32 raw_len, i32 objc_sig_off, ome_objc_t *out) {
+    if (!raw || !out || objc_sig_off < 0 || objc_sig_off + 0x30 > raw_len) return 0;
+    memset(out, 0, sizeof(*out));
+
+    const u8 *hdr = raw + objc_sig_off;
+
+    /* n_bones at header[0x10], n_atomslots at header[0x20] */
+    i32 n_bones = read_i32_le(hdr + 0x10);
+    i32 n_atomslots = read_i32_le(hdr + 0x20);
+    if (n_bones <= 0 || n_bones > OME_MAX_BONES) return 0;
+    if (n_atomslots <= 0 || n_atomslots > OME_MAX_ATOMSLOTS) return 0;
+    if (objc_sig_off + 0x30 + n_bones * 0xB4 + n_atomslots * 16 > raw_len) return 0;
+
+    out->n_bones = n_bones;
+    out->n_atomslots = n_atomslots;
+
+    /* Parse bones */
+    for (i32 i = 0; i < n_bones; i++) {
+        const u8 *rec = hdr + 0x30 + i * 0xB4;  /* record[i] */
+        const u8 *dat = rec + 4;                   /* data after 4-byte header */
+        ome_bone_t *b = &out->bones[i];
+        /* name: null-terminated, copy up to 15 chars */
+        i32 nlen = 0;
+        while (nlen < 15 && dat[nlen] != 0) nlen++;
+        memcpy(b->name, dat, (size_t)nlen);
+        b->name[nlen] = '\0';
+        b->tx = read_i32_le(dat + 0x38);
+        b->ty = read_i32_le(dat + 0x3C);
+        b->tz = read_i32_le(dat + 0x40);
+        b->h2 = read_i32_le(dat + 0x74);
+    }
+
+    /* Parse ATOMF slot names */
+    const u8 *slots = hdr + 0x30 + n_bones * 0xB4;
+    for (i32 i = 0; i < n_atomslots; i++) {
+        const u8 *s = slots + i * 16;
+        i32 nlen = 0;
+        while (nlen < 15 && s[nlen] != 0) nlen++;
+        memcpy(out->atomf_slot_name[i], s, (size_t)nlen);
+        out->atomf_slot_name[i][nlen] = '\0';
+    }
+
+    /* Build can_to_render[]: for each bone j, find ATOMF slot i with matching name */
+    for (i32 j = 0; j < n_bones; j++) out->can_to_render[j] = -1;
+    for (i32 j = 0; j < n_bones; j++) {
+        for (i32 i = 0; i < n_atomslots; i++) {
+            if (strcmp(out->bones[j].name, out->atomf_slot_name[i]) == 0) {
+                out->can_to_render[j] = i;
+                break;
+            }
+        }
+    }
+
+    /* Compute world translations for each render atom i:
+     * Walk parent chain from slot_bone upward, exclude root (h2==-1) bone. */
+    for (i32 i = 0; i < n_atomslots; i++) {
+        /* Find which bone corresponds to ATOMF slot i */
+        i32 bone_idx = -1;
+        for (i32 j = 0; j < n_bones; j++) {
+            if (out->can_to_render[j] == i) { bone_idx = j; break; }
+        }
+        if (bone_idx < 0) continue;
+
+        i32 wtx = 0, wty = 0, wtz = 0;
+        i32 idx = bone_idx;
+        while (idx >= 0 && idx < n_bones) {
+            const ome_bone_t *b = &out->bones[idx];
+            if (b->h2 == -1) break; /* root bone: skip its translation */
+            wtx += b->tx; wty += b->ty; wtz += b->tz;
+            idx = b->h2;
+        }
+        out->world_tx[i] = wtx;
+        out->world_ty[i] = wty;
+        out->world_tz[i] = wtz;
+    }
+
+    print("ome_parse_objc: n_bones=%d n_atomslots=%d\n", n_bones, n_atomslots);
+    for (i32 i = 0; i < n_atomslots; i++)
+        print("  slot[%2d] %-12s -> world(%d,%d,%d)\n",
+              i, out->atomf_slot_name[i],
+              out->world_tx[i], out->world_ty[i], out->world_tz[i]);
+    return 1;
+}

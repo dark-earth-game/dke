@@ -90,6 +90,10 @@ void model_free(model_t *m);
  * applied to this translation so the atom is offset correctly in world
  * space.  Pass (0,0,0) to render at the screen centre (e.g. test cube).
  */
+/* Camera pitch for rendering (cosine_table index, 0..4095 = 0..360°).
+ * Default 300 ≈ 26°. Set by scene.c from L%02d.INF projection matrix. */
+extern i32 model_default_pitch;
+
 void model_render(const model_t   *m,
                   system_t        *sys,
                   i32              mx,        /* screen centre X */

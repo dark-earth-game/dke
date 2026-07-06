@@ -42,6 +42,7 @@
  *   IM%02d.OME              — per-level overlay image (TODO)
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -184,33 +185,6 @@ static i32     g_scene_ani_frame    = 0;
 static u32     g_scene_ani_last_tick = 0;
 #define ANI_FRAME_MS 100  /* ~10 fps sprite cycle */
 
-/* Per-atom character-relative translations (from P00.OME OBJC hierarchy).
- * ATOMF order: basdos handro gendro piedro hangau gengau piegau
- *              acces4 acces3 mildos haudos bascou epadro coudro
- *              poidro epagau cougau poigau tete   acces0
- * X = forward/back (head→feet), Y = height, Z = left/right. */
-static const i32 G_P00_TRANS[20][3] = {
-    /*[ 0] basdos  */ {     222,    100,     22 },
-    /*[ 1] handro  */ {   -4911,     98,  -2775 },
-    /*[ 2] gendro  */ {  -32863,   -851,  -6050 },
-    /*[ 3] piedro  */ {  -60556,   -975,  -5736 },
-    /*[ 4] hangau  */ {  -65612,   -871,  -2580 },
-    /*[ 5] gengau  */ {  -93419,  -1878,    497 },
-    /*[ 6] piegau  */ { -121123,  -1953,    282 },
-    /*[ 7] acces4  */ {   -6621,  -7636,     29 },
-    /*[ 8] acces3  */ {   -6799,   6772,      3 },
-    /*[ 9] mildos  */ {    2292,     49,     51 },
-    /*[10] haudos  */ {    7914,   -124,     76 },
-    /*[11] bascou  */ {   28127,    256,    247 },
-    /*[12] epadro  */ {   22272,   -601,  -9468 },
-    /*[13] coudro  */ {    4483,  -1024, -15754 },
-    /*[14] poidro  */ {  -12355,     37, -16283 },
-    /*[15] epagau  */ {    2003,   -440,  -6953 },
-    /*[16] cougau  */ {  -15721,   -726,   -679 },
-    /*[17] poigau  */ {  -32786,    405,   -398 },
-    /*[18] tete    */ {   32444,   1589,    155 },
-    /*[19] acces0  */ {   34416,  -3103,    320 },
-};
 #define ATOM_SCALE 2  /* OME_VERT_SCALE factor applied in model_from_ome_atom */
 
 /* All geometry ATOMFs decoded from P00.OME, one model_t per ATOMF.
@@ -220,6 +194,11 @@ static const i32 G_P00_TRANS[20][3] = {
 #define SCENE_OME_MAX_ATOMS 32
 static model_t *g_scene_ome_atoms[SCENE_OME_MAX_ATOMS];
 static i32      g_scene_ome_atom_count = 0;
+
+/* OBJC hierarchy parsed from P00.OME — provides CAN slot→atom mapping
+ * and world translations computed from the bone parent chain. */
+static ome_objc_t g_scene_objc;
+static i32        g_scene_objc_loaded = 0;
 
 /* -------------------------------------------------------------------------
  * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
@@ -611,6 +590,71 @@ static void stub_restore_display_mode(i32 ecx, i32 edx) {
  * Mirrors asm: call sub_40636D */
 static void stub_sub_40636D(void) {
     /* TODO: sub_40636D */
+}
+
+/* -------------------------------------------------------------------------
+ * scene_load_inf_pitch — read camera pitch from L%02d.INF projection matrix.
+ *
+ * Returns a cosine_table index (0..4095) for the camera pitch angle,
+ * or 300 (~26°) as a safe default on any parse error.
+ * ------------------------------------------------------------------------- */
+static i32 scene_load_inf_pitch(i32 level_id, i32 cam_idx) {
+    /* Build INF path: DATAS>L{level_id:02d}>L{level_id:02d}.INF */
+    c8 virt[64];
+    snprintf(virt, sizeof(virt), "DATAS>L%02d>L%02d.INF", level_id, level_id);
+    c8 host[512];
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    if (!ls_resolve_path(base, virt, host, (i32)sizeof(host))) return 300;
+
+    FILE *f = ls_open(host, "rb");
+    if (!f) return 300;
+
+    /* Read and validate magic */
+    i32 magic = 0;
+    if (fread(&magic, 4, 1, f) != 1 || magic != 7) { ls_close(f); return 300; }
+
+    /* Skip: timestamp(4) + world_ctrl(0x208) */
+    fseek(f, 4 + 0x208, SEEK_CUR);
+    i32 n_cam = 0;
+    if (fread(&n_cam, 4, 1, f) != 1) { ls_close(f); return 300; }
+    /* Skip n_cam camera zone structs */
+    fseek(f, (long)n_cam * 0x208, SEEK_CUR);
+
+    /* Skip inexplorable section */
+    i32 n_inex = 0;
+    if (fread(&n_inex, 4, 1, f) != 1) { ls_close(f); return 300; }
+    fseek(f, (long)n_inex * 0x208, SEEK_CUR);
+
+    /* Skip stairs section */
+    i32 n_stairs = 0;
+    if (fread(&n_stairs, 4, 1, f) != 1) { ls_close(f); return 300; }
+    fseek(f, (long)n_stairs * 0x208, SEEK_CUR);
+
+    /* Extra section: n_extra × 0xA8 (projection matrices) */
+    i32 n_extra = 0;
+    if (fread(&n_extra, 4, 1, f) != 1) { ls_close(f); return 300; }
+    if (cam_idx < 0 || cam_idx >= n_extra) { ls_close(f); return 300; }
+
+    /* Seek to cam_idx's projection matrix (+20 bytes for param[5]) */
+    long entry_off = (long)cam_idx * 0xA8 + 5 * 4;  /* param[5] = R[1][2] */
+    fseek(f, entry_off, SEEK_CUR);
+
+    i32 r12 = 0;
+    if (fread(&r12, 4, 1, f) != 1) { ls_close(f); return 300; }
+    ls_close(f);
+
+    /* Convert sin(pitch) Q14 → cosine_table index */
+    float sin_val = (float)r12 / 16384.0f;
+    if (sin_val >  1.0f) sin_val =  1.0f;
+    if (sin_val < -1.0f) sin_val = -1.0f;
+    float theta_rad = asinf(sin_val);
+    i32 idx = (i32)(theta_rad * 4096.0f / (2.0f * 3.14159265f));
+    if (idx < 0) idx += 4096;
+    idx &= 0xFFF;
+
+    print("scene: INF pitch: cam=%d R[1][2]=%d -> theta=%.1f deg -> idx=%d\n",
+          cam_idx, r12, theta_rad * 180.0f / 3.14159265f, idx);
+    return idx;
 }
 
 /* -------------------------------------------------------------------------
@@ -1020,6 +1064,18 @@ i32 scene_load_level(i32 level_id) {
                 }
                 ome_atom_free(&atom);
             }
+            /* Parse OBJC chunk for bone hierarchy and CAN slot mapping */
+            g_scene_objc_loaded = 0;
+            for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+                if (ome.chunks[ci].kind == OME_CHUNK_OBJC) {
+                    g_scene_objc_loaded = ome_parse_objc(
+                        ome.raw, ome.raw_size,
+                        ome.chunks[ci].offset,
+                        &g_scene_objc);
+                    break;
+                }
+            }
+
             print("scene: P00 loaded %d geometry atoms (%d materials)\n",
                   g_scene_ome_atom_count, matr.mat_count);
             model_ome_free(&ome);
@@ -1034,6 +1090,9 @@ i32 scene_load_level(i32 level_id) {
      * needed for this pass). */
     g_scene_camera = 0;
     scene_load_camera_backdrop(level_id, g_scene_camera);
+
+    /* Read camera pitch from the INF projection matrix and apply to rendering. */
+    model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
 
     /* Load P00.CAN for player character animation. */
     {
@@ -1221,25 +1280,24 @@ i32 scene_render(system_t *sys) {
             g_scene_can_last  = tick;
         }
 
-        for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
-            /* Map atom render index to CAN slot.
-             * Atom chunks in the OME start at ATOMF index 2 (chunks 0=MATR,
-             * 1=OBJC, 2..=ATOMF).  CAN slot 0 corresponds to OBJC atom 0
-             * which maps to the first ATOMF = render atom 0.
-             * Fine-grained OBJC→slot mapping deferred until hierarchy port. */
-            i32 rx = 0, ry = 0;
-            if (g_scene_can_loaded && ai < CAN_MAX_ATOMSLOTS) {
-                const can_frame_t *kf = &g_scene_can.frames[g_scene_can_frame];
-                /* Convert u16 game angle (0..65535=360°) to
-                 * cosine_table index (0..4095=360°): >> 4. */
-                rx = (i32)(kf->atoms[ai].rx >> 4) & 0xFFF;
-                ry = (i32)(kf->atoms[ai].ry >> 4) & 0xFFF;
+        /* Build per-render-atom rotation table from CAN keyframe + OBJC slot mapping */
+        i32 atom_rx[20] = {0}, atom_ry[20] = {0};
+        if (g_scene_can_loaded && g_scene_objc_loaded) {
+            const can_frame_t *kf = &g_scene_can.frames[g_scene_can_frame];
+            for (i32 j = 0; j < g_scene_objc.n_bones && j < CAN_MAX_ATOMSLOTS; j++) {
+                i32 ri = g_scene_objc.can_to_render[j];
+                if (ri < 0 || ri >= g_scene_ome_atom_count) continue;
+                atom_rx[ri] = (i32)(kf->atoms[j].rx >> 4) & 0xFFF;
+                atom_ry[ri] = (i32)(kf->atoms[j].ry >> 4) & 0xFFF;
             }
-            /* Translation: table values are in OME raw units; vertices
-             * were scaled ×2 in model_from_ome_atom, so scale here too. */
-            i32 tx = (ai < 20) ? G_P00_TRANS[ai][0] * ATOM_SCALE : 0;
-            i32 ty = (ai < 20) ? G_P00_TRANS[ai][1] * ATOM_SCALE : 0;
-            i32 tz = (ai < 20) ? G_P00_TRANS[ai][2] * ATOM_SCALE : 0;
+        }
+        for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
+            i32 tx = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                       ? g_scene_objc.world_tx[ai] * ATOM_SCALE : 0;
+            i32 ty = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                       ? g_scene_objc.world_ty[ai] * ATOM_SCALE : 0;
+            i32 tz = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                       ? g_scene_objc.world_tz[ai] * ATOM_SCALE : 0;
             model_render(g_scene_ome_atoms[ai],
                          sys,
                          screen_x, screen_y,
@@ -1250,7 +1308,7 @@ i32 scene_render(system_t *sys) {
                          z_far,
                          g_scene_l_bmap,
                          g_scene_z_bmap,
-                         rx ? 1 : 0, ry, rx,
+                         atom_rx[ai] ? 1 : 0, atom_ry[ai], atom_rx[ai],
                          tx, ty, tz);
         }
     } else {
@@ -1282,6 +1340,7 @@ i32 scene_render(system_t *sys) {
 }
 
 void scene_release(void) {
+    model_default_pitch = 300;
     scene_free_bmap(&g_scene_bg_bmap);
     scene_free_bmap(&g_scene_l_bmap);
     scene_free_bmap(&g_scene_z_bmap);
@@ -1293,4 +1352,6 @@ void scene_release(void) {
     ani_free(&g_scene_ani);
     g_scene_ani_loaded = 0;
     g_scene_bg_level   = -1;
+    g_scene_objc_loaded = 0;
+    memset(&g_scene_objc, 0, sizeof(g_scene_objc));
 }
