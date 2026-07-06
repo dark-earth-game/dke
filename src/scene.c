@@ -124,9 +124,18 @@ void *player_entity = NULL;
  * blits camera 0's foreground image full-screen.
  * ------------------------------------------------------------------------- */
 
-/* Loaded backdrop for the current camera. NULL until the first successful
- * scene_load_level → scene_load_camera_backdrop call. Freed in scene_release. */
-static bmap_t *g_scene_bg_bmap = NULL;
+/* Per-camera assets. Loaded together by scene_load_camera_backdrop:
+ *   F (foreground) — 640×480 8bpp CIF, the coloured room image.
+ *   L (light map)  — 320×240 8bpp CIF, grayscale palette; each pixel
+ *                    modulates F brightness (128 = neutral, 0 = black,
+ *                    255 = 2× bright).  Nearest-upscaled ×2 at blit.
+ *   Z (depth)      — 640×480 8bpp CIF, depth per pixel (0=near, 255=far).
+ *                    Held for future entity-vs-background occlusion.
+ * Any of L/Z may be NULL if the CIF is absent; F is required to render.
+ * All freed in scene_release. */
+static bmap_t *g_scene_bg_bmap = NULL;   /* F */
+static bmap_t *g_scene_l_bmap  = NULL;   /* L */
+static bmap_t *g_scene_z_bmap  = NULL;   /* Z */
 
 /* Level id whose backdrop is currently in g_scene_bg_bmap.  -1 = none. */
 static i32 g_scene_bg_level = -1;
@@ -140,6 +149,15 @@ static i32 g_scene_camera = 0;
  * load. -1 = unknown; we'll probe on wrap. */
 static i32 g_scene_camera_max = 6;   /* L01 has cameras 0..6 */
 
+static void scene_free_bmap(bmap_t **pb) {
+    if (!pb || !*pb) return;
+    bmap_t *b = *pb;
+    if (b->owns_buffer  && b->pixels)  free(b->pixels);
+    if (b->owns_palette && b->palette) free(b->palette);
+    free(b);
+    *pb = NULL;
+}
+
 /*
  * scene_load_camera_backdrop — load DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF
  * into g_scene_bg_bmap, freeing any previously-loaded backdrop.  Called by
@@ -148,29 +166,55 @@ static i32 g_scene_camera_max = 6;   /* L01 has cameras 0..6 */
  * Returns 1 on success, 0 on failure (bmap left untouched).
  */
 static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
-    c8 bg_vpath[80];
-    snprintf(bg_vpath, sizeof(bg_vpath),
+    c8 vpath[80];
+
+    /* F layer — required. */
+    snprintf(vpath, sizeof(vpath),
              "DATAS>L%02d>IMAGES>FL%02dC%dL0.CIF",
              level_id, level_id, camera);
-    print("scene: loading backdrop '%s'\n", bg_vpath);
-    bmap_t *bg = game_init_load_cursor(bg_vpath);
-    if (!bg) {
-        print("scene: backdrop load failed for '%s'\n", bg_vpath);
+    print("scene: loading F '%s'\n", vpath);
+    bmap_t *fb = game_init_load_cursor(vpath);
+    if (!fb) {
+        print("scene: F load failed for '%s'\n", vpath);
         return 0;
     }
 
-    if (g_scene_bg_bmap) {
-        if (g_scene_bg_bmap->owns_buffer && g_scene_bg_bmap->pixels)
-            free(g_scene_bg_bmap->pixels);
-        if (g_scene_bg_bmap->owns_palette && g_scene_bg_bmap->palette)
-            free(g_scene_bg_bmap->palette);
-        free(g_scene_bg_bmap);
+    /* L layer — grayscale light map at half res. Optional. */
+    snprintf(vpath, sizeof(vpath),
+             "DATAS>L%02d>IMAGES>LL%02dC%dL0.CIF",
+             level_id, level_id, camera);
+    bmap_t *lb = game_init_load_cursor(vpath);
+    if (lb) {
+        print("scene: L loaded -> %dx%d\n", (i32)lb->width, lb->height);
+    } else {
+        print("scene: L absent — rendering without light modulation\n");
     }
-    g_scene_bg_bmap  = bg;
+
+    /* Z layer — depth. Optional, currently unused (reserved for entity
+     * occlusion). */
+    snprintf(vpath, sizeof(vpath),
+             "DATAS>L%02d>IMAGES>ZL%02dC%dL0.CIF",
+             level_id, level_id, camera);
+    bmap_t *zb = game_init_load_cursor(vpath);
+    if (zb) {
+        print("scene: Z loaded -> %dx%d (stored for later occlusion)\n",
+              (i32)zb->width, zb->height);
+    } else {
+        print("scene: Z absent — no depth buffer for this camera\n");
+    }
+
+    /* Swap in atomically. */
+    scene_free_bmap(&g_scene_bg_bmap);
+    scene_free_bmap(&g_scene_l_bmap);
+    scene_free_bmap(&g_scene_z_bmap);
+    g_scene_bg_bmap  = fb;
+    g_scene_l_bmap   = lb;
+    g_scene_z_bmap   = zb;
     g_scene_bg_level = level_id;
     g_scene_camera   = camera;
-    print("scene: backdrop loaded -> %dx%d palette=%p (cam=%d)\n",
-          (i32)bg->width, bg->height, (void *)bg->palette, camera);
+    print("scene: camera %d loaded (F %dx%d, L=%s, Z=%s)\n",
+          camera, (i32)fb->width, fb->height,
+          lb ? "yes" : "no", zb ? "yes" : "no");
     return 1;
 }
 
@@ -732,21 +776,55 @@ i32 scene_render(system_t *sys) {
         i32 bh = g_scene_bg_bmap->height;
         i32 ox = (fb_w > bw) ? (fb_w - bw) / 2 : 0;
         i32 oy = (fb_h > bh) ? (fb_h - bh) / 2 : 0;
-        blit_bmap_to_framebuffer(fb, fb_w, fb_h,
-                                 g_scene_bg_bmap, g_scene_bg_bmap->palette,
-                                 ox, oy);
+
+        if (g_scene_l_bmap && g_scene_l_bmap->pixels) {
+            /* Light-modulated blit.  L is grayscale (palette[i]=(i,i,i)),
+             * quarter-res (320×240 vs 640×480 → each L pixel covers a
+             * 2×2 F block via nearest upscale).  Convention: L=128
+             * neutral, <128 darken, >128 brighten.  Formula:
+             *   out.c = clamp((F.c * L) >> 7, 0, 255)
+             * matches the multiply-by-2× light convention used in the
+             * Dark Earth era 2.5D pipeline. */
+            const u8 *lpx = g_scene_l_bmap->pixels;
+            i32       lw  = (i32)g_scene_l_bmap->width;
+            i32       lh  = g_scene_l_bmap->height;
+            const u8 *pal = g_scene_bg_bmap->palette;
+            const u8 *fpx = g_scene_bg_bmap->pixels;
+
+            for (i32 y = 0; y < bh; y++) {
+                i32 dy = oy + y;
+                if (dy < 0 || dy >= fb_h) continue;
+                i32 ly = (y * lh) / bh;
+                const u8 *frow = fpx + y * bw;
+                const u8 *lrow = lpx + ly * lw;
+                u32      *drow = fb  + dy * fb_w;
+                for (i32 x = 0; x < bw; x++) {
+                    i32 dx = ox + x;
+                    if (dx < 0 || dx >= fb_w) continue;
+                    u8 idx = frow[x];
+                    u32 l  = lrow[(x * lw) / bw];
+                    u32 r  = pal[idx * 3 + 0];
+                    u32 g  = pal[idx * 3 + 1];
+                    u32 b  = pal[idx * 3 + 2];
+                    r = (r * l) >> 7;   if (r > 255) r = 255;
+                    g = (g * l) >> 7;   if (g > 255) g = 255;
+                    b = (b * l) >> 7;   if (b > 255) b = 255;
+                    /* Byte order matches blit_bmap_to_framebuffer. */
+                    drow[dx] = 0xFF000000u | (b << 16) | (g << 8) | r;
+                }
+            }
+        } else {
+            blit_bmap_to_framebuffer(fb, fb_w, fb_h,
+                                     g_scene_bg_bmap, g_scene_bg_bmap->palette,
+                                     ox, oy);
+        }
     }
     return 0;
 }
 
 void scene_release(void) {
-    if (g_scene_bg_bmap) {
-        if (g_scene_bg_bmap->owns_buffer && g_scene_bg_bmap->pixels)
-            free(g_scene_bg_bmap->pixels);
-        if (g_scene_bg_bmap->owns_palette && g_scene_bg_bmap->palette)
-            free(g_scene_bg_bmap->palette);
-        free(g_scene_bg_bmap);
-        g_scene_bg_bmap = NULL;
-        g_scene_bg_level = -1;
-    }
+    scene_free_bmap(&g_scene_bg_bmap);
+    scene_free_bmap(&g_scene_l_bmap);
+    scene_free_bmap(&g_scene_z_bmap);
+    g_scene_bg_level = -1;
 }
