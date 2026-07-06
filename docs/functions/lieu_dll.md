@@ -178,6 +178,88 @@ via opcodes 3..7 may need actual emulation.
 - .idata VA=0x2E000 size=0x61C (only KERNEL32 imports)
 - .reloc VA=0x2F000 size=0x4044
 
+## Extraction (option (c) prototype landed 2026-07)
+
+`tools/src/lieu_extract.py` — unicorn-based bytecode extractor:
+
+1. Maps LIEU DLL at ImageBase 0x10000000 (all sections)
+2. Fake callback table at 0x20000000 (40 × 4-byte trampoline ptrs)
+3. Trampolines at 0x21000000 (each = single 0xCC placeholder,
+   trapped by UC_HOOK_CODE)
+4. State buffer at 0x30000000 (4 KB), stack at 0x40000000
+5. Sentinel return-addr at 0x50000000 to halt emulation
+6. On trap: log slot + ecx/edx/stack args, simulate stdcall pop
+   using CB_POPS table (from static scan of dkev.exe callbacks),
+   resume at return address
+7. Emit `.script` text (one call per line)
+
+### Extraction results (all 55 LIEUxx.DLL)
+
+- 54 / 55 extract cleanly (LIEU55 has malformed export table; ignored)
+- 2002 total callback calls across 54 levels (avg 37/level)
+- ~700 instructions emulated per level, <100 ms per DLL
+- Deterministic (byte-for-byte identical across runs)
+
+### Callback slot usage frequency
+
+Only 19 of 40 slots invoked during level init (opcode=1):
+
+| Slot | Name / role              | Calls | Notes                              |
+|------|--------------------------|-------|------------------------------------|
+| 0x30 | (unnamed, object spawn?) | 722   | Most common; (id, param, x, y, z, flag) |
+| 0x08 | NamedObjectTwoInts       | 572   | Script trigger with 2 int params   |
+| 0x78 | (unnamed)                | 210   | Called first, ~4× per level        |
+| 0x74 | (unnamed)                | 111   |                                    |
+| 0x84 | (unnamed)                | 72    |                                    |
+| 0x8C | (unnamed)                | 72    |                                    |
+| 0x14 | NamedObjectStrPair       | 59    | Object + associated script name    |
+| 0x2C | (unnamed, ambient audio?)| 48    | Only slot passing "L%02dAMB1" strs |
+| 0x88 | (unnamed)                | 48    |                                    |
+| 0x18 | NamedObjectStr           | 36    | Object + string arg (e.g. 'IM01', 'OB44D') |
+| 0x5C | (unnamed)                | 36    |                                    |
+| others (24, 34, 50, 80, 1C, 9C, 00, 0C) | | 1-3 each |
+
+172 unique string args observed. Common strings: 'OBCHAR', 'IM23',
+'L%02dAMB1' (ambient audio), 'OB%02d[A-Z]?' (object refs like OB25,
+OB38A, OB44D), 'SP%02dARR01' (player arrival script), 'P%02dARR01',
+'L%02dOUV01'/'L%02dSOU01'/'L%02dGRE'/'L%02dRED' (door/sound/colour trigger).
+
+### Sample: LIEU01.script (first 20 lines)
+
+```
+CB_78(78)  ecx=0x2  edx=0x2  i32=0x0  i32=0x0  i32=0x0  i32=0x2
+CB_78(78)  ecx=0x1  edx=0x2  i32=0x0  i32=0x0  i32=0x0  i32=0x2
+CB_78(78)  ecx=0x0  edx=0x2  i32=0x0  i32=0x0  i32=0x0  i32=0x2
+CB_78(78)  ecx=0x0  edx=0x1  i32=0x0  i32=0x0  i32=0x0  i32=0x2
+NamedObjectTwoInts(08)  ecx=0x0  edx=0xffffffff  i32=0x0  i32=0x0  ...
+... (14 more NamedObjectTwoInts, IDs 0..2, 0x21..0x29)
+CB_2C(2C)  ecx='L01AMB1'  edx=0x5d  i32=0xfffff5d8  i32=0x0  i32=0x0  i32=0x0
+CB_30(30)  ecx=0x1  edx=0x176  i32=0xfffff4b2  i32=0x9b  i32=0x5a  i32=0x0
+CB_30(30)  ecx=0x3  edx=0x203  i32=0xfffff7bd  i32=0x69  i32=0x50  i32=0x0
+... (20 more CB_30 lines with sequential IDs, 3D positions)
+NamedObjectStr(18)  ecx='IM01'  edx=0x1d0  i32=0xf  i32=0xfffff803
+NamedObjectStr(18)  ecx='OB44D'  edx=0x2b7  i32=0x32  i32=0xfffff456
+... (final ~10 lines: NamedObjectStrPair, NamedObject, CB_88 finalizer)
+```
+
+### Files
+
+- `tools/src/lieu_extract.py` — extractor tool
+- `dke/data/lieu/LIEU%02d.script` — 55 extracted scripts (248 KB total)
+
+### Next step (M6 pass 1)
+
+C-side replay module (`src/lieu.[ch]`):
+- `lieu_load_script(level_id)` — read `.script` file
+- `lieu_replay(level_id, engine_state)` — walk records, dispatch by slot
+  to native C stubs (initially log-only, progressively wired to real
+  engine effects: object spawn, audio, script triggers)
+- Called from `scene_load_level` after INF/OME setup
+
+Each of the 19 used callback slots gets a native C stub. When a slot
+maps to a known engine primitive (e.g. `NamedObject` → object queue),
+port that primitive; otherwise stub as no-op with log for later study.
+
 ## Cross-references
 
 - sub_448F4D @ 0x448F4D — engine LIEU loader

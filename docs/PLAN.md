@@ -127,9 +127,28 @@ Still pending (pass 5):
 Options to unlock LIEU execution (see lieu_dll.md for detail):
 - (a) Per-level static hand-port (~55 × 40 KB = 2 MB of asm to port).
 - (b) Unicorn x86 emulator + native callback bridge (~1 week setup).
-- (c) One-time bytecode extraction via emulator → LIEU%02d.script tables →
-  native engine replay in shipping build. Prefer (c) if init is pure
-  sequence (no runtime-conditional branching); needs verification harness.
+- **(c) LANDED 2026-07: One-time bytecode extraction via emulator →
+  LIEU%02d.script tables → native engine replay in shipping build.**
+
+**LIEU extraction landed 2026-07 (option (c) prototype):**
+- `tools/src/lieu_extract.py` — unicorn-based extractor. Maps DLL at
+  ImageBase, wires 40 trampolines with UC_HOOK_CODE traps, calls
+  FonctionEditor(opcode=1) with stubbed callback table. Records slot
+  + ecx/edx/stack args per callback, simulates stdcall pop from
+  CB_POPS table (scanned from dkev.exe).
+- 54 / 55 DLLs extract cleanly (LIEU55 has malformed export table).
+- 2002 total calls across all levels, avg 37/level.
+- Only 19 of 40 callback slots invoked during init. Top 3: slot 0x30
+  (722 = object spawn?), 0x08 NamedObjectTwoInts (572), 0x78 (210).
+- 172 unique string args (SG..DIA, SP..ACT, LCOD, SOB, L%02dAMB1,
+  P%02dARR01, etc.). Deterministic across runs.
+- Scripts written to `dke/data/lieu/LIEU%02d.script` (55 files, 248 KB).
+
+**M6 pass 1 (next):** Native replay module.
+- `src/lieu.[ch]` — parses `.script`, dispatches by slot to C stubs.
+- Called from `scene_load_level` after INF/OME setup.
+- Progressively port each of 19 used slots to real engine effects
+  (object spawn, audio queue, script triggers).
 
 **Pass 1b landed 2026-07 (first playable frame):**
 - `scene_load_level` now loads `DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF` (camera 0 by default) via `game_init_load_cursor` and stashes it in `g_scene_bg_bmap`. Each CIF ships its own 256-colour palette so the .GRD parse is deferred.
