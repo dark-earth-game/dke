@@ -144,11 +144,29 @@ Options to unlock LIEU execution (see lieu_dll.md for detail):
   P%02dARR01, etc.). Deterministic across runs.
 - Scripts written to `dke/bin/game/lieu/LIEU%02d.script` (55 files, 248 KB).
 
-**M6 pass 1 (next):** Native replay module.
-- `src/lieu.[ch]` — parses `.script`, dispatches by slot to C stubs.
-- Called from `scene_load_level` after INF/OME setup.
-- Progressively port each of 19 used slots to real engine effects
-  (object spawn, audio queue, script triggers).
+**M6 pass 1 landed 2026-07 (native replay skeleton):**
+- `src/lieu.[ch]` — parses `.script` text, dispatches by slot to
+  log-only C stubs. LIEU_MAX_RECORDS=256. Arena for interned strings.
+- 19 identified slots wired: NamedObject (0x00), NamedObjectFlag (0x04),
+  NamedObjectTwoInts (0x08), Cinematique (0x0C), KillPerso (0x10),
+  NamedObjectStrPair (0x14), NamedObjectStr (0x18), + 12 generic CB_XX.
+- Called from `scene_load_level` after `scene_load_camera_anchor`.
+  `scene_release` frees the arena.
+- Scripts moved to `bin/game/lieu/` (gitignore exception for
+  `bin/game/lieu/`) so `state->game_path` resolution finds them.
+- Build clean.
+
+**M6 pass 2 (next):** Progressively wire slots to real engine effects.
+- Slot 0x30 (722 calls, "object spawn?"): first candidate — signature
+  looks like (id, param, x, y, z, flag). Wire to entity spawn API.
+- Slot 0x08 NamedObjectTwoInts (572): script trigger table registration.
+- Slot 0x2C L%02dAMB1: ambient audio queue.
+- Slot 0x0C Cinematique: `ls_play_movie` call.
+- Slot 0x10 KillPerso: entity kill.
+
+Each wiring pass: identify engine primitive from sub_44XXXX handler in
+`docs/functions/lieu_dll.md`, port to native C effect, verify via
+smoke test (New Game → level renders with expected state).
 
 **Pass 1b landed 2026-07 (first playable frame):**
 - `scene_load_level` now loads `DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF` (camera 0 by default) via `game_init_load_cursor` and stashes it in `g_scene_bg_bmap`. Each CIF ships its own 256-colour palette so the .GRD parse is deferred.
