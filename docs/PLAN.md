@@ -156,7 +156,18 @@ Options to unlock LIEU execution (see lieu_dll.md for detail):
   `bin/game/lieu/`) so `state->game_path` resolution finds them.
 - Build clean.
 
-**M6 pass 2 (next):** Progressively wire slots to real engine effects.
+**Scope clarification (2026-07):** LIEU DLL has 7 opcodes:
+- opcode 1 (INIT) — verified state-independent (patched extractor, 
+  eax=0 vs eax=1 = same trace). Option (c) fully covers this.
+- opcode 0 (per-frame tick) — reads state, state-conditional branches.
+- opcode 3 (event dispatch) — calls handlers from table populated in INIT.
+- opcodes 4/5/6 — internal LIEU subroutine calls from engine.
+
+Option (c) covers INIT only. Gameplay-time opcodes still need either:
+- Runtime unicorn emulator embedded in engine (option b hybrid), OR
+- Hand-port of opcode 0/3-6 handlers per level (~2 MB asm).
+
+**M6 pass 2 (next):** Progressively wire INIT slots to real engine effects.
 - Slot 0x30 (722 calls, "object spawn?"): first candidate — signature
   looks like (id, param, x, y, z, flag). Wire to entity spawn API.
 - Slot 0x08 NamedObjectTwoInts (572): script trigger table registration.
@@ -167,6 +178,13 @@ Options to unlock LIEU execution (see lieu_dll.md for detail):
 Each wiring pass: identify engine primitive from sub_44XXXX handler in
 `docs/functions/lieu_dll.md`, port to native C effect, verify via
 smoke test (New Game → level renders with expected state).
+
+**M6 pass 3+ (deferred):** Runtime opcode emulation. Embed lightweight
+unicorn instance in dke, hook 40 callbacks to native engine primitives,
+invoke opcodes 0/3-6 as the game demands. Cross-platform via unicorn
+(LGPL, Linux/macOS/Windows/x86+ARM hosts). Alternative: extract per-opcode
+decision trees via symbolic execution — larger data payload but no
+runtime x86 dependency.
 
 **Pass 1b landed 2026-07 (first playable frame):**
 - `scene_load_level` now loads `DATAS>L<lvl>>IMAGES>FL<lvl>C<cam>L0.CIF` (camera 0 by default) via `game_init_load_cursor` and stashes it in `g_scene_bg_bmap`. Each CIF ships its own 256-colour palette so the .GRD parse is deferred.

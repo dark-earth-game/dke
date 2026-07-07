@@ -33,14 +33,22 @@ FonctionEditor(ecx=opcode, edx=state, arg0=cb_table, arg4=flag):
 ```
 
 Dispatch table (8 entries, indexed by opcode+1):
-- op+1=1 → 0x1927C  (opcode 0)
-- op+1=2 → 0x18C7A  (opcode 1: callback ingestion — first call)
-- op+1=3 → 0x19233
-- op+1=4 → 0x19238
-- op+1=5 → 0x19252
-- op+1=6 → 0x1925F
-- op+1=7 → 0x1926F
-- default → 0x19319 (return state[0])
+
+| Op | Handler RVA | Role                                              |
+|----|-------------|---------------------------------------------------|
+| 0  | 0x1927C     | Per-frame tick. Reads `state[+0x134]`, branches. State-conditional |
+| 1  | 0x18C7A     | **INIT**. Ingests 40 callback ptrs into local globals, runs level setup script |
+| 2  | 0x19233     | No-op (`jmp default`). Reserved |
+| 3  | 0x19238     | Dispatch registered handler: `handler = [ebp+0xC*4 + 0x1002C880]; call handler`. Handler table populated during INIT |
+| 4  | 0x19252     | Call internal fn 0x100010f5 (1 stack arg) |
+| 5  | 0x1925F     | Call internal fn 0x10001005 (2 stack args) |
+| 6  | 0x1926F     | Call internal fn 0x10001041 (1 stack arg) |
+| default | 0x19319 | Return `state[0]`  |
+
+Engine invokes LIEU with:
+- opcode=1 **once** on level enter (pure static ingestion — extractable)
+- opcodes 0, 3-6 **repeatedly** during gameplay (state-conditional — need
+  runtime emulation OR hand-port of all handlers)
 
 Engine calls once with opcode=1 to initialise; other opcodes drive
 per-frame updates (poll object states, tick timers, etc.).
@@ -199,6 +207,20 @@ via opcodes 3..7 may need actual emulation.
 - 2002 total callback calls across 54 levels (avg 37/level)
 - ~700 instructions emulated per level, <100 ms per DLL
 - Deterministic (byte-for-byte identical across runs)
+
+### Init is state-independent (verified 2026-07)
+
+INIT handler (opcode 1) shows **NO state-conditional branching**:
+patched extractor to return eax=1 (vs eax=0) — same 738 instructions,
+same 57 callback records. Callback return values do not steer init flow.
+
+50+ post-callback branch sites exist statically in LIEU01.DLL, but all
+are reached only from opcode-0 (per-frame tick) or opcode-3 (registered
+event handlers), NOT from init.
+
+Consequence: **init extraction via option (c) is complete and correct**.
+Per-frame gameplay logic requires either runtime unicorn emulation or
+hand-port of the opcode 0/3-6 handlers per level (~2 MB of asm still).
 
 ### Callback slot usage frequency
 
