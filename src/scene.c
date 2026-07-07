@@ -59,6 +59,7 @@
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
+#include "lieu.h"
 #include "player.h"
 
 /* -------------------------------------------------------------------------
@@ -203,6 +204,9 @@ static i32      g_scene_ome_atom_count = 0;
  * and world translations computed from the bone parent chain. */
 static ome_objc_t g_scene_objc;
 static i32        g_scene_objc_loaded = 0;
+
+/* LIEU script parsed from lieu/LIEU%02d.script; freed in scene_release. */
+static lieu_script_t g_scene_lieu;
 
 /* -------------------------------------------------------------------------
  * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
@@ -1238,6 +1242,16 @@ i32 scene_load_level(i32 level_id) {
     /* Compute character screen anchor from INF projection params. */
     scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
 
+    /* LIEU script replay: parse per-level scripting recorded from LIEUxx.DLL */
+    lieu_free_script(&g_scene_lieu);
+    if (lieu_load_script(NULL, level_id, &g_scene_lieu)) {
+        print("scene: loaded LIEU%02d.script — %d calls\n",
+              level_id, g_scene_lieu.count);
+        lieu_replay(NULL, &g_scene_lieu);
+    } else {
+        print("scene: no LIEU%02d.script found (skipping replay)\n", level_id);
+    }
+
     /* Load P00.CAN for player character animation. */
     {
         c8 vpath[64];
@@ -1619,4 +1633,5 @@ void scene_release(void) {
     g_scene_bg_level   = -1;
     g_scene_objc_loaded = 0;
     memset(&g_scene_objc, 0, sizeof(g_scene_objc));
+    lieu_free_script(&g_scene_lieu);
 }

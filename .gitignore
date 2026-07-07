@@ -53,7 +53,10 @@ dkms.conf
 
 .DS_Store
 
-bin/
+bin/*
+!bin/game/
+bin/game/*
+!bin/game/lieu/
 *.id0
 *.id1
 *.id2

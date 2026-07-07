@@ -245,7 +245,8 @@ NamedObjectStr(18)  ecx='OB44D'  edx=0x2b7  i32=0x32  i32=0xfffff456
 ### Files
 
 - `tools/src/lieu_extract.py` — extractor tool
-- `dke/data/lieu/LIEU%02d.script` — 55 extracted scripts (248 KB total)
+- `dke/bin/game/lieu/LIEU%02d.script` — 55 extracted scripts (248 KB total).
+  Kept alongside game data so `state->game_path`-based path resolution finds them.
 
 ### Next step (M6 pass 1)
 

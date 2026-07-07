@@ -142,7 +142,7 @@ Options to unlock LIEU execution (see lieu_dll.md for detail):
   (722 = object spawn?), 0x08 NamedObjectTwoInts (572), 0x78 (210).
 - 172 unique string args (SG..DIA, SP..ACT, LCOD, SOB, L%02dAMB1,
   P%02dARR01, etc.). Deterministic across runs.
-- Scripts written to `dke/data/lieu/LIEU%02d.script` (55 files, 248 KB).
+- Scripts written to `dke/bin/game/lieu/LIEU%02d.script` (55 files, 248 KB).
 
 **M6 pass 1 (next):** Native replay module.
 - `src/lieu.[ch]` — parses `.script`, dispatches by slot to C stubs.
