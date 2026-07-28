@@ -170,5 +170,7 @@ void lieu_zone_debug(void);
  * character-render pass. lieu_spawn_get returns the name or NULL. */
 i32 lieu_spawn_count(void);
 const c8 *lieu_spawn_get(i32 i, i32 *x, i32 *y, i32 *view);
+i32 lieu_spawn_ground(i32 i);   /* PosPerso z = world Y ground (unscaled) */
+i32 lieu_spawn_facing(i32 i);   /* PosPerso y = facing angle              */
 
 #endif /* DKE_LIEU_CB_H */

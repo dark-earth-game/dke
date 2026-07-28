@@ -158,9 +158,12 @@ static i32 g_scene_cam_sy = 240;  /* projected character screen Y */
  * world coord can be projected to screen — used for exact persona placement.
  * Projection: v = (R * w) >> 14 + Tv;  sx = 320 + v.x*scale; sy = 240 - v.y*scale. */
 static i32   g_proj_valid     = 0;
-static i32   g_proj_R[9];               /* 3x3 rotation (param[0..8]) */
-static i32   g_proj_Tv[3];              /* translated view offset      */
-static float g_proj_scale     = 1.0f;
+static i32   g_proj_R[9];               /* camera matrix ints param[0..8].
+                                         * R(row,col) = param[row + col*3]
+                                         * (dkev transform_vector 0x48F424). */
+static i32   g_proj_T[3];               /* raw translation param[9..11],
+                                         * added directly after >>14.        */
+static i32   g_proj_gscale    = 21695;  /* param[24] = round(10240/tan(fov/2)) */
 static i32   g_proj_ground_wy = 0;      /* character ground-plane world Y */
 static i32   g_proj_zone_z    = 0;      /* camera zone centroid Z         */
 static i32   g_proj_anchor_wx = 0;      /* solved character world X        */
@@ -180,28 +183,32 @@ static void scene_fill_rect(state_t *state, i32 x, i32 y, i32 w, i32 h, u32 argb
     }
 }
 
-/* Project world (wx,wy,wz) -> screen (sx,sy) via the cached INF matrix.
- * Falls back to the character anchor if no projection is cached. */
-static void scene_project_world(i32 wx, i32 wy, i32 wz, i32 *osx, i32 *osy) {
+/* Project world (wx,wy,wz) -> screen (sx,sy), reproducing the dkev pipeline:
+ * transform_vector (0x48F424) world->camera, then the perspective 1/z divide
+ * in render_entity_bounds (0x416F70). Camera matrix R(row,col)=param[row+col*3];
+ * T added directly; near plane cz<-32768; scale = gscale/16384 / ((-cz)>>9).
+ * Returns 1 if visible, 0 if culled (behind near plane); still writes sx,sy. */
+static i32 scene_project_world(i32 wx, i32 wy, i32 wz, i32 *osx, i32 *osy) {
     if (!g_proj_valid) {
         if (osx) *osx = g_scene_cam_sx;
         if (osy) *osy = g_scene_cam_sy;
-        return;
+        return 1;
     }
-    i64 vxr = 0, vyr = 0;
-    i32 w[3] = { wx, wy, wz };
-    for (i32 c = 0; c < 3; c++) {
-        vxr += (i64)g_proj_R[c]     * w[c];
-        vyr += (i64)g_proj_R[3 + c] * w[c];
-    }
-    i32 vx = (i32)(vxr >> 14) + g_proj_Tv[0];
-    i32 vy = (i32)(vyr >> 14) + g_proj_Tv[1];
-    i32 sx = 320 + (i32)((float)vx * g_proj_scale);
-    i32 sy = 240 - (i32)((float)vy * g_proj_scale);
-    if (sx < 0) sx = 0; if (sx > 639) sx = 639;
-    if (sy < 0) sy = 0; if (sy > 479) sy = 479;
+    const i32 *R = g_proj_R;
+    i64 cx = (( (i64)wx*R[0] + (i64)wy*R[3] + (i64)wz*R[6] ) >> 14) + g_proj_T[0];
+    i64 cy = (( (i64)wx*R[1] + (i64)wy*R[4] + (i64)wz*R[7] ) >> 14) + g_proj_T[1];
+    i64 cz = (( (i64)wx*R[2] + (i64)wy*R[5] + (i64)wz*R[8] ) >> 14) + g_proj_T[2];
+
+    i32 vis = 1;
+    if (cz >= -32768) { cz = -32768; vis = 0; }   /* near-plane cull */
+    i32 d = (i32)((-cz) >> 9);
+    if (d < 1) d = 1;
+    double s = ((double)g_proj_gscale / 16384.0) / (double)d;
+    i32 sx = 320 + (i32)(cx * s + (cx < 0 ? -0.5 : 0.5));
+    i32 sy = 240 - (i32)(cy * s + (cy < 0 ? -0.5 : 0.5));
     if (osx) *osx = sx;
     if (osy) *osy = sy;
+    return vis;
 }
 
 /* Player-controlled cube world position (dev handle for gameplay
@@ -823,74 +830,37 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     if (fread(param, 4, 30, f) != 30) { ls_close(f); return; }
     ls_close(f);
 
-    /* Compute T_view = R × T >> 14 */
-    const i32 *R = param;
-    i32 T[3] = {param[9], param[10], param[11]};
-    i32 Tv[3];
-    for (i32 row = 0; row < 3; row++) {
-        i64 s = 0;
-        for (i32 col = 0; col < 3; col++) s += (i64)R[row*3+col] * T[col];
-        Tv[row] = (i32)(s >> 14);
+    if (getenv("DKE_CAMDBG")) {
+        print("cam param R[0..8]=%d %d %d %d %d %d %d %d %d\n",
+              param[0],param[1],param[2],param[3],param[4],param[5],param[6],param[7],param[8]);
+        print("cam param T[9..11]=%d %d %d  s[24..26]=%d %d %d\n",
+              param[9],param[10],param[11],param[24],param[25],param[26]);
     }
 
-    /* Orthographic scale = param[25] / param[26] / 16.0 */
-    if (param[26] == 0) return;
-    float scale = (float)param[25] / (float)param[26] / 16.0f;
-    if (scale < 1e-6f) return;
+    /* Cache the camera matrix as the engine stores it (30 ints, param[0..8]
+     * = R with R(row,col)=param[row+col*3], param[9..11]=T raw, param[24]=
+     * globalScale = round(10240/tan(fov/2))). Projection is done by
+     * scene_project_world (perspective 1/z). */
+    if (param[24] == 0) return;
+    for (i32 i = 0; i < 9; i++) g_proj_R[i] = param[i];
+    g_proj_T[0] = param[9]; g_proj_T[1] = param[10]; g_proj_T[2] = param[11];
+    g_proj_gscale    = param[24];
+    g_proj_zone_z    = (i32)zone_z;
+    g_proj_anchor_wx = zone_x;
+    /* Ground plane Y: eye Y (T[1] = ey) is a reasonable default; personas
+     * override with their own PosPerso ground when rendered. */
+    g_proj_ground_wy = param[10];
+    g_proj_valid     = 1;
 
-    /* Target screen (320, 350): solve for world (wx, wy) with wz = zone_z */
-    float target_vy = (240.0f - 350.0f) / scale;  /* = -14080 for L01 */
-    float rhs_x = -(float)Tv[0] * 16384.0f - (float)R[2] * (float)zone_z;
-    float rhs_y = (target_vy - (float)Tv[1]) * 16384.0f - (float)R[5] * (float)zone_z;
-    float det = (float)R[0] * (float)R[4] - (float)R[1] * (float)R[3];
-
-    i32 wx, wy;
-    if (det < -1000.0f || det > 1000.0f) {
-        wx = (i32)((rhs_x * (float)R[4] - rhs_y * (float)R[1]) / det);
-        wy = (i32)((rhs_y * (float)R[0] - rhs_x * (float)R[3]) / det);
-    } else {
-        /* Degenerate camera (≈90° rotated): use zone centroid X, fallback Y */
-        wx = zone_x;
-        if (R[4] != 0)
-            wy = (i32)((target_vy - (float)Tv[1] - (float)R[3]*(float)zone_x/16384.0f
-                         - (float)R[5]*(float)zone_z/16384.0f) * 16384.0f / (float)R[4]);
-        else
-            wy = 200000;
-    }
-
-    /* Project (wx, wy, zone_z) → screen */
-    i64 vx_raw = 0, vy_raw = 0;
-    for (i32 col = 0; col < 3; col++) {
-        i32 w[3] = {wx, wy, (i32)zone_z};
-        vx_raw += (i64)R[col] * w[col];
-        vy_raw += (i64)R[3+col] * w[col];
-    }
-    i32 vx = (i32)(vx_raw >> 14) + Tv[0];
-    i32 vy = (i32)(vy_raw >> 14) + Tv[1];
-
-    i32 sx = 320 + (i32)((float)vx * scale);
-    i32 sy = 240 - (i32)((float)vy * scale);
-
-    /* Clamp */
-    if (sx < 10)  sx = 10;
-    if (sx > 629) sx = 629;
-    if (sy < 10)  sy = 10;
-    if (sy > 469) sy = 469;
-
+    /* Project the zone centroid as the fallback anchor screen point. */
+    i32 sx = 320, sy = 240;
+    scene_project_world(zone_x, g_proj_ground_wy, (i32)zone_z, &sx, &sy);
     g_scene_cam_sx = sx;
     g_scene_cam_sy = sy;
 
-    /* Cache the projection for scene_project_world (persona placement). */
-    for (i32 i = 0; i < 9; i++) g_proj_R[i] = R[i];
-    g_proj_Tv[0] = Tv[0]; g_proj_Tv[1] = Tv[1]; g_proj_Tv[2] = Tv[2];
-    g_proj_scale     = scale;
-    g_proj_ground_wy = wy;
-    g_proj_zone_z    = (i32)zone_z;
-    g_proj_anchor_wx = wx;
-    g_proj_valid     = 1;
-
-    print("scene: camera anchor cam=%d zone=(%d,%d) world=(%d,%d,%d) screen=(%d,%d)\n",
-          cam_idx, zone_x, (i32)zone_z, wx, wy, (i32)zone_z, sx, sy);
+    print("scene: camera cam=%d zone=(%d,%d) R0=%d T=(%d,%d,%d) gscale=%d anchor_screen=(%d,%d)\n",
+          cam_idx, zone_x, (i32)zone_z, param[0], param[9], param[10], param[11],
+          param[24], sx, sy);
 }
 
 /* -------------------------------------------------------------------------
@@ -1808,15 +1778,17 @@ i32 scene_render(system_t *sys) {
             i32 wxt = 0, wzt = 0, pview = 0;
             const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
             if (!nm) continue;
-            /* Project the persona's world position (tile x600) to screen. */
+            /* Project the persona's world position (tile x600, its own
+             * PosPerso ground Y) to screen. */
+            i32 pground = lieu_spawn_ground(pi);
             i32 psx, psy;
-            scene_project_world(wxt * 600, g_proj_ground_wy, wzt * 600, &psx, &psy);
+            i32 pvis = scene_project_world(wxt * 600, pground, wzt * 600, &psx, &psy);
             if (getenv("DKE_PROJDBG")) {
                 static i32 s_seen[16] = {0};
                 if (pi < 16 && !s_seen[pi]) {
                     s_seen[pi] = 1;
-                    print("proj: %s world=(%d,%d,%d) -> screen=(%d,%d) [fb %dx%d]\n",
-                          nm, wxt * 600, g_proj_ground_wy, wzt * 600, psx, psy,
+                    print("proj: %s world=(%d,%d,%d) -> screen=(%d,%d) vis=%d [fb %dx%d]\n",
+                          nm, wxt * 600, pground, wzt * 600, psx, psy, pvis,
                           state ? state->graphic.width : 0,
                           state ? state->graphic.height : 0);
                 }
@@ -1899,7 +1871,7 @@ i32 scene_render(system_t *sys) {
             const c8 *nm = lieu_spawn_get(i, &wxt, &wzt, &pv);
             if (!nm) continue;
             i32 sx, sy;
-            scene_project_world(wxt * 600, g_proj_ground_wy, wzt * 600, &sx, &sy);
+            scene_project_world(wxt * 600, lieu_spawn_ground(i), wzt * 600, &sx, &sy);
             if (sx < 4)   sx = 4;
             if (sx > 560) sx = 560;
             draw_text_at(font_handle, sx, sy - 90, nm, 0xFFFFE060u);  /* name over head */

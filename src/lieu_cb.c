@@ -126,23 +126,38 @@ const c8 *lieu_poll_movie(void) {
 /* PosPerso arg mapping (verified vs engine sub_44502D/sub_463C2E):
  *   anim(p1) -> world X (tile, x600),  x(p2) -> world Z (tile, x600),
  *   y(p3) = facing (NOT position),     flag(p4) = vie (0..4 mode). */
-typedef struct { c8 name[24]; i32 wx, wz, view, id; } lieu_spawn_t;
+typedef struct {
+    c8  name[24];
+    i32 wx, wz, view, id;   /* wx=anim tile (*600=worldX), wz=x tile (*600=worldZ) */
+    i32 ground;             /* PosPerso arg8 z = world Y ground (unscaled)         */
+    i32 facing;             /* PosPerso arg4 y = facing angle                      */
+} lieu_spawn_t;
 #define LIEU_SPAWN_MAX 64
 static lieu_spawn_t g_spawns[LIEU_SPAWN_MAX];
 static i32          g_spawn_count = 0;
 
+/* PosPerso (sub_44502D): anim*600=worldX, x*600=worldZ, y=facing, z=world Y. */
 static void cb_spawn_678(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
                          const c8 *name, i32 kind, i32 z) {
-    (void)y; (void)kind; (void)z;   /* y = facing; kind/z = life indices */
+    (void)kind;
     if (name && g_spawn_count < LIEU_SPAWN_MAX) {
         lieu_spawn_t *s = &g_spawns[g_spawn_count++];
         i32 k = 0;
         while (name[k] && k < (i32)sizeof(s->name) - 1) { s->name[k] = name[k]; k++; }
         s->name[k] = '\0';
         s->wx = anim; s->wz = x; s->view = flag; s->id = zone;
+        s->ground = z; s->facing = y;
     }
-    print("lieu_cb: PosPerso '%s' id=%d vie=%d worldXZ=(%d,%d)\n",
-          name ? name : "(null)", zone, flag, anim, x);
+    print("lieu_cb: PosPerso '%s' id=%d vie=%d tileXZ=(%d,%d) facing=%d groundY=%d\n",
+          name ? name : "(null)", zone, flag, anim, x, y, z);
+}
+
+/* Ground Y + facing for spawn i (see lieu_spawn_get for name/tile/view). */
+i32 lieu_spawn_ground(i32 i) {
+    return (i >= 0 && i < g_spawn_count) ? g_spawns[i].ground : 0;
+}
+i32 lieu_spawn_facing(i32 i) {
+    return (i >= 0 && i < g_spawn_count) ? g_spawns[i].facing : 0;
 }
 
 /* Registry accessors: wx and wz = world tile coords (multiply by 600 for
