@@ -1576,12 +1576,24 @@ i32 scene_render(system_t *sys) {
         }
         if (zone >= 0) lieu_zone_trigger(zone);
     }
-    /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script. */
+    /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script.
+     * Each line HOLDS until the player advances (mouse click edge). Polled
+     * here before the movement block so we get the want_action edge first. */
     if (g_scene_bg_level >= 0) {
         const c8 *root = (state && state->game_path) ? state->game_path : ".";
         const c8 *lang = dlg_lang_code(state ? state->language_id : 0);
-        dlg_tick(g_scene_bg_level, root, lang,
-                 sys ? sys->timer.tick : 0);
+        u32 tick = sys ? sys->timer.tick : 0;
+        i32 advance = 0;
+        if (sys) {
+            player_input_t din = {0};
+            player_input_update(&din, sys);
+            advance = din.want_action;               /* mouse-left click edge */
+        }
+        if (getenv("DKE_AUTOADV")) {                  /* headless: auto-pace */
+            static u32 s_next = 0;
+            if (tick >= s_next) { advance = 1; s_next = tick + 1200; }
+        }
+        dlg_tick(g_scene_bg_level, root, lang, tick, advance);
     }
     /* Play any cutscene the LIEU script queued (intro FMV, etc). Safe here
      * in the render phase; ls_play_movie runs its own blocking decode loop. */
@@ -1799,6 +1811,16 @@ i32 scene_render(system_t *sys) {
             /* Project the persona's world position (tile x600) to screen. */
             i32 psx, psy;
             scene_project_world(wxt * 600, g_proj_ground_wy, wzt * 600, &psx, &psy);
+            if (getenv("DKE_PROJDBG")) {
+                static i32 s_seen[16] = {0};
+                if (pi < 16 && !s_seen[pi]) {
+                    s_seen[pi] = 1;
+                    print("proj: %s world=(%d,%d,%d) -> screen=(%d,%d) [fb %dx%d]\n",
+                          nm, wxt * 600, g_proj_ground_wy, wzt * 600, psx, psy,
+                          state ? state->graphic.width : 0,
+                          state ? state->graphic.height : 0);
+                }
+            }
             /* Load this persona's own mesh + skeleton + ARR01 clip. */
             i32 ci = persona_mesh_load(persona_num_from_name(nm));
             if (ci < 0) {
@@ -1884,23 +1906,53 @@ i32 scene_render(system_t *sys) {
         }
     }
 
-    /* Dialogue subtitle (current spoken line): black caption box + white
-     * text across the bottom. Box sized to the text, centred. */
+    /* Dialogue subtitle (current spoken line): full-width black caption bar
+     * across the bottom with word-wrapped white text, mirroring the engine's
+     * update_display_state (dkev sub_416AC0): wrap, black fill (palette idx
+     * 0), then draw lines inset a few px. Held until the player advances. */
     {
         const c8 *sub = dlg_active_text();
         if (sub && sub[0]) {
-            i32 fw   = state ? state->graphic.width  : 640;
-            i32 fh   = state ? state->graphic.height : 480;
-            i32 len  = (i32)strlen(sub);
-            i32 tw   = len * 8;                      /* ~8px/char */
-            i32 boxw = tw + 24;
-            if (boxw > fw - 8) boxw = fw - 8;
-            i32 boxx = (fw - boxw) / 2;
-            i32 boxy = fh - 54;
-            scene_fill_rect(state, boxx, boxy, boxw, 32, 0xFF000000u);   /* black box */
-            i32 sx = (fw - tw) / 2;
-            if (sx < boxx + 8) sx = boxx + 8;
-            draw_text_at(font_handle, sx, boxy + 8, sub, 0xFFFFFFFFu);
+            i32 fw = state ? state->graphic.width  : 640;
+            i32 fh = state ? state->graphic.height : 480;
+            const i32 lineh = 18;                 /* font cell height        */
+            const i32 pad   = 8;
+            i32 boxx = 24, boxw = fw - 48;         /* near-full-width bar      */
+            i32 maxc = (boxw - 2 * pad) / 8;       /* chars per line (~8px)    */
+            if (maxc < 8)  maxc = 8;
+            if (maxc > 120) maxc = 120;
+
+            /* Word-wrap sub into lines[]. */
+            c8  lines[6][128];
+            i32 nlines = 0;
+            const c8 *p = sub;
+            while (*p && nlines < 6) {
+                i32 n = 0, lastsp = -1;
+                while (p[n] && n < maxc && n < 127) {
+                    if (p[n] == ' ') lastsp = n;
+                    n++;
+                }
+                i32 take = n;
+                if (p[n] && lastsp > 0) take = lastsp;   /* break at last space */
+                i32 k = 0;
+                for (i32 i = 0; i < take && k < 127; i++) lines[nlines][k++] = p[i];
+                lines[nlines][k] = '\0';
+                nlines++;
+                p += take;
+                while (*p == ' ') p++;
+            }
+            if (nlines == 0) nlines = 1;
+
+            i32 boxh = nlines * lineh + 2 * pad;
+            i32 boxy = fh - boxh - 8;              /* bottom-anchored bar      */
+            scene_fill_rect(state, boxx, boxy, boxw, boxh, 0xFF000000u);
+            for (i32 li = 0; li < nlines; li++) {
+                i32 tw = (i32)strlen(lines[li]) * 8;
+                i32 sx = boxx + (boxw - tw) / 2;   /* centre each line         */
+                if (sx < boxx + pad) sx = boxx + pad;
+                draw_text_at(font_handle, sx, boxy + pad + li * lineh,
+                             lines[li], 0xFFFFFFFFu);
+            }
         }
     }
     return 0;

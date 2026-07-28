@@ -15,9 +15,13 @@
 /* Queue a dialogue line by its L-code (e.g. "L01D02"). */
 void dlg_say(const c8 *code);
 
-/* Per-frame: advance the queue; when idle, pop next line, load its text,
- * play its WAV, arm the display timer. root = game_path, lang e.g. "FR". */
-void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms);
+/* Per-frame: show one line at a time, HELD until the player advances.
+ * advance = 1 on a click/key edge to dismiss the current line and show the
+ * next. root = game_path, lang e.g. "US". */
+void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms, i32 advance);
+
+/* True while a subtitle line is on screen (waiting for the advance input). */
+i32 dlg_is_active(void);
 
 /* Current subtitle text, or NULL if none showing. */
 const c8 *dlg_active_text(void);

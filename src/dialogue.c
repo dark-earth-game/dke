@@ -27,7 +27,7 @@ static i32  g_loaded_lvl = -1;
 static c8   g_queue[DLG_QUEUE][16];
 static i32  g_qh = 0, g_qt = 0;
 static c8   g_active[256];
-static u32  g_end_ms = 0;
+static u32  g_min_ms = 0;   /* earliest tick the active line may be dismissed */
 
 static i32 read_whole(const c8 *host, c8 *dst, i32 max) {
     FILE *f = ls_open(host, "rb");
@@ -66,7 +66,7 @@ const c8 *dlg_lang_code(i32 id) {
 void dlg_reset(void) {
     g_qh = g_qt = 0;
     g_active[0] = '\0';
-    g_end_ms = 0;
+    g_min_ms = 0;
 }
 
 void dlg_say(const c8 *code) {
@@ -108,10 +108,17 @@ static i32 dlg_lookup(const c8 *code, c8 *out, i32 outmax) {
     return 0;
 }
 
-void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms) {
-    if (g_active[0] && now_ms < g_end_ms) return;   /* current line still up */
-    g_active[0] = '\0';
-    if (g_qh == g_qt) return;                        /* queue empty */
+void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms, i32 advance) {
+    /* Retail Dark Earth auto-advances by a voice-length timer (dkev
+     * sub_44968B). We instead HOLD each line until the player advances
+     * (click/key), so the conversation is user-paced. A line may be
+     * dismissed only after a short minimum so the click that opened it
+     * (or the previous line's click) doesn't skip it instantly. */
+    if (g_active[0]) {
+        if (!advance || now_ms < g_min_ms) return;   /* wait for input */
+        g_active[0] = '\0';                            /* advance -> next  */
+    }
+    if (g_qh == g_qt) return;                          /* queue empty */
 
     const c8 *code = g_queue[g_qh & DLG_QMASK];
     g_qh++;
@@ -133,11 +140,13 @@ void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms) {
         if (w.sample_rate) dur = (u32)((u64)w.num_samples * 1000 / w.sample_rate);
         wav_free(&w);
     }
-    if (dur < 1200) dur = 1200;
-    g_end_ms = now_ms + dur;
-    print("dlg: '%s' -> \"%s\" (%u ms)\n", code, g_active, dur);
+    (void)dur;
+    g_min_ms = now_ms + 500;   /* debounce: can't skip for first 500 ms */
+    print("dlg: '%s' -> \"%s\" (hold for input)\n", code, g_active);
 }
 
 const c8 *dlg_active_text(void) {
     return g_active[0] ? g_active : NULL;
 }
+
+i32 dlg_is_active(void) { return g_active[0] ? 1 : 0; }
