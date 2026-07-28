@@ -164,6 +164,41 @@ static entity_display_t g_secondary_entities[SECONDARY_ENTITY_SLOTS];
 static void *g_bulle_sprites[4] = {0};     /* speech bubble sprites */
 static void *g_textures_gif     = NULL;     /* TEXTURES.GIF base atlas */
 
+/* Combat / creature definition table (sub_471C18) — 100 entries × 20 bytes.
+ * Loaded from DATAS>OBJETS>OBJETS.TXT.
+ *
+ * Original data addresses:
+ *   combat_ability_table @ 004DB860 — byte flags
+ *   byte_4DB861          @ 004DB861 — poly index
+ *   byte_4DB862          @ 004DB862 — weapon index
+ *   byte_4DB863          @ 004DB863 — linked entity id
+ *   dword_4DB850         @ 004DB850 — nbobj (object count)
+ *   dword_4DB854         @ 004DB854 — nbvie (health/lives)
+ *   dword_4DB858         @ 004DB858 — ptvie (health points)
+ *   dword_4DB85C         @ 004DB85C — ptnrj (energy points)
+ */
+#define CREATURE_TABLE_SIZE 100
+#define MAX_POLY_OBJECTS    35
+#define MAX_WEAPONS         35
+
+typedef struct {
+    i32 nbobj;          /* +0x00: object count */
+    i32 nbvie;          /* +0x04: health/lives */
+    i32 ptvie;          /* +0x08: health points */
+    i32 ptnrj;          /* +0x0C: energy points */
+    u8  flags;          /* +0x10: combat ability bitmask */
+    u8  poly_index;     /* +0x11: polygon object slot */
+    u8  weapon_index;   /* +0x12: weapon slot */
+    u8  linke;          /* +0x13: linked entity id */
+} creature_entry_t;
+
+static creature_entry_t g_creature_table[CREATURE_TABLE_SIZE];
+
+/* Resource tables filled per-weapon (35 entries × 10 words).
+ * resource_table @ 004DBBE0, word_4DC020 @ 004DC020 */
+static i16 g_resource_table[MAX_WEAPONS * 10];
+static i16 g_resource_table_copy[MAX_WEAPONS * 10];
+
 /* Object name table (sub_426335) — 135 entries × 180 bytes, byte_50B030 */
 #define OBJECT_NAME_SLOTS 135
 typedef struct {
@@ -645,6 +680,233 @@ static void sub_415FB0(const c8 *base_name, u8 *desc) {
 }
 
 /* -------------------------------------------------------------------------
+ * text_find_value — port of sub_461CA7.
+ *
+ * Searches 'buf' (length 'buf_len') for the key string 'key'.  When found,
+ * skips spaces after the match and copies the value token (chars > 0x20)
+ * into 'out'.  If not found, writes "x\0" into 'out'.
+ *
+ * Original calling convention:
+ *   ECX = buffer, EDX = buffer length, arg_0 = key, arg_4 = output.
+ * ---------------------------------------------------------------------- */
+static void text_find_value(const c8 *buf, i32 buf_len, const c8 *key, c8 *out) {
+    i32 klen = (i32)strlen(key);
+    i32 limit = buf_len - klen;
+    for (i32 i = 0; i <= limit; i++) {
+        i32 match = 0;
+        while (match < klen && buf[i + match] == key[match])
+            match++;
+        if (match == klen) {
+            const c8 *p = buf + i + klen;
+            const c8 *end = buf + buf_len;
+            while (p < end && *p == ' ') p++;
+            c8 *dst = out;
+            while (p < end && (u8)*p > 0x20)
+                *dst++ = *p++;
+            *dst = '\0';
+            return;
+        }
+    }
+    out[0] = 'x';
+    out[1] = '\0';
+}
+
+/* -------------------------------------------------------------------------
+ * 004723C0 — sub_4723C0 (pre-check / cache loader).
+ *
+ * Checks for a pre-compiled .CTX binary cache of the creature table.
+ * Port: always returns 0 (force text parse).  The .CTX cache is a
+ * size-optimization from the original; we always parse from text.
+ * ---------------------------------------------------------------------- */
+static i32 sub_4723C0_stub(const c8 *virtual_path) {
+    (void)virtual_path;
+    print("sub_4723C0: cache check skipped (always parse text)\n");
+    return 0;
+}
+
+/* -------------------------------------------------------------------------
+ * 0047257D — sub_47257D (post-process / cache writer).
+ *
+ * Writes the parsed creature table to a .CTX binary cache.
+ * Port: stub — no cache writing needed.
+ * ---------------------------------------------------------------------- */
+static void sub_47257D_stub(const c8 *virtual_path) {
+    (void)virtual_path;
+    print("sub_47257D: cache write skipped\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 00471C18 — load_objets_txt
+ *
+ * Parses DATAS>OBJETS>OBJETS.TXT — creature/object definition table.
+ * 431 instructions in original; loads entire file, loops 100 entries,
+ * searches for keyed weapon-ability flags and creature stats.
+ *
+ * Key format in file:  "sabr?NN :" / "nbobj NN :" where NN = creature index.
+ * sub_461CA7 extracts the value after the key.
+ *
+ * Combat ability flags bitmask:
+ *   0x01 = polygone, 0x02 = arme, 0x04 = sabre, 0x08 = hache,
+ *   0x10 = foudre,   0x20 = lance-feu, 0x40 = cracker, 0x80 = pistolet
+ *
+ * Per-creature stats: nbobj, nbvie, ptvie, ptnrj, linke.
+ * Caps: 35 poly-objects (var_198), 35 weapons (var_19C).
+ * ---------------------------------------------------------------------- */
+
+// 00471C18
+static void load_objets_txt(const c8 *virtual_path) {
+    i32 poly_count   = 1;  /* var_198 — starts at 1 */
+    i32 weapon_count = 1;  /* var_19C — starts at 1 */
+
+    /* sub_4723C0 pre-check: if cache exists, skip text parse */
+    if (sub_4723C0_stub(virtual_path)) return;
+
+    /* Resolve path and get file size */
+    c8 resolved[512];
+    if (!ls_resolve_path(state->game_path, virtual_path, resolved, (i32)sizeof(resolved))) {
+        print("load_objets_txt: path overflow '%s'\n", virtual_path);
+        return;
+    }
+
+    i32 file_size = ls_get_filesize(resolved);
+    if (file_size <= 0) {
+        print("load_objets_txt: file not found or empty '%s'\n", resolved);
+        sub_47257D_stub(virtual_path);
+        return;
+    }
+
+    /* Allocate and load entire file */
+    c8 *buf = (c8 *)allocate_memory(MEM_SLOT_SPECIAL, file_size + 1);
+    if (!buf) {
+        print("load_objets_txt: alloc failed (%d bytes)\n", file_size);
+        sub_47257D_stub(virtual_path);
+        return;
+    }
+
+    FILE *fp = ls_open(resolved, "rb");
+    if (!fp) {
+        print("load_objets_txt: cannot open '%s'\n", resolved);
+        free_memory(buf);
+        sub_47257D_stub(virtual_path);
+        return;
+    }
+    ls_read_buffer(fp, buf, file_size);
+    ls_close(fp);
+    buf[file_size] = '\0';
+
+    c8 key[128];   /* var_184 — format string result */
+    c8 val[256];   /* var_100 — extracted value */
+
+    for (i32 i = 0; i < CREATURE_TABLE_SIZE; i++) {
+        creature_entry_t *ent = &g_creature_table[i];
+        ent->flags        = 0;
+        ent->poly_index   = 0;
+        ent->weapon_index = 0;
+
+        /* --- sabre (0x04) --- */
+        sprintf(key, "sabr?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) ent->flags |= 0x04;
+
+        /* --- hache (0x08) --- */
+        sprintf(key, "hach?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) ent->flags |= 0x08;
+
+        /* --- foudre (0x10) --- */
+        sprintf(key, "foud?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) ent->flags |= 0x10;
+
+        /* --- lance-feu (0x20) --- */
+        sprintf(key, "lfeu?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) ent->flags |= 0x20;
+
+        /* --- cracker (0x40) --- */
+        sprintf(key, "crac?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) ent->flags |= 0x40;
+
+        /* --- pistolet (0x80) --- */
+        sprintf(key, "pist?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) ent->flags |= 0x80;
+
+        /* --- capacity check: poly-objects capped at 35 --- */
+        if (poly_count >= MAX_POLY_OBJECTS) {
+            print("load_objets_txt: Too many OBJUTILS_MULTIPLES\n");
+            break;
+        }
+        /* --- capacity check: weapons capped at 35 --- */
+        if (weapon_count >= MAX_WEAPONS) {
+            print("load_objets_txt: Too many OBJUTILS_ARMES\n");
+            break;
+        }
+
+        /* --- nbobj --- */
+        sprintf(key, "nbobj%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        ent->nbobj = (i32)atol(val);
+
+        /* --- nbvie --- */
+        sprintf(key, "nbvie%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        ent->nbvie = (i32)atol(val);
+
+        /* Fill resource tables with nbvie for this weapon slot (10 words) */
+        {
+            i32 nbvie_val = ent->nbvie;
+            i32 base = weapon_count * 10;
+            for (i32 j = 0; j < 10; j++) {
+                g_resource_table[base + j]      = (i16)nbvie_val;
+                g_resource_table_copy[base + j]  = (i16)nbvie_val;
+            }
+        }
+
+        /* --- ptvie --- */
+        sprintf(key, "ptvie%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        ent->ptvie = (i32)atol(val);
+
+        /* --- ptnrj --- */
+        sprintf(key, "ptnrj%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        ent->ptnrj = (i32)atol(val);
+
+        /* --- linke --- */
+        sprintf(key, "linke%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        ent->linke = (u8)atoi(val);
+
+        /* --- polygone (0x01) --- */
+        sprintf(key, "poly?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) {
+            ent->flags |= 0x01;
+            ent->poly_index = (u8)poly_count;
+            poly_count++;
+        }
+
+        /* --- arme (0x02) --- */
+        sprintf(key, "arme?%02d :", i);
+        text_find_value(buf, file_size, key, val);
+        if (atoi(val) == 1) {
+            ent->flags |= 0x02;
+            ent->weapon_index = (u8)weapon_count;
+            weapon_count++;
+        }
+    }
+
+    free_memory(buf);
+    print("load_objets_txt: parsed %d creatures, %d poly-objects, %d weapons\n",
+          CREATURE_TABLE_SIZE, poly_count - 1, weapon_count - 1);
+
+    /* sub_47257D post-process */
+    sub_47257D_stub(virtual_path);
+}
+
+/* -------------------------------------------------------------------------
  * 004161B0 — game_finalize
  *
  * Original asm (entire body):
@@ -685,6 +947,9 @@ b8 game_init(state_t *state) {
     (void)g_dword_4D7F2C;
     (void)g_dword_4F4DF4;
     (void)g_unk_4CFE40;
+    (void)g_creature_table;
+    (void)g_resource_table;
+    (void)g_resource_table_copy;
 
     /* ------------------------------------------------------------------ */
     /* Phase 1 — debug banner                                               */
@@ -1179,7 +1444,7 @@ b8 game_init(state_t *state) {
     /* Phase 40 — sub_471C18 — load objets.txt                             */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_471C18 loading objets.txt\n");
-    /* TODO: sub_471C18 @ 00471C18 — ECX="objets>objets.txt" */
+    load_objets_txt("DATAS>OBJETS>OBJETS.TXT"); /* sub_471C18 @ 00471C18 */
 
     /* ------------------------------------------------------------------ */
     /* Phase 41 — special_mode_active → dword_505DD8                      */
