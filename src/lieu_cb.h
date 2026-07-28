@@ -147,7 +147,7 @@ void lieu_exit(void);
  * corresponding condition; not driven during normal play yet. */
 void lieu_zone_trigger(i32 zone_id);   /* op 3: trigger[zone_id]  */
 void lieu_object_timer(i32 id);        /* op 4: event4(id)        */
-void lieu_pending_event(i32 v);        /* op 5: event5(v)         */
+void lieu_pending_event(i32 v, i32 phase); /* op 5: event5(v, phase)  */
 
 /* Pointer to a field in the live state buffer, so engine code can set the
  * guards handlers read (e.g. *lieu_state_slot(0x194) = submode). */
@@ -181,5 +181,9 @@ i32 lieu_spawn_count(void);
 const c8 *lieu_spawn_get(i32 i, i32 *x, i32 *y, i32 *view);
 i32 lieu_spawn_ground(i32 i);   /* PosPerso z = world Y ground (unscaled) */
 i32 lieu_spawn_facing(i32 i);   /* PosPerso y = facing angle              */
+
+/* Player movement blocking from group(3)/group(0) brackets.
+ * Returns 1 while a dialogue/cutscene group is open. */
+i32 lieu_player_blocked(void);
 
 #endif /* DKE_LIEU_CB_H */

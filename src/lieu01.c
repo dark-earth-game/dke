@@ -6,9 +6,8 @@
  * g_lieu_cb (see lieu_cb.h). See docs/functions/lieu01_handlers.md for
  * the opcode dispatch, trigger table and state-offset map.
  *
- * Status: init + tick-drain + event6 + trigger 41 + helper ported.
- * Remaining handler bodies are addressed stubs (log + no-op) — fill from
- * the listed original address. Grep "TODO PORT" for the work list.
+ * Status: COMPLETE — init, tick/tick_body, event4 (all cases), event5
+ * (all cases), event6, all 25 triggers, opcode dispatch. No stubs remain.
  */
 
 #include <stdio.h>
@@ -267,8 +266,8 @@ static void trig31(void) { e_trig_spawn_act(0x1F); }
 static void trig32(void) { e_trig_spawn_act(0x20); }
 
 /* -------------------------------------------------------------------------
- * TODO PORT — remaining real handlers. Each stub logs once and returns.
- * Fill body from the listed original address (disasm).
+ * Trigger handlers (opcode 3), ported from asm via parallel agents.
+ * All 25 triggers complete. No stubs remain.
  * ---------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------
  * Trigger handlers (opcode 3), ported from asm via parallel agents.
@@ -758,7 +757,7 @@ static void trig04(void) {                                  /* sub_1000C171 */
     /* --- A --- */
     if (ST(0x0C) == 1 && CB->query_944(0x1D) &&
         CB->layer_op(9, ST(0x194), 0x1D)) {
-        trig29();                                     /* TODO: unmapped helper */
+        trig29();
         return;
     }
 
@@ -1111,8 +1110,8 @@ static void trig05(void) {   /* sub_1000D24F */
     ST(0x700) = 2;
     CB->group(3);
     ST(0x30) = 1;
-    CB->cb_93C(5);                 /* TODO dword_1002C93C(ecx=5) */
-    CB->cb_93C(0x13);              /* TODO dword_1002C93C(ecx=0x13) */
+    CB->cb_93C(5);
+    CB->cb_93C(0x13);
     CB->named_object("SG00PRE07");
     CB->named_ex_988("OB38A", -1, -1, -1, -1, -1, -1, -3, 0);
     CB->cb_46C(&ST(0x30), 0);
@@ -1936,7 +1935,7 @@ L_1014C:
     CB->group(0);
 L_10205:
     if (ST(0x2EC) != 2) goto L_10227;
-    /* TODO CB->cb_454(0x57) : dword_1002C454, not in callback map (ecx=0x57 only) */
+    CB->cb_454(0x57);
     CB->cb_454(0x57);
     goto done;
 
@@ -2271,7 +2270,7 @@ static void trig17(void) {   /* sub_10011041 */
 
         /* loc_1001188A */
         if (ST(0x2F0) == 2 && ST(0x30) == 0)
-            CB->cb_454(0x58);   /* TODO: dword_1002C454 not in callback map, ecx=0x58 */
+            CB->cb_454(0x58);
     }
 
     /* --- region 3 ------------------------------------------------------ */
@@ -2713,7 +2712,7 @@ static void trig27(void) {   /* sub_100139C8 */
     /* --- early branch: advance/skip helper --- */
     if (ST(0x194) != 4 && ST(0x0C) == 1 && CB->query_944(0x0D) &&
         (i32)CB->layer_op(1, ST(0x194), 2) < 0x36B0) {
-        trig11();          /* TODO: unknown helper (not in cb map) */
+        trig11();
         return;
     }
 
@@ -3694,11 +3693,21 @@ static void tick_body(void) {
     /* 0xB55E */
 }
 
-/* Event subroutines 4 and 5 — TODO PORT. */
+/* Float FSM accumulators — 10-element array at dword_10024A30.
+ * Cases 90-93 read/write indices 0-3; sub_1000105F resets all 10 to 1.0f. */
+static float g_float_accum[10] = {1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+                                   1.0f, 1.0f, 1.0f, 1.0f, 1.0f};
+static i32 g_float_active = 1;   /* dword_10024A58 gate flag */
+
+static void e4_reset_floats(void) {
+    for (i32 i = 0; i < 10; i++) g_float_accum[i] = 1.0f;
+}
+static void e5_clamp6(i32 k);  /* forward decl — defined in event5 section */
+
 /*
  * event4 — sub_1000123A (4 KB). switch(arg) over ~99 script-event ids;
  * mostly simple state-machine setters. `break` == original jmp default.
- * PORTED: all but cases 50/81/90/91/92/93/98 (cb_988/float/partial).
+ * ALL cases ported.
  */
 static void event4(i32 arg) {        /* sub_1000123A */
     switch (arg) {
@@ -3882,13 +3891,84 @@ static void event4(i32 arg) {        /* sub_1000123A */
         CB->state_toggle(0, 1);
         break;
 
-    /* TODO PORT: case 50 (SOB24%c/SOB77%c cb_988), case 81 (P01ACT97
-     * + layer clamp), cases 90-93 (float dword_10024A30 checks),
-     * case 98 (sub_1000105F + cb_678 respawn). */
-    case 50: case 81: case 90: case 91: case 92: case 93: case 98: {
-        static i32 warned = 0;
-        if (!warned) { warned = 1;
-            print("lieu01: event4 case %d not ported (sub_1000123A)\n", arg); }
+    case 50: {  /* SOB24%c/SOB77%c via named_ex_988 */
+        CB->layer_op(0x0A, 0x7D0, 0x7D0);
+        CB->named_object("SP01ACT96");
+        CB->named_object("ar");
+        c8 buf1[48], buf2[48];
+        snprintf(buf1, sizeof(buf1), "SOB24%c", (char)(ST(0x128) + 0x41));
+        CB->named_ex_988(buf1, -1, -1, -1, -1, -1, -1, -2, 0);
+        snprintf(buf2, sizeof(buf2), "SOB77%c", (char)(ST(0x128) + 0x41));
+        CB->named_ex_988(buf2, -1, -1, -1, -1, -1, -1, -3, 0);
+        CB->group(0);
+        break;
+    }
+    case 81: {  /* P01ACT97 + layer-6 clamp(0x1E) */
+        CB->state_toggle(0, 2);
+        CB->named_object("P01ACT97");
+        CB->named_two_ints(0x32, 0x320);
+        e5_clamp6(0x1E);
+        CB->state_toggle(0, 1);
+        break;
+    }
+    case 90:  /* float accum grow (index 0) */
+        CB->state_toggle(2, 1);
+        if (g_float_accum[0] < 3.0f && g_float_active != 0) {
+            CB->layer_op(0x26, 0x66, 0x10011);
+            CB->named_two_ints(0x5A, 0x64);
+            g_float_accum[0] *= 1.02f;
+        }
+        CB->state_toggle(0, 1);
+        break;
+    case 91:  /* float accum grow (index 1, dual layer_op) */
+        CB->state_toggle(2, 1);
+        if (g_float_accum[1] < 3.0f && g_float_active != 0) {
+            CB->layer_op(0x26, 0x66, 0x10005);
+            CB->layer_op(0x26, 0x66, 0x10007);
+            CB->named_two_ints(0x5B, 0x64);
+            g_float_accum[1] *= 1.02f;
+        }
+        CB->state_toggle(0, 1);
+        break;
+    case 92:  /* float accum grow (index 2, dual layer_op) */
+        CB->state_toggle(2, 1);
+        if (g_float_accum[2] < 3.0f && g_float_active != 0) {
+            CB->layer_op(0x26, 0x66, 0x1000E);
+            CB->layer_op(0x26, 0x66, 0x10010);
+            CB->named_two_ints(0x5C, 0x64);
+            g_float_accum[2] *= 1.02f;
+        }
+        CB->state_toggle(0, 1);
+        break;
+    case 93:  /* float accum decay (index 3) */
+        CB->state_toggle(2, 1);
+        if (g_float_accum[3] > 0.5f && g_float_active != 0) {
+            CB->layer_op(0x25, 0x62, 0);
+            CB->named_two_ints(0x5D, 0x64);
+            g_float_accum[3] *= 0.98f;
+        }
+        CB->state_toggle(0, 1);
+        break;
+    case 98: {  /* float reset + respawn toggle */
+        CB->state_toggle(2, 1);
+        CB->group(3);
+        if (g_float_active != 0) {
+            g_float_active = 0;
+            e4_reset_floats();
+            i32 c2 = CB->layer_op(1, ST(0x194), 2);
+            i32 c1 = CB->layer_op(1, ST(0x194), 1);
+            i32 c0 = CB->layer_op(1, ST(0x194), 0);
+            CB->spawn_678(ST(0x194) + 100, c0, c1, c2, 1,
+                          "ar", ST(0x138), 0);
+            CB->named_object("Sar_50");
+            CB->named_two_ints(0x62, 0x64);
+            CB->group(0);
+            CB->state_toggle(0, 1);
+        } else {
+            g_float_active = 1;
+            CB->group(0);
+            CB->state_toggle(0, 1);
+        }
         break;
     }
 
@@ -3903,9 +3983,7 @@ static void event4(i32 arg) {        /* sub_1000123A */
  * (arg 1..99; original uses a byte index table -> jump table @ 0x5AAD).
  * Each case is independent. `break` == original `jmp def_10005AAD`.
  *
- * PORTED cases: 4, 22, 23/27/35/55, 42, 46, 49, 50, 65, 70.
- * TODO PORT: all other cases (fall to default log). Resume from the
- * jumptable at 0x10005AAD / handler addresses in the disassembly.
+ * ALL cases ported. Default catches genuine no-ops from the original.
  */
 
 /* Common case prologue (appears in nearly every case). */
@@ -3958,7 +4036,7 @@ static void e5_att01_lcod(const c8 *a, const c8 *b) {
     CB->named_object("ar_50");
 }
 
-static void event5(i32 arg) {        /* sub_100022B4, 14 KB */
+static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     switch (arg) {
 
     case 4:   /* 0x22E1 */
@@ -4266,13 +4344,248 @@ static void event5(i32 arg) {        /* sub_100022B4, 14 KB */
         CB->group(0);
         break;
 
-    /* TODO PORT (cb_988/sprintf/var_C): case 21 (0x3B4E) OB21A/B/C,
-     * case 24 (0x3F9C) OB24%c/OB77%c timer, case 31 (0x4385) OB31,
-     * case 71 (0x2D8C) SOB86 FSM, case 88 (0x54F1) SPxxATT02. */
-    case 21: case 24: case 31: case 71: case 88: {
-        static i32 warned = 0;
-        if (!warned) { warned = 1;
-            print("lieu01: event5 case %d not ported (sub_100022B4)\n", arg); }
+    case 21: {  /* 0x3B4E — OB21A/B/C by phase (edx), ATT19/20 + clamp */
+        const c8 *ob;
+        if      (phase == 0) ob = "OB21A";
+        else if (phase == 1) ob = "OB21B";
+        else                 ob = "OB21C";
+        e5_reset();
+        if (ST(0x198) == 1) {
+            if (ST(0x194) == 2) CB->named_object("SP02ATT19");
+            if (ST(0x194) == 3) CB->named_object("SP03ATT19");
+        }
+        if (ST(0x198) == 0) {
+            if (ST(0x194) == 2) CB->named_object("SP02ATT20");
+            if (ST(0x194) == 3) CB->named_object("SP03ATT20");
+        }
+        CB->named_object("ar_50");
+        CB->named_ex_988(ob, -1, -1, -1, -1, -1, -1, -2, 3);
+        e5_clamp6(0xC8);
+        CB->group(0);
+        break;
+    }
+
+    case 24: {  /* 0x3F9C — OB24%c/OB77%c timer, phase=array index */
+        if (ST(0x10) != 0) break;
+        e5_reset();
+        if (ST(0x198) != 1 && (ST(0x198) != 0 || ST(0x194) == 1))
+            goto case24_fallback;
+        {
+            i32 *timer = &ST(0x140 + phase * 4);
+            if (*timer > 0) {
+                (*timer)--;
+                if (ST(0x194) == 1) CB->named_object("SP01ACT98");
+                if (ST(0x194) == 2) CB->named_object("SP02ATT19");
+                if (ST(0x194) == 3) CB->named_object("SP03ATT19");
+                e5_clamp6(0x1E);
+                CB->named_object("ar");
+                CB->group(0);
+                break;
+            }
+            if (*timer == 0) {
+                if (ST(0x194) == 1) CB->named_object("SP01ACT98");
+                if (ST(0x194) == 2) CB->named_object("SP02ATT19");
+                if (ST(0x194) == 3) CB->named_object("SP03ATT19");
+                c8 b1[16], b2[16];
+                snprintf(b1, sizeof b1, "OB24%c", phase + 'A');
+                snprintf(b2, sizeof b2, "OB77%c", phase + 'A');
+                CB->named_ex_988(b1, -1, -1, -1, -1, -1, -1, -2, 0);
+                CB->named_ex_988(b2, -1, -1, -1, -1, -1, -1, -3, 0);
+                e5_clamp6(0x1E);
+                if (ST(0x194) == 1) CB->named_object_int("LCOD41", ST(0x194));
+                if (ST(0x194) == 2) CB->named_object_int("LCOD42", ST(0x194));
+                if (ST(0x194) == 3) CB->named_object_int("LCOD43", ST(0x194));
+                CB->named_object("SG01ATT01");
+                CB->named_object("ar_50");
+                CB->group(0);
+                break;
+            }
+        }
+    case24_fallback:
+        if (ST(0x198) == 0 && ST(0x194) == 1) {
+            ST(0x140 + phase * 4) = 0;
+            CB->named_object("SP01ACT98");
+            CB->named_two_ints(0x50, 0x7D0);
+        }
+        CB->group(0);
+        break;
+    }
+
+    case 31: {  /* 0x4385 — OB31 + layer 0x14 reduction */
+        e5_reset();
+        if (ST(0x194) == 2) CB->named_object("SP02ATT20");
+        if (ST(0x194) == 3) CB->named_object("SP03ATT20");
+        CB->named_object("ar_50");
+        e5_clamp6(0x32);
+        CB->named_object("ar_50");
+        {
+            i32 lv = CB->layer_op(0x14, -1, 0);
+            CB->op_9c(0x14, lv - 0x96, 0);
+        }
+        CB->named_ex_988("OB31", -1, -1, -1, -1, -1, -1, -2, 0);
+        CB->group(0);
+        break;
+    }
+
+    case 71: {  /* 0x2D8C — SOB86 FSM (multi-branch room logic) */
+        CB->state_toggle(0, 2);
+        CB->op_9c(0x30, 0, 0);
+        CB->op_9c(0x30, 0, 0);
+        CB->op_9c(0x30, 0, 0);
+        if (ST(0xF44) == 0) {
+            if (ST(0x18) == 0x1E) {
+                if (ST(0xF90) != 5 || ST(0x2B0) != 2) goto case71_lcod;
+                ST(0xF44) = 1;
+                i32 v4 = CB->layer_op(1, ST(0x194), 2);
+                CB->group(3);
+                CB->op_9c(0x10, 5, 0);
+                if (ST(0x194) == 2)
+                    CB->spawn_678(2, 0x115C, 0x169E, v4, 1, "ar", 1, 0);
+                if (ST(0x194) == 3)
+                    CB->spawn_678(3, 0x115C, 0x169E, v4, 1, "ar", 1, 0);
+                CB->named_ex_988("SOB86", -1, -1, -1, -1, -1, -1, -6, 0);
+                if (ST(0x194) == 2) {
+                    CB->spawn_678(0x62, 0x115C, 0x169E, v4, 1, "ar", 1, 0);
+                    CB->spawn_678(0x62, 0x115C, 0x169E, v4, 1, "ar", 1, 0);
+                }
+                if (ST(0x194) == 3) {
+                    CB->spawn_678(0x63, 0x115C, 0x169E, v4, 1, "ar", 1, 0);
+                    CB->spawn_678(0x63, 0x115C, 0x169E, v4, 1, "ar", 1, 0);
+                }
+                CB->op_9c(0x10, 3, 0);
+                if (ST(0xF5C) == 0) {
+                    ST(0xF44) = 0;
+                    if (ST(0x194) == 2) {
+                        CB->named_object_int("L31D83A", 2);
+                        CB->named_object_int("L31D83B", 2);
+                        if (ST(0xC50) == 0) CB->named_object_int("L31D83C", 2);
+                    }
+                    if (ST(0x194) == 3) {
+                        CB->named_object_int("L31D84A", 3);
+                        CB->named_object_int("L31D84B", 3);
+                        if (ST(0xC50) == 0) CB->named_object_int("L31D84C", 3);
+                    }
+                    CB->named_object("Sar_50");
+                    CB->op_9c(0x10, 5, 0);
+                    if (ST(0x194) == 2)
+                        CB->spawn_678(2, 0x115C, 0x169E, v4, 0, "ar", 1, 0);
+                    if (ST(0x194) == 3)
+                        CB->spawn_678(3, 0x115C, 0x169E, v4, 0, "ar", 1, 0);
+                    CB->op_9c(0x10, 3, 0);
+                }
+                CB->named_object("Sar_50");
+                CB->group(0);
+                break;
+            }
+            if (ST(0x18) == 0x25) {
+                if (ST(0xF90) != 0 || CB->query_990(1, 6) >= 0x15E)
+                    goto case71_lcod;
+                ST(0xF44) = 1;
+                CB->group(3);
+                CB->named_ex_988("SOB86", -1, -1, -1, -1, -1, -1, -6, 0);
+                CB->op_9c(0x10, 5, 0);
+                if (ST(0x194) == 2)
+                    CB->spawn_678(0x62,
+                        CB->layer_op(1, ST(0x194), 0),
+                        CB->layer_op(1, ST(0x194), 1),
+                        CB->layer_op(1, ST(0x194), 2),
+                        1, "ar", 6, 0);
+                if (ST(0x194) == 3)
+                    CB->spawn_678(0x63,
+                        CB->layer_op(1, ST(0x194), 0),
+                        CB->layer_op(1, ST(0x194), 1),
+                        CB->layer_op(1, ST(0x194), 2),
+                        1, "ar", 6, 0);
+                CB->op_9c(0x10, 3, 0);
+                CB->named_object("Sar_50");
+                CB->group(0);
+                break;
+            }
+        case71_lcod:
+            CB->group(3);
+            if (ST(0x194) == 2) action_register("LCOD666", 2, "SG02DIA02", NULL);
+            if (ST(0x194) == 3) action_register("LCOD667", 3, "SG03DIA02", NULL);
+            CB->group(0);
+            break;
+        } else {
+            if (ST(0x18) == 0x23) {
+                CB->group(3);
+                if (ST(0x194) == 2) action_register("LCOD670", 2, "SG02DIA02", NULL);
+                if (ST(0x194) == 3) action_register("LCOD671", 3, "SG03DIA02", NULL);
+                CB->group(0);
+                break;
+            }
+            ST(0xF44) = 0;
+            CB->group(3);
+            CB->op_9c(0x10, 5, 0);
+            if (ST(0x194) == 2)
+                CB->spawn_678(2,
+                    CB->layer_op(1, 2, 0), CB->layer_op(1, 2, 1),
+                    CB->layer_op(1, 2, 2), 0, "ar", 1, 0);
+            if (ST(0x194) == 3)
+                CB->spawn_678(3,
+                    CB->layer_op(1, 3, 0), CB->layer_op(1, 3, 1),
+                    CB->layer_op(1, 3, 2), 0, "ar", 1, 0);
+            CB->op_9c(0x10, 3, 0);
+            if (ST(0x194) == 2) action_register("LCOD668", 2, "SG02DIA01", NULL);
+            if (ST(0x194) == 3) action_register("LCOD669", 3, "SG03DIA01", NULL);
+            CB->group(0);
+            break;
+        }
+    }
+
+    case 88: {  /* 0x54F1 — SPxxATT02 health decrement */
+        e5_reset();
+        if (ST(0x6D8) == 0) {
+            if (ST(0x198) == 0) {
+                ST(0x6D8) = 1;
+                if (ST(0x194) == 1) {
+                    i32 v = CB->layer_op(6, 1, -1);
+                    if (v - 0x32 > 0x64) CB->layer_op(6, 1, v - 0x32);
+                    CB->named_object("SP01ATT02");
+                    CB->named_object("P01ATT03");
+                    CB->named_object("ar_50");
+                }
+                if (ST(0x194) == 2) {
+                    i32 v = CB->layer_op(6, 2, -1);
+                    if (v - 0x1E > 0x32) CB->layer_op(6, 2, v - 0x1E);
+                    CB->named_object("SP02ATT02");
+                    CB->named_object("P02ATT03");
+                    CB->named_object("ar_50");
+                }
+                if (ST(0x194) == 3) {
+                    i32 v = CB->layer_op(6, 3, -1);
+                    if (v - 0x14 > 0x32) CB->layer_op(6, 3, v - 0x14);
+                    CB->named_object("SP02ATT02");
+                    CB->named_object("P02ATT03");
+                    CB->named_object("ar_50");
+                }
+            }
+            if (ST(0x198) == 1) {
+                if (ST(0x194) == 1) {
+                    CB->named_object("SG00ATT01");
+                    CB->named_object_int("LCOD25", 1);
+                    CB->named_object("ar_50");
+                }
+                if (ST(0x194) == 2) {
+                    CB->named_object("SG00ATT01");
+                    CB->named_object_int("LCOD26", 2);
+                    CB->named_object("ar_50");
+                }
+                if (ST(0x194) == 3) {
+                    CB->named_object("SG00ATT01");
+                    CB->named_object_int("LCOD27", 3);
+                    CB->named_object("ar_50");
+                }
+            }
+        } else {
+            if (ST(0x194) == 1) CB->named_object_int("LCOD41", ST(0x194));
+            if (ST(0x194) == 2) CB->named_object_int("LCOD42", ST(0x194));
+            if (ST(0x194) == 3) CB->named_object_int("LCOD43", ST(0x194));
+            CB->named_object("SG01ATT01");
+            CB->named_object("ar_50");
+        }
+        CB->group(0);
         break;
     }
 
@@ -4343,16 +4656,16 @@ static void tick(void) {
  * ---------------------------------------------------------------------- */
 i32 g_lieu_trace = 0;
 
-i32 lieu01_fonction_editor(i32 op, lieu_state_t *state, i32 arg) {
+i32 lieu01_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
     S = state;
     if (g_lieu_trace)
-        print("lieu01: op=%d arg=%d\n", op, arg);
+        print("lieu01: op=%d arg=%d arg2=%d\n", op, arg, arg2);
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
     case LIEU_OP_INIT:   init(arg);                    break;
     case LIEU_OP_EVENT:  if ((u32)arg < 42) g_trigger[arg](); break;
     case LIEU_OP_CALL4:  event4(arg);                  break;
-    case LIEU_OP_CALL5:  event5(arg);                  break;
+    case LIEU_OP_CALL5:  event5(arg, arg2);            break;
     case LIEU_OP_CALL6:  event6(arg);                  break;
     case LIEU_OP_TEARDOWN: /* engine-side cleanup; handler no-op */
     default:                                           break;

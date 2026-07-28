@@ -48,8 +48,10 @@ extern i32 g_lieu_trace;
  *   state : per-level state buffer (0xFA0 bytes)
  *   arg   : opcode-specific (event index for op 3; sub arg for 4/5/6;
  *           reload flag for op 1)
+ *   arg2  : secondary parameter (used by op 5 = event5 phase counter;
+ *           0 for all other opcodes)
  * Returns state[0] (result code), matching the original.
  */
-i32 lieu01_fonction_editor(i32 op, lieu_state_t *state, i32 arg);
+i32 lieu01_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 
 #endif /* DKE_LIEU01_H */

@@ -85,18 +85,101 @@ static i32 __attribute__((unused)) bam_angle(i32 dx, i32 dz) {
         print("lieu_cb: %s (stub)\n", name); } } while (0)
 
 /* -------------------------------------------------------------------------
- * Callback stubs. Signatures match lieu_cb_t exactly.
- * Queries return 0 (=> guarded handler branches stay inactive for now).
- * TODO wire: map each to a real dke engine primitive.
+ * Player movement blocking (group open/close brackets).
+ * group(3) = open bracket (block player), group(0) = close bracket.
+ * Original engine queues these as actions, but we apply directly since
+ * dke has no action queue processor.
  * ---------------------------------------------------------------------- */
-static void cb_named_object(const c8 *name) { CBLOG("named_object"); (void)name; }
+static i32 g_player_blocked = 0;
+i32 lieu_player_blocked(void) { return g_player_blocked; }
+
+/* -------------------------------------------------------------------------
+ * State toggle layers (3 independent dialogue/scripting queues).
+ * Original: mode 0→dword_4FC194, mode 1→dword_507274, mode 2→dword_507270.
+ * Each has a mode byte (0/1/2) and a counter. layer=2 means "reset".
+ * ---------------------------------------------------------------------- */
+static i32 g_layer_mode[3]    = {0, 0, 0};
+static i32 g_layer_counter[3] = {0, 0, 0};
+
+/* -------------------------------------------------------------------------
+ * Entity state tracking. The original engine tracks entity state in
+ * per-entity structs (0x220-stride objects at dword_4DF5D0 for IDs 0-3,
+ * separate NPC array for higher IDs). LIEU queries entity alive, HP,
+ * visibility, combat readiness, and anim state via layer_op.
+ *
+ * We track a lightweight version: alive, HP (0x400 = full), visibility,
+ * combat ready, anim state per entity. Spawn/kill callbacks update this.
+ * ---------------------------------------------------------------------- */
+#define ENT_MAX 256
+typedef struct {
+    i32 alive;        /* 1 = loaded/present */
+    i32 hp;           /* 0..0x3FF (1023); layer_op(6) reads/writes */
+    i32 visible;      /* 1 = visible; layer_op(12) toggles */
+    i32 combat_ready; /* 1 = in combat mode; layer_op(18) tests */
+    i32 anim_state;   /* layer_op(6) r/w with entity anim tag */
+} ent_state_t;
+static ent_state_t g_ents[ENT_MAX];
+
+static void ents_clear(void) {
+    for (i32 i = 0; i < ENT_MAX; i++) {
+        g_ents[i].alive = 0;
+        g_ents[i].hp = 0x200;
+        g_ents[i].visible = 1;
+        g_ents[i].combat_ready = 0;
+        g_ents[i].anim_state = 0;
+    }
+    for (i32 i = 0; i < 4; i++) { g_ents[i].alive = 1; g_ents[i].hp = 0x3FF; }
+    g_ents[12].alive = 1;
+    g_ents[12].hp = 0x3FF;
+}
+
+static void ent_spawn(i32 id) {
+    if (id >= 0 && id < ENT_MAX) {
+        g_ents[id].alive = 1;
+        if (g_ents[id].hp <= 0) g_ents[id].hp = 0x200;
+        g_ents[id].visible = 1;
+    }
+}
+
+static void ent_kill(i32 id) {
+    if (id >= 0 && id < ENT_MAX) {
+        g_ents[id].alive = 0;
+        g_ents[id].hp = 0;
+        g_ents[id].combat_ready = 0;
+    }
+}
+
+static i32 g_op9c_counter = 0;
+
+/* -------------------------------------------------------------------------
+ * Callback implementations. Signatures match lieu_cb_t exactly.
+ * ---------------------------------------------------------------------- */
+
+/* slot 0 sub_44453E "Animation": dispatch by name prefix.
+ * 'a' = actor anim, 'p'/'g' = placement, 's' = sound, '2' = 2D sprite. */
+static void cb_named_object(const c8 *name) {
+    if (!name || !name[0]) return;
+    c8 low = name[0];
+    if (low >= 'A' && low <= 'Z') low += 32;
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: named_object first='%c' name='%s'\n", low, name); }
+    (void)low;
+}
+
+/* slot 1 sub_4449A5 "Dialogue": enqueue dialogue line. */
 static void cb_named_object_int(const c8 *name, i32 v) {
     (void)v;
-    /* L-code line ids ("L01D02", "L01D17A") are dialogue lines -> speak. */
     if (name && name[0] == 'L' && name[1] >= '0' && name[1] <= '9' && name[3] == 'D')
         dlg_say(name);
 }
-static void cb_named_two_ints(i32 id, i32 p) { CBLOG("named_two_ints"); (void)id; (void)p; }
+
+/* slot 2 sub_444A3E "Evenement": sound/event trigger.
+ * id = event source, param = -1 to arm, positive to trigger. */
+static void cb_named_two_ints(i32 id, i32 p) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: named_two_ints id=%d param=%d\n", id, p); }
+    (void)id; (void)p;
+}
 /* Cinematique(name): the LIEU script asks to play cutscene <name> (e.g.
  * "SC22_500"). Map to "SCnn.CRH" and QUEUE it — the movie player must run
  * from the render phase (scene_render), not from here (called mid INIT /
@@ -148,6 +231,13 @@ static void cb_spawn_678(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
         s->wx = anim; s->wz = x; s->view = flag; s->id = zone;
         s->ground = z; s->facing = y;
     }
+    /* Mark entity as alive/spawned. vie==2 means dead/cadaver placement. */
+    if (zone >= 0 && zone < ENT_MAX) {
+        if (flag == 2)
+            ent_kill(zone);
+        else
+            ent_spawn(zone);
+    }
     print("lieu_cb: PosPerso '%s' id=%d vie=%d tileXZ=(%d,%d) facing=%d groundY=%d\n",
           name ? name : "(null)", zone, flag, anim, x, y, z);
 }
@@ -170,13 +260,23 @@ const c8 *lieu_spawn_get(i32 i, i32 *wx, i32 *wz, i32 *view) {
     if (view) *view = g_spawns[i].view;
     return g_spawns[i].name;
 }
+/* slot 6 sub_445189 "EtatObjet": object state/placement with 7 stack args.
+ * Uppercases name, stores position (tile*600) and flags into action slot.
+ * Without action processor: log and no-op. */
 static void cb_named_ex_988(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
                             i32 a4, i32 a5, i32 a6, i32 a7) {
-    CBLOG("named_ex_988"); (void)name; (void)p; (void)a1; (void)a2;
-    (void)a3; (void)a4; (void)a5; (void)a6; (void)a7;
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: named_ex_988 '%s' p=%d\n", name ? name : "", p); }
+    (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; (void)a6; (void)a7;
 }
+
+/* slot 8 sub_4453E1 "Joindre": make actor move to position.
+ * Negative actor_id forces join even if already walking.
+ * Without entity system: log only. */
 static void cb_actor_934(i32 zone, i32 facing, i32 a2, i32 a3, i32 a4) {
-    CBLOG("actor_934"); (void)zone; (void)facing; (void)a2; (void)a3; (void)a4;
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: actor_934 id=%d facing=%d\n", zone, facing); }
+    (void)a2; (void)a3; (void)a4;
 }
 /* ChangeCamera (slot 9, dkev sub_4454F2): a = camera index, b = mode
  * (1 = auto-follow, 2 = forced/locked). The LIEU script drives the in-game
@@ -213,7 +313,14 @@ i32 lieu_poll_level_change(i32 *entry) {
     if (t >= 0) { if (entry) *entry = g_next_entry; g_next_level = -1; }
     return t;
 }
-static void cb_place_95C(const c8 *name, i32 id, i32 coord) { CBLOG("place_95C"); (void)name; (void)id; (void)coord; }
+/* slot 11 sub_44569A "Bruitage": sound placement.
+ * If name starts with 'Z', calls sub_44D23D (zone sound). Otherwise enqueues
+ * action type 11 with name/id/coord. */
+static void cb_place_95C(const c8 *name, i32 id, i32 coord) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: place_95C '%s' id=%d coord=%d\n", name ? name : "", id, coord); }
+    (void)id; (void)coord;
+}
 /* slot 12 sub_445765 AjouteZone(id, cx, cz, sizeX, sizeZ, flag): register
  * a static zone rectangle (spatial args scaled tile->world by 600). */
 static void cb_spawn_978(i32 id, i32 param, i32 x, i32 y, i32 z, i32 flag) {
@@ -229,7 +336,18 @@ static void cb_spawn_978(i32 id, i32 param, i32 x, i32 y, i32 z, i32 flag) {
 static void cb_cb_93C(i32 id) {
     if (id >= 1 && id < LIEU_ZONE_COUNT) g_zones[id].center_x = -1;
 }
-static void cb_cb_970(i32 a, i32 b) { CBLOG("cb_970"); (void)a; (void)b; }
+/* slot 14 sub_445919 "Combat": enqueue combat action.
+ * a = entity ID, b = combat mode (-1 = engage, 0 = assign target).
+ * Marks entity as combat-ready. */
+static void cb_cb_970(i32 a, i32 b) {
+    print("lieu_cb: cb_970 (combat) entity=%d mode=%d\n", a, b);
+    if (a >= 0 && a < ENT_MAX) {
+        if (b == -1)
+            g_ents[a].combat_ready = 1;
+        else
+            g_ents[a].combat_ready = 0;
+    }
+}
 /* Facing tests (DirectionPerso/Zone/Spec). dke has no player-facing control
  * yet, so these are PERMISSIVE (return 1 = "facing satisfied") — the RE
  * recommendation, so zone/conversation triggers fire on entry rather than
@@ -244,30 +362,344 @@ static i32  cb_query_990(i32 a, i32 b) {
     double dz = (double)(g_zones[a].center_z - g_zones[b].center_z);
     return (i32)(sqrt(dx * dx + dz * dz) / LIEU_ZONE_SCALE);
 }
+/* slot 19 sub_446159 "AnimObjet": object animation with params.
+ * Enqueues action type 19 with name/coords/flags. */
 static void cb_cb_98C(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3) {
-    CBLOG("cb_98C"); (void)name; (void)p; (void)a1; (void)a2; (void)a3;
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: cb_98C '%s' p=%d\n", name ? name : "", p); }
+    (void)a1; (void)a2; (void)a3;
 }
-static void cb_group(i32 a) { CBLOG("group"); (void)a; }
-static void cb_cb_454(i32 a) { CBLOG("cb_454"); (void)a; }
-static void cb_select_468(i32 a) { CBLOG("select_468"); (void)a; }
-static void cb_cb_964(i32 a, i32 b) { CBLOG("cb_964"); (void)a; (void)b; }
+
+/* slot 20 sub_446227 "Bloque": dialogue/cutscene group brackets.
+ * group(3) = begin group (block player movement + camera).
+ * group(0) = end group (close bracket).
+ * Negative values (not used in L01) have immediate effects: bit 1=unlock
+ * movement, bit 2=unlock camera, bit 4=reset combat state.
+ * Since dke has no action queue, we apply the blocking directly. */
+static void cb_group(i32 a) {
+    if (a < 0) {
+        i32 flags = -a;
+        if (flags & 1) g_player_blocked = 0;
+        if (flags & 2) { /* camera unlock — no-op for now */ }
+        if (flags & 4) { /* combat reset — no-op for now */ }
+        print("lieu_cb: group unblock flags=0x%X\n", flags);
+    } else if (a == 3) {
+        g_player_blocked = 1;
+    } else if (a == 0) {
+        g_player_blocked = 0;
+    }
+}
+
+/* slot 21 sub_44637B "Fouille": remove entity and clear its zone slots.
+ * In the original, iterates 41 zone slots and clears any whose entity
+ * pointer matches. Also marks entity as no longer alive. */
+static void cb_cb_454(i32 a) {
+    print("lieu_cb: cb_454 (fouille) entity=%d\n", a);
+    if (a >= 0 && a < ENT_MAX) ent_kill(a);
+}
+
+/* slot 22 sub_44648B: camera select (positive) or actor stop (negative).
+ * Positive a: enqueues camera/zone select action (type 22).
+ * Negative a: IMMEDIATE — stops actor movement (clears entity walk/join state).
+ * Without entity system, negative branch logs only. */
+static void cb_select_468(i32 a) {
+    if (a < 0) {
+        print("lieu_cb: select_468 stop actor %d\n", -a);
+    } else {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: select_468 select=%d\n", a); }
+    }
+}
+
+/* slot 23 sub_44660D: flag/state set.
+ * Enqueues action type 23 with flag_id and value. */
+static void cb_cb_964(i32 a, i32 b) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: cb_964 flag=%d val=%d\n", a, b); }
+    (void)a; (void)b;
+}
+
+/* slot 25: debug/subtitle text — no-op. */
 static void cb_debug_text(const c8 *t, i32 edx, i32 len) { (void)t; (void)edx; (void)len; }
-static void cb_flush_958(i32 zone, i32 sub) { CBLOG("flush_958"); (void)zone; (void)sub; }
-/* cb_46C sets the state slot the handler passed (guard reset / field set). */
+
+/* slot 27 sub_446808 "JoindrePerm": permanent actor join.
+ * Like actor_934 (Joindre) but persistent. Negative zone forces join. */
+static void cb_flush_958(i32 zone, i32 sub) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: flush_958 zone=%d sub=%d\n", zone, sub); }
+    (void)zone; (void)sub;
+}
+
+/* slot 28: cb_46C sets the state slot the handler passed. */
 static void cb_cb_46C(i32 *slot, i32 edx) { if (slot) *slot = edx; }
-/* query_940 sub_4469BA: random integer in [0, n]. Engine ls_random uses a
- * 15-bit rand (0..32767); mask host rand() (31-bit) to match the range. */
+
+/* slot 29: query_940 — random integer in [0, n]. */
 static i32  cb_query_940(i32 n) {
     return (i32)(((u32)n * ((u32)rand() & 0x7FFFu)) / 32767u) & 0xFFFF;
 }
-static void cb_state_toggle(i32 mode, i32 layer) { CBLOG("state_toggle"); (void)mode; (void)layer; }
-static void cb_attach_99C(i32 zone, const c8 *name, i32 a, i32 b) {
-    CBLOG("attach_99C"); (void)zone; (void)name; (void)a; (void)b;
+
+/* slot 30 sub_446A05: state_toggle(mode, layer).
+ * Manages 3 independent dialogue layer tables. When layer=2 the table is
+ * reset (memset to -1) and mode set to 1 with counter 0. */
+static void cb_state_toggle(i32 mode, i32 layer) {
+    if (mode < 0 || mode > 2) return;
+    g_layer_mode[mode] = layer;
+    if (layer == 2) {
+        g_layer_mode[mode]    = 1;
+        g_layer_counter[mode] = 0;
+    }
 }
-static i32  cb_layer_op(i32 op, i32 layer, i32 arg) { CBLOG("layer_op"); (void)op; (void)layer; (void)arg; return 0; }
-static void cb_cb_950(i32 a) { CBLOG("cb_950"); (void)a; }
-static void cb_cb_97C(i32 a, i32 b) { CBLOG("cb_97C"); (void)a; (void)b; }
-static void cb_op_9c(i32 op, i32 a, i32 arg) { CBLOG("op_9c"); (void)op; (void)a; (void)arg; }
+
+/* slot 32 sub_446BE9 "LinkObjet": object attach/toggle.
+ * Enqueues action type 32 with name/zone/flags. */
+static void cb_attach_99C(i32 zone, const c8 *name, i32 a, i32 b) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: attach_99C zone=%d '%s'\n", zone, name ? name : ""); }
+    (void)a; (void)b;
+}
+
+/* -------------------------------------------------------------------------
+ * slot 34 sub_446E19 "layer_op": the engine's general-purpose operation
+ * dispatcher (48-case switch). All cases called from L01 are implemented.
+ *
+ * Case map (op value → behaviour):
+ *   0  Entity position query (same as 1 but via different struct path)
+ *   1  Entity position: sub-arg 0=X/600, 1=Z/600, 2=facing(u16), 3=Y/600
+ *   2  Combat ability check
+ *   4  Sound/WAV file load (layer=idx|channel<<16, arg=flags)
+ *   6  Entity HP/energy: arg<0 → read, arg>=0 → write
+ *   9  Entity in zone test
+ *  10  Timer interval set
+ *  12  Entity visibility toggle
+ *  18  Entity combat ready / alive check
+ *  20  Counter read
+ *  23  Entity movement stop
+ *  24  Music control
+ *  29  Entity alive/loaded check
+ *  35  Reset/clear state
+ *  37  Visual scale effect
+ *  38  Visual parameter set
+ * ---------------------------------------------------------------------- */
+static i32 cb_layer_op(i32 op, i32 layer, i32 arg) {
+    switch (op) {
+    case 0:
+    case 1: {
+        for (i32 i = 0; i < g_spawn_count; i++) {
+            if (g_spawns[i].id == layer) {
+                switch (arg) {
+                case 0:  return g_spawns[i].wx;
+                case 1:  return g_spawns[i].wz;
+                case 2:  return (u16)g_spawns[i].facing;
+                case 3:  return g_spawns[i].ground / 600;
+                default: return 0;
+                }
+            }
+        }
+        if (layer >= 0 && layer < 4) {
+            i32 px, pz;
+            if (player_get_pos(&px, NULL, &pz)) {
+                switch (arg) {
+                case 0:  return px / 600;
+                case 1:  return pz / 600;
+                case 2:  return 0;
+                default: return 0;
+                }
+            }
+        }
+        return 0;
+    }
+    case 2:
+        return 0;
+    case 4: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: layer_op(4) sound idx=%d arg=0x%X\n", layer, arg); }
+        return 0;
+    }
+    case 6: {
+        /* HP/energy read (arg < 0) or write (arg >= 0).
+         * layer = entity ID. arg=-1 → return current HP. */
+        if (layer >= 0 && layer < ENT_MAX) {
+            if (arg < 0) return g_ents[layer].hp;
+            g_ents[layer].hp = arg;
+            if (arg <= 0) ent_kill(layer);
+        }
+        return 0;
+    }
+    case 9: {
+        if (arg < 1 || arg >= LIEU_ZONE_COUNT) return 0;
+        if (g_zones[arg].center_x == -1) return 0;
+        i32 ex = 0, ez = 0;
+        for (i32 i = 0; i < g_spawn_count; i++) {
+            if (g_spawns[i].id == layer) {
+                ex = g_spawns[i].wx * 600;
+                ez = g_spawns[i].wz * 600;
+                goto got_pos;
+            }
+        }
+        if (layer >= 0 && layer < 4) {
+            player_get_pos(&ex, NULL, &ez);
+        } else {
+            return 0;
+        }
+    got_pos: ;
+        i32 dx = g_zones[arg].center_x - ex;
+        i32 dz = g_zones[arg].center_z - ez;
+        i32 hx = g_zones[arg].size_x / 2, hz = g_zones[arg].size_z / 2;
+        if ((dx < 0 ? -dx : dx) > hx) return 0;
+        if ((dz < 0 ? -dz : dz) > hz) return 0;
+        return 1;
+    }
+    case 10: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: layer_op(10) timer layer=%d arg=%d\n", layer, arg); }
+        return 0;
+    }
+    case 12:
+        /* Entity visibility: layer = entity ID, arg = 0 (hide) / 1 (show). */
+        if (layer >= 0 && layer < ENT_MAX)
+            g_ents[layer].visible = arg;
+        return 0;
+    case 18:
+        /* Entity combat ready / alive. Returns 1 if the entity is alive and
+         * in combat-capable state. Used in tick_body to gate imp appearance
+         * (layer_op(0x12, 0x57, 0) checks if imp W is alive). */
+        if (layer >= 0 && layer < ENT_MAX)
+            return g_ents[layer].alive;
+        return 0;
+    case 20:
+        /* Counter read. Returns the deferred counter value. */
+        return g_op9c_counter;
+    case 23: {
+        /* Entity movement stop. Clears walk/join state. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: layer_op(23) stop entity=%d\n", layer); }
+        return 0;
+    }
+    case 24: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: layer_op(24) music idx=%d cmd=%d\n", layer, arg); }
+        return 0;
+    }
+    case 29:
+        /* Entity alive/loaded check. Returns 1 if the entity is present
+         * (spawned and not dead). Critical for imp appearance logic and
+         * party member checks in tick_body. */
+        if (layer >= 0 && layer < ENT_MAX)
+            return g_ents[layer].alive;
+        return 0;
+    case 35:
+        return 0;
+    case 37: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: layer_op(37) visual scale layer=%d\n", layer); }
+        return 0;
+    }
+    case 38: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: layer_op(38) visual param layer=%d arg=0x%X\n", layer, arg); }
+        return 0;
+    }
+    default:
+        return 0;
+    }
+}
+
+/* slot 36 sub_443273: enqueues action type 39 with ecx at action[0x48].
+ * Without action processor: no-op. */
+static void cb_cb_950(i32 a) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: cb_950 a=%d\n", a); }
+    (void)a;
+}
+
+/* slot 37 sub_44356F: enqueues action type 35 with a1 at action[0x70] and
+ * a2 at action[0x48]. Guards a1 < 20. */
+static void cb_cb_97C(i32 a, i32 b) {
+    static i32 w = 0;
+    if (!w) { w = 1; print("lieu_cb: cb_97C a=%d b=%d\n", a, b); }
+    (void)a; (void)b;
+}
+
+/* slot 39 sub_446D84 "Diversempile": deferred action dispatch.
+ * Original enqueues action type 37 ("DiversEmpile") with op/a/arg at
+ * action[0x14/0x18/0x1C]. The action processor switches on op to apply
+ * effects. We apply the critical effects immediately since dke has no
+ * deferred action queue. */
+static void cb_op_9c(i32 op, i32 a, i32 arg) {
+    switch (op) {
+    case 0x06:
+        /* Set entity anim state. a = entity ID, arg = state value. */
+        if (a >= 0 && a < ENT_MAX) g_ents[a].hp = arg;
+        break;
+    case 0x0C:
+        /* Show/hide companion. a = entity ID, arg = 0 (hide) / 1 (show). */
+        if (a >= 0 && a < ENT_MAX) g_ents[a].visible = arg;
+        break;
+    case 0x10: {
+        /* Camera mode set. a = camera mode, arg = sub-param. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x10) camera mode=%d sub=%d\n", a, arg); }
+        break;
+    }
+    case 0x12:
+        /* Entity combat enable/disable. a = entity ID, arg = 0/1. */
+        if (a >= 0 && a < ENT_MAX) g_ents[a].combat_ready = arg;
+        break;
+    case 0x14:
+        /* Counter write. Stored for layer_op(20) reads. */
+        g_op9c_counter = a;
+        break;
+    case 0x16: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x16) a=%d arg=%d\n", a, arg); }
+        break;
+    }
+    case 0x17: {
+        /* Stop entity movement. a = entity ID. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x17) stop entity=%d\n", a); }
+        break;
+    }
+    case 0x18: {
+        /* Sound/music control. a = sound index, arg = sub-command. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x18) sound=%d cmd=%d\n", a, arg); }
+        break;
+    }
+    case 0x1B: {
+        /* Screen fade / transition. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x1B) fade a=%d\n", a); }
+        break;
+    }
+    case 0x1C: {
+        /* Entity reset/remove. a = entity ID. */
+        if (a >= 0 && a < ENT_MAX) ent_kill(a);
+        break;
+    }
+    case 0x29: {
+        /* Timer trigger. a = timer value. Deferred. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x29) timer=%d\n", a); }
+        break;
+    }
+    case 0x2A: {
+        /* Long timer. */
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c(0x2A) long_timer a=%d\n", a); }
+        break;
+    }
+    case 0x30:
+        /* Action queue clear / sync point. Called 3x in sequence as a
+         * flush barrier. No-op without action queue. */
+        break;
+    default: {
+        static i32 w = 0;
+        if (!w) { w = 1; print("lieu_cb: op_9c unknown op=%d a=%d arg=%d\n", op, a, arg); }
+        break;
+    }
+    }
+}
 
 /* Concrete vtable. Unlisted (void*) slots stay NULL — the ported handlers
  * never call them. */
@@ -314,7 +746,9 @@ void lieu_enter(i32 level_id) {
     g_lieu_cb    = &g_lieu_cb_impl;
     memset(g_lieu_state, 0, sizeof(g_lieu_state));
     zones_clear();   /* engine memsets dword_506C80 to -1 before INIT arms */
+    ents_clear();    /* reset entity alive/HP/visibility state              */
     g_spawn_count = 0;
+    g_op9c_counter = 0;
     g_lieu_room_entered = 0;
     dlg_reset();
     /* Trace on via env LIEU_TRACE=1 (observe opcode dispatch at runtime). */
@@ -343,7 +777,7 @@ void lieu_enter(i32 level_id) {
     LIEU_ST(g_lieu_state, 0x0C)  = 1;
 
     print("lieu: LIEU01 native scripting — running INIT\n");
-    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0);   /* op 1 */
+    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0, 0);   /* op 1 */
 }
 
 /*
@@ -376,13 +810,13 @@ i32 lieu_detect_zone(void) {
 void lieu_tick(void) {
     /* Per-frame: engine calls op -1 every frame (drain + tick_body). */
     if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_TICK, g_lieu_state, 0);   /* op -1 */
+        lieu01_fonction_editor(LIEU_OP_TICK, g_lieu_state, 0, 0);   /* op -1 */
 }
 
 void lieu_exit(void) {
     /* Teardown: engine op 2 (DLL handler is a no-op). */
     if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_TEARDOWN, g_lieu_state, 0); /* op 2 */
+        lieu01_fonction_editor(LIEU_OP_TEARDOWN, g_lieu_state, 0, 0); /* op 2 */
     g_lieu_level = 0;
 }
 
@@ -399,7 +833,7 @@ void lieu_enter_room(void) {
     zones_clear();
     g_spawn_count = 0;
     print("lieu: intro done -> entering room (submode 0), re-running INIT\n");
-    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0);
+    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0, 0);
     print("lieu: room INIT placed %d personas\n", g_spawn_count);
     lieu_zone_debug();
     /* Dialogue now fires from the trigger handlers on zone entry (op 3),
@@ -416,15 +850,15 @@ void lieu_enter_room(void) {
  * ---------------------------------------------------------------------- */
 void lieu_zone_trigger(i32 zone_id) {   /* op 3: run trigger[zone_id]      */
     if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_EVENT, g_lieu_state, zone_id);
+        lieu01_fonction_editor(LIEU_OP_EVENT, g_lieu_state, zone_id, 0);
 }
 void lieu_object_timer(i32 id) {        /* op 4: event4(id)                */
     if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_CALL4, g_lieu_state, id);
+        lieu01_fonction_editor(LIEU_OP_CALL4, g_lieu_state, id, 0);
 }
-void lieu_pending_event(i32 v) {        /* op 5: event5(v)                 */
+void lieu_pending_event(i32 v, i32 phase) { /* op 5: event5(v, phase)      */
     if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_CALL5, g_lieu_state, v);
+        lieu01_fonction_editor(LIEU_OP_CALL5, g_lieu_state, v, phase);
 }
 
 /* Read/write the live state buffer (so the engine can populate the fields

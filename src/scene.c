@@ -1844,9 +1844,8 @@ i32 scene_render(system_t *sys) {
         g_scene_prev_tick = tick;
 
         player_input_t pin = {0};
-        player_input_update(&pin, sys);
-
-
+        if (!lieu_player_blocked())
+            player_input_update(&pin, sys);
 
         /* ~50k world units/s (LIEU zones are ~50-90k wide). */
         i32 step = (50000 * dt_ms) / 1000;
