@@ -150,6 +150,12 @@ static entity_display_t g_entity_display[ENTITY_DISPLAY_SLOTS];
 static bmap_t *g_display_surface = NULL;     /* dword_509260 */
 static void   *g_smoke_sprites[5] = {0};
 
+/* Secondary entity display (sub_42F88E) — 32 slots for NPC/companion render */
+#define SECONDARY_ENTITY_SLOTS 32
+static entity_display_t g_secondary_entities[SECONDARY_ENTITY_SLOTS];
+static void *g_bulle_sprites[4] = {0};     /* speech bubble sprites */
+static void *g_textures_gif     = NULL;     /* TEXTURES.GIF base atlas */
+
 /* Object name table (sub_426335) — 135 entries × 180 bytes, byte_50B030 */
 #define OBJECT_NAME_SLOTS 135
 typedef struct {
@@ -985,8 +991,22 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     /* Phase 21 — sub_42F88E                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_42F88E\n");
-    /* TODO: sub_42F88E @ 0042F88E */
+    print("game_init: sub_42F88E (secondary entities + dialogue bubbles)\n");
+    {
+        for (i32 i = 0; i < SECONDARY_ENTITY_SLOTS; i++) {
+            memset(&g_secondary_entities[i], 0, sizeof(g_secondary_entities[i]));
+            g_secondary_entities[i].type = 6;
+        }
+
+        static const c8 *bulle_names[] = {
+            "datas>objets>BULLE0.GIF", "datas>objets>BULLE1.GIF",
+            "datas>objets>BULLE2.GIF", "datas>objets>BULLE3.GIF",
+        };
+        for (i32 i = 0; i < 4; i++)
+            g_bulle_sprites[i] = image_load_compressed(bulle_names[i], NULL);
+
+        g_textures_gif = image_load_compressed("datas>objets>TEXTURES.GIF", NULL);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 22 — register_player_creature (ECX=1)                         */
