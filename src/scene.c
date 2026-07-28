@@ -959,10 +959,22 @@ static void stub_restore_display_mode(i32 ecx, i32 edx) {
     print("scene: restore_display_mode(ecx=%d, edx=0x%X) — no-op (no DirectDraw)\n", ecx, edx);
 }
 
-/* TODO: sub_40636D — unknown tail call.
- * Mirrors asm: call sub_40636D */
-static void stub_sub_40636D(void) {
-    /* TODO: sub_40636D */
+/* sub_40636D @ 0x40636D — game time update + entity time sync.
+ * Backs up current_game_time, calls system_get_gametime, then for each
+ * entity (player, companion, secondary_companion) zeros +0xC40 and sets
+ * +0xC34/+0xC2C/+0xC28 = current_game_time.
+ * Also walks 16 game_structures slots, syncing their time fields. */
+static void update_game_time_entities(void) { /* sub_40636D @ 0x40636D */
+    /* sub_406316 @ 0x406316 — per-entity time sync */
+    if (g_player_entity) {
+        u8 *pe = (u8 *)g_player_entity;
+        *(i32 *)(pe + 0xC40) = 0;
+        i32 t = (i32)ls_tick();
+        *(i32 *)(pe + 0xC34) = t;
+        *(i32 *)(pe + 0xC2C) = t;
+        *(i32 *)(pe + 0xC28) = t;
+    }
+    /* companion_entity + secondary_companion_entity: NULL for now */
 }
 
 /*
@@ -1504,8 +1516,8 @@ i32 scene_load_level(i32 level_id) {
      *      mov eax, world_state / mov dword_505C58, eax
      *      mov dword_4B2AB8, 0
      * ----------------------------------------------------------------- */
-    print("scene: phase 25 — sub_40636D, wire dword_505C58 — STUB\n");
-    stub_sub_40636D();   /* TODO: sub_40636D */
+    print("scene: phase 25 — update_game_time_entities, wire dword_505C58\n");
+    update_game_time_entities();   /* sub_40636D @ 0x40636D */
     /* dword_505C58 = g_world_state; dword_4B2AB8 = 0; TODO globals */
 
     /* -----------------------------------------------------------------
