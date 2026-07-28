@@ -2,7 +2,25 @@
 #include "game_detection.h"
 
 game_type_e detect_game() {
-    return DKE_UK;
+    const c8 *base = ls_get_base_path();
+    c8 resolved[512];
+
+    static const struct { const c8 *vpath; game_type_e type; } checks[] = {
+        { "DATAS>DIALOGUE>FR", DKE_FR },
+        { "DATAS>DIALOGUE>EN", DKE_UK },
+        { "DATAS>DIALOGUE>DE", DKE_DE },
+        { "DATAS>DIALOGUE>SP", DKE_SP },
+        { "DATAS>DIALOGUE>IT", DKE_IT },
+    };
+
+    for (i32 i = 0; i < (i32)(sizeof(checks) / sizeof(checks[0])); i++) {
+        if (ls_resolve_path(base, checks[i].vpath, resolved, sizeof(resolved))
+            && ls_exists(resolved)) {
+            return checks[i].type;
+        }
+    }
+
+    return DKE_UNKNOWN;
 }
 
 const c8* get_game_title(game_type_e game) {

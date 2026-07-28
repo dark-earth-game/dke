@@ -29,6 +29,7 @@ static c8   g_queue[DLG_QUEUE][16];
 static i32  g_qh = 0, g_qt = 0;
 static c8   g_active[256];
 static u32  g_min_ms = 0;   /* earliest tick the active line may be dismissed */
+static u32  g_deadline_ms = 0; /* auto-advance after voice duration + padding  */
 
 static i32 read_whole(const c8 *host, c8 *dst, i32 max) {
     FILE *f = ls_open(host, "rb");
@@ -68,6 +69,7 @@ void dlg_reset(void) {
     g_qh = g_qt = 0;
     g_active[0] = '\0';
     g_min_ms = 0;
+    g_deadline_ms = 0;
 }
 
 void dlg_say(const c8 *code) {
@@ -116,7 +118,8 @@ void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms, i32 advance
      * dismissed only after a short minimum so the click that opened it
      * (or the previous line's click) doesn't skip it instantly. */
     if (g_active[0]) {
-        if (!advance || now_ms < g_min_ms) return;   /* wait for input */
+        i32 auto_adv = (g_deadline_ms && now_ms >= g_deadline_ms);
+        if (!auto_adv && (!advance || now_ms < g_min_ms)) return;
         g_active[0] = '\0';                            /* advance -> next  */
     }
     if (g_qh == g_qt) return;                          /* queue empty */
@@ -147,9 +150,9 @@ void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms, i32 advance
                   (double)(t1 - t0) * 1000.0 / CLOCKS_PER_SEC,
                   (double)(clock() - t1) * 1000.0 / CLOCKS_PER_SEC);
     }
-    (void)dur;
+    g_deadline_ms = now_ms + dur + 500;  /* auto-advance after voice + 500ms pad */
     g_min_ms = now_ms + 500;   /* debounce: can't skip for first 500 ms */
-    print("dlg: '%s' -> \"%s\" (hold for input)\n", code, g_active);
+    print("dlg: '%s' -> \"%s\" (auto %.1fs)\n", code, g_active, (dur + 500) / 1000.0);
 }
 
 const c8 *dlg_active_text(void) {

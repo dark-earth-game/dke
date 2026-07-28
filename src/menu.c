@@ -252,36 +252,7 @@ static void menu_load_click_sfx(const c8 *game_path) {
         }
     }
 
-    /* Fall back: use first .WAV in NORMAL/ (alphabetical order).
-     * We do a small open-dir loop using stdio popen to stay C99 / portable. */
-    snprintf(path, sizeof(path), "%s/wav/NORMAL", game_path);
-
-    /* Use popen ls to enumerate; C99 has no opendir portably without POSIX. */
-    c8 cmd[600];
-    snprintf(cmd, sizeof(cmd), "ls \"%s\"/*.WAV 2>/dev/null | head -1", path);
-
-#if defined(PLATFORM_MACOS) || defined(PLATFORM_LINUX)
-    FILE *lspipe = popen(cmd, "r");
-    if (lspipe) {
-        c8 first_wav[512] = {0};
-        if (fgets(first_wav, (i32)sizeof(first_wav), lspipe)) {
-            /* Strip trailing newline */
-            i32 len = (i32)strlen(first_wav);
-            while (len > 0 && (first_wav[len-1] == '\n' || first_wav[len-1] == '\r')) {
-                first_wav[--len] = '\0';
-            }
-            if (len > 0) {
-                printf("menu: click sfx fallback to first WAV: '%s'\n", first_wav);
-                pclose(lspipe);
-                wav_load(&sfx_click, first_wav);
-                return;
-            }
-        }
-        pclose(lspipe);
-    }
-#endif
-
-    printf("menu: no click sfx found in '%s/wav/NORMAL/'\n", game_path);
+    printf("menu: no click sfx found under '%s/wav/'\n", game_path);
 }
 
 // 00437EB7 (init phase)
@@ -486,15 +457,21 @@ static void menu_dispatch(menu_t *menu) {
             break;
 
         case MENU_ACTION_LOAD:
-            /* TODO: sub_437ADC — load-slot picker panel (SAVE.GIF, DKEGAME.CFG).
-             * Stub: log and fall through. */
-            print("menu: LOAD not yet implemented (sub_437ADC TODO)\n");
+            /* TODO: sub_437ADC — load-slot picker panel (SAVE.GIF, DKEGAME.CFG). */
+            print("menu: LOAD not yet implemented\n");
+            menu->state = MENU_STATE_MAIN;
             break;
 
         case MENU_ACTION_OPTIONS:
-            /* TODO: sub_438CA5 — options panel (brightness/contrast/shadow sliders).
-             * Stub: log and fall through. */
-            print("menu: OPTIONS not yet implemented (sub_438CA5 TODO)\n");
+            /* TODO: sub_438CA5 — options panel (brightness/contrast/shadow sliders). */
+            print("menu: OPTIONS not yet implemented\n");
+            menu->state = MENU_STATE_MAIN;
+            break;
+
+        case MENU_ACTION_SAVE:
+            /* TODO: save-slot picker panel. */
+            print("menu: SAVE not yet implemented\n");
+            menu->state = MENU_STATE_MAIN;
             break;
 
         default:
