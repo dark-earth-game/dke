@@ -55,6 +55,14 @@ static void dlg_load(i32 lvl, const c8 *root, const c8 *lang) {
     print("dlg: loaded dialogue DB for L%02d (%d bytes)\n", lvl, g_buf_len);
 }
 
+/* Language int -> 2-letter code (dkev language_list @ 0x4B52C0).
+ * 0=FR 1=GB 2=US 3=DE 4=IT 5=SP 6=JP. English = 2 ("US" -> disk folder us). */
+const c8 *dlg_lang_code(i32 id) {
+    static const c8 *const codes[] = { "FR", "GB", "US", "DE", "IT", "SP", "JP" };
+    if (id < 0 || id > 6) id = 0;
+    return codes[id];
+}
+
 void dlg_reset(void) {
     g_qh = g_qt = 0;
     g_active[0] = '\0';

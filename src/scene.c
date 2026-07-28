@@ -165,6 +165,21 @@ static i32   g_proj_ground_wy = 0;      /* character ground-plane world Y */
 static i32   g_proj_zone_z    = 0;      /* camera zone centroid Z         */
 static i32   g_proj_anchor_wx = 0;      /* solved character world X        */
 
+/* Fill a solid ARGB rectangle into the front buffer (subtitle box, etc). */
+static void scene_fill_rect(state_t *state, i32 x, i32 y, i32 w, i32 h, u32 argb) {
+    if (!state || !state->graphic.front_buffer) return;
+    u32 *fb = state->graphic.front_buffer;
+    i32 fw = state->graphic.width, fh = state->graphic.height;
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > fw) w = fw - x;
+    if (y + h > fh) h = fh - y;
+    for (i32 j = 0; j < h; j++) {
+        u32 *row = fb + (y + j) * fw + x;
+        for (i32 i = 0; i < w; i++) row[i] = argb;
+    }
+}
+
 /* Project world (wx,wy,wz) -> screen (sx,sy) via the cached INF matrix.
  * Falls back to the character anchor if no projection is cached. */
 static void scene_project_world(i32 wx, i32 wy, i32 wz, i32 *osx, i32 *osy) {
@@ -1564,7 +1579,8 @@ i32 scene_render(system_t *sys) {
     /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script. */
     if (g_scene_bg_level >= 0) {
         const c8 *root = (state && state->game_path) ? state->game_path : ".";
-        dlg_tick(g_scene_bg_level, root, "FR",
+        const c8 *lang = dlg_lang_code(state ? state->language_id : 0);
+        dlg_tick(g_scene_bg_level, root, lang,
                  sys ? sys->timer.tick : 0);
     }
     /* Play any cutscene the LIEU script queued (intro FMV, etc). Safe here
@@ -1868,14 +1884,23 @@ i32 scene_render(system_t *sys) {
         }
     }
 
-    /* Dialogue subtitle (current spoken line). */
+    /* Dialogue subtitle (current spoken line): black caption box + white
+     * text across the bottom. Box sized to the text, centred. */
     {
         const c8 *sub = dlg_active_text();
         if (sub && sub[0]) {
-            i32 len = (i32)strlen(sub);
-            i32 sx  = 320 - (len * 8) / 2;   /* rough centre (8px/char) */
-            if (sx < 8) sx = 8;
-            draw_text_at(font_handle, sx, 430, sub, 0xFFFFFFFFu);
+            i32 fw   = state ? state->graphic.width  : 640;
+            i32 fh   = state ? state->graphic.height : 480;
+            i32 len  = (i32)strlen(sub);
+            i32 tw   = len * 8;                      /* ~8px/char */
+            i32 boxw = tw + 24;
+            if (boxw > fw - 8) boxw = fw - 8;
+            i32 boxx = (fw - boxw) / 2;
+            i32 boxy = fh - 54;
+            scene_fill_rect(state, boxx, boxy, boxw, 32, 0xFF000000u);   /* black box */
+            i32 sx = (fw - tw) / 2;
+            if (sx < boxx + 8) sx = boxx + 8;
+            draw_text_at(font_handle, sx, boxy + 8, sub, 0xFFFFFFFFu);
         }
     }
     return 0;

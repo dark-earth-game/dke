@@ -22,6 +22,9 @@ void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms);
 /* Current subtitle text, or NULL if none showing. */
 const c8 *dlg_active_text(void);
 
+/* Language int (DKE.CFG Language) -> 2-letter folder code, e.g. 2 -> "US". */
+const c8 *dlg_lang_code(i32 id);
+
 /* Reset queue + active line (on level enter/exit). */
 void dlg_reset(void);
 
