@@ -122,6 +122,21 @@ static i32 g_dword_4B787C        = 0;       /* dword_4B787C @ 004B787C  */
 /* Index buffer computed from gouraud table */
 static void *g_index_buffer       = NULL;   /* index_buffer (asm sym)   */
 
+/* Inverse-Z buffer (sub_421960) — 16KB from ui_health_buffer pool */
+static void *g_inv_z_array        = NULL;   /* dword_510F30 @ 00510F30  */
+
+/* Animation system (sub_41F7C8) */
+static void *g_anim_buffer        = NULL;   /* dword_511744 — 54KB anim data  */
+static void *g_pos_buffer         = NULL;   /* dword_511778 — 330KB positions */
+static void *g_msg_buffer         = NULL;   /* dword_511740 — 12KB messages   */
+static void *g_can_ptrs[4]        = {0};    /* dword_511730..51173C — CAN ptrs */
+static i32   g_can_indices[4]     = {-1,-1,-1,-1};
+
+/* Sound sample tables (sub_44D706) */
+static u8    g_sample_registry[3000] = {0}; /* byte_4FB450 @ 004FB450 */
+static u8    g_sample_flags[200]     = {0}; /* dword_4FB380 @ 004FB380 */
+static i32   g_samples_enabled       = 1;
+
 /* Resource / sprite bmap used by initialize_resource_slots (sub_4130AA) */
 static bmap_t *g_dword_4B297C    = NULL;   /* dword_4B297C @ 004B297C  */
 
@@ -803,20 +818,33 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     /* Phase 11 — sub_421960                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_421960\n");
-    /* TODO: sub_421960 @ 00421960 */
+    print("game_init: sub_421960 (inverse-Z buffer)\n");
+    g_inv_z_array = allocate_memory(0, 0x4000);
+    if (g_inv_z_array) memset(g_inv_z_array, 0, 0x4000);
 
     /* ------------------------------------------------------------------ */
     /* Phase 12 — sub_41F7C8                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_41F7C8\n");
-    /* TODO: sub_41F7C8 @ 0041F7C8 */
+    print("game_init: sub_41F7C8 (animation system init)\n");
+    g_anim_buffer = allocate_memory(0, 54 * 1024);
+    g_pos_buffer  = allocate_memory(0, 330 * 1024);
+    g_msg_buffer  = allocate_memory(0, 12 * 1024);
+    if (g_anim_buffer) memset(g_anim_buffer, 0, 54 * 1024);
+    if (g_pos_buffer)  memset(g_pos_buffer,  0, 330 * 1024);
+    if (g_msg_buffer)  memset(g_msg_buffer,  0, 12 * 1024);
+    for (i32 i = 0; i < 4; i++) {
+        g_can_ptrs[i] = allocate_memory(0, 5 * 1024);
+        g_can_indices[i] = -1;
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 13 — sub_44D706                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_44D706\n");
-    /* TODO: sub_44D706 @ 0044D706 */
+    print("game_init: sub_44D706 (sound sample tables)\n");
+    if (g_samples_enabled) {
+        memset(g_sample_registry, 0, sizeof(g_sample_registry));
+        memset(g_sample_flags, 0, sizeof(g_sample_flags));
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 14 — sub_43040A                                               */
@@ -936,8 +964,7 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     /* Phase 24 — sub_44D676                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_44D676\n");
-    /* TODO: sub_44D676 @ 0044D676 — labelled __wsetargv in IDA (doubtful) */
+    /* Phase 24 — sub_44D676: confirmed empty stub in original (push/pop/ret) */
 
     /* ------------------------------------------------------------------ */
     /* Phase 25 — sub_48F2C0 — texture config init (3E8h = 1000 entries)   */
