@@ -144,6 +144,12 @@ static i32 g_dword_505C54 = 0;
 static bmap_t *g_scene_bg_bmap = NULL;   /* F */
 static u8      g_scene_grd[256 * 64];    /* character shade ramp (FL..L0.GRD) */
 static i32     g_scene_grd_loaded = 0;
+
+/* Per-camera active region (INF zone polygon, world X/Z). The engine picks
+ * the camera whose region contains the player (dkev sub_45A67C). */
+typedef struct { i32 nv; i32 vx[32], vz[32]; } cam_region_t;
+static cam_region_t g_cam_region[32];   /* SCENE_MAX_CAMERAS (defined below) */
+static i32          g_cam_region_count = 0;
 static bmap_t *g_scene_l_bmap  = NULL;   /* L */
 static bmap_t *g_scene_z_bmap  = NULL;   /* Z */
 
@@ -893,6 +899,83 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
 }
 
 /* -------------------------------------------------------------------------
+ * scene_load_camera_regions — read every camera's INF zone polygon (world
+ * X/Z) into g_cam_region, so scene_camera_for_position can pick the active
+ * camera by player position (dkev auto-camera sub_45A67C).
+ * ------------------------------------------------------------------------- */
+static void scene_load_camera_regions(i32 level_id) {
+    g_cam_region_count = 0;
+    c8 virt[64], host[512];
+    snprintf(virt, sizeof(virt), "DATAS>L%02d>L%02d.INF", level_id, level_id);
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    if (!ls_resolve_path(base, virt, host, (i32)sizeof(host))) return;
+    FILE *f = ls_open(host, "rb");
+    if (!f) return;
+    i32 magic = 0;
+    if (fread(&magic, 4, 1, f) != 1 || magic != 7) { ls_close(f); return; }
+    fseek(f, 4 + 0x208, SEEK_CUR);          /* timestamp + world_ctrl */
+    i32 n_cam = 0;
+    if (fread(&n_cam, 4, 1, f) != 1 || n_cam <= 0) { ls_close(f); return; }
+    if (n_cam > 32) n_cam = 32;
+    long cams_base = ftell(f);
+    for (i32 c = 0; c < n_cam; c++) {
+        fseek(f, cams_base + (long)c * 0x208 + 0x1D8, SEEK_SET);
+        i32 nv = 0;
+        if (fread(&nv, 4, 1, f) != 1 || nv <= 0 || nv > 32) { g_cam_region[c].nv = 0; continue; }
+        cam_region_t *r = &g_cam_region[c];
+        r->nv = 0;
+        for (i32 i = 0; i < nv; i++) {
+            i32 vx = 0, vy = 0, vz = 0;
+            if (fread(&vx, 4, 1, f) != 1 || fread(&vy, 4, 1, f) != 1 || fread(&vz, 4, 1, f) != 1) break;
+            if (vx > -3000000 && vx < 3000000 && vz > -3000000 && vz < 3000000) {
+                r->vx[r->nv] = vx; r->vz[r->nv] = vz; r->nv++;
+            }
+        }
+    }
+    g_cam_region_count = n_cam;
+    ls_close(f);
+    print("scene: loaded %d camera regions\n", n_cam);
+    if (getenv("DKE_CAMDBG")) {
+        for (i32 c = 0; c < n_cam; c++) {
+            cam_region_t *r = &g_cam_region[c];
+            i32 minx = 1<<30, maxx = -(1<<30), minz = 1<<30, maxz = -(1<<30);
+            for (i32 i = 0; i < r->nv; i++) {
+                if (r->vx[i] < minx) minx = r->vx[i];
+                if (r->vx[i] > maxx) maxx = r->vx[i];
+                if (r->vz[i] < minz) minz = r->vz[i];
+                if (r->vz[i] > maxz) maxz = r->vz[i];
+            }
+            print("  cam[%d] nv=%d X[%d..%d] Z[%d..%d]\n", c, r->nv, minx, maxx, minz, maxz);
+        }
+    }
+}
+
+/* Point-in-polygon (X/Z plane), ray-casting. */
+static i32 scene_pt_in_region(i32 px, i32 pz, const cam_region_t *r) {
+    if (r->nv < 3) return 0;
+    i32 inside = 0;
+    for (i32 i = 0, j = r->nv - 1; i < r->nv; j = i++) {
+        if ((r->vz[i] > pz) != (r->vz[j] > pz)) {
+            i64 xcross = (i64)(r->vx[j] - r->vx[i]) * (pz - r->vz[i])
+                       / (r->vz[j] - r->vz[i]) + r->vx[i];
+            if (px < xcross) inside = !inside;
+        }
+    }
+    return inside;
+}
+
+/* Camera whose region contains (wx,wz), or -1. Prefers the current camera
+ * (hysteresis) so the player must fully leave a region before switching. */
+static i32 scene_camera_for_position(i32 wx, i32 wz, i32 current) {
+    if (current >= 0 && current < g_cam_region_count &&
+        scene_pt_in_region(wx, wz, &g_cam_region[current]))
+        return current;
+    for (i32 c = 0; c < g_cam_region_count; c++)
+        if (scene_pt_in_region(wx, wz, &g_cam_region[c])) return c;
+    return -1;
+}
+
+/* -------------------------------------------------------------------------
  * scene_load_inf_pitch — read camera pitch from L%02d.INF projection matrix.
  *
  * Returns a cosine_table index (0..4095) for the camera pitch angle,
@@ -1397,6 +1480,9 @@ i32 scene_load_level(i32 level_id) {
     /* Compute character screen anchor from INF projection params. */
     scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
 
+    /* Per-camera active regions (for auto camera switching by player pos). */
+    scene_load_camera_regions(g_scene_bg_level);
+
     /* LIEU scripting: native hand-port (src/lieu01.c for level 1). Runs
      * INIT now; per-frame tick driven from scene_render; deinit in release. */
     lieu_enter(level_id);
@@ -1754,7 +1840,8 @@ i32 scene_render(system_t *sys) {
         }
 
         /* Debug headless sweep (fixed step, dt-independent). */
-        if (getenv("DKE_WALK")) { g_player_wx -= 6000; g_player_moving = 1; }
+        if (getenv("DKE_WALK"))  { g_player_wx -= 6000; g_player_moving = 1; }
+        if (getenv("DKE_WALKZ")) { g_player_wz += 6000; g_player_moving = 1; }
 
         /* Loose clamp around the character start. */
         i32 lim = 400000;
@@ -1771,6 +1858,19 @@ i32 scene_render(system_t *sys) {
     if (g_player_entity) {
         *(i32 *)((u8 *)g_player_entity + 0x1C0) = g_player_wx;
         *(i32 *)((u8 *)g_player_entity + 0x1C8) = g_player_wz;
+    }
+
+    /* Auto camera switch: pick the camera whose region contains the player
+     * (dkev auto mode). Reload backdrop + projection for the new camera. */
+    if (g_player_seeded && g_cam_region_count > 0 && !getenv("DKE_NOAUTOCAM")) {
+        i32 wantcam = scene_camera_for_position(g_player_wx, g_player_wz, g_scene_camera);
+        if (wantcam >= 0 && wantcam != g_scene_camera) {
+            print("scene: auto camera %d -> %d (player wX=%d wZ=%d)\n",
+                  g_scene_camera, wantcam, g_player_wx, g_player_wz);
+            scene_load_camera_backdrop(g_scene_bg_level, wantcam);
+            scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
+            model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
+        }
     }
 
     /* Screen position from the INF projection. LIEU world Z is far outside
