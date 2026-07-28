@@ -1606,6 +1606,30 @@ i32 scene_render(system_t *sys) {
                          atom_rx[ai] ? 1 : 0, atom_ry[ai], atom_rx[ai],
                          tx, ty, tz);
         }
+
+        /* Render each LIEU-placed persona (P00ARR01, P12ARR01, ...) as the
+         * loaded character mesh, at a screen position near the INF anchor.
+         * Placeholder: all personas share the player mesh until per-persona
+         * models load; positions are clustered around the character stand. */
+        for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
+            if (!lieu_spawn_get(pi, NULL, NULL, NULL)) continue;
+            i32 psx = g_scene_cam_sx - 90 + pi * 180;
+            if (psx < 20)  psx = 20;
+            if (psx > 620) psx = 620;
+            for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
+                i32 tx = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                           ? g_scene_objc.world_tx[ai] * ATOM_SCALE : 0;
+                i32 ty = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                           ? g_scene_objc.world_ty[ai] * ATOM_SCALE : 0;
+                i32 tz = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                           ? g_scene_objc.world_tz[ai] * ATOM_SCALE : 0;
+                model_render(g_scene_ome_atoms[ai], sys, psx, g_scene_cam_sy,
+                             focal, tick, g_cube_world_z, cube_world_size, z_far,
+                             g_scene_l_bmap, g_scene_z_bmap,
+                             atom_rx[ai] ? 1 : 0, atom_ry[ai], atom_rx[ai],
+                             tx, ty, tz);
+            }
+        }
     } else {
         model_render(model_test_cube(),
                      sys,
