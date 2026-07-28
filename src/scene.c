@@ -200,6 +200,72 @@ static i32      g_scene_ome_atom_count = 0;
 static ome_objc_t g_scene_objc;
 static i32        g_scene_objc_loaded = 0;
 
+/* -------------------------------------------------------------------------
+ * Persona mesh cache — loads PERSOS>P<nn>.OME on demand so LIEU-placed
+ * personas render with their own model (P00, P12, ...). Static pose (no
+ * per-persona CAN animation yet). Keyed by persona number.
+ * ---------------------------------------------------------------------- */
+#define PERSONA_CACHE_MAX 12
+typedef struct {
+    i32       num;                             /* persona number, -1 = empty */
+    model_t  *atoms[SCENE_OME_MAX_ATOMS];
+    i32       count;
+} persona_mesh_t;
+static persona_mesh_t g_persona_cache[PERSONA_CACHE_MAX];
+static i32            g_persona_cache_n = 0;
+
+/* Parse a persona number from a name like "P12ARR01" -> 12; -1 if none. */
+static i32 persona_num_from_name(const c8 *name) {
+    if (!name || name[0] != 'P' || name[1] < '0' || name[1] > '9') return -1;
+    i32 n = 0, i = 1;
+    while (name[i] >= '0' && name[i] <= '9' && i <= 3) { n = n*10 + (name[i]-'0'); i++; }
+    return n;
+}
+
+/* Load (or fetch cached) PERSOS>P<num>.OME geometry atoms. Returns cache
+ * index or -1 on failure. */
+static i32 persona_mesh_load(i32 num) {
+    for (i32 i = 0; i < g_persona_cache_n; i++)
+        if (g_persona_cache[i].num == num) return i;
+    if (num < 0 || g_persona_cache_n >= PERSONA_CACHE_MAX) return -1;
+
+    c8 vpath[32], host[512];
+    snprintf(vpath, sizeof(vpath), "PERSOS>P%02d.OME", num);
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    if (!ls_resolve_path(base, vpath, host, (i32)sizeof(host))) return -1;
+
+    ome_file_t ome = {0};
+    if (!model_ome_open(host, &ome)) return -1;
+
+    persona_mesh_t *pm = &g_persona_cache[g_persona_cache_n];
+    pm->num = num; pm->count = 0;
+
+    ome_matr_t matr = {0}, *matr_ptr = NULL;
+    for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+        if (ome.chunks[ci].kind != OME_CHUNK_MATR) continue;
+        if (ome_parse_matr(ome.raw + ome.chunks[ci].offset + 0x60,
+                           ome.chunks[ci].length - 0x60, &matr))
+            matr_ptr = &matr;
+        break;
+    }
+    for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+        if (ome.chunks[ci].kind != OME_CHUNK_ATOMF) continue;
+        if (pm->count >= SCENE_OME_MAX_ATOMS) break;
+        ome_atom_t atom = {0};
+        if (ome_decode_atomf(ome.raw + ome.chunks[ci].offset + 0x60,
+                             ome.chunks[ci].length - 0x60, &atom) &&
+            atom.vert_count > 0 && atom.face_count > 0) {
+            model_t *m = model_from_ome_atom(&atom, matr_ptr);
+            if (m) pm->atoms[pm->count++] = m;
+        }
+        ome_atom_free(&atom);
+    }
+    model_ome_free(&ome);
+    if (pm->count == 0) return -1;
+    print("scene: loaded persona mesh P%02d.OME (%d atoms)\n", num, pm->count);
+    return g_persona_cache_n++;
+}
+
 
 /* -------------------------------------------------------------------------
  * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
@@ -1612,22 +1678,23 @@ i32 scene_render(system_t *sys) {
          * Placeholder: all personas share the player mesh until per-persona
          * models load; positions are clustered around the character stand. */
         for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
-            if (!lieu_spawn_get(pi, NULL, NULL, NULL)) continue;
+            const c8 *nm = lieu_spawn_get(pi, NULL, NULL, NULL);
+            if (!nm) continue;
             i32 psx = g_scene_cam_sx - 90 + pi * 180;
             if (psx < 20)  psx = 20;
             if (psx > 620) psx = 620;
-            for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
-                i32 tx = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
-                           ? g_scene_objc.world_tx[ai] * ATOM_SCALE : 0;
-                i32 ty = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
-                           ? g_scene_objc.world_ty[ai] * ATOM_SCALE : 0;
-                i32 tz = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
-                           ? g_scene_objc.world_tz[ai] * ATOM_SCALE : 0;
-                model_render(g_scene_ome_atoms[ai], sys, psx, g_scene_cam_sy,
+            /* Load this persona's own mesh (P<nn>.OME); else use player mesh. */
+            i32 ci = persona_mesh_load(persona_num_from_name(nm));
+            model_t **atoms = (ci >= 0) ? g_persona_cache[ci].atoms
+                                        : g_scene_ome_atoms;
+            i32 acount      = (ci >= 0) ? g_persona_cache[ci].count
+                                        : g_scene_ome_atom_count;
+            for (i32 ai = 0; ai < acount; ai++) {
+                model_render(atoms[ai], sys, psx, g_scene_cam_sy,
                              focal, tick, g_cube_world_z, cube_world_size, z_far,
                              g_scene_l_bmap, g_scene_z_bmap,
-                             atom_rx[ai] ? 1 : 0, atom_ry[ai], atom_rx[ai],
-                             tx, ty, tz);
+                             0, 0, 0,       /* static default pose */
+                             0, 0, 0);
             }
         }
     } else {
