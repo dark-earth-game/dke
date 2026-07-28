@@ -137,6 +137,27 @@ static u8    g_sample_registry[3000] = {0}; /* byte_4FB450 @ 004FB450 */
 static u8    g_sample_flags[200]     = {0}; /* dword_4FB380 @ 004FB380 */
 static i32   g_samples_enabled       = 1;
 
+/* Entity display array (sub_43040A) — 12 render slots, 188 bytes each in asm */
+#define ENTITY_DISPLAY_SLOTS 12
+typedef struct {
+    i32 rect[4];   /* x0, y0, x1, y1 */
+    i32 scale;
+    i32 type;
+    i32 visible;
+    u8  pad[188 - 7*4];
+} entity_display_t;
+static entity_display_t g_entity_display[ENTITY_DISPLAY_SLOTS];
+static bmap_t *g_display_surface = NULL;     /* dword_509260 */
+static void   *g_smoke_sprites[5] = {0};
+
+/* Object name table (sub_426335) — 135 entries × 180 bytes, byte_50B030 */
+#define OBJECT_NAME_SLOTS 135
+typedef struct {
+    i32 id;
+    c8  name[176];
+} object_name_entry_t;
+static object_name_entry_t g_object_name_table[OBJECT_NAME_SLOTS];
+
 /* Resource / sprite bmap used by initialize_resource_slots (sub_4130AA) */
 static bmap_t *g_dword_4B297C    = NULL;   /* dword_4B297C @ 004B297C  */
 
@@ -849,8 +870,26 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     /* Phase 14 — sub_43040A                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_43040A\n");
-    /* TODO: sub_43040A @ 0043040A */
+    print("game_init: sub_43040A (entity display array + smoke sprites)\n");
+    {
+        g_display_surface = ls_init_bmap_ex(16, 16, 8, 8);
+
+        static const c8 *smoke_names[] = {
+            "datas>objets>SMOKE0.GIF", "datas>objets>SMOKE1.GIF",
+            "datas>objets>SMOKE2.GIF", "datas>objets>SMOKE3.GIF",
+            "datas>objets>SMOKE4.GIF",
+        };
+        for (i32 i = 0; i < 5; i++)
+            g_smoke_sprites[i] = image_load_compressed(smoke_names[i], NULL);
+
+        for (i32 i = 0; i < ENTITY_DISPLAY_SLOTS; i++) {
+            memset(&g_entity_display[i], 0, sizeof(g_entity_display[i]));
+            g_entity_display[i].rect[2] = 639;
+            g_entity_display[i].rect[3] = 479;
+            g_entity_display[i].scale = 1;
+            g_entity_display[i].type = 7;
+        }
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 15 — weapon-slot table init (4 entries × 31 slots)            */
@@ -1101,8 +1140,12 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     /* Phase 39 — sub_426335                                               */
     /* ------------------------------------------------------------------ */
-    print("game_init: sub_426335\n");
-    /* TODO: sub_426335 @ 00426335 */
+    print("game_init: sub_426335 (object name table init)\n");
+    {
+        memset(g_object_name_table, 0, sizeof(g_object_name_table));
+        for (i32 i = 0; i < OBJECT_NAME_SLOTS; i++)
+            memcpy(g_object_name_table[i].name, "empty", 6);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 40 — sub_471C18 — load objets.txt                             */
