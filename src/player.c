@@ -253,11 +253,18 @@ void player_entity_init(void) {
     ent_set_u32(ent, 0x074, 1);           /* render_flag */
     ent_set_u32(ent, 0x030, 0xFFFF4000U); /* viewport_offset_x */
     ent_set_u32(ent, 0x038, 0xFFFFC000U); /* viewport_offset_y */
-    ent_set_u32(ent, 0xD64, 0);
-    ent_set_u32(ent, 0xD68, 0);
+    ent_set_u32(ent, 0xD64, 0);       /* special_state */
+    ent_set_u32(ent, 0xD68, 0);       /* sound_handle */
+    ent_set_u32(ent, 0xD7C, 0);       /* perso_id = 0 (player) */
+    ent_set_u32(ent, 0xD80, 0);       /* ai_enabled = 0 for player */
     ent_put(ent, ENT_OFF_STATE_FLAG, 0xFFFFFFFFU);
     ent_put(ent, ENT_OFF_HEALTH,     0x10000);
     ent_put(ent, ENT_OFF_ENERGY,     0x4000);
+    ent_put(ent, ENT_OFF_COMBAT_READY, 1);
+
+    /* Gravity sub-struct init at +0x184 (0xB4 bytes) */
+    memset((u8 *)ent + 0x184, 0, 0xB4);
+    memcpy((u8 *)ent + 0x188, "gravit", 7);
 
     if (state) {
         ent_put(ent, ENT_OFF_LAST_TIME, state->current_game_time);

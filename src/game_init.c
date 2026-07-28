@@ -61,6 +61,7 @@
 #include "libsys/common.h"
 #include "libsys/memory.h"
 #include "libsys/file_system.h"
+#include "libsys/system.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/cif.h"
 #include "libsys/graphics/palette.h"
@@ -1108,7 +1109,10 @@ b8 game_init(state_t *state) {
     /* Phase 9 — initialize_health_hud                                     */
     /* ------------------------------------------------------------------ */
     print("game_init: initializing health HUD\n");
-    /* TODO: initialize_health_hud @ 0046C092 — allocates 2048-byte HUD buffer */
+    {
+        void *hud_buf = allocate_memory(0, 0x800);
+        if (hud_buf) memset(hud_buf, 0, 0x800);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 10 — sub_45D395 (mouse + animation init)                     */
@@ -1259,7 +1263,13 @@ b8 game_init(state_t *state) {
     /* Phase 20 — allocate_and_initialize_health_buffer                    */
     /* ------------------------------------------------------------------ */
     print("game_init: allocate_and_initialize_health_buffer\n");
-    /* TODO: allocate_and_initialize_health_buffer @ 46C324 */
+    /* allocate_and_initialize_health_buffer @ 46C324:
+     * Allocates a 2KB buffer for HUD health bar rendering data.
+     * The real function populates gradient tables; for now just alloc+zero. */
+    {
+        static u8 g_health_hud_buf[2048];
+        memset(g_health_hud_buf, 0, sizeof(g_health_hud_buf));
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 21 — sub_42F88E                                               */
@@ -1414,7 +1424,10 @@ b8 game_init(state_t *state) {
     /* Phase 36 — system_get_gametime → player_entity +D5Ch               */
     /* ------------------------------------------------------------------ */
     print("game_init: system_get_gametime → player_entity\n");
-    /* TODO: system_get_gametime @ 46C4B4 — ECX=player_entity, [ecx+D5Ch]=eax */
+    if (g_player_entity) {
+        u8 *pe = (u8 *)g_player_entity;
+        *(i32 *)(pe + 0xD5C) = (i32)ls_tick();
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 37 — sub_48F1D0 — render surface setup ×2                    */
