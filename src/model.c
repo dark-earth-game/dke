@@ -7,6 +7,7 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 #include "libsys/common.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/shading.h"
@@ -392,7 +393,7 @@ void model_render(const model_t *m, system_t *sys,
 #define MRW_MAX_FACES 2048
 #define MRW_SHADE_MID 32   /* GRD shade band (0..63) used until per-face lighting */
 
-typedef struct { i32 sx, sy; i64 cz; i32 vis; } mrw_vert_t;
+typedef struct { i32 sx, sy; i64 cx, cy, cz; i32 vis; } mrw_vert_t;
 
 void model_render_world(const model_t *m,
                         const i32 *cam_r, const i32 *cam_t, i32 gscale,
@@ -456,7 +457,7 @@ void model_render_world(const model_t *m,
         double s = ((double)gscale / 16384.0) / (double)d;
         P[i].sx = 320 + (i32)(cx * s + (cx < 0 ? -0.5 : 0.5));
         P[i].sy = 240 - (i32)(cy * s + (cy < 0 ? -0.5 : 0.5));
-        P[i].cz = cz;
+        P[i].cx = cx; P[i].cy = cy; P[i].cz = cz;
         P[i].vis = vis;
     }
 
@@ -520,6 +521,27 @@ void model_render_world(const model_t *m,
             col = 0xFF000000u | ((u32)pal[3*idx+2] << 16)
                               | ((u32)pal[3*idx+1] << 8)
                               |  (u32)pal[3*idx+0];
+        }
+
+        /* Flat directional shading: camera-space face normal dotted with a
+         * fixed key light gives the character 3D form (engine does normal.L).
+         * Modulate brightness 0.45..1.0; l_bmap still adds scene lighting. */
+        {
+            double ux = (double)(b->cx - a->cx), uy = (double)(b->cy - a->cy), uz = (double)(b->cz - a->cz);
+            double vx = (double)(c->cx - a->cx), vy = (double)(c->cy - a->cy), vz = (double)(c->cz - a->cz);
+            double nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
+            double nl = nx*nx + ny*ny + nz*nz;
+            if (nl > 1.0) {
+                nl = 1.0 / sqrt(nl);
+                /* Key light from upper-front (camera looks down -Z). */
+                double dot = (nx*0.30 + ny*0.55 - nz*0.78) * nl;
+                if (dot < 0) dot = -dot;                 /* two-sided */
+                double f = 0.45 + 0.55 * dot;            /* 0.45..1.0 */
+                u32 r = (u32)((col & 0xFF) * f);
+                u32 g = (u32)(((col >> 8) & 0xFF) * f);
+                u32 bl = (u32)(((col >> 16) & 0xFF) * f);
+                col = 0xFF000000u | (bl << 16) | (g << 8) | r;
+            }
         }
 
         fill_triangle(fb, fb_w, fb_h,
