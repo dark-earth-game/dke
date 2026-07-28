@@ -69,6 +69,7 @@
 #include "state.h"
 #include "game_init.h"
 #include "player.h"
+#include "entity.h"
 #include "material.h"
 
 /* -------------------------------------------------------------------------
@@ -117,6 +118,14 @@ static u8 g_entity_slot_table[ENTITY_SLOT_COUNT * ENTITY_SLOT_SIZE];
 #define WEAPON_SLOT_ENTRIES 4
 #define WEAPON_SLOT_SIZE    0x88
 static u8 g_weapon_slot_table[WEAPON_SLOT_ENTRIES * WEAPON_SLOT_SIZE];
+
+/* Texture config table — 1000 entries (sub_48F2C0 @ 0x48F2C0) */
+#define TEXTURE_CONFIG_ENTRIES 0x3E8
+static void *g_texture_config[TEXTURE_CONFIG_ENTRIES];
+
+/* Render surface descriptors (sub_48F1D0 @ 0x48F1D0) */
+static bmap_t *g_render_surface2  = NULL;   /* render_surface2 (asm sym) */
+static bmap_t *g_unk_4EDC00       = NULL;   /* unk_4EDC00 @ 004EDC00     */
 
 /* Misc */
 static i32 g_dword_4ECD3C        = 0;       /* dword_4ECD3C @ 004ECD3C  */
@@ -941,8 +950,9 @@ b8 game_init(state_t *state) {
      * are documented and names are reserved for cross-reference. */
     (void)g_palette_data;
     /* g_player_entity is now in player.c (extern via player.h) */
-    (void)g_game_context;
-    (void)g_entity_buffer_base;
+    (void)g_texture_config;
+    (void)g_render_surface2;
+    (void)g_unk_4EDC00;
     /* New globals populated by ported functions — suppress read-before-use
      * warnings from -Wall until callers of these values are ported. */
     (void)g_dword_4B297C;
@@ -1310,14 +1320,15 @@ b8 game_init(state_t *state) {
     /* Phase 25 — sub_48F2C0 — texture config init (3E8h = 1000 entries)   */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_48F2C0 texture config init\n");
-    /* TODO: sub_48F2C0 @ 0048F2C0 — ECX=&texture_config, EDX=0x3E8, push 0x3E8 */
+    /* sub_48F2C0 @ 0x48F2C0 — zero 1000-entry texture pointer table */
+    memset(g_texture_config, 0, sizeof(g_texture_config));
 
     /* ------------------------------------------------------------------ */
     /* Phase 26 — sub_48F230 — entity buffer setup (640×480)               */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_48F230 entity buffer setup\n");
-    /* TODO: sub_48F230 @ 0048F230 — ECX=dword_56A5E0, EDX=&entity_buffer_base,
-     *   push 0, 0, 0x280, 0x1E0, dword_4B7228[dword_4B721C*4]            */
+    /* sub_48F230 @ 0x48F230 — create 640x480 entity render buffer */
+    g_entity_buffer_base = ls_init_bmap_ex(0x280, 0x1E0, 8, 8);
 
     /* ------------------------------------------------------------------ */
     /* Phase 27 — render bmap creation                                     */
@@ -1416,7 +1427,25 @@ b8 game_init(state_t *state) {
     /* graphics_context+18h = palette_data                                 */
     /* ------------------------------------------------------------------ */
     print("game_init: entity/context cross-wiring\n");
-    /* TODO: pointer writes @ 46C484–46C4B1 — waiting for entity types    */
+    /* pointer writes @ 46C484-46C4B1 */
+    if (g_player_entity) {
+        /* player_entity+B0h = dword_4B70E8 @ 46C484 */
+        u8 *pe = (u8 *)g_player_entity;
+        *(void **)(pe + 0xB0) = g_dword_4B70E8;
+    }
+    /* game_context = entity_buffer_base @ 46C48E */
+    g_game_context = g_entity_buffer_base;
+    /* game_context+18h = palette_data @ 46C498 */
+    if (g_game_context) {
+        bmap_t *gc = (bmap_t *)g_game_context;
+        gc->reserved_18 = (i32)(intptr_t)g_palette_data;
+    }
+    /* render_buffer1+18h = palette_data @ 46C4A0 */
+    if (g_render_buffer1) {
+        g_render_buffer1->reserved_18 = (i32)(intptr_t)g_palette_data;
+    }
+    /* graphics_context+18h = palette_data @ 46C4B1 — graphics_context
+     * not yet mapped; will wire when state_t exposes it */
 
     /* ------------------------------------------------------------------ */
     /* Phase 36 — system_get_gametime → player_entity +D5Ch               */
@@ -1431,15 +1460,19 @@ b8 game_init(state_t *state) {
     /* Phase 37 — sub_48F1D0 — render surface setup ×2                    */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_48F1D0 render surface setup\n");
-    /* TODO: sub_48F1D0 @ 0048F1D0 ×2:
-     *   push 0Fh; ECX=dword_4B71FC; EDX=&render_surface2        @ 46C4BA
-     *   push 0Fh; ECX=debug_surface; EDX=&unk_4EDC00            @ 46C4C6 */
+    /* sub_48F1D0 @ 0x48F1D0 - call 1: ECX=dword_4B71FC, EDX=&render_surface2 @ 46C4BA */
+    g_render_surface2 = ls_init_bmap_ex(0x280, 0x1E0, 8, 8);
+    /* sub_48F1D0 @ 0x48F1D0 - call 2: ECX=debug_surface, EDX=&unk_4EDC00 @ 46C4C6 */
+    g_unk_4EDC00 = ls_init_bmap_ex(0x280, 0x1E0, 8, 8);
 
     /* ------------------------------------------------------------------ */
     /* Phase 38 — set_entities_combat_mode                                 */
     /* ------------------------------------------------------------------ */
     print("game_init: set_entities_combat_mode\n");
-    /* TODO: set_entities_combat_mode @ 46C4D2 */
+    /* set_entities_combat_mode @ 0x46C4D2 */
+    if (g_player_entity) {
+        ent_put(g_player_entity, ENT_OFF_COMBAT_READY, 1);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 39 — sub_426335                                               */
@@ -1467,22 +1500,22 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     if (state->colour_mode != 0) {
         print("game_init: sub_491ED0 + sub_491FD0 (16-bit colour init)\n");
-        /* TODO: sub_491ED0 @ 00491ED0 */
-        /* TODO: sub_491FD0 @ 00491FD0 — push 0x3C; ECX=dword_4B71F8;
-         *       EDX=graphics_context[+2Ch]                               */
+        /* sub_491ED0 @ 0x491ED0 — 16-bit colour conversion table setup (stub) */
+        /* sub_491FD0 @ 0x491FD0 — push 0x3C; ECX=dword_4B71F8;
+         *   EDX=graphics_context[+2Ch]; 16-bit palette mapping (stub) */
     }
 
     /* ------------------------------------------------------------------ */
     /* Phase 43 — sub_45B207                                               */
     /* ------------------------------------------------------------------ */
     print("game_init: sub_45B207\n");
-    /* TODO: sub_45B207 @ 0045B207 */
+    /* sub_45B207 @ 0x45B207 — small init (stub) */
 
     /* ------------------------------------------------------------------ */
     /* Phase 44 — display_weapons_inventory                                */
     /* ------------------------------------------------------------------ */
     print("game_init: display_weapons_inventory\n");
-    /* TODO: display_weapons_inventory @ 0046C57F — displays ammo/items in UI */
+    /* display_weapons_inventory @ 0x46C57F — HUD weapons display init (stub) */
 
     /* ------------------------------------------------------------------ */
     /* Phase 45 — sub_4161B0 + dword_4B787C = 0 (tail cleanup)            */

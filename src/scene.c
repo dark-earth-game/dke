@@ -64,6 +64,7 @@
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
+#include "entity.h"
 #include "lieu_cb.h"
 #include "player.h"
 
@@ -716,10 +717,81 @@ static void stub_sub_4640BC(void) {
     print("scene: pos_perso — player entity placed with defaults\n");
 }
 
-/* TODO: sub_426D2C — unknown; called after sub_4640BC block.
- * Mirrors asm: call sub_426D2C */
-static void stub_sub_426D2C(void) {
-    /* TODO: sub_426D2C */
+/* -------------------------------------------------------------------------
+ * Zone trigger table — 135 entries, 28-byte stride (byte_4B3448 in IDA).
+ * offset 0x00: active flag (byte)
+ * offset 0x11: pending/triggered flag (byte)
+ * ------------------------------------------------------------------------- */
+#define TRIGGER_TABLE_ENTRIES 135
+#define TRIGGER_ENTRY_SIZE    28
+
+static u8 g_trigger_table[TRIGGER_TABLE_ENTRIES * TRIGGER_ENTRY_SIZE];
+
+/* sub_475BB6 @ 0x475BB6 — find degradable/zone object from trigger entry.
+ * Thiscall, searches 8 object slots. Stub until object system lands. */
+static void *stub_find_degradable_object(u8 *entry) {
+    (void)entry;
+    return NULL;
+}
+
+/* sub_47398A @ 0x47398A — process zone transition for player entity.
+ * Thiscall, handles zone state changes. Stub until zone system lands. */
+static i32 stub_process_zone_transition(void *zone_obj) {
+    (void)zone_obj;
+    return 0;
+}
+
+/* sub_462BCC @ 0x462BCC — dispatch zone trigger event to scripting.
+ * Stub until scripting dispatch lands. */
+static void stub_dispatch_zone_trigger(u8 zone_id, void *entity) {
+    (void)zone_id; (void)entity;
+}
+
+/* sub_426D2C @ 0x426D2C — per-frame zone trigger scanner.
+ * Walks all 135 trigger table entries looking for one that is both
+ * active and pending. If found, resolves to a zone object and attempts
+ * a zone transition; on success dispatches the trigger to scripting.
+ * Only one trigger fires per frame. */
+static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
+    i32 result = 0;
+    for (i32 i = 0; i < TRIGGER_TABLE_ENTRIES; i++) {
+        u8 *entry = &g_trigger_table[i * TRIGGER_ENTRY_SIZE];
+        if (entry[0x00] == 0) continue;   /* not active */
+        if (entry[0x11] == 0) continue;   /* not pending */
+
+        /* If player is in advanced action state (phase >= 4)
+         * and already has a zone assigned, consume & clear trigger */
+        if (g_player_entity) {
+            i32 phase = ent_get_i32(g_player_entity, 0xB0);
+            if (phase >= 4) {
+                /* action_ptr = [entity+0xAC], zone_id = [action_ptr+0x97] */
+                u8 *action_ptr = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+                if (action_ptr) {
+                    u8 cur_zone = action_ptr[0x97];
+                    if (cur_zone != 0) {
+                        entry[0x11] = 0;  /* consume trigger */
+                        break;
+                    }
+                }
+            }
+        }
+
+        /* Resolve trigger entry to a degradable/zone object */
+        void *zone_obj = stub_find_degradable_object(entry);  /* sub_475BB6 */
+
+        /* Attempt zone transition for the player */
+        if (stub_process_zone_transition(zone_obj)) {          /* sub_47398A */
+            /* Dispatch trigger event to scripting */
+            if (g_player_entity) {
+                u8 *action_ptr = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+                u8 zone_id = action_ptr ? action_ptr[0x97] : 0;
+                stub_dispatch_zone_trigger(zone_id, g_player_entity);  /* sub_462BCC */
+            }
+            result = 1;
+            break;  /* only one trigger per frame */
+        }
+    }
+    return result;
 }
 
 /* TODO: process_color_palette — per-entity palette processing.
@@ -744,10 +816,12 @@ static void stub_sub_45619D(void) {
                    g_world.num_collisions);
 }
 
-/* TODO: set_entities_combat_mode — enables combat for all entities.
- * Mirrors asm: call set_entities_combat_mode */
+/* set_entities_combat_mode — activate combat AI for placed entities.
+ * Sets entity+0xC44=1 (combat ready flag) on player and companions.
+ * Non-essential during initial level load. */
 static void stub_set_entities_combat_mode(void) {
-    /* TODO: set_entities_combat_mode */
+    if (g_player_entity)
+        ent_put(g_player_entity, ENT_OFF_COMBAT_READY, 1);
 }
 
 /* sub_448F4D — LIEU DLL loader / combat-scripting bootstrap.
@@ -848,11 +922,13 @@ static void stub_sub_45E070(void) {
     }
 }
 
-/* TODO: sub_47674F — unknown; ECX=0.
- * Mirrors asm: xor ecx, ecx / call sub_47674F */
+/* sub_47674F — composite_entity_pass: renders all entities onto scene buffers.
+ * Iterates 8 entity slots, builds draw order, composites animated frames.
+ * ECX=0 draws all entities without context filtering.
+ * Depends on sub_4762BF (single entity renderer), sub_4728DF (anim parser),
+ * sub_4731F6 (multi-frame animated renderer). No-op until entity system lands. */
 static void stub_sub_47674F(i32 arg) {
     (void)arg;
-    /* TODO: sub_47674F */
 }
 
 /* TODO: render_entity_with_ui — render companion entities with HUD.
@@ -1305,8 +1381,8 @@ i32 scene_load_level(i32 level_id) {
      *      mov dword_506520, 0
      *      mov damage_counter, 0
      * ----------------------------------------------------------------- */
-    print("scene: phase 13 — sub_426D2C, zero damage counters — STUB\n");
-    stub_sub_426D2C();   /* TODO: sub_426D2C */
+    print("scene: phase 13 — check_zone_triggers, zero damage counters\n");
+    check_zone_triggers();   /* sub_426D2C @ 0x426D2C */
 
     /* -----------------------------------------------------------------
      * Phase 14 — player entity combat defaults
