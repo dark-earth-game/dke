@@ -164,6 +164,7 @@ const c8 *lieu_poll_movie(void);
 /* One-shot intro->room transition: re-runs INIT at submode 0 so trig00
  * places the room's arrival characters. Call after the intro movie plays. */
 void lieu_enter_room(void);
+void lieu_zone_debug(void);
 
 /* Persona placements recorded by PosPerso (spawn_678). For a future dke
  * character-render pass. lieu_spawn_get returns the name or NULL. */

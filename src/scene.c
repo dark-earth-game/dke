@@ -163,6 +163,7 @@ static i32   g_proj_Tv[3];              /* translated view offset      */
 static float g_proj_scale     = 1.0f;
 static i32   g_proj_ground_wy = 0;      /* character ground-plane world Y */
 static i32   g_proj_zone_z    = 0;      /* camera zone centroid Z         */
+static i32   g_proj_anchor_wx = 0;      /* solved character world X        */
 
 /* Project world (wx,wy,wz) -> screen (sx,sy) via the cached INF matrix.
  * Falls back to the character anchor if no projection is cached. */
@@ -194,6 +195,12 @@ static void scene_project_world(i32 wx, i32 wy, i32 wz, i32 *osx, i32 *osy) {
  * the model's per-pixel Z-test against the scene Z bmap keeps working. */
 static i32 g_cube_world_x = 0;
 static i32 g_cube_world_z = 0;   /* seeded from zfar/3 on camera load */
+
+/* Player position in LIEU world units (same space as zones + personas), so
+ * walking fires op-3 zone triggers. Seeded from the character world anchor. */
+static i32 g_player_wx = 0;
+static i32 g_player_wz = 0;
+static i32 g_player_seeded = 0;
 
 /* Tick of last scene_render call — used to derive dt for cube movement
  * so speed stays consistent across frame rates. 0 = first frame. */
@@ -864,6 +871,7 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     g_proj_scale     = scale;
     g_proj_ground_wy = wy;
     g_proj_zone_z    = (i32)zone_z;
+    g_proj_anchor_wx = wx;
     g_proj_valid     = 1;
 
     print("scene: camera anchor cam=%d zone=(%d,%d) world=(%d,%d,%d) screen=(%d,%d)\n",
@@ -1544,7 +1552,13 @@ i32 scene_render(system_t *sys) {
      *   op -1 tick every frame, then op 3 for the current zone (if any). */
     lieu_tick();
     {
+        static i32 s_last_zone = -2;
         i32 zone = lieu_detect_zone();
+        if (zone != s_last_zone) {
+            print("scene: player -> zone %d (wX=%d wZ=%d)\n",
+                  zone, g_player_wx, g_player_wz);
+            s_last_zone = zone;
+        }
         if (zone >= 0) lieu_zone_trigger(zone);
     }
     /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script. */
@@ -1653,7 +1667,15 @@ i32 scene_render(system_t *sys) {
      * cube slides behind foreground scene geometry when WASD walks it
      * toward the room's far walls. */
     i32 z_far = scene_get_camera_zfar(g_scene_camera);
-    if (g_cube_world_z == 0) g_cube_world_z = z_far / 3;
+
+    /* Seed the player at the room's character world position once the INF
+     * projection is available. Then WASD moves it in LIEU world units so
+     * lieu_detect_zone (world-space rect test) fires when walking a zone. */
+    if (!g_player_seeded && g_proj_valid) {
+        g_player_wx = g_proj_anchor_wx;
+        g_player_wz = g_proj_zone_z;
+        g_player_seeded = 1;
+    }
 
     if (sys) {
         u32 tick = sys->timer.tick;
@@ -1665,41 +1687,39 @@ i32 scene_render(system_t *sys) {
         player_input_t pin = {0};
         player_input_update(&pin, sys);
 
-        /* Speed: cross-room ≈ 5 s → v = zfar / 5000 units/ms. */
-        i32 speed = z_far / 5;    /* units per second */
-        if (speed < 20) speed = 20;
-        i32 step = (speed * dt_ms) / 1000;
 
-        g_cube_world_x += (i32)(pin.velocity_x * step);
-        g_cube_world_z += (i32)(pin.velocity_z * step);
 
-        /* Clamp to room roughly. Range chosen loose — refined once real
-         * walkable region comes from LIEU. */
-        i32 half_zfar = z_far / 2;
-        if (g_cube_world_x < -half_zfar) g_cube_world_x = -half_zfar;
-        if (g_cube_world_x >  half_zfar) g_cube_world_x =  half_zfar;
-        if (g_cube_world_z < 50)         g_cube_world_z = 50;
-        if (g_cube_world_z > z_far - 50) g_cube_world_z = z_far - 50;
+        /* ~50k world units/s (LIEU zones are ~50-90k wide). */
+        i32 step = (50000 * dt_ms) / 1000;
+        g_player_wx += (i32)(pin.velocity_x * step);   /* A/D -> world X */
+        g_player_wz += (i32)(pin.velocity_z * step);   /* W/S -> world Z */
+
+        /* Debug headless sweep (fixed step, dt-independent). */
+        if (getenv("DKE_WALK")) g_player_wx -= 6000;
+
+        /* Loose clamp around the character start. */
+        i32 lim = 400000;
+        if (g_player_seeded) {
+            if (g_player_wx < g_proj_anchor_wx - lim) g_player_wx = g_proj_anchor_wx - lim;
+            if (g_player_wx > g_proj_anchor_wx + lim) g_player_wx = g_proj_anchor_wx + lim;
+            if (g_player_wz < g_proj_zone_z - lim)    g_player_wz = g_proj_zone_z - lim;
+            if (g_player_wz > g_proj_zone_z + lim)    g_player_wz = g_proj_zone_z + lim;
+        }
     }
 
-    /* Feed the WASD placeholder position into the player transform so the
-     * LIEU zone detector (lieu_detect_zone, next frame) tracks the player.
-     * X -> +0x1C0, Z -> +0x1C8 of the embedded transform block.
-     * NOTE: dke's cube world units and the LIEU zone units are currently
-     * different coordinate spaces, so this is correct plumbing but zones
-     * won't actually fire until that scale is calibrated (or the real
-     * movement/camera-projection system lands). */
+    /* Feed the player world (X,Z) into the transform so lieu_detect_zone
+     * (next frame) tests it against the LIEU zone rects. */
     if (g_player_entity) {
-        *(i32 *)((u8 *)g_player_entity + 0x1C0) = g_cube_world_x;
-        *(i32 *)((u8 *)g_player_entity + 0x1C8) = g_cube_world_z;
+        *(i32 *)((u8 *)g_player_entity + 0x1C0) = g_player_wx;
+        *(i32 *)((u8 *)g_player_entity + 0x1C8) = g_player_wz;
     }
 
-    /* Screen-space anchor from world X. Rough parallax: shift screen
-     * centre by (world_x * focal_len) / world_z so the cube slides
-     * horizontally with a hint of perspective foreshortening. */
+    /* Screen position from the INF projection. LIEU world Z is far outside
+     * the z-buffer range, so use a fixed mid-room render depth for the mesh. */
     i32 focal = fb_w;
-    i32 screen_x = g_scene_cam_sx + (g_cube_world_x * focal) / (g_cube_world_z > 1 ? g_cube_world_z : 1);
-    i32 screen_y = g_scene_cam_sy;
+    i32 screen_x, screen_y;
+    scene_project_world(g_player_wx, g_proj_ground_wy, g_player_wz, &screen_x, &screen_y);
+    i32 render_depth = z_far / 2;
 
     i32 cube_world_size = 60;
     u32 tick = sys ? sys->timer.tick : 0;
@@ -1743,7 +1763,7 @@ i32 scene_render(system_t *sys) {
                          screen_x, screen_y,
                          focal,
                          tick,
-                         g_cube_world_z,
+                         render_depth,
                          cube_world_size,
                          z_far,
                          g_scene_l_bmap,
@@ -1769,7 +1789,7 @@ i32 scene_render(system_t *sys) {
                 /* fallback: player mesh, static pose */
                 for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++)
                     model_render(g_scene_ome_atoms[ai], sys, psx, psy, focal, tick,
-                                 g_cube_world_z, cube_world_size, z_far,
+                                 render_depth, cube_world_size, z_far,
                                  g_scene_l_bmap, g_scene_z_bmap, 0, 0, 0, 0, 0, 0);
                 continue;
             }
@@ -1800,7 +1820,7 @@ i32 scene_render(system_t *sys) {
                 i32 tz = (pm->objc_loaded && ai < pm->objc.n_atomslots)
                            ? pm->objc.world_tz[ai] * ATOM_SCALE : 0;
                 model_render(pm->atoms[ai], sys, psx, psy,
-                             focal, tick, g_cube_world_z, cube_world_size, z_far,
+                             focal, tick, render_depth, cube_world_size, z_far,
                              g_scene_l_bmap, g_scene_z_bmap,
                              prx[ai] ? 1 : 0, pry[ai], prx[ai], tx, ty, tz);
             }
@@ -1811,7 +1831,7 @@ i32 scene_render(system_t *sys) {
                      screen_x, screen_y,
                      focal,
                      tick,
-                     g_cube_world_z,
+                     render_depth,
                      cube_world_size,
                      z_far,
                      g_scene_l_bmap,
@@ -1823,11 +1843,11 @@ i32 scene_render(system_t *sys) {
     /* HUD — current level, camera, and cube world position so testers
      * can see WASD input landing without staring at the log. */
     if (state && state->debug_enabled) {
-        c8 hud[96];
+        c8 hud[128];
         snprintf(hud, sizeof(hud),
-                 "L%02d cam=%d  x=%d z=%d  zfar=%d",
+                 "L%02d cam=%d  wX=%d wZ=%d  zone=%d",
                  g_scene_bg_level, g_scene_camera,
-                 g_cube_world_x, g_cube_world_z, z_far);
+                 g_player_wx, g_player_wz, lieu_detect_zone());
         draw_text_at(font_handle, 6, 6, hud, 0xFFFFFFFFu);
     }
 

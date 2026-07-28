@@ -55,6 +55,15 @@ static void zones_clear(void) {
     for (i32 i = 0; i < LIEU_ZONE_COUNT; i++) g_zones[i].center_x = -1;
 }
 
+void lieu_zone_debug(void) {
+    for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {
+        if (g_zones[i].center_x == -1) continue;
+        print("zone[%d] c=(%d,%d) half=(%d,%d) active=%d\n", i,
+              g_zones[i].center_x, g_zones[i].center_z,
+              g_zones[i].size_x / 2, g_zones[i].size_z / 2, g_zones[i].active);
+    }
+}
+
 /* Facing tolerance ~50.6 deg (0x2400 BAM). Signed shortest-arc compare. */
 static i32 facing_ok(i32 player_ang, i32 target_ang) {
     i32 d = (target_ang - player_ang) & 0xFFFF;
@@ -350,6 +359,7 @@ void lieu_enter_room(void) {
     print("lieu: intro done -> entering room (submode 0), re-running INIT\n");
     lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0);
     print("lieu: room INIT placed %d personas\n", g_spawn_count);
+    lieu_zone_debug();
 
     /* DEMO: queue the opening exchange so the dialogue pipeline (subtitle +
      * WAV) is exercised on new game. The trigger-driven conversation is
