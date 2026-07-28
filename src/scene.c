@@ -58,6 +58,7 @@
 #include "state.h"
 #include "scene.h"
 #include "game_init.h"
+#include "world.h"
 #include "anim2d.h"
 #include "can.h"
 #include "model.h"
@@ -672,12 +673,13 @@ static void stub_handle_data_l44_faux(void) {
     /* TODO: handle_data_l44_faux */
 }
 
-/* TODO: sub_46D305 — world controller allocation.
- * Called after memset of dword_543C60 (0xF00 bytes) when world_controller==0.
- * Mirrors asm: push 0F00h / push 0 / push offset dword_543C60 / call _memset
- *              then call sub_46D305 */
+/* sub_46D305 — world controller: load INF zone data + build level paths. */
 static void stub_sub_46D305(void) {
-    /* TODO: sub_46D305 — allocate + init world_controller */
+    const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+    world_load_level_data(g_world_state, gp,
+                          state ? state->is_demo : 0,
+                          0, state ? state->debug_enabled : 0);
+    g_world_controller = g_world.world_controller;
 }
 
 /* TODO: sub_46D0EA — asset loader dispatcher.
@@ -687,19 +689,30 @@ static void stub_sub_46D0EA(void) {
     /* TODO: sub_46D0EA — load level assets (DAT/IMAGES/PAL/ANIM2D/OME) */
 }
 
-/* TODO: can_do_32k — colour-mode capability check.
- * ECX=color_mode; result used to select texture_library entries.
- * Mirrors asm: mov ecx, color_mode / call can_do_32k */
-static void stub_can_do_32k(i32 color_mode) {
+/* can_do_32k — colour-mode capability check. Always true on modern HW. */
+static i32 stub_can_do_32k(i32 color_mode) {
     (void)color_mode;
-    /* TODO: can_do_32k */
+    return 1;
 }
 
-/* TODO: sub_4640BC — player entity placement in world.
- * Called when dword_4B727C != 0 (world controller valid).
- * Mirrors asm: push eax/edx ... / mov ecx, game_state / call sub_4640BC */
+/* sub_4640BC — pos_perso: entity placement in world.
+ * Full function takes (perso_id, x, y, z, life_state, anim_name, action_slot, action_param).
+ * During scene_load_level, player entity gets default position/anim. */
 static void stub_sub_4640BC(void) {
-    /* TODO: sub_4640BC */
+    if (!g_player_entity) return;
+    u8 *pe = (u8 *)g_player_entity;
+
+    *(i32 *)(pe + 0x070) = 1;
+    *(i32 *)(pe + 0x074) = 1;
+    *(i32 *)(pe + 0x078) = 0;
+    *(i32 *)(pe + 0x07C) = 0;
+    *(i32 *)(pe + 0x080) = 639;
+    *(i32 *)(pe + 0x084) = 479;
+    *(i32 *)(pe + 0x064) = 0x50;
+    *(i32 *)(pe + 0x090) = 2;
+    *(i32 *)(pe + 0x094) = 2;
+
+    print("scene: pos_perso — player entity placed with defaults\n");
 }
 
 /* TODO: sub_426D2C — unknown; called after sub_4640BC block.
@@ -740,12 +753,13 @@ static void stub_sub_448F4D(void) {
     /* TODO: sub_448F4D */
 }
 
-/* TODO: ls_clear_bmap — clear a bmap's pixel buffer to zero.
- * Called for graphics_context and game_context.
- * Mirrors asm: mov ecx, graphics_context / call ls_clear_bmap */
+/* ls_clear_bmap — clear a bmap's pixel buffer to zero.
+ * Called for graphics_context and game_context. */
 static void stub_ls_clear_bmap(void *bmap) {
-    (void)bmap;
-    /* TODO: ls_clear_bmap */
+    if (!bmap) return;
+    bmap_t *b = (bmap_t *)bmap;
+    if (b->pixels && b->stride > 0 && b->height > 0)
+        memset(b->pixels, 0, (u32)(b->stride * b->height));
 }
 
 /* sub_45D27A — render buffer cursor/mask overlay (77 instructions).
