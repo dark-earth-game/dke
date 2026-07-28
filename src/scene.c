@@ -59,6 +59,7 @@
 #include "scene.h"
 #include "game_init.h"
 #include "world.h"
+#include "nav_grid.h"
 #include "anim2d.h"
 #include "can.h"
 #include "model.h"
@@ -735,10 +736,12 @@ static void stub_render_sprite_time_based_effect(void) {
     /* TODO: render_sprite_time_based_effect */
 }
 
-/* TODO: sub_45619D — unknown; called after render_sprite_time_based_effect.
- * Mirrors asm: call sub_45619D */
+/* sub_45619D — build 64×64 navigation grid from world controller zones. */
 static void stub_sub_45619D(void) {
-    /* TODO: sub_45619D */
+    if (!g_world.world_controller) return;
+    nav_grid_build(g_world.world_controller,
+                   (sol_limit_t *const *)g_world.collision_zones,
+                   g_world.num_collisions);
 }
 
 /* TODO: set_entities_combat_mode — enables combat for all entities.
@@ -747,10 +750,11 @@ static void stub_set_entities_combat_mode(void) {
     /* TODO: set_entities_combat_mode */
 }
 
-/* TODO: sub_448F4D — unknown; called after set_entities_combat_mode.
- * Mirrors asm: call sub_448F4D */
+/* sub_448F4D — LIEU DLL loader / combat-scripting bootstrap.
+ * Resets state, installs 40-slot handler vtable, loads LIEU DLL, calls
+ * FonctionEditor(INIT). We have LIEU01 natively ported — call lieu_enter. */
 static void stub_sub_448F4D(void) {
-    /* TODO: sub_448F4D */
+    lieu_enter(g_world_state);
 }
 
 /* ls_clear_bmap — clear a bmap's pixel buffer to zero.
