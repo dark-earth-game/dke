@@ -64,15 +64,17 @@ void lieu_zone_debug(void) {
     }
 }
 
+/* Facing helpers — currently unused (facing queries are permissive, see
+ * cb_query_944/954/998), kept for when player-facing input lands. */
 /* Facing tolerance ~50.6 deg (0x2400 BAM). Signed shortest-arc compare. */
-static i32 facing_ok(i32 player_ang, i32 target_ang) {
+static i32 __attribute__((unused)) facing_ok(i32 player_ang, i32 target_ang) {
     i32 d = (target_ang - player_ang) & 0xFFFF;
     if (d > 0x8000) d -= 0x10000;
     return (d < 0 ? -d : d) < 0x2400;
 }
 
 /* BAM angle from (dx,dz), matching engine: -(atan2*65536/2pi) & 0xFFFF. */
-static i32 bam_angle(i32 dx, i32 dz) {
+static i32 __attribute__((unused)) bam_angle(i32 dx, i32 dz) {
     double a = atan2((double)dz, (double)dx) * 65536.0 / (2.0 * M_PI);
     return (i32)(-(i32)a) & 0xFFFF;
 }
@@ -180,21 +182,13 @@ static void cb_cb_93C(i32 id) {
     if (id >= 1 && id < LIEU_ZONE_COUNT) g_zones[id].center_x = -1;
 }
 static void cb_cb_970(i32 a, i32 b) { CBLOG("cb_970"); (void)a; (void)b; }
-/* query_954 "DirectionPerso": needs the character/named-object table
- * (dke has no object entities yet) -> 0 until they exist. */
-static i32  cb_query_954(i32 a) { (void)a; return 0; }
-/* query_944 "DirectionZone": is the player facing zone n (within ~50.6 deg)? */
-static i32  cb_query_944(i32 n) {
-    i32 px, pz;
-    if (n < 1 || n >= LIEU_ZONE_COUNT || g_zones[n].center_x == -1) return 0;
-    if (!player_get_pos(&px, NULL, &pz)) return 0;
-    i32 target = bam_angle(g_zones[n].center_x - px, g_zones[n].center_z - pz);
-    return facing_ok((i32)player_get_facing(), target);
-}
-/* query_998 "DirectionSpec": is the player facing absolute angle n? */
-static i32  cb_query_998(i32 angle) {
-    return facing_ok((i32)player_get_facing(), angle & 0xFFFF);
-}
+/* Facing tests (DirectionPerso/Zone/Spec). dke has no player-facing control
+ * yet, so these are PERMISSIVE (return 1 = "facing satisfied") — the RE
+ * recommendation, so zone/conversation triggers fire on entry rather than
+ * never. Restore the real facing math once facing input + math land. */
+static i32  cb_query_954(i32 a) { (void)a; return 1; }   /* DirectionPerso */
+static i32  cb_query_944(i32 n) { (void)n; return 1; }   /* DirectionZone  */
+static i32  cb_query_998(i32 a) { (void)a; return 1; }   /* DirectionSpec  */
 /* query_990: distance between zone a and b, world units / 600. */
 static i32  cb_query_990(i32 a, i32 b) {
     if (a < 1 || a >= LIEU_ZONE_COUNT || b < 1 || b >= LIEU_ZONE_COUNT) return 0;
@@ -360,13 +354,9 @@ void lieu_enter_room(void) {
     lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0);
     print("lieu: room INIT placed %d personas\n", g_spawn_count);
     lieu_zone_debug();
-
-    /* DEMO: queue the opening exchange so the dialogue pipeline (subtitle +
-     * WAV) is exercised on new game. The trigger-driven conversation is
-     * gated on gameplay state (zone entry / facing) dke can't produce yet;
-     * these lines are the real level-1 opening from NWDIAL01. */
-    dlg_say("L01D02");    /* "Kalhi, tu dors?" */
-    dlg_say("L01D17A");
+    /* Dialogue now fires from the trigger handlers on zone entry (op 3),
+     * not demo-queued. Facing gates are permissive (see query_944/954/998)
+     * since dke has no player-facing control yet. */
 }
 
 /* -------------------------------------------------------------------------
