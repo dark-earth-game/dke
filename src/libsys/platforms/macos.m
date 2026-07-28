@@ -215,6 +215,14 @@ static void handle_events(system_t *system, i32 type, i32 key) {
         case 0x6F:
             system->actions[111] = type;
             break;
+        // [ (keyCode 0x21) → actions[91] : manual camera prev (debug)
+        case 0x21:
+            system->actions[91] = type;
+            break;
+        // ] (keyCode 0x1E) → actions[93] : manual camera next (debug)
+        case 0x1E:
+            system->actions[93] = type;
+            break;
         default:
             break;
     }

@@ -289,11 +289,11 @@ void player_input_update(player_input_t *out, system_t *sys) {
     out->velocity_z  = 0.0f;
     out->want_action = 0;
 
-    /* WASD movement */
-    if (sys->actions[119]) out->velocity_z = -1.0f; /* W — forward  */
-    if (sys->actions[115]) out->velocity_z = +1.0f; /* S — backward */
-    if (sys->actions[97])  out->velocity_x = -1.0f; /* A — left     */
-    if (sys->actions[100]) out->velocity_x = +1.0f; /* D — right    */
+    /* Movement — arrow keys (primary) and WASD (alternate). */
+    if (sys->actions[38] || sys->actions[119]) out->velocity_z = -1.0f; /* Up / W — forward  */
+    if (sys->actions[40] || sys->actions[115]) out->velocity_z = +1.0f; /* Down / S — back   */
+    if (sys->actions[37] || sys->actions[97])  out->velocity_x = -1.0f; /* Left / A — left   */
+    if (sys->actions[39] || sys->actions[100]) out->velocity_x = +1.0f; /* Right / D — right */
 
     /* Attack edge: mouse_left pressed-this-frame (value == 2) */
     if (sys->mouse_left == 2) out->want_action = 1;
