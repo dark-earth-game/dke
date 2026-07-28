@@ -153,6 +153,40 @@ static i32 g_scene_camera = 0;
 static i32 g_scene_cam_sx = 320;  /* projected character screen X */
 static i32 g_scene_cam_sy = 240;  /* projected character screen Y */
 
+/* Cached INF camera projection (filled by scene_load_camera_anchor) so any
+ * world coord can be projected to screen — used for exact persona placement.
+ * Projection: v = (R * w) >> 14 + Tv;  sx = 320 + v.x*scale; sy = 240 - v.y*scale. */
+static i32   g_proj_valid     = 0;
+static i32   g_proj_R[9];               /* 3x3 rotation (param[0..8]) */
+static i32   g_proj_Tv[3];              /* translated view offset      */
+static float g_proj_scale     = 1.0f;
+static i32   g_proj_ground_wy = 0;      /* character ground-plane world Y */
+static i32   g_proj_zone_z    = 0;      /* camera zone centroid Z         */
+
+/* Project world (wx,wy,wz) -> screen (sx,sy) via the cached INF matrix.
+ * Falls back to the character anchor if no projection is cached. */
+static void scene_project_world(i32 wx, i32 wy, i32 wz, i32 *osx, i32 *osy) {
+    if (!g_proj_valid) {
+        if (osx) *osx = g_scene_cam_sx;
+        if (osy) *osy = g_scene_cam_sy;
+        return;
+    }
+    i64 vxr = 0, vyr = 0;
+    i32 w[3] = { wx, wy, wz };
+    for (i32 c = 0; c < 3; c++) {
+        vxr += (i64)g_proj_R[c]     * w[c];
+        vyr += (i64)g_proj_R[3 + c] * w[c];
+    }
+    i32 vx = (i32)(vxr >> 14) + g_proj_Tv[0];
+    i32 vy = (i32)(vyr >> 14) + g_proj_Tv[1];
+    i32 sx = 320 + (i32)((float)vx * g_proj_scale);
+    i32 sy = 240 - (i32)((float)vy * g_proj_scale);
+    if (sx < 0) sx = 0; if (sx > 639) sx = 639;
+    if (sy < 0) sy = 0; if (sy > 479) sy = 479;
+    if (osx) *osx = sx;
+    if (osy) *osy = sy;
+}
+
 /* Player-controlled cube world position (dev handle for gameplay
  * skeleton). Reset to camera-relative default on each camera load; WASD
  * moves the cube around within the current room. Depth is world units so
@@ -792,6 +826,15 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
 
     g_scene_cam_sx = sx;
     g_scene_cam_sy = sy;
+
+    /* Cache the projection for scene_project_world (persona placement). */
+    for (i32 i = 0; i < 9; i++) g_proj_R[i] = R[i];
+    g_proj_Tv[0] = Tv[0]; g_proj_Tv[1] = Tv[1]; g_proj_Tv[2] = Tv[2];
+    g_proj_scale     = scale;
+    g_proj_ground_wy = wy;
+    g_proj_zone_z    = (i32)zone_z;
+    g_proj_valid     = 1;
+
     print("scene: camera anchor cam=%d zone=(%d,%d) world=(%d,%d,%d) screen=(%d,%d)\n",
           cam_idx, zone_x, (i32)zone_z, wx, wy, (i32)zone_z, sx, sy);
 }
@@ -1678,11 +1721,12 @@ i32 scene_render(system_t *sys) {
          * Placeholder: all personas share the player mesh until per-persona
          * models load; positions are clustered around the character stand. */
         for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
-            const c8 *nm = lieu_spawn_get(pi, NULL, NULL, NULL);
+            i32 wxt = 0, wzt = 0, pview = 0;
+            const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
             if (!nm) continue;
-            i32 psx = g_scene_cam_sx - 90 + pi * 180;
-            if (psx < 20)  psx = 20;
-            if (psx > 620) psx = 620;
+            /* Project the persona's world position (tile x600) to screen. */
+            i32 psx, psy;
+            scene_project_world(wxt * 600, g_proj_ground_wy, wzt * 600, &psx, &psy);
             /* Load this persona's own mesh (P<nn>.OME); else use player mesh. */
             i32 ci = persona_mesh_load(persona_num_from_name(nm));
             model_t **atoms = (ci >= 0) ? g_persona_cache[ci].atoms
@@ -1690,7 +1734,7 @@ i32 scene_render(system_t *sys) {
             i32 acount      = (ci >= 0) ? g_persona_cache[ci].count
                                         : g_scene_ome_atom_count;
             for (i32 ai = 0; ai < acount; ai++) {
-                model_render(atoms[ai], sys, psx, g_scene_cam_sy,
+                model_render(atoms[ai], sys, psx, psy,
                              focal, tick, g_cube_world_z, cube_world_size, z_far,
                              g_scene_l_bmap, g_scene_z_bmap,
                              0, 0, 0,       /* static default pose */
@@ -1728,20 +1772,15 @@ i32 scene_render(system_t *sys) {
      * draw each as a name label so the LIEU-driven cast is visible. */
     {
         i32 np = lieu_spawn_count();
-        /* Anchor at the room's character-stand screen position (from the
-         * L01.INF projection), clustering the cast around it. */
-        i32 base_x = g_scene_cam_sx;
-        i32 base_y = g_scene_cam_sy;
         for (i32 i = 0; i < np; i++) {
-            i32 px = 0, py = 0, pv = 0;
-            const c8 *nm = lieu_spawn_get(i, &px, &py, &pv);
+            i32 wxt = 0, wzt = 0, pv = 0;
+            const c8 *nm = lieu_spawn_get(i, &wxt, &wzt, &pv);
             if (!nm) continue;
-            i32 sx = base_x - 60 + i * 120;
-            i32 sy = base_y;
-            if (sx < 4) sx = 4;
+            i32 sx, sy;
+            scene_project_world(wxt * 600, g_proj_ground_wy, wzt * 600, &sx, &sy);
+            if (sx < 4)   sx = 4;
             if (sx > 560) sx = 560;
-            draw_text_at(font_handle, sx, sy - 40, "\x18",  0xFF30FF80u); /* marker */
-            draw_text_at(font_handle, sx, sy,      nm,       0xFFFFE060u);
+            draw_text_at(font_handle, sx, sy - 90, nm, 0xFFFFE060u);  /* name over head */
         }
     }
     return 0;

@@ -106,31 +106,35 @@ const c8 *lieu_poll_movie(void) {
  * The engine enqueues this as an action (dword_4FFB50) processed by the
  * persona/action system. dke has no persona render yet, so we record each
  * placement into a registry (for a future render pass) and log it. */
-typedef struct { c8 name[24]; i32 x, y, view, id; } lieu_spawn_t;
+/* PosPerso arg mapping (verified vs engine sub_44502D/sub_463C2E):
+ *   anim(p1) -> world X (tile, x600),  x(p2) -> world Z (tile, x600),
+ *   y(p3) = facing (NOT position),     flag(p4) = vie (0..4 mode). */
+typedef struct { c8 name[24]; i32 wx, wz, view, id; } lieu_spawn_t;
 #define LIEU_SPAWN_MAX 64
 static lieu_spawn_t g_spawns[LIEU_SPAWN_MAX];
 static i32          g_spawn_count = 0;
 
 static void cb_spawn_678(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
                          const c8 *name, i32 kind, i32 z) {
-    (void)anim; (void)kind; (void)z;
+    (void)y; (void)kind; (void)z;   /* y = facing; kind/z = life indices */
     if (name && g_spawn_count < LIEU_SPAWN_MAX) {
         lieu_spawn_t *s = &g_spawns[g_spawn_count++];
         i32 k = 0;
         while (name[k] && k < (i32)sizeof(s->name) - 1) { s->name[k] = name[k]; k++; }
         s->name[k] = '\0';
-        s->x = x; s->y = y; s->view = flag; s->id = zone;
+        s->wx = anim; s->wz = x; s->view = flag; s->id = zone;
     }
-    print("lieu_cb: PosPerso '%s' id=%d view=%d at (%d,%d)\n",
-          name ? name : "(null)", zone, flag, x, y);
+    print("lieu_cb: PosPerso '%s' id=%d vie=%d worldXZ=(%d,%d)\n",
+          name ? name : "(null)", zone, flag, anim, x);
 }
 
-/* Registry accessors for a future dke persona-render pass. */
+/* Registry accessors: wx and wz = world tile coords (multiply by 600 for
+ * world units, then project). */
 i32 lieu_spawn_count(void) { return g_spawn_count; }
-const c8 *lieu_spawn_get(i32 i, i32 *x, i32 *y, i32 *view) {
+const c8 *lieu_spawn_get(i32 i, i32 *wx, i32 *wz, i32 *view) {
     if (i < 0 || i >= g_spawn_count) return NULL;
-    if (x) *x = g_spawns[i].x;
-    if (y) *y = g_spawns[i].y;
+    if (wx)   *wx   = g_spawns[i].wx;
+    if (wz)   *wz   = g_spawns[i].wz;
     if (view) *view = g_spawns[i].view;
     return g_spawns[i].name;
 }
