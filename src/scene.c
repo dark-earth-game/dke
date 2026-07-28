@@ -1637,15 +1637,20 @@ i32 scene_render(system_t *sys) {
      * draw each as a name label so the LIEU-driven cast is visible. */
     {
         i32 np = lieu_spawn_count();
+        /* Anchor at the room's character-stand screen position (from the
+         * L01.INF projection), clustering the cast around it. */
+        i32 base_x = g_scene_cam_sx;
+        i32 base_y = g_scene_cam_sy;
         for (i32 i = 0; i < np; i++) {
             i32 px = 0, py = 0, pv = 0;
             const c8 *nm = lieu_spawn_get(i, &px, &py, &pv);
             if (!nm) continue;
-            /* Spread horizontally; drop a rough marker + the name. */
-            i32 sx = 140 + i * 180;
-            i32 sy = 300;
-            draw_text_at(font_handle, sx, sy,       nm,        0xFFFFE060u);
-            draw_text_at(font_handle, sx, sy + 16,  "\x7f",   0xFF20FF80u);
+            i32 sx = base_x - 60 + i * 120;
+            i32 sy = base_y;
+            if (sx < 4) sx = 4;
+            if (sx > 560) sx = 560;
+            draw_text_at(font_handle, sx, sy - 40, "\x18",  0xFF30FF80u); /* marker */
+            draw_text_at(font_handle, sx, sy,      nm,       0xFFFFE060u);
         }
     }
     return 0;
