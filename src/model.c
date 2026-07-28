@@ -510,22 +510,9 @@ void model_render_world(const model_t *m,
                     - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
         if (cross_z >= 0) continue;
 
-        /* Face color: the material base index (MATR field[0]) into the scene
-         * palette; the scene light map (l_bmap) shades it per pixel. Optional
-         * GRD ramp could pick a shade band from the face normal. Falls back to
-         * the raw material RGB when no palette is available. */
-        u32 col = face->colour;
-        if (pal && face->mat_base) {
-            i32 idx = face->mat_base;
-            if (grd) idx = grd[MRW_SHADE_MID * 256 + idx];   /* mid shade band */
-            col = 0xFF000000u | ((u32)pal[3*idx+2] << 16)
-                              | ((u32)pal[3*idx+1] << 8)
-                              |  (u32)pal[3*idx+0];
-        }
-
-        /* Flat directional shading: camera-space face normal dotted with a
-         * fixed key light gives the character 3D form (engine does normal.L).
-         * Modulate brightness 0.45..1.0; l_bmap still adds scene lighting. */
+        /* Shade level 0..63 from the camera-space face normal dotted with a
+         * fixed key light (engine does normal.L). 32 = neutral (base color). */
+        i32 shade = MRW_SHADE_MID;
         {
             double ux = (double)(b->cx - a->cx), uy = (double)(b->cy - a->cy), uz = (double)(b->cz - a->cz);
             double vx = (double)(c->cx - a->cx), vy = (double)(c->cy - a->cy), vz = (double)(c->cz - a->cz);
@@ -533,13 +520,33 @@ void model_render_world(const model_t *m,
             double nl = nx*nx + ny*ny + nz*nz;
             if (nl > 1.0) {
                 nl = 1.0 / sqrt(nl);
-                /* Key light from upper-front (camera looks down -Z). */
-                double dot = (nx*0.30 + ny*0.55 - nz*0.78) * nl;
-                if (dot < 0) dot = -dot;                 /* two-sided */
-                double f = 0.45 + 0.55 * dot;            /* 0.45..1.0 */
-                u32 r = (u32)((col & 0xFF) * f);
-                u32 g = (u32)(((col >> 8) & 0xFF) * f);
-                u32 bl = (u32)(((col >> 16) & 0xFF) * f);
+                double dot = (nx*0.30 + ny*0.55 - nz*0.78) * nl;  /* upper-front light */
+                /* Map dot (-1..1) into the ramp's lit-but-not-blown range.
+                 * The GRD ramp darkens below ~24 and blows toward 63. */
+                shade = 20 + (i32)(dot * 12);
+                if (shade < 4)  shade = 4;
+                if (shade > 40) shade = 40;
+            }
+        }
+
+        /* Face color: material base index (MATR field[0]). With the GRD shade
+         * ramp (grd[base*64 + shade] = shaded palette index) this reproduces
+         * the engine's baked lighting; else palette[base] with a brightness
+         * modulate; else the raw material RGB. */
+        u32 col = face->colour;
+        if (pal && face->mat_base) {
+            i32 idx = face->mat_base & 0xFF;
+            if (grd) {
+                idx = grd[(idx * 64 + shade) & 0x3FFF];
+                col = 0xFF000000u | ((u32)pal[3*idx+2] << 16)
+                                  | ((u32)pal[3*idx+1] << 8)
+                                  |  (u32)pal[3*idx+0];
+            } else {
+                double f = 0.45 + 0.55 * (shade / 63.0) * 2.0;
+                if (f > 1.6) f = 1.6;
+                u32 r  = (u32)(pal[3*idx+0] * f); if (r  > 255) r  = 255;
+                u32 g  = (u32)(pal[3*idx+1] * f); if (g  > 255) g  = 255;
+                u32 bl = (u32)(pal[3*idx+2] * f); if (bl > 255) bl = 255;
                 col = 0xFF000000u | (bl << 16) | (g << 8) | r;
             }
         }
