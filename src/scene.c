@@ -111,6 +111,10 @@ static i32 g_dword_505C54 = 0;
  * Used by sub_45E070 to build the coarse brightness map. */
 extern bmap_t *g_render_buffer2;
 
+/* INTFANI3 bmap — cursor/mask overlay source (loaded in game_init phase 14).
+ * Mirrors asm dword_4F4DF4.  Set externally; NULL until wired. */
+static bmap_t *g_intfani3_bmap = NULL;
+
 /* 768-entry (24 rows x 32 cols) coarse brightness map: max pixel value
  * per 20x20 tile of render_buffer2. Built by sub_45E070, queried for
  * approximate screen-space brightness when shading 3D character models. */
@@ -646,11 +650,11 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
  * Replace with real implementations in subsequent Slice C passes.
  * ------------------------------------------------------------------------- */
 
-/* TODO: set_display_mode — ECX=0x1D sets hardware display mode
+/* set_display_mode — ECX=0x1D sets hardware display mode.
+ * Original: DirectDraw SetDisplayMode. No-op on modern platforms.
  * Mirrors asm: mov ecx, 1Dh / call set_display_mode */
 static void stub_set_display_mode(i32 mode) {
-    (void)mode;
-    /* TODO: set_display_mode */
+    print("scene: set_display_mode(0x%X) — no-op (no DirectDraw)\n", mode);
 }
 
 /* TODO: sub_469E34 — ECX=1; called when level folder NOT found.
@@ -744,12 +748,53 @@ static void stub_ls_clear_bmap(void *bmap) {
     /* TODO: ls_clear_bmap */
 }
 
-/* TODO: sub_45D27A — render buffer update.
- * EDX=1, ECX=render_buffer1.
+/* sub_45D27A — render buffer cursor/mask overlay (77 instructions).
+ * Composites a 70x119 (0x46 x 0x77) mask region from g_intfani3_bmap
+ * (dword_4F4DF4 / INTFANI3) into render_buffer2.
+ *
+ * If mode != 0: for each pixel in the source region starting at scanline
+ * offset +0x56 (86), if source pixel != 0 write 0xFF to destination.
+ * Destination Y starts at (render_buffer2.height - 0x77).
+ *
+ * EDX=mode, ECX=render_buffer1 (buf param, unused in mask path).
  * Mirrors asm: mov edx, 1 / mov ecx, render_buffer1 / call sub_45D27A */
-static void stub_sub_45D27A(void *buf, i32 mode) {
-    (void)buf; (void)mode;
-    /* TODO: sub_45D27A */
+static void sub_45D27A(void *buf, i32 mode) {
+    (void)buf;
+
+    if (!g_intfani3_bmap || !g_intfani3_bmap->pixels) {
+        print("sub_45D27A: INTFANI3 bmap not available — skipping\n");
+        return;
+    }
+    if (!g_render_buffer2 || !g_render_buffer2->pixels) return;
+
+    if (mode == 0) return;
+
+    /* Source: g_intfani3_bmap, 70 wide x 119 tall, starting at scanline 86 */
+    i32 src_w   = 0x46;  /* 70 */
+    i32 src_h   = 0x77;  /* 119 */
+    i32 src_y0  = 0x56;  /* 86 — scanline offset into source */
+    i32 src_stride = g_intfani3_bmap->stride;
+    u8 *src_pixels = g_intfani3_bmap->pixels;
+
+    /* Destination: render_buffer2, positioned at bottom */
+    i32 dst_y0  = g_render_buffer2->height - src_h;
+    i32 dst_stride = g_render_buffer2->stride;
+    u8 *dst_pixels = g_render_buffer2->pixels;
+
+    /* Bounds checks */
+    if (src_y0 + src_h > g_intfani3_bmap->height) return;
+    if (dst_y0 < 0) return;
+    if (src_w > g_render_buffer2->width) return;
+
+    for (i32 y = 0; y < src_h; y++) {
+        u8 *src_row = src_pixels + (src_y0 + y) * src_stride;
+        u8 *dst_row = dst_pixels + (dst_y0 + y) * dst_stride;
+        for (i32 x = 0; x < src_w; x++) {
+            if (src_row[x] != 0) {
+                dst_row[x] = 0xFF;
+            }
+        }
+    }
 }
 
 /* TODO: update_player_interface — HUD/inventory render.
@@ -806,18 +851,18 @@ static void stub_apply_model_transform(void *entity, void *transform) {
     /* TODO: apply_model_transform */
 }
 
-/* TODO: system_get_gametime — read current system game timer.
+/* system_get_gametime — read current system game timer.
+ * Returns milliseconds from platform tick counter (ls_tick).
  * Mirrors asm: call system_get_gametime */
-static i32 stub_system_get_gametime(void) {
-    /* TODO: system_get_gametime */
-    return 0;
+static i32 system_get_gametime(void) {
+    return (i32)ls_tick();
 }
 
-/* TODO: restore_display_mode — EDX=0x1D, ECX=1.
+/* restore_display_mode — EDX=0x1D, ECX=1.
+ * Original: DirectDraw RestoreDisplayMode. No-op on modern platforms.
  * Mirrors asm: mov edx, 1Dh / mov ecx, 1 / call restore_display_mode */
 static void stub_restore_display_mode(i32 ecx, i32 edx) {
-    (void)ecx; (void)edx;
-    /* TODO: restore_display_mode */
+    print("scene: restore_display_mode(ecx=%d, edx=0x%X) — no-op (no DirectDraw)\n", ecx, edx);
 }
 
 /* TODO: sub_40636D — unknown tail call.
@@ -1322,7 +1367,7 @@ i32 scene_load_level(i32 level_id) {
     print("scene: phase 20 — clear bmaps + interface update — STUB\n");
     stub_ls_clear_bmap(NULL);              /* TODO: ls_clear_bmap(graphics_context) */
     stub_ls_clear_bmap(NULL);              /* TODO: ls_clear_bmap(game_context) */
-    stub_sub_45D27A(NULL, 1);             /* TODO: sub_45D27A(render_buffer1, 1) */
+    sub_45D27A(NULL, 1);                  /* sub_45D27A(render_buffer1, 1) */
     stub_update_player_interface(NULL, 2); /* TODO: update_player_interface(game_context,2) */
     stub_sub_45E070();                     /* TODO: sub_45E070 */
     stub_sub_47674F(0);                    /* TODO: sub_47674F(0) */
@@ -1348,7 +1393,7 @@ i32 scene_load_level(i32 level_id) {
      * Phase 23 — system_get_gametime → last_event_check_time
      * ----------------------------------------------------------------- */
     print("scene: phase 23 — system_get_gametime\n");
-    i32 t = stub_system_get_gametime();   /* TODO: system_get_gametime */
+    i32 t = system_get_gametime();
     (void)t;
     /* last_event_check_time = t;  TODO global */
 
