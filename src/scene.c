@@ -1822,17 +1822,25 @@ i32 scene_render(system_t *sys) {
                     pry[ri] = (i32)((u32)kf->atoms[jj].ry >> 4) & 0xFFF;
                 }
             }
+            /* Rasterize each atom through the real in-game camera (world
+             * pipeline). Bone world_tx/ty/tz already reflect the animated
+             * pose (objc_update_bone_positions from the CAN keyframe). */
+            i32 mshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : -2;
+            i32 mflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
+            i32 pfac   = lieu_spawn_facing(pi) & 0xFFF;
+            (void)psx; (void)psy; (void)prx; (void)pry;
             for (i32 ai = 0; ai < pm->count; ai++) {
                 i32 tx = (pm->objc_loaded && ai < pm->objc.n_atomslots)
-                           ? pm->objc.world_tx[ai] * ATOM_SCALE : 0;
+                           ? pm->objc.world_tx[ai] : 0;
                 i32 ty = (pm->objc_loaded && ai < pm->objc.n_atomslots)
-                           ? pm->objc.world_ty[ai] * ATOM_SCALE : 0;
+                           ? pm->objc.world_ty[ai] : 0;
                 i32 tz = (pm->objc_loaded && ai < pm->objc.n_atomslots)
-                           ? pm->objc.world_tz[ai] * ATOM_SCALE : 0;
-                model_render(pm->atoms[ai], sys, psx, psy,
-                             focal, tick, render_depth, cube_world_size, z_far,
-                             g_scene_l_bmap, g_scene_z_bmap,
-                             prx[ai] ? 1 : 0, pry[ai], prx[ai], tx, ty, tz);
+                           ? pm->objc.world_tz[ai] : 0;
+                model_render_world(pm->atoms[ai],
+                                   g_proj_R, g_proj_T, g_proj_gscale,
+                                   wxt * 600, pground, wzt * 600, pfac,
+                                   mshift, mflip, tx, ty, tz,
+                                   g_scene_l_bmap, NULL);
             }
         }
     } else {

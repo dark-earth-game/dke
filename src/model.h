@@ -111,3 +111,26 @@ void model_render(const model_t   *m,
                   i32              atom_tx,   /* character-relative translation X */
                   i32              atom_ty,   /* character-relative translation Y */
                   i32              atom_tz);  /* character-relative translation Z */
+
+/*
+ * model_render_world — rasterize a mesh atom through the REAL in-game camera
+ * (dkev sub_420D80 pipeline). Each OME vertex is rotated by the object facing,
+ * translated to its world position, transformed to camera space by the camera
+ * matrix, and perspective-projected (1/z). Faces are painter-sorted back-to-
+ * front (engine uses summed vertex depth, no per-pixel z-buffer) and flat-
+ * filled; scene occlusion via optional z_bmap.
+ *
+ *   cam_r[9]  camera rotation ints, R(row,col)=cam_r[row+col*3] (Q14)
+ *   cam_t[3]  camera translation, added after >>14
+ *   gscale    globalScale = round(10240/tan(fov/2))
+ *   obj_wx/wy/wz  object world position (world units)
+ *   facing    yaw angle (cosine_table index 0..4095)
+ *   vshift    right-shift applied to the model_t Q16.16 vertex -> world units
+ *   atom_tx/ty/tz  per-atom (bone) world translation, added after facing rotate
+ */
+void model_render_world(const model_t *m,
+                        const i32 *cam_r, const i32 *cam_t, i32 gscale,
+                        i32 obj_wx, i32 obj_wy, i32 obj_wz, i32 facing,
+                        i32 vshift, i32 flip_y,
+                        i32 atom_tx, i32 atom_ty, i32 atom_tz,
+                        const bmap_t *l_bmap, const bmap_t *z_bmap);

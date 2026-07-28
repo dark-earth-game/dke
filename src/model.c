@@ -386,6 +386,136 @@ void model_render(const model_t *m, system_t *sys,
 }
 
 /* -------------------------------------------------------------------------
+ * model_render_world — real in-game camera pipeline (dkev sub_420D80).
+ * ------------------------------------------------------------------------- */
+#define MRW_MAX_VERTS 2048
+#define MRW_MAX_FACES 2048
+
+typedef struct { i32 sx, sy; i64 cz; i32 vis; } mrw_vert_t;
+
+void model_render_world(const model_t *m,
+                        const i32 *cam_r, const i32 *cam_t, i32 gscale,
+                        i32 obj_wx, i32 obj_wy, i32 obj_wz, i32 facing,
+                        i32 vshift, i32 flip_y,
+                        i32 atom_tx, i32 atom_ty, i32 atom_tz,
+                        const bmap_t *l_bmap, const bmap_t *z_bmap) {
+    if (!m || !state) return;
+    u32 *fb   = state->graphic.front_buffer;
+    i32  fb_w = state->graphic.width;
+    i32  fb_h = state->graphic.height;
+    if (!fb) return;
+    if (m->vertex_count <= 0 || m->vertex_count > MRW_MAX_VERTS) return;
+    if (m->face_count   <= 0 || m->face_count   > MRW_MAX_FACES) return;
+
+    i32 cyf = cosine_table[facing & 0xFFF];
+    i32 syf = cosine_table[(facing + 1024) & 0xFFF];
+
+    /* Scale bone translation to the same world units as the vertices. OBJC
+     * bone coords are raw OME; model_t vertices are OME<<1, so lift the bone
+     * to model units (<<1) then apply the same vshift. */
+    #define MRW_SCALE(v)  (vshift >= 0 ? ((v) >> vshift) : ((v) << (-vshift)))
+    i32 sax = MRW_SCALE(atom_tx << 1);
+    i32 say = MRW_SCALE(atom_ty << 1);
+    i32 saz = MRW_SCALE(atom_tz << 1);
+    if (flip_y) say = -say;
+
+    static mrw_vert_t P[MRW_MAX_VERTS];
+    for (i32 i = 0; i < m->vertex_count; i++) {
+        /* model_t vertices are OME_raw<<1 (Q16.16-ish). vshift brings them to
+         * world units (vshift=1 => OME units == world units 1:1). */
+        i32 ox, oy, oz;
+        if (vshift >= 0) {
+            ox = m->vertices[i].x >> vshift;
+            oy = m->vertices[i].y >> vshift;
+            oz = m->vertices[i].z >> vshift;
+        } else {
+            ox = m->vertices[i].x << (-vshift);
+            oy = m->vertices[i].y << (-vshift);
+            oz = m->vertices[i].z << (-vshift);
+        }
+        if (flip_y) oy = -oy;
+
+        /* Object facing rotation (yaw about world Y) + per-atom bone offset. */
+        i32 rx = (i32)(( (i64)ox * cyf + (i64)oz * syf) >> 14) + sax;
+        i32 rz = (i32)((-(i64)ox * syf + (i64)oz * cyf) >> 14) + saz;
+        i32 ry = oy + say;
+
+        /* Object -> world. */
+        i32 wx = obj_wx + rx, wy = obj_wy + ry, wz = obj_wz + rz;
+
+        /* World -> camera (Q14), R(row,col)=cam_r[row+col*3]; T added直接. */
+        i64 cx = (( (i64)wx*cam_r[0] + (i64)wy*cam_r[3] + (i64)wz*cam_r[6] ) >> 14) + cam_t[0];
+        i64 cy = (( (i64)wx*cam_r[1] + (i64)wy*cam_r[4] + (i64)wz*cam_r[7] ) >> 14) + cam_t[1];
+        i64 cz = (( (i64)wx*cam_r[2] + (i64)wy*cam_r[5] + (i64)wz*cam_r[8] ) >> 14) + cam_t[2];
+
+        i32 vis = (cz < -32768) ? 1 : 0;
+        i64 czc = (cz < -32768) ? cz : -32768;
+        i32 d = (i32)((-czc) >> 9); if (d < 1) d = 1;
+        double s = ((double)gscale / 16384.0) / (double)d;
+        P[i].sx = 320 + (i32)(cx * s + (cx < 0 ? -0.5 : 0.5));
+        P[i].sy = 240 - (i32)(cy * s + (cy < 0 ? -0.5 : 0.5));
+        P[i].cz = cz;
+        P[i].vis = vis;
+    }
+
+    /* Painter's order: face key = sum of vertex camera depths (cz, negative =
+     * far). Draw most-negative first (back-to-front). Simple insertion sort. */
+    static i32 order[MRW_MAX_FACES];
+    static i64 key[MRW_MAX_FACES];
+    i32 nf = 0;
+    for (i32 f = 0; f < m->face_count; f++) {
+        const model_face_t *face = &m->faces[f];
+        key[nf]   = P[face->i0].cz + P[face->i1].cz + P[face->i2].cz;
+        order[nf] = f;
+        i32 j = nf - 1;
+        while (j >= 0 && key[j] > key[j+1]) {           /* ascending: far first */
+            i64 tk = key[j]; key[j] = key[j+1]; key[j+1] = tk;
+            i32 to = order[j]; order[j] = order[j+1]; order[j+1] = to;
+            j--;
+        }
+        nf++;
+    }
+
+    if (getenv("DKE_MESHDBG")) {
+        static i32 shown = 0;
+        if (shown < 8) {
+            shown++;
+            i32 minx = 99999, maxx = -99999, miny = 99999, maxy = -99999, nv = 0;
+            for (i32 i = 0; i < m->vertex_count; i++) {
+                if (P[i].sx < minx) minx = P[i].sx;
+                if (P[i].sx > maxx) maxx = P[i].sx;
+                if (P[i].sy < miny) miny = P[i].sy;
+                if (P[i].sy > maxy) maxy = P[i].sy;
+                if (P[i].vis) nv++;
+            }
+            print("mesh: verts=%d vis=%d faces=%d bbox x[%d..%d] y[%d..%d] (%dx%d px)\n",
+                  m->vertex_count, nv, m->face_count, minx, maxx, miny, maxy,
+                  maxx - minx, maxy - miny);
+        }
+    }
+
+    for (i32 oi = 0; oi < nf; oi++) {
+        const model_face_t *face = &m->faces[order[oi]];
+        const mrw_vert_t *a = &P[face->i0];
+        const mrw_vert_t *b = &P[face->i1];
+        const mrw_vert_t *c = &P[face->i2];
+        if (!a->vis && !b->vis && !c->vis) continue;    /* all behind near plane */
+
+        /* Backface cull via screen winding (Y flipped -> front faces have
+         * negative signed area, matching model_render). */
+        i64 cross_z = (i64)(b->sx - a->sx) * (i64)(c->sy - a->sy)
+                    - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
+        if (cross_z >= 0) continue;
+
+        fill_triangle(fb, fb_w, fb_h,
+                      a->sx, a->sy, 128,
+                      b->sx, b->sy, 128,
+                      c->sx, c->sy, 128,
+                      face->colour, l_bmap, z_bmap);
+    }
+}
+
+/* -------------------------------------------------------------------------
  * model_from_ome_atom — build a render-ready model_t from ome_atom_t.
  * See model.h for contract.
  * ------------------------------------------------------------------------- */
