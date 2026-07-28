@@ -88,6 +88,34 @@ static void ent_set_u32(void *ent, i32 off, u32 val) {
  * player_entity_init — allocate + zero-init + default-field-set the player
  * entity struct.  Mirrors sub_46493B for the player (ECX < 0x62 path).
  * ---------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------
+ * player_get_pos / player_get_facing — live player transform accessors.
+ *
+ * In dkev the live transform is the embedded "gravit" block at entity+0x184
+ * (engine reaches it via [entity+0x50] after a re-point). Position X/Y/Z sit
+ * at +0x3C/+0x40/+0x44 of that block = entity+0x1C0/+0x1C4/+0x1C8; facing
+ * (16-bit BAM) at +0x5C = entity+0x1E0. We read the embedded offsets
+ * directly rather than through the [0x50] pointer, since storing a 64-bit
+ * pointer in the 32-bit blob field would truncate on this build.
+ *
+ * NOTE: nothing writes velocity into the transform yet (movement not
+ * ported), so position stays (0,0,0) — the accessors are correct, the data
+ * is just static until movement integration lands.
+ * ---------------------------------------------------------------------- */
+i32 player_get_pos(i32 *x, i32 *y, i32 *z) {
+    if (!g_player_entity) return 0;
+    const u8 *e = (const u8 *)g_player_entity;
+    if (x) *x = *(const i32 *)(e + 0x1C0);
+    if (y) *y = *(const i32 *)(e + 0x1C4);
+    if (z) *z = *(const i32 *)(e + 0x1C8);
+    return 1;
+}
+
+u16 player_get_facing(void) {
+    if (!g_player_entity) return 0;
+    return (u16)(*(const i32 *)((const u8 *)g_player_entity + 0x1E0) & 0xFFFF);
+}
+
 void player_entity_init(void) {
     print("player: player_entity_init start\n");
 

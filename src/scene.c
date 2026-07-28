@@ -24,8 +24,8 @@
  * Globals identified in asm:
  *   world_state          — set to level_id
  *   world_controller     — tested (non-null branch skips dword_543C60 memset)
- *   player_entity+0xD04  — zeroed
- *   player_entity+0xD08  — set from player_entity+0xD04
+ *   g_player_entity+0xD04  — zeroed
+ *   g_player_entity+0xD08  — set from g_player_entity+0xD04
  *   dword_4EDC30/34/38   — zeroed
  *   byte_4B7280          — set to 1
  *   byte_511760          — set to 0
@@ -49,6 +49,7 @@
 
 #include "libsys/common.h"
 #include "libsys/file_system.h"
+#include "libsys/movie.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/font.h"
 #include "libsys/graphics/shading.h"
@@ -59,7 +60,7 @@
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
-#include "lieu.h"
+#include "lieu_cb.h"
 #include "player.h"
 
 /* -------------------------------------------------------------------------
@@ -111,16 +112,10 @@ static i32 g_dword_505C54 = 0;
  * ------------------------------------------------------------------------- */
 
 /*
- * player_entity — opaque pointer; we only write to offsets 0xD04 and 0xD08
- * in this skeleton pass, so no full struct definition is needed yet.
- *
- * Currently NULL (g_player_entity in game_init.c is static and not yet exported).
- * Writes to player_entity offsets are guarded by NULL-check so they are safe
- * no-ops until the entity system lands in Slice D.
- *
- * TODO: export g_player_entity from game_init.[ch] and link here.
+ * The player entity is the one allocated by player_entity_init (game_init
+ * phase 33) and exported as g_player_entity via player.h. Scene phase-7/22
+ * writes and the LIEU zone-detection (lieu_cb.c player_get_pos) both use it.
  */
-void *player_entity = NULL;
 
 /* state singleton — defined in main.c; extern declared in state.h (already included) */
 
@@ -205,8 +200,6 @@ static i32      g_scene_ome_atom_count = 0;
 static ome_objc_t g_scene_objc;
 static i32        g_scene_objc_loaded = 0;
 
-/* LIEU script parsed from lieu/LIEU%02d.script; freed in scene_release. */
-static lieu_script_t g_scene_lieu;
 
 /* -------------------------------------------------------------------------
  * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
@@ -498,8 +491,8 @@ static void stub_sub_426D2C(void) {
 }
 
 /* TODO: process_color_palette — per-entity palette processing.
- * Called for player_entity, companion_entity, secondary_companion_entity.
- * Mirrors asm: mov eax, player_entity / mov ecx, [eax+50h] / call process_color_palette */
+ * Called for g_player_entity, companion_entity, secondary_companion_entity.
+ * Mirrors asm: mov eax, g_player_entity / mov ecx, [eax+50h] / call process_color_palette */
 static void stub_process_color_palette(void *entity) {
     (void)entity;
     /* TODO: process_color_palette */
@@ -574,7 +567,7 @@ static void stub_render_entity_with_ui(void *entity, i32 mode) {
 }
 
 /* TODO: apply_model_transform — apply transform matrix to entity.
- * Mirrors asm: mov edx, [eax+8Ch] / mov ecx, player_entity / call apply_model_transform */
+ * Mirrors asm: mov edx, [eax+8Ch] / mov ecx, g_player_entity / call apply_model_transform */
 static void stub_apply_model_transform(void *entity, void *transform) {
     (void)entity; (void)transform;
     /* TODO: apply_model_transform */
@@ -868,7 +861,7 @@ i32 scene_load_level(i32 level_id) {
     }
 
     /* -----------------------------------------------------------------
-     * Phase 5 — zero byte_511760; zero player_entity offsets
+     * Phase 5 — zero byte_511760; zero g_player_entity offsets
      * Asm: mov byte_511760, 0
      *      cmp current_entity, 0 / jz skip
      *        mov [eax+0A0h], 0   ; current_entity->+0xA0 = 0
@@ -892,13 +885,13 @@ i32 scene_load_level(i32 level_id) {
     g_dword_4EDC38 = 0;
 
     /* -----------------------------------------------------------------
-     * Phase 7 — zero player_entity+0xD04 and copy to +0xD08
+     * Phase 7 — zero g_player_entity+0xD04 and copy to +0xD08
      * Asm: mov [eax+0D04h], 0
      *      mov eax, [eax+0D04h] / mov [ecx+0D08h], eax
      * ----------------------------------------------------------------- */
-    print("scene: phase 7 — zero player_entity+0xD04 / +0xD08\n");
-    if (player_entity) {
-        u8 *pe = (u8 *)player_entity;
+    print("scene: phase 7 — zero g_player_entity+0xD04 / +0xD08\n");
+    if (g_player_entity) {
+        u8 *pe = (u8 *)g_player_entity;
         *(i32 *)(pe + 0xD04) = 0;
         *(i32 *)(pe + 0xD08) = *(i32 *)(pe + 0xD04); /* = 0 */
     }
@@ -973,8 +966,8 @@ i32 scene_load_level(i32 level_id) {
      *      mov dword_4DD9B4, 1
      * ----------------------------------------------------------------- */
     print("scene: phase 14 — player entity combat defaults\n");
-    if (player_entity) {
-        u8 *pe = (u8 *)player_entity;
+    if (g_player_entity) {
+        u8 *pe = (u8 *)g_player_entity;
         *(i32 *)(pe + 0xC64) = 0x10000;
         *(i32 *)(pe + 0xC68) = 0x4000;
     }
@@ -985,7 +978,7 @@ i32 scene_load_level(i32 level_id) {
      * Asm: mov ecx, [eax+50h] / call process_color_palette (×3)
      * ----------------------------------------------------------------- */
     print("scene: phase 15 — process_color_palette (player+companions) — STUB\n");
-    stub_process_color_palette(player_entity);   /* TODO: process_color_palette */
+    stub_process_color_palette(g_player_entity);   /* TODO: process_color_palette */
 
     /* -----------------------------------------------------------------
      * Phase 16 — player entity position / viewport defaults
@@ -998,8 +991,8 @@ i32 scene_load_level(i32 level_id) {
      *      mov [eax+64h], 80h
      * ----------------------------------------------------------------- */
     print("scene: phase 16 — player entity position defaults\n");
-    if (player_entity) {
-        u8 *pe = (u8 *)player_entity;
+    if (g_player_entity) {
+        u8 *pe = (u8 *)g_player_entity;
         *(i32 *)(pe + 0x030) = (i32)0xFFFF4000;
         *(i32 *)(pe + 0x038) = (i32)0xFFFFC000;
         *(i32 *)(pe + 0xCEC) = 0;
@@ -1063,7 +1056,7 @@ i32 scene_load_level(i32 level_id) {
      * Phase 22 — apply_model_transform for player + companions
      * ----------------------------------------------------------------- */
     print("scene: phase 22 — apply_model_transform — STUB\n");
-    stub_apply_model_transform(NULL, NULL); /* TODO: player_entity */
+    stub_apply_model_transform(NULL, NULL); /* TODO: g_player_entity */
 
     /* -----------------------------------------------------------------
      * Phase 23 — system_get_gametime → last_event_check_time
@@ -1242,15 +1235,9 @@ i32 scene_load_level(i32 level_id) {
     /* Compute character screen anchor from INF projection params. */
     scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
 
-    /* LIEU script replay: parse per-level scripting recorded from LIEUxx.DLL */
-    lieu_free_script(&g_scene_lieu);
-    if (lieu_load_script(NULL, level_id, &g_scene_lieu)) {
-        print("scene: loaded LIEU%02d.script — %d calls\n",
-              level_id, g_scene_lieu.count);
-        lieu_replay(NULL, &g_scene_lieu);
-    } else {
-        print("scene: no LIEU%02d.script found (skipping replay)\n", level_id);
-    }
+    /* LIEU scripting: native hand-port (src/lieu01.c for level 1). Runs
+     * INIT now; per-frame tick driven from scene_render; deinit in release. */
+    lieu_enter(level_id);
 
     /* Load P00.CAN for player character animation. */
     {
@@ -1413,6 +1400,24 @@ static void scene_update_bone_positions(const can_frame_t *kf) {
 i32 scene_render(system_t *sys) {
     if (!state) return 0;
 
+    /* Per-frame LIEU scripting (native hand-port; level 1 only for now),
+     * mirroring the engine's per-frame driver (dkev sub_44968B):
+     *   op -1 tick every frame, then op 3 for the current zone (if any). */
+    lieu_tick();
+    {
+        i32 zone = lieu_detect_zone();
+        if (zone >= 0) lieu_zone_trigger(zone);
+    }
+    /* Play any cutscene the LIEU script queued (intro FMV, etc). Safe here
+     * in the render phase; ls_play_movie runs its own blocking decode loop. */
+    {
+        const c8 *mv = lieu_poll_movie();
+        if (mv) {
+            ls_play_movie(mv);
+            lieu_enter_room();   /* intro done -> place room characters */
+        }
+    }
+
     /* --- Input: camera cycling + Esc-to-menu ------------------------- */
     /* Left arrow (keyCode 123 → actions[37]) — previous camera */
     if (sys->actions[37] == 1) {
@@ -1531,6 +1536,18 @@ i32 scene_render(system_t *sys) {
         if (g_cube_world_z > z_far - 50) g_cube_world_z = z_far - 50;
     }
 
+    /* Feed the WASD placeholder position into the player transform so the
+     * LIEU zone detector (lieu_detect_zone, next frame) tracks the player.
+     * X -> +0x1C0, Z -> +0x1C8 of the embedded transform block.
+     * NOTE: dke's cube world units and the LIEU zone units are currently
+     * different coordinate spaces, so this is correct plumbing but zones
+     * won't actually fire until that scale is calibrated (or the real
+     * movement/camera-projection system lands). */
+    if (g_player_entity) {
+        *(i32 *)((u8 *)g_player_entity + 0x1C0) = g_cube_world_x;
+        *(i32 *)((u8 *)g_player_entity + 0x1C8) = g_cube_world_z;
+    }
+
     /* Screen-space anchor from world X. Rough parallax: shift screen
      * centre by (world_x * focal_len) / world_z so the cube slides
      * horizontally with a hint of perspective foreshortening. */
@@ -1633,5 +1650,5 @@ void scene_release(void) {
     g_scene_bg_level   = -1;
     g_scene_objc_loaded = 0;
     memset(&g_scene_objc, 0, sizeof(g_scene_objc));
-    lieu_free_script(&g_scene_lieu);
+    lieu_exit();
 }

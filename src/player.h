@@ -18,6 +18,12 @@
  * ---------------------------------------------------------------------- */
 extern void *g_player_entity;   /* player_entity (asm sym) */
 
+/* Live player transform accessors (read the embedded transform block).
+ * player_get_pos returns 1 on success, 0 if no player entity. Position is
+ * i32 world units; facing is 16-bit BAM (0..0xFFFF = full circle). */
+i32 player_get_pos(i32 *x, i32 *y, i32 *z);
+u16 player_get_facing(void);
+
 /* -------------------------------------------------------------------------
  * player_input_t — per-frame input snapshot polled from system_t.actions[].
  * ---------------------------------------------------------------------- */
