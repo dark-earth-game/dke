@@ -261,11 +261,14 @@ i32 ome_decode_atomf(const u8 *raw, i32 raw_len, ome_atom_t *out) {
     /* Skip 16-byte body header. */
     i32 pos = 16;
 
-    /* Count vertex records: 32 bytes each, field[7] == 0 or 0x00200000. */
+    /* Count vertex records: 32 bytes each. field[7] is a bit set of flags
+     * combining 0x00200000 (next-ptr present) and 0x40000000 (seen on some
+     * atoms, e.g. P00 slot 18 = the head); a record is still a vertex as long
+     * as no OTHER bits are set. The face section (ftype!=0x64...) breaks it. */
     i32 n_verts = 0;
     while (pos + 32 <= raw_len) {
         u32 flag = (u32)read_i32_le(raw + pos + 28);
-        if (flag != 0 && flag != 0x00200000u) break;
+        if (flag & ~0x40200000u) break;
         n_verts++;
         pos += 32;
     }

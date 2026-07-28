@@ -329,18 +329,27 @@ static i32 persona_mesh_load(i32 num) {
             matr_ptr = &matr;
         break;
     }
+    /* Index atoms by ATOMF ordinal so atom slot i == OBJC bone slot i. A
+     * failed/empty ATOMF leaves a NULL gap rather than shifting later atoms
+     * onto the wrong bone (which would break the skeletal pose). */
+    for (i32 i = 0; i < SCENE_OME_MAX_ATOMS; i++) pm->atoms[i] = NULL;
+    i32 aidx = 0;
     for (i32 ci = 0; ci < ome.chunk_count; ci++) {
         if (ome.chunks[ci].kind != OME_CHUNK_ATOMF) continue;
-        if (pm->count >= SCENE_OME_MAX_ATOMS) break;
+        if (aidx >= SCENE_OME_MAX_ATOMS) break;
         ome_atom_t atom = {0};
+        model_t *m = NULL;
         if (ome_decode_atomf(ome.raw + ome.chunks[ci].offset + 0x60,
                              ome.chunks[ci].length - 0x60, &atom) &&
             atom.vert_count > 0 && atom.face_count > 0) {
-            model_t *m = model_from_ome_atom(&atom, matr_ptr);
-            if (m) pm->atoms[pm->count++] = m;
+            m = model_from_ome_atom(&atom, matr_ptr);
+        } else {
+            print("scene: P%02d ATOMF slot %d decode empty/failed\n", num, aidx);
         }
+        pm->atoms[aidx++] = m;   /* keep the slot even if NULL */
         ome_atom_free(&atom);
     }
+    pm->count = aidx;
     /* OBJC skeleton (parse before freeing the OME raw buffer). */
     pm->objc_loaded = 0;
     for (i32 ci = 0; ci < ome.chunk_count; ci++) {
@@ -1940,6 +1949,7 @@ i32 scene_render(system_t *sys) {
             lcz = (float)((i64)lwx*g_proj_R[2] + (i64)lwy*g_proj_R[5] + (i64)lwz*g_proj_R[8]);
         }
         for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
+            if (getenv("DKE_ONLYP") && pi != atoi(getenv("DKE_ONLYP"))) continue;
             i32 wxt = 0, wzt = 0, pview = 0;
             const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
             if (!nm) continue;
@@ -2002,6 +2012,7 @@ i32 scene_render(system_t *sys) {
             i32 objy   = pground + myoff;
             (void)psx; (void)psy; (void)prx; (void)pry;
             for (i32 ai = 0; ai < pm->count; ai++) {
+                if (!pm->atoms[ai]) continue;
                 i32 have = pm->objc_loaded && ai < pm->objc.n_atomslots;
                 i32 tx = have ? pm->objc.world_tx[ai] : 0;
                 i32 ty = have ? pm->objc.world_ty[ai] : 0;
@@ -2041,6 +2052,7 @@ i32 scene_render(system_t *sys) {
                     const can_frame_t *kf = pm->can_loaded ? &pm->can.frames[pm->frame] : NULL;
                     if (pm->objc_loaded) objc_update_bone_positions(&pm->objc, kf);
                     for (i32 ai = 0; ai < pm->count; ai++) {
+                        if (!pm->atoms[ai]) continue;
                         i32 have = pm->objc_loaded && ai < pm->objc.n_atomslots;
                         i32 tx = have ? pm->objc.world_tx[ai] : 0;
                         i32 ty = have ? pm->objc.world_ty[ai] : 0;
