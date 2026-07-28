@@ -166,6 +166,10 @@ const c8 *lieu_poll_movie(void);
  * Clears on read; writes the destination entry-point id to *entry. */
 i32 lieu_poll_level_change(i32 *entry);
 
+/* ChangeCamera (slot 9): pending camera the script requested (or -1). Clears
+ * on read; *mode gets the mode (2 = forced/locked, else auto-follow). */
+i32 lieu_poll_camera_change(i32 *mode);
+
 /* One-shot intro->room transition: re-runs INIT at submode 0 so trig00
  * places the room's arrival characters. Call after the intro movie plays. */
 void lieu_enter_room(void);

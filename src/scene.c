@@ -159,6 +159,7 @@ static i32 g_scene_bg_level = -1;
 /* Camera index within the level (0..6 for L01). Runtime-cycled via
  * scene_render input handling (Left/Right arrow keys). */
 static i32 g_scene_camera = 0;
+static i32 g_camera_forced = 0;   /* script locked the camera (ChangeCamera mode 2) */
 
 static i32 g_scene_cam_sx = 320;  /* projected character screen X */
 static i32 g_scene_cam_sy = 240;  /* projected character screen Y */
@@ -830,8 +831,10 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     i32 n_cam = 0;
     if (fread(&n_cam, 4, 1, f) != 1 || cam_idx >= n_cam) { ls_close(f); return; }
 
+    /* Start of the camera-struct array (independent of cam_idx). */
+    long cams_base = ftell(f);
     /* Seek to cam_idx zone struct (+0x1D8 for n_verts, +0x1DC for vertices) */
-    long cam_struct_off = ftell(f) + (long)cam_idx * 0x208;
+    long cam_struct_off = cams_base + (long)cam_idx * 0x208;
     fseek(f, cam_struct_off + 0x1D8, SEEK_SET);
     i32 n_verts = 0;
     if (fread(&n_verts, 4, 1, f) != 1 || n_verts <= 0 || n_verts > 64) {
@@ -853,9 +856,10 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     i32 zone_x = (i32)(sum_x / valid);
     i32 zone_z = (i32)(sum_z / valid);
 
-    /* Skip to extra section (projection matrices).
-     * Continue reading: remaining cam structs + inexplorable + stairs + n_extra */
-    fseek(f, cam_struct_off + (long)n_cam * 0x208, SEEK_SET);
+    /* Skip to extra section (projection matrices). The extra section begins
+     * after ALL n_cam camera structs — measured from cams_base, NOT from the
+     * per-camera cam_struct_off (which already includes cam_idx*0x208). */
+    fseek(f, cams_base + (long)n_cam * 0x208, SEEK_SET);
     /* n_inex */
     i32 n_inex = 0;
     if (fread(&n_inex, 4, 1, f) != 1) { ls_close(f); return; }
@@ -1692,6 +1696,22 @@ i32 scene_render(system_t *sys) {
         }
     }
 
+    /* Script-driven camera (ChangeCamera, slot 9): the LIEU script sets the
+     * in-game camera (e.g. the opening bedroom view cb_458(6,1)). Apply it:
+     * reload backdrop + projection + pitch. Mode 2 locks out auto-switching. */
+    {
+        i32 cmode = 1;
+        i32 wantcam = lieu_poll_camera_change(&cmode);
+        if (wantcam >= 0 && wantcam != g_scene_camera) {
+            print("scene: ChangeCamera -> camera %d (mode %d)\n", wantcam, cmode);
+            if (scene_load_camera_backdrop(g_scene_bg_level, wantcam)) {
+                scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
+                model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
+            }
+        }
+        if (wantcam >= 0) g_camera_forced = (cmode == 2);
+    }
+
     /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script.
      * Each line HOLDS until the player advances (mouse click edge). Polled
      * here before the movement block so we get the want_action edge first. */
@@ -1863,8 +1883,9 @@ i32 scene_render(system_t *sys) {
     }
 
     /* Auto camera switch: pick the camera whose region contains the player
-     * (dkev auto mode). Reload backdrop + projection for the new camera. */
-    if (g_player_seeded && g_cam_region_count > 0 && !getenv("DKE_NOAUTOCAM")) {
+     * (dkev auto mode). Skipped while the script locked the camera (mode 2). */
+    if (g_player_seeded && g_cam_region_count > 0 && !g_camera_forced &&
+        !getenv("DKE_NOAUTOCAM")) {
         i32 wantcam = scene_camera_for_position(g_player_wx, g_player_wz, g_scene_camera);
         if (wantcam >= 0 && wantcam != g_scene_camera) {
             print("scene: auto camera %d -> %d (player wX=%d wZ=%d)\n",

@@ -178,7 +178,24 @@ static void cb_named_ex_988(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
 static void cb_actor_934(i32 zone, i32 facing, i32 a2, i32 a3, i32 a4) {
     CBLOG("actor_934"); (void)zone; (void)facing; (void)a2; (void)a3; (void)a4;
 }
-static void cb_cb_458(i32 a, i32 b) { CBLOG("cb_458"); (void)a; (void)b; }
+/* ChangeCamera (slot 9, dkev sub_4454F2): a = camera index, b = mode
+ * (1 = auto-follow, 2 = forced/locked). The LIEU script drives the in-game
+ * camera through this (e.g. cb_458(6,1) sets the opening bedroom view).
+ * Queue it; the scene loop applies it via lieu_poll_camera_change. */
+static i32 g_next_cam = -1;
+static i32 g_next_cam_mode = 1;
+static void cb_cb_458(i32 a, i32 b) {
+    print("lieu_cb: ChangeCamera camera=%d mode=%d\n", a, b);
+    if (a >= 0) { g_next_cam = a; g_next_cam_mode = b; }
+}
+
+/* Pending camera the script requested (or -1). Clears on read; *mode gets the
+ * ChangeCamera mode (2 = forced -> disable auto-switch until next change). */
+i32 lieu_poll_camera_change(i32 *mode) {
+    i32 c = g_next_cam;
+    if (c >= 0) { if (mode) *mode = g_next_cam_mode; g_next_cam = -1; }
+    return c;
+}
 /* CHANGEPIECE (opcode 10, dkev sub_4455EE): a = target level id, b = entry
  * point id. Queues a room change unless the target is the current level or
  * negative (which the engine treats as a same-room reposition). The main
