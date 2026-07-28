@@ -45,6 +45,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 
 #include "libsys/common.h"
@@ -141,6 +142,8 @@ static i32 g_dword_505C54 = 0;
  * Any of L/Z may be NULL if the CIF is absent; F is required to render.
  * All freed in scene_release. */
 static bmap_t *g_scene_bg_bmap = NULL;   /* F */
+static u8      g_scene_grd[256 * 64];    /* character shade ramp (FL..L0.GRD) */
+static i32     g_scene_grd_loaded = 0;
 static bmap_t *g_scene_l_bmap  = NULL;   /* L */
 static bmap_t *g_scene_z_bmap  = NULL;   /* Z */
 
@@ -573,6 +576,30 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     g_scene_z_bmap   = zb;
     g_scene_bg_level = level_id;
     g_scene_camera   = camera;
+
+    /* Character shade ramp: DATAS>L<lvl>>PAL>FL<lvl>C<cam>L0.GRD (256*64 =
+     * 16384 bytes). Maps (base palette index, light level) -> shaded palette
+     * index for the character rasterizer; RGB from the backdrop palette. */
+    g_scene_grd_loaded = 0;
+    {
+        c8 gp[80], host[512];
+        snprintf(gp, sizeof(gp), "DATAS>L%02d>PAL>FL%02dC%dL0.GRD",
+                 level_id, level_id, camera);
+        const c8 *base = (state && state->game_path) ? state->game_path : ".";
+        if (ls_resolve_path(base, gp, host, (i32)sizeof(host))) {
+            FILE *gf = fopen(host, "rb");
+            if (gf) {
+                size_t n = fread(g_scene_grd, 1, sizeof(g_scene_grd), gf);
+                fclose(gf);
+                if (n == sizeof(g_scene_grd)) {
+                    g_scene_grd_loaded = 1;
+                    print("scene: GRD shade ramp loaded (%s)\n", gp);
+                } else {
+                    print("scene: GRD short read %zu for %s\n", n, gp);
+                }
+            }
+        }
+    }
 
     /* Reset cube world position on camera swap so it re-centres for the
      * new room's zfar. Removed once real character world coords come
@@ -1773,6 +1800,7 @@ i32 scene_render(system_t *sys) {
          * loaded character mesh, at a screen position near the INF anchor.
          * Placeholder: all personas share the player mesh until per-persona
          * models load; positions are clustered around the character stand. */
+        clock_t s_pers = getenv("DKE_PERFDBG") ? clock() : 0;
         for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
             i32 wxt = 0, wzt = 0, pview = 0;
             const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
@@ -1848,6 +1876,11 @@ i32 scene_render(system_t *sys) {
                                    mshift, mflip, tx, ty, tz,
                                    g_scene_l_bmap, NULL);
             }
+        }
+        if (getenv("DKE_PERFDBG")) {
+            static i32 pc = 0; static double acc = 0;
+            acc += (double)(clock() - s_pers) * 1000.0 / CLOCKS_PER_SEC;
+            if (++pc >= 30) { print("perf: persona render avg %.2f ms/frame\n", acc/pc); pc=0; acc=0; }
         }
     } else {
         model_render(model_test_cube(),

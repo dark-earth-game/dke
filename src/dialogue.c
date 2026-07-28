@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "libsys/common.h"
 #include "libsys/file_system.h"
@@ -135,10 +136,16 @@ void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms, i32 advance
     wav_t w = {0};
     u32 dur = 2500;
     snprintf(wp, sizeof(wp), "%s/dialog/L%02d/%s.WAV", root, level, code);
+    clock_t t0 = getenv("DKE_PERFDBG") ? clock() : 0;
     if (wav_load(&w, wp)) {
+        clock_t t1 = getenv("DKE_PERFDBG") ? clock() : 0;
         sfx_play(&w);
         if (w.sample_rate) dur = (u32)((u64)w.num_samples * 1000 / w.sample_rate);
         wav_free(&w);
+        if (getenv("DKE_PERFDBG"))
+            print("perf: dlg wav_load %.1f ms, sfx_play %.1f ms\n",
+                  (double)(t1 - t0) * 1000.0 / CLOCKS_PER_SEC,
+                  (double)(clock() - t1) * 1000.0 / CLOCKS_PER_SEC);
     }
     (void)dur;
     g_min_ms = now_ms + 500;   /* debounce: can't skip for first 500 ms */

@@ -15,41 +15,34 @@
  * CoreAudio AudioQueue streaming backend
  * =========================================================================
  *
- * 4 queue buffers of AQ_BUF_SIZE bytes each.  A free-list protected by a
- * pthread_mutex + condvar hands buffers to ls_platform_audio_push.
- * The AudioQueue callback (aq_callback) returns finished buffers to the
- * free-list.  If no buffer is free within a short spin, the push drops
- * the block and returns 0 (caller retries on the next frame).
+ * Each push allocates ONE AudioQueue buffer sized to the whole clip, enqueues
+ * it, and returns immediately (non-blocking). aq_callback frees the buffer
+ * when CoreAudio finishes playing it. aq_inflight bounds outstanding buffers.
+ * This avoids the old fixed-pool design that blocked the render thread for a
+ * clip's entire duration (dialogue voice froze the frame).
  * ========================================================================= */
 
-#define AQ_NUM_BUFS   8
-#define AQ_BUF_SIZE   16384   /* bytes per buffer (~186 ms @ 22050 Hz stereo i16) —
-                                  large enough to hold one CRH movie frame's PCM
-                                  (~5880 bytes) plus headroom */
-
-static AudioQueueRef        aq_queue   = NULL;
-static AudioQueueBufferRef  aq_bufs[AQ_NUM_BUFS];
-
-/* Free-list */
-static AudioQueueBufferRef  aq_free[AQ_NUM_BUFS];
-static i32                  aq_free_count = 0;
+static AudioQueueRef        aq_queue  = NULL;
 static pthread_mutex_t      aq_mutex  = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t       aq_cond   = PTHREAD_COND_INITIALIZER;
 
 static b8 aq_open = false;
 
-/* AudioQueue callback — called from CoreAudio's internal thread */
+/* Count of buffers currently enqueued (allocated on demand, freed here).
+ * Bounds memory if a caller pushes faster than playback drains. */
+static i32                  aq_inflight = 0;
+#define AQ_MAX_INFLIGHT     64
+
+/* AudioQueue callback — called from CoreAudio's internal thread.
+ * Buffers are allocated per-push (whole clip in one buffer) and FREED here,
+ * so a push never blocks waiting on a fixed pool. */
 static void aq_callback(void *user_data,
                         AudioQueueRef queue,
                         AudioQueueBufferRef buf)
 {
     (void)user_data;
-    (void)queue;
+    AudioQueueFreeBuffer(queue, buf);
     pthread_mutex_lock(&aq_mutex);
-    if (aq_free_count < AQ_NUM_BUFS) {
-        aq_free[aq_free_count++] = buf;
-    }
-    pthread_cond_signal(&aq_cond);
+    if (aq_inflight > 0) aq_inflight--;
     pthread_mutex_unlock(&aq_mutex);
 }
 
@@ -78,23 +71,10 @@ b8 ls_platform_audio_open(i32 sample_rate, i32 channels, i32 bit_depth)
         return false;
     }
 
-    /* Allocate buffers and pre-fill with silence */
+    /* Buffers are allocated on demand per push (see ls_platform_audio_push);
+     * no fixed pool / silence prefill. */
     pthread_mutex_lock(&aq_mutex);
-    aq_free_count = 0;
-    for (i32 i = 0; i < AQ_NUM_BUFS; i++) {
-        err = AudioQueueAllocateBuffer(aq_queue, AQ_BUF_SIZE, &aq_bufs[i]);
-        if (err != noErr) {
-            printf("ls_platform_audio_open: AllocateBuffer[%d] failed (%d)\n", i, (int)err);
-            pthread_mutex_unlock(&aq_mutex);
-            AudioQueueDispose(aq_queue, true);
-            aq_queue = NULL;
-            return false;
-        }
-        /* Pre-fill with silence to avoid initial underrun */
-        memset(aq_bufs[i]->mAudioData, 0, AQ_BUF_SIZE);
-        aq_bufs[i]->mAudioDataByteSize = AQ_BUF_SIZE;
-        AudioQueueEnqueueBuffer(aq_queue, aq_bufs[i], 0, NULL);
-    }
+    aq_inflight = 0;
     pthread_mutex_unlock(&aq_mutex);
 
     err = AudioQueueStart(aq_queue, NULL);
@@ -115,50 +95,34 @@ i32 ls_platform_audio_push(const i16 *pcm, i32 bytes)
 {
     if (!aq_open || !aq_queue || !pcm || bytes <= 0) return 0;
 
-    const u8 *src = (const u8 *)pcm;
-    i32 remaining = bytes;
-    i32 total_queued = 0;
-
-    while (remaining > 0) {
-        pthread_mutex_lock(&aq_mutex);
-
-        /* Wait up to ~250 ms for a free buffer — long enough for CoreAudio
-         * to drain a queued buffer at any typical sample rate. */
-        if (aq_free_count == 0) {
-            struct timespec ts;
-            clock_gettime(CLOCK_REALTIME, &ts);
-            ts.tv_nsec += 250 * 1000000L;
-            while (ts.tv_nsec >= 1000000000L) { ts.tv_sec++; ts.tv_nsec -= 1000000000L; }
-            pthread_cond_timedwait(&aq_cond, &aq_mutex, &ts);
-        }
-
-        if (aq_free_count == 0) {
-            /* Queue still full — drop the remainder rather than block forever. */
-            pthread_mutex_unlock(&aq_mutex);
-            return total_queued;
-        }
-
-        AudioQueueBufferRef buf = aq_free[--aq_free_count];
+    /* Non-blocking: allocate ONE AudioQueue buffer sized to the whole clip,
+     * copy, enqueue, return immediately. CoreAudio plays it on its own thread
+     * and aq_callback frees it. The render thread never waits on playback,
+     * so dialogue voice no longer stalls the frame. */
+    pthread_mutex_lock(&aq_mutex);
+    if (aq_inflight >= AQ_MAX_INFLIGHT) {   /* backpressure — drop, don't block */
         pthread_mutex_unlock(&aq_mutex);
-
-        i32 chunk = remaining < AQ_BUF_SIZE ? remaining : AQ_BUF_SIZE;
-        memcpy(buf->mAudioData, src, (size_t)chunk);
-        buf->mAudioDataByteSize = (UInt32)chunk;
-
-        OSStatus err = AudioQueueEnqueueBuffer(aq_queue, buf, 0, NULL);
-        if (err != noErr) {
-            pthread_mutex_lock(&aq_mutex);
-            aq_free[aq_free_count++] = buf;
-            pthread_mutex_unlock(&aq_mutex);
-            return total_queued;
-        }
-
-        src           += chunk;
-        remaining     -= chunk;
-        total_queued  += chunk;
+        return 0;
     }
+    aq_inflight++;
+    pthread_mutex_unlock(&aq_mutex);
 
-    return total_queued;
+    AudioQueueBufferRef buf = NULL;
+    OSStatus err = AudioQueueAllocateBuffer(aq_queue, (UInt32)bytes, &buf);
+    if (err != noErr || !buf) {
+        pthread_mutex_lock(&aq_mutex); aq_inflight--; pthread_mutex_unlock(&aq_mutex);
+        return 0;
+    }
+    memcpy(buf->mAudioData, pcm, (size_t)bytes);
+    buf->mAudioDataByteSize = (UInt32)bytes;
+
+    err = AudioQueueEnqueueBuffer(aq_queue, buf, 0, NULL);
+    if (err != noErr) {
+        AudioQueueFreeBuffer(aq_queue, buf);
+        pthread_mutex_lock(&aq_mutex); aq_inflight--; pthread_mutex_unlock(&aq_mutex);
+        return 0;
+    }
+    return bytes;
 }
 
 void ls_platform_audio_close(void)
@@ -169,7 +133,7 @@ void ls_platform_audio_close(void)
     aq_queue = NULL;
     aq_open  = false;
     pthread_mutex_lock(&aq_mutex);
-    aq_free_count = 0;
+    aq_inflight = 0;
     pthread_mutex_unlock(&aq_mutex);
     printf("ls_platform_audio_close: CoreAudio queue stopped.\n");
 }
