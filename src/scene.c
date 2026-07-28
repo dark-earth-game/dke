@@ -676,7 +676,7 @@ static void stub_handle_data_l44_faux(void) {
 }
 
 /* sub_46D305 — world controller: load INF zone data + build level paths. */
-static void stub_sub_46D305(void) {
+static void load_world_controller(void) { /* sub_46D305 @ 0x46D305 */
     const c8 *gp = (state && state->game_path) ? state->game_path : ".";
     world_load_level_data(g_world_state, gp,
                           state ? state->is_demo : 0,
@@ -699,10 +699,11 @@ static i32 stub_can_do_32k(i32 color_mode) {
     return 1;
 }
 
-/* sub_4640BC — pos_perso: entity placement in world.
- * Full function takes (perso_id, x, y, z, life_state, anim_name, action_slot, action_param).
- * During scene_load_level, player entity gets default position/anim. */
-static void stub_sub_4640BC(void) {
+/* sub_4640BC @ 0x4640BC — pos_perso: entity placement in world.
+ * Full function: 968 bytes, dispatches on life_mode (0=place, 1=init, 2=combat,
+ * 3=nop, 4=remove). Handles player char swaps (types 0x62-0x67), enemy/companion
+ * creation. During scene_load_level, applies default placement to player entity. */
+static void place_player_defaults(void) { /* sub_4640BC @ 0x4640BC */
     if (!g_player_entity) return;
     u8 *pe = (u8 *)g_player_entity;
 
@@ -848,7 +849,7 @@ static void stub_render_sprite_time_based_effect(void) {
 }
 
 /* sub_45619D — build 64×64 navigation grid from world controller zones. */
-static void stub_sub_45619D(void) {
+static void build_nav_grid(void) { /* sub_45619D @ 0x45619D */
     if (!g_world.world_controller) return;
     nav_grid_build(g_world.world_controller,
                    (sol_limit_t *const *)g_world.collision_zones,
@@ -858,7 +859,7 @@ static void stub_sub_45619D(void) {
 /* set_entities_combat_mode — activate combat AI for placed entities.
  * Sets entity+0xC44=1 (combat ready flag) on player and companions.
  * Non-essential during initial level load. */
-static void stub_set_entities_combat_mode(void) {
+static void set_entities_combat_mode(void) { /* @ 0x46C4D2 */
     if (g_player_entity)
         ent_put(g_player_entity, ENT_OFF_COMBAT_READY, 1);
 }
@@ -866,13 +867,13 @@ static void stub_set_entities_combat_mode(void) {
 /* sub_448F4D — LIEU DLL loader / combat-scripting bootstrap.
  * Resets state, installs 40-slot handler vtable, loads LIEU DLL, calls
  * FonctionEditor(INIT). We have LIEU01 natively ported — call lieu_enter. */
-static void stub_sub_448F4D(void) {
+static void init_level_scripting(void) { /* sub_448F4D @ 0x448F4D */
     lieu_enter(g_world_state);
 }
 
 /* ls_clear_bmap — clear a bmap's pixel buffer to zero.
  * Called for graphics_context and game_context. */
-static void stub_ls_clear_bmap(void *bmap) {
+static void clear_bmap(void *bmap) {
     if (!bmap) return;
     bmap_t *b = (bmap_t *)bmap;
     if (b->pixels && b->stride > 0 && b->height > 0)
@@ -937,13 +938,13 @@ static void stub_update_player_interface(void *ctx, i32 mode) {
     /* update_player_interface @ 0x45D1F6 — needs overlay_cursor_image */
 }
 
-/* sub_45E070 — screen light intensity map downsampler.
+/* sub_45E070 @ 0x45E070 — screen light intensity map downsampler.
  * Scans render_buffer2 (640x480 8bpp) in 20x20 pixel tiles (24 rows x 32
  * cols = 768 tiles), records the brightest pixel in each tile into
  * g_brightness_map[]. Result is a coarse screen-space brightness lookup
  * used to shade 3D character models to match pre-rendered background
  * lighting. */
-static void stub_sub_45E070(void) {
+static void build_brightness_map(void) { /* sub_45E070 @ 0x45E070 */
     if (!g_render_buffer2 || !g_render_buffer2->pixels) return;
     u8 *pixels = g_render_buffer2->pixels;
     i32 stride = g_render_buffer2->stride;
@@ -1388,7 +1389,7 @@ i32 scene_load_level(i32 level_id) {
     if (!g_world_controller) {
         print("scene: world_controller is NULL — memset dword_543C60 + sub_46D305\n");
         /* memset dword_543C60 0xF00: TODO once dword_543C60 is declared */
-        stub_sub_46D305();   /* TODO: sub_46D305 — world controller alloc */
+        load_world_controller();   /* TODO: sub_46D305 — world controller alloc */
     } else {
         print("scene: world_controller already set, skip alloc\n");
     }
@@ -1430,7 +1431,7 @@ i32 scene_load_level(i32 level_id) {
      *        push ... / mov ecx, game_state / call sub_4640BC
      * ----------------------------------------------------------------- */
     print("scene: phase 12 — sub_4640BC (player world placement) — STUB\n");
-    stub_sub_4640BC();   /* TODO: sub_4640BC */
+    place_player_defaults();   /* TODO: sub_4640BC */
 
     /* -----------------------------------------------------------------
      * Phase 13 — sub_426D2C + damage counter zero
@@ -1490,7 +1491,7 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     print("scene: phase 17 — render_sprite_time_based_effect + sub_45619D — STUB\n");
     stub_render_sprite_time_based_effect();   /* TODO: render_sprite_time_based_effect */
-    stub_sub_45619D();                        /* TODO: sub_45619D */
+    build_nav_grid();                        /* TODO: sub_45619D */
 
     /* -----------------------------------------------------------------
      * Phase 18 — viewport globals
@@ -1506,8 +1507,8 @@ i32 scene_load_level(i32 level_id) {
      * Phase 19 — set_entities_combat_mode + sub_448F4D
      * ----------------------------------------------------------------- */
     print("scene: phase 19 — set_entities_combat_mode + sub_448F4D — STUB\n");
-    stub_set_entities_combat_mode();   /* TODO: set_entities_combat_mode */
-    stub_sub_448F4D();                 /* TODO: sub_448F4D */
+    set_entities_combat_mode();   /* TODO: set_entities_combat_mode */
+    init_level_scripting();                 /* TODO: sub_448F4D */
 
     /* -----------------------------------------------------------------
      * Phase 20 — ls_clear_bmap (graphics_context, game_context)
@@ -1516,11 +1517,11 @@ i32 scene_load_level(i32 level_id) {
      *           sub_45E070, sub_47674F(0)
      * ----------------------------------------------------------------- */
     print("scene: phase 20 — clear bmaps + interface update — STUB\n");
-    stub_ls_clear_bmap(NULL);              /* TODO: ls_clear_bmap(graphics_context) */
-    stub_ls_clear_bmap(NULL);              /* TODO: ls_clear_bmap(game_context) */
+    clear_bmap(NULL);              /* TODO: ls_clear_bmap(graphics_context) */
+    clear_bmap(NULL);              /* TODO: ls_clear_bmap(game_context) */
     sub_45D27A(NULL, 1);                  /* sub_45D27A(render_buffer1, 1) */
     stub_update_player_interface(NULL, 2); /* TODO: update_player_interface(game_context,2) */
-    stub_sub_45E070();                     /* TODO: sub_45E070 */
+    build_brightness_map();                     /* TODO: sub_45E070 */
     stub_sub_47674F(0);                    /* TODO: sub_47674F(0) */
 
     /* -----------------------------------------------------------------
