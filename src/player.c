@@ -17,6 +17,7 @@
  *   Set default fields identified from asm field writes after memset.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -31,6 +32,14 @@
  * Allocated in player_entity_init; referenced by scene.c, game_init.c.
  * ---------------------------------------------------------------------- */
 void *g_player_entity = NULL;   /* player_entity (asm sym) */
+void *g_companion_entity = NULL;
+void *g_secondary_companion_entity = NULL;
+
+/* dword_505D68 — active weapon class index (0='A', 1='B' player, 2='C', 3='D') */
+static i32 g_weapon_class_index = 0;  /* sub_471B80 @ 0x471B80 */
+
+/* dword_505DDC — raw weapon type byte from persona descriptor +0x97 */
+static u8 g_active_weapon_type = 0;   /* 0x505DDC */
 
 /* -------------------------------------------------------------------------
  * Entity struct allocation size from asm:
@@ -325,6 +334,34 @@ void player_entity_init(void) {
     print("player: player_entity_init done\n");
 }
 
+/* sub_4648DC @ 0x4648DC — entity class identifier (0x5F bytes).
+ * Returns single char: 'B' for player, 'C' companion, 'D' secondary, 'A' default.
+ * Used to build weapon object names: sprintf("O%c%02d", class, weapon_type). */
+static c8 entity_get_class_char(void *entity) { /* sub_4648DC @ 0x4648DC */
+    if (entity == g_player_entity) return 'B';
+    if (entity == g_companion_entity) return 'C';
+    if (entity == g_secondary_companion_entity) return 'D';
+    return 'A';
+}
+
+/* sub_471B80 @ 0x471B80 — post-weapon global setup (0x5F bytes).
+ * Sets g_weapon_class_index from player entity+0xD6 (4th byte of weapon name
+ * string at entity+0xD2). Standard "OB03" → +0xD6 is NUL → index 0. */
+static void post_weapon_global_setup(void) { /* sub_471B80 @ 0x471B80 */
+    g_weapon_class_index = 0;
+    if (!g_player_entity) return;
+    u8 *pe = (u8 *)g_player_entity;
+    u8 *desc = *(u8 **)(pe + 0xAC);
+    if (!desc) return;
+    u8 weapon_type = desc[0x97];
+    if (weapon_type != 0) {
+        i8 class_char = *(i8 *)(pe + 0xD6);
+        i32 index = class_char - 'A';
+        if (index == -0x41) index = 0; /* NUL terminator case */
+        g_weapon_class_index = index;
+    }
+}
+
 /* -------------------------------------------------------------------------
  * 00464F6D
  * player_entity_init_secondary — weapon/companion buffer wire-up.
@@ -359,25 +396,29 @@ void player_entity_init_secondary(void) {
     /* TODO: wire +0xCD8 to byte_4F60E0 once that data segment is mapped */
     print("player: TODO +0xCD8 dialogue buffer ptr (byte_4F60E0 not mapped)\n");
 
-    /* Phase 2: read weapon type from slot table at [entity+0xACh] + 0x97 offset
-     * asm: mov eax,[ebp+var_98]; mov eax,[eax+0ACh]; ... cl,[eax+97h] → var_C
-     * +0xACh is the weapon-slot table ptr (set in player_entity_init TODO).
-     * Without it, var_C == 0, which takes the "skip" branch in asm. */
-    /* TODO: sub_4648DC (weapon class decode) */
-    print("player: TODO weapon slot read at [entity+0xACh]+0x97 (slot table not yet wired)\n");
+    /* Phase 2: read weapon type from persona descriptor at [entity+0xACh]+0x97 */
+    u8 *desc = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+    u8 weapon_type = desc ? desc[0x97] : 0;
+    print("player: weapon_type = %d (from persona descriptor)\n", weapon_type);
 
-    /* Phase 3: weapon entity load (player branch — var_94 = 0)
-     * asm: sub_4648DC; sprintf "O%c%02d"; sub_475BB6; sub_472C5C; sub_473756; sub_41F6BA */
-    print("player: TODO sub_4648DC (weapon class decode)\n");
-    print("player: TODO sub_475BB6 (object lookup by name)\n");
-    print("player: TODO sub_472C5C (weapon entity init)\n");
-    print("player: TODO sub_473756 (weapon entity attach)\n");
-    print("player: TODO sub_41F6BA (entity registration)\n");
+    /* Phase 3: weapon entity load (player branch)
+     * asm: sub_4648DC → class char; sprintf "O%c%02d"; sub_475BB6 → slot lookup */
+    if (weapon_type != 0) {
+        c8 class_char = entity_get_class_char(g_player_entity); /* sub_4648DC @ 0x4648DC */
+        c8 weapon_name[8];
+        snprintf(weapon_name, sizeof(weapon_name), "O%c%02d", class_char, weapon_type);
+        print("player: weapon object name = '%s'\n", weapon_name);
+        /* TODO: sub_475BB6 — object slot lookup by name (needs slot array) */
+        /* TODO: sub_472C5C — weapon entity init */
+        /* TODO: sub_473756 — weapon entity attach to bone */
+        /* TODO: sub_41F6BA — entity registration */
+    }
 
-    /* Phase 4: if player_entity → dword_505DDC = weapon_type; sub_471B80
-     * asm: mov eax,player_entity; cmp [var_98],eax; jnz ...; call sub_471B80 */
-    /* TODO: dword_505DDC = weapon_type; sub_471B80 */
-    print("player: TODO dword_505DDC write + sub_471B80\n");
+    /* Phase 4: set weapon globals + post-weapon setup */
+    g_active_weapon_type = weapon_type; /* dword_505DDC @ 0x505DDC */
+    post_weapon_global_setup(); /* sub_471B80 @ 0x471B80 */
+    print("player: weapon_class_index = %d, active_weapon_type = %d\n",
+          g_weapon_class_index, g_active_weapon_type);
 
     print("player: player_entity_init_secondary done\n");
 }

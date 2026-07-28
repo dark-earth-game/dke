@@ -17,6 +17,8 @@
  * Exposed here so scene.c and game_init.c can read the pointer.
  * ---------------------------------------------------------------------- */
 extern void *g_player_entity;   /* player_entity (asm sym) */
+extern void *g_companion_entity;
+extern void *g_secondary_companion_entity;
 
 /* Live player transform accessors (read the embedded transform block).
  * player_get_pos returns 1 on success, 0 if no player entity. Position is
