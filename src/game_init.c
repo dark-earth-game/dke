@@ -88,7 +88,7 @@ static void *g_palette_data        = NULL;   /* palette_data (asm sym) */
 
 /* Render / scratch bmaps */
 static bmap_t *g_render_buffer1   = NULL;   /* render_buffer1 (asm sym) */
-static bmap_t *g_render_buffer2   = NULL;   /* render_buffer2 (asm sym) */
+bmap_t *g_render_buffer2   = NULL;   /* render_buffer2 (asm sym) */
 static bmap_t *g_debug_surface    = NULL;   /* debug_surface (asm sym)  */
 static bmap_t *g_bmap_4B71FC     = NULL;   /* dword_4B71FC @ 004B71FC */
 static bmap_t *g_bmap_4B7200     = NULL;   /* dword_4B7200 @ 004B7200 */

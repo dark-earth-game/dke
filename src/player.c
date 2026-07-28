@@ -23,6 +23,7 @@
 #include "libsys/common.h"
 #include "libsys/system.h"
 #include "state.h"
+#include "entity.h"
 #include "player.h"
 
 /* -------------------------------------------------------------------------
@@ -76,11 +77,9 @@ void *g_player_entity = NULL;   /* player_entity (asm sym) */
  *   sub_42DDED  — squad/companion wiring
  * ---------------------------------------------------------------------- */
 
-/* Helper: write a u32 at byte offset into the entity blob. */
+/* ent_set_u32 — legacy helper, wraps ent_put from entity.h */
 static void ent_set_u32(void *ent, i32 off, u32 val) {
-    u8 *p = (u8 *)ent;
-    u32 *slot = (u32 *)(p + off);
-    *slot = val;
+    ent_put(ent, off, val);
 }
 
 /* -------------------------------------------------------------------------
@@ -104,16 +103,15 @@ static void ent_set_u32(void *ent, i32 off, u32 val) {
  * ---------------------------------------------------------------------- */
 i32 player_get_pos(i32 *x, i32 *y, i32 *z) {
     if (!g_player_entity) return 0;
-    const u8 *e = (const u8 *)g_player_entity;
-    if (x) *x = *(const i32 *)(e + 0x1C0);
-    if (y) *y = *(const i32 *)(e + 0x1C4);
-    if (z) *z = *(const i32 *)(e + 0x1C8);
+    if (x) *x = ent_get_i32(g_player_entity, ENT_OFF_WORLD_X);
+    if (y) *y = ent_get_i32(g_player_entity, ENT_OFF_WORLD_Y);
+    if (z) *z = ent_get_i32(g_player_entity, ENT_OFF_WORLD_Z);
     return 1;
 }
 
 u16 player_get_facing(void) {
     if (!g_player_entity) return 0;
-    return (u16)(*(const i32 *)((const u8 *)g_player_entity + 0x1E0) & 0xFFFF);
+    return (u16)(ent_get(g_player_entity, ENT_OFF_FACING) & 0xFFFF);
 }
 
 void player_entity_init(void) {
@@ -155,25 +153,23 @@ void player_entity_init(void) {
     ent_set_u32(ent, 0x00C, 0x1DF);
 
     /* Misc defaults */
-    ent_set_u32(ent, 0x064, 0x50);       /* = 80 */
-    ent_set_u32(ent, 0x070, 1);
-    ent_set_u32(ent, 0x074, 1);
-    ent_set_u32(ent, 0xE94, 0xFFFF);
-    ent_set_u32(ent, 0x030, 0xFFFF4000U);
-    ent_set_u32(ent, 0x038, 0xFFFFC000U);
+    ent_set_u32(ent, 0x064, 0x50);       /* render_scale = 80 */
+    ent_set_u32(ent, 0x070, 1);           /* render_mode = normal */
+    ent_set_u32(ent, 0x074, 1);           /* render_flag */
+    ent_set_u32(ent, 0x030, 0xFFFF4000U); /* viewport_offset_x */
+    ent_set_u32(ent, 0x038, 0xFFFFC000U); /* viewport_offset_y */
     ent_set_u32(ent, 0xD64, 0);
     ent_set_u32(ent, 0xD68, 0);
-    ent_set_u32(ent, 0xC04, 0xFFFFFFFFU);
-    ent_set_u32(ent, 0xC64, 0x10000);
-    ent_set_u32(ent, 0xC68, 0x4000);
+    ent_put(ent, ENT_OFF_STATE_FLAG, 0xFFFFFFFFU);
+    ent_put(ent, ENT_OFF_HEALTH,     0x10000);
+    ent_put(ent, ENT_OFF_ENERGY,     0x4000);
 
-    /* +0xD34 = current_game_time (from asm: mov eax,current_game_time; mov [ecx+0D34h],eax) */
     if (state) {
-        ent_set_u32(ent, 0xD34, state->current_game_time);
+        ent_put(ent, ENT_OFF_LAST_TIME, state->current_game_time);
     }
 
-    /* +0xD80 = 0 for player (no squad) */
-    ent_set_u32(ent, 0xD80, 0);
+    ent_put(ent, ENT_OFF_SQUAD_FLAG, 0);
+    ent_put(ent, ENT_OFF_UNK_E94,   0xFFFF);
 
     /* Player weapon-slot table link at +0xACh: player always uses the
      * main weapon slot (dword_4ECD50 ptr — not yet tracked; NULL for now). */

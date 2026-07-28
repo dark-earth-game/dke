@@ -107,6 +107,15 @@ static u8 g_byte_511760 = 0;
  */
 static i32 g_dword_505C54 = 0;
 
+/* render_buffer2 — 640x480 8bpp bmap (allocated in game_init phase 28).
+ * Used by sub_45E070 to build the coarse brightness map. */
+extern bmap_t *g_render_buffer2;
+
+/* 768-entry (24 rows x 32 cols) coarse brightness map: max pixel value
+ * per 20x20 tile of render_buffer2. Built by sub_45E070, queried for
+ * approximate screen-space brightness when shading 3D character models. */
+static u8 g_brightness_map[768];
+
 /* -------------------------------------------------------------------------
  * External globals referenced from asm — declared here as opaque pointers
  * so the skeleton links without error.  They will be properly typed when the
@@ -751,10 +760,29 @@ static void stub_update_player_interface(void *ctx, i32 mode) {
     /* TODO: update_player_interface */
 }
 
-/* TODO: sub_45E070 — unknown; called after update_player_interface.
- * Mirrors asm: call sub_45E070 */
+/* sub_45E070 — screen light intensity map downsampler.
+ * Scans render_buffer2 (640x480 8bpp) in 20x20 pixel tiles (24 rows x 32
+ * cols = 768 tiles), records the brightest pixel in each tile into
+ * g_brightness_map[]. Result is a coarse screen-space brightness lookup
+ * used to shade 3D character models to match pre-rendered background
+ * lighting. */
 static void stub_sub_45E070(void) {
-    /* TODO: sub_45E070 */
+    if (!g_render_buffer2 || !g_render_buffer2->pixels) return;
+    u8 *pixels = g_render_buffer2->pixels;
+    i32 stride = g_render_buffer2->stride;
+    for (i32 i = 0; i < 768; i++) {
+        i32 row = i / 32;
+        i32 col = i % 32;
+        u8 *tile = pixels + row * 20 * stride + col * 20;
+        u8 mx = 0;
+        for (i32 ty = 0; ty < 20; ty++) {
+            u8 *sl = tile + ty * stride;
+            for (i32 tx = 0; tx < 20; tx++) {
+                if (sl[tx] > mx) mx = sl[tx];
+            }
+        }
+        g_brightness_map[i] = mx;
+    }
 }
 
 /* TODO: sub_47674F — unknown; ECX=0.
