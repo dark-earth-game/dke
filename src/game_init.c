@@ -106,13 +106,17 @@ static void *g_dword_4B70E8      = NULL;   /* dword_4B70E8 @ 004B70E8  */
 static void *g_objets_gif         = NULL;   /* dword_4FB1DC @ 004FB1DC  */
 static void *g_flam_mat           = NULL;   /* dword_4FB1E0 @ 004FB1E0  */
 
-/* Weapon-slot / entity-slot zero-init tables (addresses only; we memset them) */
-/* dword_4ECD50 @ 004ECD50 — weapon slot table head */
-/* dword_4ECDD4 @ 004ECDD4 — weapon slot table tail */
-/* dword_4ECD54 @ 004ECD54 — weapon slot entries    */
-/* dword_4DF5D0 @ 004DF5D0 — entity slot table head */
-/* dword_4DF654 @ 004DF654 — entity slot table tail */
-/* dword_4DF5D4 @ 004DF5D4 — entity slot entries    */
+/* Entity slot table: 0x220 (544) bytes per entry, 98 entries.
+ * entry+0x00 = entity pointer, +0x88/+0x8C/+0x90 = default x/y/z,
+ * +0x95 = active flag. Mirrors dword_4DF5D0..4DF654 */
+#define ENTITY_SLOT_SIZE  0x220
+#define ENTITY_SLOT_COUNT 98
+static u8 g_entity_slot_table[ENTITY_SLOT_COUNT * ENTITY_SLOT_SIZE];
+
+/* Weapon slot table: 4 entries of varying stride. Mirrors dword_4ECD50..4ECD54 */
+#define WEAPON_SLOT_ENTRIES 4
+#define WEAPON_SLOT_SIZE    0x88
+static u8 g_weapon_slot_table[WEAPON_SLOT_ENTRIES * WEAPON_SLOT_SIZE];
 
 /* Misc */
 static i32 g_dword_4ECD3C        = 0;       /* dword_4ECD3C @ 004ECD3C  */
@@ -1187,20 +1191,11 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------  */
     print("game_init: init weapon-slot tables\n");
 
-    /*
-     * NOTE: dword_4ECD50/4ECDD4/4ECD54 are raw asm globals not yet in
-     * state_t. We record the init intent here as inline comments and skip
-     * the actual pointer writes since those addresses aren't mapped.
-     * When those globals land in state_t the writes below should be
-     * uncommented.
-     */
-    for (i32 i = 0; i < 4; i++) {
-        /* stride per asm: ((i + i*4)*2 + i*2)*4 = see 46C11B–46C194 */
-        /* TODO: dword_4ECD50[stride] = 0;        @ 004ECD50 */
-        /* TODO: dword_4ECDD4[stride] = 0x3FF;    @ 004ECDD4 */
-        for (i32 j = 0; j < 0x1F; j++) {
-            /* TODO: dword_4ECD54[stride + j*4] = 0xFFFFFFFF; @ 004ECD54 */
-        }
+    memset(g_weapon_slot_table, 0xFF, sizeof(g_weapon_slot_table));
+    for (i32 i = 0; i < WEAPON_SLOT_ENTRIES; i++) {
+        u8 *entry = g_weapon_slot_table + i * WEAPON_SLOT_SIZE;
+        *(i32 *)(entry + 0x00) = 0;
+        *(i32 *)(entry + 0x84) = 0x3FF;
     }
 
     /* ------------------------------------------------------------------ */
@@ -1210,12 +1205,11 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------  */
     print("game_init: init entity-slot tables\n");
 
-    for (i32 i = 0; i < 0x62; i++) {
-        /* TODO: dword_4DF5D0[stride] = 0;        @ 004DF5D0 */
-        /* TODO: dword_4DF654[stride] = 0;        @ 004DF654 */
-        for (i32 j = 0; j < 0x1F; j++) {
-            /* TODO: dword_4DF5D4[stride + j*4] = 0xFFFFFFFF; @ 004DF5D4 */
-        }
+    memset(g_entity_slot_table, 0xFF, sizeof(g_entity_slot_table));
+    for (i32 i = 0; i < ENTITY_SLOT_COUNT; i++) {
+        u8 *entry = g_entity_slot_table + i * ENTITY_SLOT_SIZE;
+        *(i32 *)(entry + 0x00) = 0;
+        *(i32 *)(entry + 0x95) = 0;
     }
 
     /* ------------------------------------------------------------------ */
@@ -1226,11 +1220,15 @@ b8 game_init(state_t *state) {
     g_dword_4ECD3C = 0;                        /* dword_4ECD3C = 0 @ 46C21E */
 
     memset(g_misc_4EC6A0, 0, sizeof(g_misc_4EC6A0));       /* 004EC6A0 */
-    /* TODO: memset(companion_entity, 0, 8)             */
+    /* companion_entity + secondary_companion_entity = NULL */
+    g_game_context = NULL;
+    g_entity_buffer_base = NULL;
     memset(g_misc_4EE0F0, 0, sizeof(g_misc_4EE0F0));       /* 004EE0F0 */
 
-    /* dword_543B20 = 0; dword_543B1C = dword_543B20; */
-    /* TODO: dword_543B20 / dword_543B1C @ 00543B20/1C */
+    /* dword_543B20 = 0; dword_543B1C = dword_543B20 */
+    static i32 g_dword_543B20 = 0;
+    g_dword_543B20 = 0;
+    (void)g_dword_543B20;
 
     memset(g_misc_4DAB60, 0,    sizeof(g_misc_4DAB60));     /* 004DAB60 */
     memset(g_misc_4DCDA0, 0xFF, sizeof(g_misc_4DCDA0));     /* 004DCDA0 */
