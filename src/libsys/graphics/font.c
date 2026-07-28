@@ -161,12 +161,10 @@ static void install_fallback_font(font_t *f) {
  * init_font  (addr 430BEA)
  *
  * Loads one font by logical name.
- *   "SYSFONT" → datas/menus/FONTE11.CAR (+ FONTE11.CIF — TODO: decode).
- *   Other names → append ".FNT" and call ls_load_file (TODO: sub_482200).
+ *   "SYSFONT" → datas/menus/FONTE11.CAR + FONTE11.CIF.
+ *   Other names → append ".FNT", read header, load atlas via CIF (sub_482200/sub_4822E0).
  *
- * Current status: CAR index is read and stored; CIF pixel data decoding
- *   is stubbed (sub_482200 / sub_4822E0 / sub_48B660 not yet ported).
- *   Fallback is installed so callers always get a usable font.
+ * Both paths fall back to embedded CP437 8×8 if files are missing or decode fails.
  * ====================================================================== */
 
 // 430BEA
@@ -268,14 +266,129 @@ b8 init_font(font_t *out, const c8 *name) {
 
     } else {
         /*
-         * Non-SYSFONT: original calls sub_482200(name, 8) which appends ".FNT"
-         * and calls ls_load_file.  Not yet ported.
-         * TODO: sub_482200 — open <name>.FNT via ls_load_file, parse header,
-         *        call sub_4822E0 to build font object.
+         * Non-SYSFONT: sub_482200 (font atlas loader) + sub_4822E0 (descriptor builder).
+         * 1. Open <name>.FNT, read 6-int header
+         * 2. Load atlas image (<name>.CIF) via cif_load
+         * 3. Build glyph_entries from grid layout
+         * 4. If spacing_flag nonzero, compute proportional widths by scanning cells
+         * Falls back to CP437 if FNT or atlas not found.
          */
-        print("init_font: non-SYSFONT fonts not yet ported (%s) — fallback\n",
-              name);
-        install_fallback_font(out);
+        const c8 *base = ls_get_base_path();
+
+        /* sub_482200 step 1: append ".FNT", load file, read header */
+        c8 fnt_vpath[256];
+        c8 fnt_path[512];
+        snprintf(fnt_vpath, sizeof(fnt_vpath), "%s.FNT", name);
+        ls_resolve_path(base, fnt_vpath, fnt_path, sizeof(fnt_path));
+
+        FILE *fp = ls_open(fnt_path, "rb");
+        if (!fp) {
+            print("init_font: %s not found — fallback\n", fnt_vpath);
+            install_fallback_font(out);
+            return true;
+        }
+
+        /* 6 header integers: cols_per_row, glyph_h, (passed), glyph_w, spacing_flag, char_count */
+        i32 hdr[6];
+        if (fread(hdr, sizeof(i32), 6, fp) != 6) {
+            print("init_font: %s header short read — fallback\n", fnt_vpath);
+            ls_close(fp);
+            install_fallback_font(out);
+            return true;
+        }
+        ls_close(fp);
+
+        i32 cols_per_row  = hdr[0];
+        i32 glyph_h       = hdr[1];
+        /* hdr[2] passed to sub_4822E0 (unused beyond forwarding) */
+        i32 glyph_w       = hdr[3];
+        i32 spacing_flag  = hdr[4];
+        i32 char_count    = hdr[5];
+
+        /* Original: if spacing_flag == 0, forced to 0 (monospaced) */
+        if (spacing_flag == 0) spacing_flag = 0;
+
+        if (glyph_w <= 0 || glyph_h <= 0 || char_count <= 0) {
+            print("init_font: %s invalid header (w=%d h=%d n=%d) — fallback\n",
+                  fnt_vpath, glyph_w, glyph_h, char_count);
+            install_fallback_font(out);
+            return true;
+        }
+
+        /* sub_4822E0 step 3: load atlas image (CIF) */
+        c8 cif_vpath[256];
+        c8 cif_path[512];
+        snprintf(cif_vpath, sizeof(cif_vpath), "%s.CIF", name);
+        ls_resolve_path(base, cif_vpath, cif_path, sizeof(cif_path));
+
+        cif_image_t atlas_img;
+        if (!cif_load(&atlas_img, cif_path)) {
+            print("init_font: %s atlas not found — fallback\n", cif_vpath);
+            install_fallback_font(out);
+            return true;
+        }
+
+        /* sub_4822E0 [+0x10]: glyphs_per_row = atlas_bitmap_width / glyph_width */
+        i32 glyphs_per_row = atlas_img.width / glyph_w;
+        if (glyphs_per_row <= 0) glyphs_per_row = cols_per_row;
+
+        /* Build glyph_entries from grid layout so existing draw_text_at renderer works */
+        font_glyph_entry_t *entries = (font_glyph_entry_t *)memory_alloc(
+            char_count * (i32)sizeof(font_glyph_entry_t));
+        if (!entries) {
+            cif_free(&atlas_img);
+            install_fallback_font(out);
+            return true;
+        }
+
+        for (i32 i = 0; i < char_count; i++) {
+            i32 col = i % glyphs_per_row;
+            i32 row = i / glyphs_per_row;
+            entries[i].atlas_x     = col * glyph_w;
+            entries[i].atlas_y     = row * glyph_h;
+            entries[i].glyph_width = glyph_w;
+        }
+
+        /* sub_4822E0 step 4: if spacing_flag nonzero, scan each glyph cell
+         * right-to-left to find rightmost non-transparent pixel → advance width */
+        if (spacing_flag != 0) {
+            for (i32 i = 0; i < char_count; i++) {
+                i32 ax = entries[i].atlas_x;
+                i32 ay = entries[i].atlas_y;
+                i32 rightmost = -1;
+                for (i32 cx = glyph_w - 1; cx >= 0 && rightmost < 0; cx--) {
+                    for (i32 ry = 0; ry < glyph_h; ry++) {
+                        i32 px = ax + cx;
+                        i32 py = ay + ry;
+                        if (px < atlas_img.width && py < atlas_img.height &&
+                            atlas_img.pixels[py * atlas_img.width + px] != 0) {
+                            rightmost = cx;
+                            break;
+                        }
+                    }
+                }
+                /* advance = rightmost pixel column + 2 (1 pixel padding).
+                 * Empty glyphs (e.g. space) keep the full cell width. */
+                entries[i].glyph_width = (rightmost >= 0) ? (rightmost + 2) : glyph_w;
+            }
+        }
+
+        /* Fill font_t — sub_4822E0 descriptor fields */
+        out->atlas_pixels  = atlas_img.pixels;
+        out->atlas_width   = atlas_img.width;
+        out->atlas_height  = atlas_img.height;
+        out->palette       = atlas_img.palette;
+        atlas_img.palette  = NULL;
+        out->glyph_entries = entries;
+        out->glyph_w       = glyph_w;
+        out->glyph_h       = glyph_h;
+        out->band_height   = glyph_h;
+        out->first_char    = 0;
+        out->num_chars     = char_count;
+        out->use_fallback  = false;
+
+        print("init_font: loaded %s (%d chars, %dx%d, proportional=%d)\n",
+              name, char_count, glyph_w, glyph_h, spacing_flag != 0);
         return true;
     }
 }

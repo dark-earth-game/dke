@@ -104,12 +104,9 @@ b8 init_font_system(void);
  *
  * name: logical font name, e.g. "SYSFONT".
  *   "SYSFONT" maps to datas/menus/FONTE11.CAR + .CIF.
- *   Other names: appended with ".FNT" and opened via ls_load_file (TODO).
+ *   Other names: appends ".FNT" for header, loads atlas via cif_load (sub_482200/sub_4822E0).
  * out: caller-supplied font_t to fill.
- * Returns true on success, false if files not found / decode fails.
- *
- * NOTE: CIF atlas decoding is not yet ported (TODO: sub_482200 / sub_4822E0).
- *       Currently installs fallback regardless of file presence.
+ * Returns true on success (always — falls back to CP437 if files missing).
  */
 b8 init_font(font_t *out, const c8 *name);
 
