@@ -226,6 +226,8 @@ static i32 g_cube_world_z = 0;   /* seeded from zfar/3 on camera load */
 static i32 g_player_wx = 0;
 static i32 g_player_wz = 0;
 static i32 g_player_seeded = 0;
+static i32 g_player_facing  = 0;   /* cosine_table units (0..4095) from movement */
+static i32 g_player_moving  = 0;   /* 1 while the player has walk input this frame */
 
 /* Tick of last scene_render call — used to derive dt for cube movement
  * so speed stays consistent across frame rates. 0 = first frame. */
@@ -1719,8 +1721,16 @@ i32 scene_render(system_t *sys) {
         g_player_wx += (i32)(pin.velocity_x * step);   /* A/D -> world X */
         g_player_wz += (i32)(pin.velocity_z * step);   /* W/S -> world Z */
 
+        /* Face the movement direction (cosine_table units). */
+        g_player_moving = (pin.velocity_x != 0.0f || pin.velocity_z != 0.0f);
+        if (g_player_moving) {
+            double ang = atan2((double)pin.velocity_x, (double)pin.velocity_z);
+            i32 f = (i32)(ang * 4096.0 / (2.0 * 3.14159265358979));
+            g_player_facing = f & 0xFFF;
+        }
+
         /* Debug headless sweep (fixed step, dt-independent). */
-        if (getenv("DKE_WALK")) g_player_wx -= 6000;
+        if (getenv("DKE_WALK")) { g_player_wx -= 6000; g_player_moving = 1; }
 
         /* Loose clamp around the character start. */
         i32 lim = 400000;
@@ -1889,6 +1899,45 @@ i32 scene_render(system_t *sys) {
                                    g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                    (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
                                    lcx, lcy, lcz);
+            }
+        }
+        /* Player avatar: render the controlled character (P00 = Arkhan) at the
+         * player world position once the player has walked away from the
+         * scripted start, so the static opening cutscene shows only the
+         * scripted personas but the room becomes playable with a visible,
+         * movement-facing avatar. */
+        {
+            i32 dx = g_player_wx - g_proj_anchor_wx;
+            i32 dz = g_player_wz - g_proj_zone_z;
+            i32 walked = (dx > 3000 || dx < -3000 || dz > 3000 || dz < -3000);
+            if ((walked || getenv("DKE_PLAYER")) && g_proj_valid) {
+                i32 pmshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 1;
+                i32 pmflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
+                i32 pfloor  = getenv("DKE_MYOFF") ? atoi(getenv("DKE_MYOFF")) : -120000;
+                i32 ci = persona_mesh_load(0);   /* P00 = Arkhan */
+                if (ci >= 0) {
+                    persona_mesh_t *pm = &g_persona_cache[ci];
+                    if (pm->can_loaded && pm->can.n_frames > 0 &&
+                        tick - pm->can_last >= CAN_FRAME_MS) {
+                        pm->frame = (pm->frame + 1) % pm->can.n_frames;
+                        pm->can_last = tick;
+                    }
+                    const can_frame_t *kf = pm->can_loaded ? &pm->can.frames[pm->frame] : NULL;
+                    if (pm->objc_loaded) objc_update_bone_positions(&pm->objc, kf);
+                    for (i32 ai = 0; ai < pm->count; ai++) {
+                        i32 tx = (pm->objc_loaded && ai < pm->objc.n_atomslots) ? pm->objc.world_tx[ai] : 0;
+                        i32 ty = (pm->objc_loaded && ai < pm->objc.n_atomslots) ? pm->objc.world_ty[ai] : 0;
+                        i32 tz = (pm->objc_loaded && ai < pm->objc.n_atomslots) ? pm->objc.world_tz[ai] : 0;
+                        model_render_world(pm->atoms[ai],
+                                           g_proj_R, g_proj_T, g_proj_gscale,
+                                           g_player_wx, pfloor, g_player_wz, g_player_facing,
+                                           pmshift, pmflip, tx, ty, tz,
+                                           g_scene_l_bmap, NULL,
+                                           g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
+                                           (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
+                                           lcx, lcy, lcz);
+                    }
+                }
             }
         }
         if (getenv("DKE_PERFDBG")) {
