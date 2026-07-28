@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "libsys/common.h"
@@ -261,7 +262,8 @@ i32 ls_main(system_t *system, c8 **argv) {
      * publisher/title splash (EADKE) at boot so we exercise the CRH decoder
      * + CoreAudio streaming end-to-end. ls_play_movie skips gracefully if
      * the file is missing rather than crash. */
-    ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
+    if (!getenv("DKE_NEWGAME"))   /* skip boot splash in headless test mode */
+        ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
 
     /* --- Slice B: main menu state machine ---
      * menu_init fetches the MENUGEN backdrop from game_init (same source as
@@ -270,7 +272,25 @@ i32 ls_main(system_t *system, c8 **argv) {
     menu_t menu;
     menu_init(&menu);
 
+    /* Debug autostart for headless/log-driven testing:
+     *   DKE_NEWGAME=1  — skip the menu, load first room immediately.
+     *   DKE_FRAMES=N   — quit after N main-loop frames. */
+    i32 dbg_autonew   = (getenv("DKE_NEWGAME") != NULL);
+    i32 dbg_maxframes = getenv("DKE_FRAMES") ? atoi(getenv("DKE_FRAMES")) : 0;
+    i32 dbg_frame     = 0;
+    if (dbg_autonew) {
+        print("main: DKE_NEWGAME -> scene_load_level(%d)\n", state->first_room);
+        if (scene_load_level(state->first_room) == 0)
+            menu.state = MENU_STATE_LOADING;
+        else
+            print("main: DKE_NEWGAME scene_load_level failed\n");
+    }
+
     while(!system->quit) {
+        if (dbg_maxframes && ++dbg_frame > dbg_maxframes) {
+            print("main: DKE_FRAMES=%d reached — exiting\n", dbg_maxframes);
+            break;
+        }
         system->timer.tick = ls_tick();
         ls_update_events(system);
 

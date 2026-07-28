@@ -1413,7 +1413,8 @@ i32 scene_render(system_t *sys) {
     {
         const c8 *mv = lieu_poll_movie();
         if (mv) {
-            ls_play_movie(mv);
+            if (getenv("DKE_NOMOVIE")) print("scene: DKE_NOMOVIE skip movie %s\n", mv);
+            else                       ls_play_movie(mv);
             lieu_enter_room();   /* intro done -> place room characters */
         }
     }
@@ -1629,6 +1630,23 @@ i32 scene_render(system_t *sys) {
                  g_scene_bg_level, g_scene_camera,
                  g_cube_world_x, g_cube_world_z, z_far);
         draw_text_at(font_handle, 6, 6, hud, 0xFFFFFFFFu);
+    }
+
+    /* LIEU personas placed for this room (e.g. P00ARR01 + P12ARR01, the two
+     * characters that open level 1). Until real character models render,
+     * draw each as a name label so the LIEU-driven cast is visible. */
+    {
+        i32 np = lieu_spawn_count();
+        for (i32 i = 0; i < np; i++) {
+            i32 px = 0, py = 0, pv = 0;
+            const c8 *nm = lieu_spawn_get(i, &px, &py, &pv);
+            if (!nm) continue;
+            /* Spread horizontally; drop a rough marker + the name. */
+            i32 sx = 140 + i * 180;
+            i32 sy = 300;
+            draw_text_at(font_handle, sx, sy,       nm,        0xFFFFE060u);
+            draw_text_at(font_handle, sx, sy + 16,  "\x7f",   0xFF20FF80u);
+        }
     }
     return 0;
 }
