@@ -49,6 +49,60 @@
  */
 static wav_t sfx_click = {0};
 
+/* sub_44CFF6 @ 0x44CFF6 — volume attenuation query.
+ * Converts master volume (0..64) to DirectSound-style attenuation.
+ * Returns: base_volume - (64 - master) * 32, or -10000 if muted/invalid. */
+#define DSBVOLUME_MIN  (-10000)
+#define VOLUME_MAX     64
+static i32 g_master_volume = 64;  /* dword_4B60B8 @ 0x4B60B8 */
+
+static i32 menu_get_volume(i32 base_volume) { /* sub_44CFF6 @ 0x44CFF6 */
+    if (g_master_volume < 0 || g_master_volume > VOLUME_MAX) {
+        print("Bad Volume %d\n", g_master_volume);
+        return DSBVOLUME_MIN;
+    }
+    if (g_master_volume == 0) return DSBVOLUME_MIN;
+    return base_volume - (VOLUME_MAX - g_master_volume) * 32;
+}
+
+/* sub_43F7BD @ 0x43F7BD — hitbox test from menu button table.
+ * Tests mouse position against button entries. Returns 1-based index of hit
+ * button, or 0 if no hit. Handles hover state toggle via indirect pointer. */
+typedef struct {
+    i32 src_x;       /* +0x00 — source sprite x */
+    i32 src_y;       /* +0x04 — source sprite y */
+    i32 width;       /* +0x08 — hitbox width */
+    i32 height;      /* +0x0C — hitbox height */
+    i32 dst_x;       /* +0x10 — hitbox screen x */
+    i32 dst_y;       /* +0x14 — hitbox screen y */
+    i32 *state_ptr;  /* +0x18 — indirect state variable */
+    i32 hover_val;   /* +0x1C — value written on enter */
+    i32 unhover_val; /* +0x20 — value written on leave (-1 = no action) */
+    i32 is_hovered;  /* +0x24 — current hover flag */
+} menu_button_entry_t;
+
+static i32 menu_hitbox_test(i32 mx, i32 my, i32 mouse_btn,
+                            menu_button_entry_t *table, i32 count) {
+    /* sub_43F7BD @ 0x43F7BD */
+    for (i32 i = 0; i < count; i++) {
+        menu_button_entry_t *btn = &table[i];
+        if (mx < btn->dst_x || mx >= btn->dst_x + btn->width) continue;
+        if (my < btn->dst_y || my >= btn->dst_y + btn->height) continue;
+        if (mouse_btn != 0) {
+            if (!btn->is_hovered ||
+                (btn->state_ptr && *btn->state_ptr != btn->hover_val)) {
+                btn->is_hovered = 1;
+                if (btn->state_ptr) *btn->state_ptr = btn->hover_val;
+            } else if (btn->unhover_val != -1) {
+                btn->is_hovered = 0;
+                if (btn->state_ptr) *btn->state_ptr = btn->unhover_val;
+            }
+        }
+        return i + 1;
+    }
+    return 0;
+}
+
 /* -------------------------------------------------------------------------
  * Menu item table — MAIN_MENU_ITEMS
  *
@@ -457,20 +511,24 @@ static void menu_dispatch(menu_t *menu) {
             break;
 
         case MENU_ACTION_LOAD:
-            /* TODO: sub_437ADC — load-slot picker panel (SAVE.GIF, DKEGAME.CFG). */
-            print("menu: LOAD not yet implemented\n");
+            /* sub_4379C4 @ 0x4379C4 — load-slot picker panel.
+             * Loads SAVE.GIF backdrop, shows 2-button slot selector,
+             * returns slot index (1-based). Needs draw_image + overlay_cursor_image. */
+            print("menu: LOAD — sub_4379C4 (slot picker needs draw_image)\n");
             menu->state = MENU_STATE_MAIN;
             break;
 
         case MENU_ACTION_OPTIONS:
-            /* TODO: sub_438CA5 — options panel (brightness/contrast/shadow sliders). */
-            print("menu: OPTIONS not yet implemented\n");
+            /* sub_438CA5 (within 0x437EB7) — options panel.
+             * 8-state keyboard nav grid (brightness/contrast/shadow/volume sliders).
+             * Deeply interleaved with 10K+ instruction mega-function. */
+            print("menu: OPTIONS — sub_438CA5 (needs mega-function refactor)\n");
             menu->state = MENU_STATE_MAIN;
             break;
 
         case MENU_ACTION_SAVE:
-            /* TODO: save-slot picker panel. */
-            print("menu: SAVE not yet implemented\n");
+            /* sub_4379C4 @ 0x4379C4 — save-slot picker panel (same as LOAD). */
+            print("menu: SAVE — sub_4379C4 (slot picker needs draw_image)\n");
             menu->state = MENU_STATE_MAIN;
             break;
 
@@ -725,22 +783,14 @@ i32 process_mainmenu(menu_t *menu) {
      * menu_update, so we only report state here.
      *
      * Deep tree TODOs (pass 3 remainder):
-     *   TODO: sub_43F7BD       — exact hitbox test from var_4AE0[8] asm table
-     *   TODO: find_closest_palette_colors — palette remap for 8-bit mode
-     *   TODO: ls_lock_bmap / ls_unlock_bmap — 8-bit pixel remap loop (480×640)
-     *   TODO: sub_44CFF6       — volume query
-     *   TODO: help_screen_context — secondary sound channel
-     *   TODO: var_4B40 table   — sub-menu hitbox entries (SAVE/CREDITS panel)
-     *   TODO: select_language_version + DKEGAME.CFG — save slot existence check
-     *   TODO: game_exit_code   — global action code communicated to ls_main
-     *   TODO: is_demo / dword_4B4768 / dword_4B4854 — demo-mode guards
-     *   TODO: sub_4380F9       — new game bootstrap (Slice C)
-     *   TODO: sub_437ADC       — load-slot picker panel
-     *   TODO: sub_438CA5       — options panel (brightness/contrast/shadow)
-     *   TODO: menu_process_gamma — pre-menu brightness slider
-     *   TODO: sub_4374B0       — sprite animation init (intro fade path)
-     *   TODO: sub_4375DF       — sprite animation tick (intro fade loop)
-     *   TODO: sub_4378EA       — post-fade state reset
+     *   sub_43F7BD @ 0x43F7BD  — hitbox test: pure logic, implementable
+     *   sub_44CFF6 @ 0x44CFF6  — volume query: trivial arithmetic
+     *   sub_4374B0 @ 0x4374B0  — fade scan: per-row first-nonzero pixel
+     *   sub_4375DF @ 0x4375DF  — fade tick: curtain-reveal wipe animation
+     *   sub_4378EA @ 0x4378EA  — post-fade bounce: dampened sine oscillation
+     *   sub_437ADC (within 0x4379C4) — load-slot picker: SAVE.GIF + 2-button UI
+     *   sub_438CA5 (within 0x437EB7) — options panel: 8-state keyboard nav
+     *   Remaining: palette remap, sub-menu tables, save detection, demo guards
      */
 
     /* Release cursor bmaps on QUIT (state transitions away from MAIN).

@@ -127,6 +127,19 @@ static void *g_texture_config[TEXTURE_CONFIG_ENTRIES];
 static bmap_t *g_render_surface2  = NULL;   /* render_surface2 (asm sym) */
 static bmap_t *g_unk_4EDC00       = NULL;   /* unk_4EDC00 @ 004EDC00     */
 
+/* Palette buffer for upper-half palette (indices 128-255 from MENUGEN.GIF) */
+static u8 g_unk_4DDF30[0x300];              /* unk_4DDF30 @ 004DDF30 */
+
+/* Palette colour lookup tables (ls_build_palette_colour @ 0x482F40) */
+static u8  g_pal_sort_r[256];               /* byte_4D973C @ 004D973C */
+static u8  g_pal_sort_g[256];               /* byte_4D983C @ 004D983C */
+static u8  g_pal_sort_b[256];               /* byte_4D993C @ 004D993C */
+static i32 g_pal_range_r[256] __attribute__((unused)); /* dword_4D943C @ 004D943C */
+static i32 g_pal_range_g[256] __attribute__((unused)); /* dword_4D953C @ 004D953C */
+static i32 g_pal_range_b[256] __attribute__((unused)); /* dword_4D963C @ 004D963C */
+static u8 *g_ls_palette_colour_ptr = NULL;  /* _ls_palette_colour */
+static i32 g_pal_sort_channel __attribute__((unused)) = 0; /* dword_4BF594 @ 004BF594 */
+
 /* Misc */
 static i32 g_dword_4ECD3C        = 0;       /* dword_4ECD3C @ 004ECD3C  */
 static i32 g_is_using_hdd        = 0;       /* is_using_hdd (asm sym)   */
@@ -1083,10 +1096,13 @@ b8 game_init(state_t *state) {
             print("game_init: MENUGEN.GIF palette loaded -> %p\n", menugen_palette);
         }
 
-        /* memcpy 0x300 bytes from palette into unk_4DDF30                  *
-         * memset unk_4DDF30 first 0x180 bytes to 0                         *
-         * These are file-local statics we don't track; skip inline.        */
-        /* TODO: memcpy/memset to unk_4DDF30 @ 46C05F-46C071 */
+        /* Copy full 768-byte palette into unk_4DDF30, then zero first 384 bytes
+         * (indices 0-127). Net effect: keep only upper half (128-255). */
+        /* memcpy/memset unk_4DDF30 @ 0x46C05F-0x46C071 */
+        if (menugen_palette) {
+            memcpy(g_unk_4DDF30, menugen_palette, 0x300);
+            memset(g_unk_4DDF30, 0, 0x180);
+        }
 
         /* Release temporary palette */
         ls_free_palette(menugen_palette);       /* 46C076 */
@@ -1109,8 +1125,28 @@ b8 game_init(state_t *state) {
                   (i32)bm->width, bm->height);
         }
 
-        /* TODO: update_palette_with_default_colors @ 46C088 */
-        /* TODO: ls_build_palette_colour @ 46C08E */
+        /* update_palette_with_default_colors @ 0x40C840 — copy palette to color_table.
+         * Full version also runs per-entry RGB transform + ls_convert_colour.
+         * Simplified: just copy palette data into color_table. */
+        if (g_menugen_palette) {
+            memcpy(color_table, g_menugen_palette, 0x300);
+            color_table[0] = 0; color_table[1] = 0; color_table[2] = 0;
+        }
+
+        /* ls_build_palette_colour @ 0x482F40 — build sorted palette lookup tables
+         * for fast nearest-colour matching. Sorts 3 index arrays (R/G/B channels)
+         * via qsort, then builds range tables for each channel. */
+        if (g_menugen_palette) {
+            g_ls_palette_colour_ptr = (u8 *)g_menugen_palette;
+            for (i32 ci = 0; ci < 256; ci++) {
+                g_pal_sort_r[ci] = (u8)ci;
+                g_pal_sort_g[ci] = (u8)ci;
+                g_pal_sort_b[ci] = (u8)ci;
+            }
+            /* Sort by R, G, B channels using qsort (deferred — needs comparator
+             * with global channel state). Tables initialized with identity. */
+            print("game_init: ls_build_palette_colour — identity init (qsort deferred)\n");
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -1303,7 +1339,20 @@ b8 game_init(state_t *state) {
     /* Phase 22 — register_player_creature (ECX=1)                         */
     /* ------------------------------------------------------------------ */
     print("game_init: register_player_creature\n");
-    /* TODO: register_player_creature @ 0046C32C — ECX=1 configures serpent/fish/bird */
+    /* register_player_creature @ 0x40D265 — ECX=1 selects SERPENT creature type.
+     * Switch table: 1=SERPENT, 2=POISSON, 3=PIAF, 4=CHSOURIS, 5=TITI, 6=LAME.
+     * Each calls setup_creature("PERSOS>", name, ...) to load OME/MAT/OBC.
+     * setup_creature chain not yet ported — log creature selection for now. */
+    {
+        static const c8 *creature_names[] = {
+            NULL, "SERPENT", "POISSON", "PIAF", "CHSOURIS", "TITI", "LAME"
+        };
+        i32 creature_type = 1; /* ECX=1 from call site @ 0x46C32C */
+        if (creature_type >= 1 && creature_type <= 6) {
+            print("game_init: creature type %d = '%s' (setup_creature TODO)\n",
+                  creature_type, creature_names[creature_type]);
+        }
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 23 — init_font_system                                          */
@@ -1393,9 +1442,11 @@ b8 game_init(state_t *state) {
     /* Phase 31 — initialize_resource + palette_data wire-up               */
     /* ------------------------------------------------------------------ */
     print("game_init: initialize_resource + palette wire-up\n");
-    /* TODO: initialize_resource @ 0046C453 — ECX=ui_health_buffer slot;
-     *       result → palette_data                                         */
-    /* g_palette_data = initialize_resource(state->game.ui_health_buffer); */
+    /* initialize_resource @ 0x4033F8 — if resource ptr non-NULL, allocate
+     * 0x300-byte palette buffer. Thin wrapper around ls_init_palette. */
+    if (state->game.ui_health_buffer) {
+        g_palette_data = allocate_memory(MEM_SLOT_HEALTH, 0x300);
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 32 — game_state / game_death_state from dword_4B70E8          */

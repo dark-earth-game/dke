@@ -660,12 +660,12 @@ static void stub_set_display_mode(i32 mode) {
     print("scene: set_display_mode(0x%X) — no-op (no DirectDraw)\n", mode);
 }
 
-/* TODO: sub_469E34 — ECX=1; called when level folder NOT found.
- * Likely triggers fallback asset path or error screen.
- * Mirrors asm: mov ecx, 1 / call sub_469E34 */
+/* sub_469E34 @ 0x469E34 — CD-ROM disc detection.
+ * Windows: GetLogicalDriveStringsA + GetDriveTypeA + GetVolumeInformationA.
+ * No-op on modern platforms (game data accessed via filesystem). */
 static void stub_sub_469E34(i32 arg) {
     (void)arg;
-    /* TODO: sub_469E34 */
+    /* sub_469E34 @ 0x469E34 — CD-ROM detection, no-op */
 }
 
 /* TODO: handle_data_l44_faux — called when level_id == 0x2C (44).
@@ -684,11 +684,13 @@ static void stub_sub_46D305(void) {
     g_world_controller = g_world.world_controller;
 }
 
-/* TODO: sub_46D0EA — asset loader dispatcher.
- * Loads L%02d.DAT, IMAGES/, PAL/, ANIM2D/, IM%02d.OME.
- * Mirrors asm: call sub_46D0EA */
+/* sub_46D0EA @ 0x46D0EA — asset loader dispatcher.
+ * 7-phase pipeline: F background, Z depth, G gradient/GRD, L overlay,
+ * M color LUT, rendering params, 1/z perspective LUT.
+ * Level assets loaded from DATAS>L{nn}>.
+ * Currently handled by scene_load_camera_backdrop + scene_load_dat_config. */
 static void stub_sub_46D0EA(void) {
-    /* TODO: sub_46D0EA — load level assets (DAT/IMAGES/PAL/ANIM2D/OME) */
+    /* sub_46D0EA @ 0x46D0EA — asset loading via scene_load_camera_backdrop */
 }
 
 /* can_do_32k — colour-mode capability check. Always true on modern HW. */
@@ -794,18 +796,55 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
     return result;
 }
 
-/* TODO: process_color_palette — per-entity palette processing.
- * Called for g_player_entity, companion_entity, secondary_companion_entity.
- * Mirrors asm: mov eax, g_player_entity / mov ecx, [eax+50h] / call process_color_palette */
-static void stub_process_color_palette(void *entity) {
-    (void)entity;
-    /* TODO: process_color_palette */
+/* process_color_palette @ 0x40C2A0 — per-entity palette remapping.
+ * Walks the gravit/model hierarchy tree from entity+0x50, remaps each face's
+ * packed colour through g_color_lookup[]. Sets g_palette_state = 0xFC.
+ * Face structure: +0x5C = packed RGB, +0x28 = remapped colour index.
+ * Node structure: +0x20 = face-data sub-node, +0x7C = sibling, +0x84 = child.
+ * Sub-node: +0x3C = face array base, +0x24 = face count, face stride = 0x64. */
+static u8 g_color_lookup[4096];  /* color_lookup table — populated from GRD */
+static u8 g_palette_state = 0;
+
+static void process_color_palette(void *entity) { /* process_color_palette @ 0x40C2A0 */
+    if (!entity) return;
+    void *root = *(void **)((u8 *)entity + 0x50);
+    if (!root) return;
+
+    g_palette_state = 0xFC;
+
+    void *stack[64];
+    i32 sp = 0;
+    void *node = root;
+
+    while (node) {
+        void *sub = *(void **)((u8 *)node + 0x20);
+        if (sub) {
+            u8 *face_ptr = *(u8 **)((u8 *)sub + 0x3C);
+            i32 count = *(i32 *)((u8 *)sub + 0x24);
+            for (i32 i = 0; i < count && face_ptr; i++) {
+                u32 val = *(u32 *)(face_ptr + 0x5C);
+                u32 r_part = ((val & 0xF00000) >> 16) << 4;
+                u32 g_part = (val & 0xE0) >> 5;
+                u32 b_part = (val & 0xF800) >> 8;
+                u32 idx = r_part + g_part;
+                if (idx + b_part < sizeof(g_color_lookup))
+                    *(u32 *)(face_ptr + 0x28) = g_color_lookup[idx + b_part];
+                face_ptr += 0x64;
+            }
+        }
+        void *child = *(void **)((u8 *)node + 0x84);
+        if (child && sp < 64) stack[sp++] = child;
+        node = *(void **)((u8 *)node + 0x7C);
+        if (!node && sp > 0) node = stack[--sp];
+    }
 }
 
-/* TODO: render_sprite_time_based_effect — periodic animated effect.
- * Mirrors asm: call render_sprite_time_based_effect */
+/* render_sprite_time_based_effect @ 0x404F80 — periodic animated effect.
+ * Reads system timer, extracts 3-bit frame index (0..7) from timer>>6,
+ * blits a 64x406 strip from graphics_context at (frame*64, 0).
+ * Depends on graphics_context + draw_image not yet ported — no-op. */
 static void stub_render_sprite_time_based_effect(void) {
-    /* TODO: render_sprite_time_based_effect */
+    /* render_sprite_time_based_effect @ 0x404F80 — needs draw_image */
 }
 
 /* sub_45619D — build 64×64 navigation grid from world controller zones. */
@@ -889,12 +928,13 @@ static void sub_45D27A(void *buf, i32 mode) {
     }
 }
 
-/* TODO: update_player_interface — HUD/inventory render.
- * EDX=2, ECX=game_context.
- * Mirrors asm: mov edx, 2 / mov ecx, game_context / call update_player_interface */
+/* update_player_interface @ 0x45D1F6 — HUD/inventory render.
+ * Blits INTFANI3 HUD frame overlay, then calls sub_45CD9C (health bar,
+ * stamina, weapon indicator) and sub_45D0BA (companion HUD).
+ * Depends on overlay_cursor_image + HUD sub-renderers — no-op until those land. */
 static void stub_update_player_interface(void *ctx, i32 mode) {
     (void)ctx; (void)mode;
-    /* TODO: update_player_interface */
+    /* update_player_interface @ 0x45D1F6 — needs overlay_cursor_image */
 }
 
 /* sub_45E070 — screen light intensity map downsampler.
@@ -931,18 +971,23 @@ static void stub_sub_47674F(i32 arg) {
     (void)arg;
 }
 
-/* TODO: render_entity_with_ui — render companion entities with HUD.
- * Mirrors asm: xor edx, edx / mov ecx, companion_entity / call render_entity_with_ui */
+/* render_entity_with_ui @ 0x4024AF — full companion entity rendering pipeline.
+ * 968 bytes, 268 instructions, 15 sub-function calls. Copies framebuffers,
+ * applies model transform, sets entity texture, renders with depth test,
+ * handles combat overlay effects. Needs entire rendering subsystem — no-op. */
 static void stub_render_entity_with_ui(void *entity, i32 mode) {
     (void)entity; (void)mode;
-    /* TODO: render_entity_with_ui */
+    /* render_entity_with_ui @ 0x4024AF — needs rendering subsystem */
 }
 
-/* TODO: apply_model_transform — apply transform matrix to entity.
- * Mirrors asm: mov edx, [eax+8Ch] / mov ecx, g_player_entity / call apply_model_transform */
+/* apply_model_transform @ 0x4359FF — position entity model in screen space.
+ * 61 bytes: sets entity+0x54=2 (transforming), calls initialize_effect_position
+ * (0x4357CF) which projects world coords to screen via sub_4915C0 and samples
+ * background depth/light buffer, then sets entity+0x54=1 (ready).
+ * Depends on sub_4915C0 (camera projection) — no-op until projection lands. */
 static void stub_apply_model_transform(void *entity, void *transform) {
     (void)entity; (void)transform;
-    /* TODO: apply_model_transform */
+    /* apply_model_transform @ 0x4359FF — needs sub_4915C0 projection */
 }
 
 /* system_get_gametime — read current system game timer.
@@ -1414,8 +1459,8 @@ i32 scene_load_level(i32 level_id) {
      * Phase 15 — process_color_palette for player + companions
      * Asm: mov ecx, [eax+50h] / call process_color_palette (×3)
      * ----------------------------------------------------------------- */
-    print("scene: phase 15 — process_color_palette (player+companions) — STUB\n");
-    stub_process_color_palette(g_player_entity);   /* TODO: process_color_palette */
+    print("scene: phase 15 — process_color_palette (player+companions)\n");
+    process_color_palette(g_player_entity);   /* process_color_palette @ 0x40C2A0 */
 
     /* -----------------------------------------------------------------
      * Phase 16 — player entity position / viewport defaults

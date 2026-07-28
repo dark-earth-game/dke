@@ -453,9 +453,9 @@ void player_input_update(player_input_t *out, system_t *sys) {
     /* Attack edge: mouse_left pressed-this-frame (value == 2) */
     if (sys->mouse_left == 2) out->want_action = 1;
 
-    /* Log only when moving (suppress per-frame noise). */
-    if (out->velocity_x != 0.0f || out->velocity_z != 0.0f) {
-        print("player: input v=(%.1f, %.1f) action=%d\n",
-              out->velocity_x, out->velocity_z, out->want_action);
-    }
+    // /* Log only when moving (suppress per-frame noise). */
+    // if (out->velocity_x != 0.0f || out->velocity_z != 0.0f) {
+    //     print("player: input v=(%.1f, %.1f) action=%d\n",
+    //           out->velocity_x, out->velocity_z, out->want_action);
+    // }
 }
