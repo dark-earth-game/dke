@@ -21,6 +21,7 @@
 #include "lieu_cb.h"
 #include "lieu01.h"
 #include "player.h"
+#include "dialogue.h"
 
 /* -------------------------------------------------------------------------
  * Per-level state buffer + owned vtable pointer.
@@ -78,7 +79,12 @@ static i32 bam_angle(i32 dx, i32 dz) {
  * TODO wire: map each to a real dke engine primitive.
  * ---------------------------------------------------------------------- */
 static void cb_named_object(const c8 *name) { CBLOG("named_object"); (void)name; }
-static void cb_named_object_int(const c8 *name, i32 v) { CBLOG("named_object_int"); (void)name; (void)v; }
+static void cb_named_object_int(const c8 *name, i32 v) {
+    (void)v;
+    /* L-code line ids ("L01D02", "L01D17A") are dialogue lines -> speak. */
+    if (name && name[0] == 'L' && name[1] >= '0' && name[1] <= '9' && name[3] == 'D')
+        dlg_say(name);
+}
 static void cb_named_two_ints(i32 id, i32 p) { CBLOG("named_two_ints"); (void)id; (void)p; }
 /* Cinematique(name): the LIEU script asks to play cutscene <name> (e.g.
  * "SC22_500"). Map to "SCnn.CRH" and QUEUE it — the movie player must run
@@ -259,6 +265,7 @@ void lieu_enter(i32 level_id) {
     zones_clear();   /* engine memsets dword_506C80 to -1 before INIT arms */
     g_spawn_count = 0;
     g_lieu_room_entered = 0;
+    dlg_reset();
     /* Trace on via env LIEU_TRACE=1 (observe opcode dispatch at runtime). */
     g_lieu_trace = (getenv("LIEU_TRACE") != NULL);
 
@@ -343,6 +350,13 @@ void lieu_enter_room(void) {
     print("lieu: intro done -> entering room (submode 0), re-running INIT\n");
     lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0);
     print("lieu: room INIT placed %d personas\n", g_spawn_count);
+
+    /* DEMO: queue the opening exchange so the dialogue pipeline (subtitle +
+     * WAV) is exercised on new game. The trigger-driven conversation is
+     * gated on gameplay state (zone entry / facing) dke can't produce yet;
+     * these lines are the real level-1 opening from NWDIAL01. */
+    dlg_say("L01D02");    /* "Kalhi, tu dors?" */
+    dlg_say("L01D17A");
 }
 
 /* -------------------------------------------------------------------------

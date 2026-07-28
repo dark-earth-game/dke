@@ -50,6 +50,7 @@
 #include "libsys/common.h"
 #include "libsys/file_system.h"
 #include "libsys/movie.h"
+#include "dialogue.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/font.h"
 #include "libsys/graphics/shading.h"
@@ -1546,6 +1547,12 @@ i32 scene_render(system_t *sys) {
         i32 zone = lieu_detect_zone();
         if (zone >= 0) lieu_zone_trigger(zone);
     }
+    /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script. */
+    if (g_scene_bg_level >= 0) {
+        const c8 *root = (state && state->game_path) ? state->game_path : ".";
+        dlg_tick(g_scene_bg_level, root, "FR",
+                 sys ? sys->timer.tick : 0);
+    }
     /* Play any cutscene the LIEU script queued (intro FMV, etc). Safe here
      * in the render phase; ls_play_movie runs its own blocking decode loop. */
     {
@@ -1838,6 +1845,17 @@ i32 scene_render(system_t *sys) {
             if (sx < 4)   sx = 4;
             if (sx > 560) sx = 560;
             draw_text_at(font_handle, sx, sy - 90, nm, 0xFFFFE060u);  /* name over head */
+        }
+    }
+
+    /* Dialogue subtitle (current spoken line). */
+    {
+        const c8 *sub = dlg_active_text();
+        if (sub && sub[0]) {
+            i32 len = (i32)strlen(sub);
+            i32 sx  = 320 - (len * 8) / 2;   /* rough centre (8px/char) */
+            if (sx < 8) sx = 8;
+            draw_text_at(font_handle, sx, 430, sub, 0xFFFFFFFFu);
         }
     }
     return 0;
