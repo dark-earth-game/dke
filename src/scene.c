@@ -241,9 +241,15 @@ static i32        g_scene_objc_loaded = 0;
  * ---------------------------------------------------------------------- */
 #define PERSONA_CACHE_MAX 12
 typedef struct {
-    i32       num;                             /* persona number, -1 = empty */
-    model_t  *atoms[SCENE_OME_MAX_ATOMS];
-    i32       count;
+    i32        num;                            /* persona number, -1 = empty */
+    model_t   *atoms[SCENE_OME_MAX_ATOMS];
+    i32        count;
+    ome_objc_t objc;                           /* skeleton for FK            */
+    i32        objc_loaded;
+    can_anim_t can;                            /* ARR01 arrival clip         */
+    i32        can_loaded;
+    i32        frame;
+    u32        can_last;
 } persona_mesh_t;
 static persona_mesh_t g_persona_cache[PERSONA_CACHE_MAX];
 static i32            g_persona_cache_n = 0;
@@ -294,9 +300,33 @@ static i32 persona_mesh_load(i32 num) {
         }
         ome_atom_free(&atom);
     }
+    /* OBJC skeleton (parse before freeing the OME raw buffer). */
+    pm->objc_loaded = 0;
+    for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+        if (ome.chunks[ci].kind == OME_CHUNK_OBJC) {
+            pm->objc_loaded = ome_parse_objc(ome.raw, ome.raw_size,
+                                             ome.chunks[ci].offset, &pm->objc);
+            break;
+        }
+    }
     model_ome_free(&ome);
     if (pm->count == 0) return -1;
-    print("scene: loaded persona mesh P%02d.OME (%d atoms)\n", num, pm->count);
+
+    /* Load the persona's own CAN, selecting the ARR01 arrival clip by hash;
+     * fall back to P01.CAN (g01arr01) for personas without a CAN. */
+    pm->can_loaded = 0; pm->frame = 0; pm->can_last = 0;
+    c8 clip[16], cvp[32], chost[512];
+    snprintf(clip, sizeof(clip), "p%02darr01", num);
+    snprintf(cvp,  sizeof(cvp),  "ANM>P%02d.CAN", num);
+    if (ls_resolve_path(base, cvp, chost, (i32)sizeof(chost)) &&
+        can_load_named(chost, clip, &pm->can)) {
+        pm->can_loaded = 1;
+    } else if (ls_resolve_path(base, "ANM>P01.CAN", chost, (i32)sizeof(chost))) {
+        pm->can_loaded = can_load_named(chost, "g01arr01", &pm->can);
+    }
+
+    print("scene: loaded persona P%02d.OME (%d atoms, objc=%d, can=%d)\n",
+          num, pm->count, pm->objc_loaded, pm->can_loaded);
     return g_persona_cache_n++;
 }
 
@@ -1452,21 +1482,19 @@ static void scene_mat3_apply(const scene_mat3_t *r, i32 tx, i32 ty, i32 tz,
  * Updates g_scene_objc.world_tx/ty/tz[render_atom] in place.
  * kf may be NULL (T-pose: all rotations = identity).
  */
-static void scene_update_bone_positions(const can_frame_t *kf) {
-    if (!g_scene_objc_loaded) return;
-    i32 n = g_scene_objc.n_bones;
+/* Per-skeleton bone FK — writes objc->world_tx/ty/tz[atom] from keyframe kf.
+ * Parameterized so each persona drives its own OBJC skeleton. */
+static void objc_update_bone_positions(ome_objc_t *objc, const can_frame_t *kf) {
+    i32 n = objc->n_bones;
     if (n <= 0 || n > OME_MAX_BONES) return;
 
-    /* Per-bone accumulated world position (OME raw units, relative to root) */
-    i32       bone_wx[OME_MAX_BONES];
-    i32       bone_wy[OME_MAX_BONES];
-    i32       bone_wz[OME_MAX_BONES];
-    /* Per-bone accumulated rotation (product of all ancestors' rotations) */
+    i32          bone_wx[OME_MAX_BONES];
+    i32          bone_wy[OME_MAX_BONES];
+    i32          bone_wz[OME_MAX_BONES];
     scene_mat3_t bone_rot[OME_MAX_BONES];
 
-    i32 j;
-    for (j = 0; j < n; j++) {
-        const ome_bone_t *b = &g_scene_objc.bones[j];
+    for (i32 j = 0; j < n; j++) {
+        const ome_bone_t *b = &objc->bones[j];
         i32 rx_idx = 0, ry_idx = 0;
         if (kf && j < CAN_MAX_ATOMSLOTS) {
             rx_idx = (i32)((u32)kf->atoms[j].rx >> 4) & 0xFFF;
@@ -1476,28 +1504,29 @@ static void scene_update_bone_positions(const can_frame_t *kf) {
 
         i32 parent = b->h2;
         if (parent < 0 || parent >= n) {
-            /* Root bone: world position = (0,0,0), accum rot = local */
             bone_wx[j] = 0; bone_wy[j] = 0; bone_wz[j] = 0;
             bone_rot[j] = local_rot;
         } else {
-            /* Rotate this bone's local translation by parent's accumulated rot */
             i32 rx, ry, rz;
-            scene_mat3_apply(&bone_rot[parent], b->tx, b->ty, b->tz,
-                             &rx, &ry, &rz);
+            scene_mat3_apply(&bone_rot[parent], b->tx, b->ty, b->tz, &rx, &ry, &rz);
             bone_wx[j] = bone_wx[parent] + rx;
             bone_wy[j] = bone_wy[parent] + ry;
             bone_wz[j] = bone_wz[parent] + rz;
             bone_rot[j] = scene_mat3_mul(&bone_rot[parent], &local_rot);
         }
 
-        /* Write to render atom world position if this bone has geometry */
-        i32 ai = g_scene_objc.can_to_render[j];
-        if (ai >= 0 && ai < g_scene_objc.n_atomslots) {
-            g_scene_objc.world_tx[ai] = bone_wx[j];
-            g_scene_objc.world_ty[ai] = bone_wy[j];
-            g_scene_objc.world_tz[ai] = bone_wz[j];
+        i32 ai = objc->can_to_render[j];
+        if (ai >= 0 && ai < objc->n_atomslots) {
+            objc->world_tx[ai] = bone_wx[j];
+            objc->world_ty[ai] = bone_wy[j];
+            objc->world_tz[ai] = bone_wz[j];
         }
     }
+}
+
+static void scene_update_bone_positions(const can_frame_t *kf) {
+    if (!g_scene_objc_loaded) return;
+    objc_update_bone_positions(&g_scene_objc, kf);
 }
 
 /*
@@ -1727,18 +1756,46 @@ i32 scene_render(system_t *sys) {
             /* Project the persona's world position (tile x600) to screen. */
             i32 psx, psy;
             scene_project_world(wxt * 600, g_proj_ground_wy, wzt * 600, &psx, &psy);
-            /* Load this persona's own mesh (P<nn>.OME); else use player mesh. */
+            /* Load this persona's own mesh + skeleton + ARR01 clip. */
             i32 ci = persona_mesh_load(persona_num_from_name(nm));
-            model_t **atoms = (ci >= 0) ? g_persona_cache[ci].atoms
-                                        : g_scene_ome_atoms;
-            i32 acount      = (ci >= 0) ? g_persona_cache[ci].count
-                                        : g_scene_ome_atom_count;
-            for (i32 ai = 0; ai < acount; ai++) {
-                model_render(atoms[ai], sys, psx, psy,
+            if (ci < 0) {
+                /* fallback: player mesh, static pose */
+                for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++)
+                    model_render(g_scene_ome_atoms[ai], sys, psx, psy, focal, tick,
+                                 g_cube_world_z, cube_world_size, z_far,
+                                 g_scene_l_bmap, g_scene_z_bmap, 0, 0, 0, 0, 0, 0);
+                continue;
+            }
+            persona_mesh_t *pm = &g_persona_cache[ci];
+            /* Advance the persona's animation frame. */
+            if (pm->can_loaded && pm->can.n_frames > 0 &&
+                tick - pm->can_last >= CAN_FRAME_MS) {
+                pm->frame = (pm->frame + 1) % pm->can.n_frames;
+                pm->can_last = tick;
+            }
+            const can_frame_t *kf = pm->can_loaded ? &pm->can.frames[pm->frame] : NULL;
+            if (pm->objc_loaded) objc_update_bone_positions(&pm->objc, kf);
+            /* Per-atom rotation table from the keyframe (via OBJC slot map). */
+            i32 prx[SCENE_OME_MAX_ATOMS] = {0}, pry[SCENE_OME_MAX_ATOMS] = {0};
+            if (kf && pm->objc_loaded) {
+                for (i32 jj = 0; jj < pm->objc.n_bones && jj < CAN_MAX_ATOMSLOTS; jj++) {
+                    i32 ri = pm->objc.can_to_render[jj];
+                    if (ri < 0 || ri >= pm->count) continue;
+                    prx[ri] = (i32)((u32)kf->atoms[jj].rx >> 4) & 0xFFF;
+                    pry[ri] = (i32)((u32)kf->atoms[jj].ry >> 4) & 0xFFF;
+                }
+            }
+            for (i32 ai = 0; ai < pm->count; ai++) {
+                i32 tx = (pm->objc_loaded && ai < pm->objc.n_atomslots)
+                           ? pm->objc.world_tx[ai] * ATOM_SCALE : 0;
+                i32 ty = (pm->objc_loaded && ai < pm->objc.n_atomslots)
+                           ? pm->objc.world_ty[ai] * ATOM_SCALE : 0;
+                i32 tz = (pm->objc_loaded && ai < pm->objc.n_atomslots)
+                           ? pm->objc.world_tz[ai] * ATOM_SCALE : 0;
+                model_render(pm->atoms[ai], sys, psx, psy,
                              focal, tick, g_cube_world_z, cube_world_size, z_far,
                              g_scene_l_bmap, g_scene_z_bmap,
-                             0, 0, 0,       /* static default pose */
-                             0, 0, 0);
+                             prx[ai] ? 1 : 0, pry[ai], prx[ai], tx, ty, tz);
             }
         }
     } else {

@@ -73,3 +73,10 @@ typedef struct {
  * Returns 1 on success, 0 on failure.
  */
 i32 can_load_first(const c8 *host_path, can_anim_t *out);
+
+/*
+ * can_load_named — load the clip whose name hashes to clip_name (e.g.
+ * "p12arr01" selects the ARR01 arrival clip). Falls back to the first clip
+ * if no hash match. Returns 1 on success, 0 on failure.
+ */
+i32 can_load_named(const c8 *host_path, const c8 *clip_name, can_anim_t *out);
