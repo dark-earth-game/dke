@@ -1612,10 +1612,10 @@ i32 scene_render(system_t *sys) {
         i32 next = g_scene_camera - 1;
         if (next < 0) next = g_scene_camera_max;
         print("scene: cam prev %d -> %d\n", g_scene_camera, next);
-        if (!scene_load_camera_backdrop(g_scene_bg_level, next)) {
-            /* Failed — the previous cam may not exist; try wrapping to 0. */
-            if (next != 0) scene_load_camera_backdrop(g_scene_bg_level, 0);
-        }
+        if (!scene_load_camera_backdrop(g_scene_bg_level, next) && next != 0)
+            scene_load_camera_backdrop(g_scene_bg_level, 0);
+        scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
+        model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
     }
     /* Right arrow (keyCode 124 → actions[39]) — next camera */
     if (sys->actions[39] == 1) {
@@ -1624,10 +1624,13 @@ i32 scene_render(system_t *sys) {
         if (next > g_scene_camera_max) next = 0;
         print("scene: cam next %d -> %d\n", g_scene_camera, next);
         if (!scene_load_camera_backdrop(g_scene_bg_level, next)) {
-            /* Cap discovered — remember it and wrap. */
             g_scene_camera_max = g_scene_camera;
             scene_load_camera_backdrop(g_scene_bg_level, 0);
         }
+        /* Reload projection (INF matrix) + pitch for the new camera so
+         * characters and zones project correctly, not just the backdrop. */
+        scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
+        model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
     }
     /* Esc (keyCode 53 → actions[27]) — request return to main menu */
     if (sys->actions[27] == 1) {
