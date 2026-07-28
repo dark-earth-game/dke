@@ -169,7 +169,7 @@ typedef struct {
  * ------------------------------------------------------------------------- */
 
 #define OME_MAX_BONES      32
-#define OME_MAX_ATOMSLOTS  20
+#define OME_MAX_ATOMSLOTS  24   /* P12 has 21 atom slots; keep headroom */
 
 typedef struct {
     char name[16];
@@ -185,6 +185,10 @@ typedef struct {
     i32         world_tx[OME_MAX_ATOMSLOTS];
     i32         world_ty[OME_MAX_ATOMSLOTS];
     i32         world_tz[OME_MAX_ATOMSLOTS];
+    /* Accumulated world rotation per atom (Q14 3x3, row-major m[row*3+col]),
+     * from the CAN keyframe hierarchy — applied to the atom's vertices so the
+     * limb geometry rotates with the pose, not just its pivot position. */
+    i32         world_rot[OME_MAX_ATOMSLOTS][9];
     i32         can_to_render[OME_MAX_BONES]; /* CAN slot j → render atom (-1 = no geo) */
 } ome_objc_t;
 

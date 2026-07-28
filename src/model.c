@@ -400,6 +400,7 @@ void model_render_world(const model_t *m,
                         i32 obj_wx, i32 obj_wy, i32 obj_wz, i32 facing,
                         i32 vshift, i32 flip_y,
                         i32 atom_tx, i32 atom_ty, i32 atom_tz,
+                        const i32 *bone_rot,
                         const bmap_t *l_bmap, const bmap_t *z_bmap,
                         const u8 *pal, const u8 *grd,
                         float lx, float ly, float lz) {
@@ -427,7 +428,6 @@ void model_render_world(const model_t *m,
     i32 sax = MRW_SCALE(atom_tx << 1);
     i32 say = MRW_SCALE(atom_ty << 1);
     i32 saz = MRW_SCALE(atom_tz << 1);
-    if (flip_y) say = -say;
 
     static mrw_vert_t P[MRW_MAX_VERTS];
     for (i32 i = 0; i < m->vertex_count; i++) {
@@ -443,12 +443,24 @@ void model_render_world(const model_t *m,
             oy = m->vertices[i].y << (-vshift);
             oz = m->vertices[i].z << (-vshift);
         }
-        if (flip_y) oy = -oy;
 
-        /* Object facing rotation (yaw about world Y) + per-atom bone offset. */
-        i32 rx = (i32)(( (i64)ox * cyf + (i64)oz * syf) >> 14) + sax;
-        i32 rz = (i32)((-(i64)ox * syf + (i64)oz * cyf) >> 14) + saz;
-        i32 ry = oy + say;
+        /* Skeletal pose: rotate the atom's vertices by the bone's accumulated
+         * world rotation (Q14 row-major), so the limb geometry follows the
+         * animation, not just its pivot. Then offset to the bone world pos. */
+        if (bone_rot) {
+            i32 bx = (i32)(( (i64)bone_rot[0]*ox + (i64)bone_rot[1]*oy + (i64)bone_rot[2]*oz) >> 14);
+            i32 by = (i32)(( (i64)bone_rot[3]*ox + (i64)bone_rot[4]*oy + (i64)bone_rot[5]*oz) >> 14);
+            i32 bz = (i32)(( (i64)bone_rot[6]*ox + (i64)bone_rot[7]*oy + (i64)bone_rot[8]*oz) >> 14);
+            ox = bx; oy = by; oz = bz;
+        }
+        /* Character-local posed vertex (bone pivot in the same local frame). */
+        i32 lx0 = ox + sax, ly0 = oy + say, lz0 = oz + saz;
+        if (flip_y) ly0 = -ly0;
+
+        /* Character facing (yaw about world Y). */
+        i32 rx = (i32)(( (i64)lx0 * cyf + (i64)lz0 * syf) >> 14);
+        i32 rz = (i32)((-(i64)lx0 * syf + (i64)lz0 * cyf) >> 14);
+        i32 ry = ly0;
 
         /* Object -> world. */
         i32 wx = obj_wx + rx, wy = obj_wy + ry, wz = obj_wz + rz;

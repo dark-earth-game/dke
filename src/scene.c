@@ -1629,6 +1629,7 @@ static void objc_update_bone_positions(ome_objc_t *objc, const can_frame_t *kf) 
             objc->world_tx[ai] = bone_wx[j];
             objc->world_ty[ai] = bone_wy[j];
             objc->world_tz[ai] = bone_wz[j];
+            for (i32 k = 0; k < 9; k++) objc->world_rot[ai][k] = bone_rot[j].m[k];
         }
     }
 }
@@ -2001,16 +2002,15 @@ i32 scene_render(system_t *sys) {
             i32 objy   = pground + myoff;
             (void)psx; (void)psy; (void)prx; (void)pry;
             for (i32 ai = 0; ai < pm->count; ai++) {
-                i32 tx = (pm->objc_loaded && ai < pm->objc.n_atomslots)
-                           ? pm->objc.world_tx[ai] : 0;
-                i32 ty = (pm->objc_loaded && ai < pm->objc.n_atomslots)
-                           ? pm->objc.world_ty[ai] : 0;
-                i32 tz = (pm->objc_loaded && ai < pm->objc.n_atomslots)
-                           ? pm->objc.world_tz[ai] : 0;
+                i32 have = pm->objc_loaded && ai < pm->objc.n_atomslots;
+                i32 tx = have ? pm->objc.world_tx[ai] : 0;
+                i32 ty = have ? pm->objc.world_ty[ai] : 0;
+                i32 tz = have ? pm->objc.world_tz[ai] : 0;
+                const i32 *brot = have ? pm->objc.world_rot[ai] : NULL;
                 model_render_world(pm->atoms[ai],
                                    g_proj_R, g_proj_T, g_proj_gscale,
                                    wxt * 600, objy, wzt * 600, pfac,
-                                   mshift, mflip, tx, ty, tz,
+                                   mshift, mflip, tx, ty, tz, brot,
                                    g_scene_l_bmap, NULL,
                                    g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                    (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
@@ -2041,13 +2041,15 @@ i32 scene_render(system_t *sys) {
                     const can_frame_t *kf = pm->can_loaded ? &pm->can.frames[pm->frame] : NULL;
                     if (pm->objc_loaded) objc_update_bone_positions(&pm->objc, kf);
                     for (i32 ai = 0; ai < pm->count; ai++) {
-                        i32 tx = (pm->objc_loaded && ai < pm->objc.n_atomslots) ? pm->objc.world_tx[ai] : 0;
-                        i32 ty = (pm->objc_loaded && ai < pm->objc.n_atomslots) ? pm->objc.world_ty[ai] : 0;
-                        i32 tz = (pm->objc_loaded && ai < pm->objc.n_atomslots) ? pm->objc.world_tz[ai] : 0;
+                        i32 have = pm->objc_loaded && ai < pm->objc.n_atomslots;
+                        i32 tx = have ? pm->objc.world_tx[ai] : 0;
+                        i32 ty = have ? pm->objc.world_ty[ai] : 0;
+                        i32 tz = have ? pm->objc.world_tz[ai] : 0;
+                        const i32 *brot = have ? pm->objc.world_rot[ai] : NULL;
                         model_render_world(pm->atoms[ai],
                                            g_proj_R, g_proj_T, g_proj_gscale,
                                            g_player_wx, pfloor, g_player_wz, g_player_facing,
-                                           pmshift, pmflip, tx, ty, tz,
+                                           pmshift, pmflip, tx, ty, tz, brot,
                                            g_scene_l_bmap, NULL,
                                            g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                            (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
