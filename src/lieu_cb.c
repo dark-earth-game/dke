@@ -179,7 +179,23 @@ static void cb_actor_934(i32 zone, i32 facing, i32 a2, i32 a3, i32 a4) {
     CBLOG("actor_934"); (void)zone; (void)facing; (void)a2; (void)a3; (void)a4;
 }
 static void cb_cb_458(i32 a, i32 b) { CBLOG("cb_458"); (void)a; (void)b; }
-static void cb_cb_984(i32 a, i32 b) { CBLOG("cb_984"); (void)a; (void)b; }
+/* CHANGEPIECE (opcode 10, dkev sub_4455EE): a = target level id, b = entry
+ * point id. Queues a room change unless the target is the current level or
+ * negative (which the engine treats as a same-room reposition). The main
+ * scene loop drains this via lieu_poll_level_change and reloads the level. */
+static i32 g_next_level = -1;
+static i32 g_next_entry = 0;
+static void cb_cb_984(i32 a, i32 b) {
+    print("lieu_cb: CHANGEPIECE target=%d entry=%d (cur=%d)\n", a, b, g_lieu_level);
+    if (a >= 0 && a != g_lieu_level) { g_next_level = a; g_next_entry = b; }
+}
+
+/* Pending room change target (or -1). Clears on read; fills *entry. */
+i32 lieu_poll_level_change(i32 *entry) {
+    i32 t = g_next_level;
+    if (t >= 0) { if (entry) *entry = g_next_entry; g_next_level = -1; }
+    return t;
+}
 static void cb_place_95C(const c8 *name, i32 id, i32 coord) { CBLOG("place_95C"); (void)name; (void)id; (void)coord; }
 /* slot 12 sub_445765 AjouteZone(id, cx, cz, sizeX, sizeZ, flag): register
  * a static zone rectangle (spatial args scaled tile->world by 600). */

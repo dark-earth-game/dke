@@ -161,6 +161,11 @@ i32 lieu_detect_zone(void);
  * (once), or NULL. Drained by scene_render (safe render context). */
 const c8 *lieu_poll_movie(void);
 
+/* CHANGEPIECE (opcode 10): pending room-change target level id (or -1 if
+ * none). Set when the LIEU script calls slot 10 to walk to another room.
+ * Clears on read; writes the destination entry-point id to *entry. */
+i32 lieu_poll_level_change(i32 *entry);
+
 /* One-shot intro->room transition: re-runs INIT at submode 0 so trig00
  * places the room's arrival characters. Call after the intro movie plays. */
 void lieu_enter_room(void);

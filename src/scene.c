@@ -1575,6 +1575,27 @@ i32 scene_render(system_t *sys) {
         }
         if (zone >= 0) lieu_zone_trigger(zone);
     }
+
+    /* Room change: the LIEU script fired CHANGEPIECE (slot 10) — walk to the
+     * target room. Teardown the current level, load the target; the new room's
+     * INIT (trig00 POSPERSO) places the player at the entry door. */
+    {
+        i32 entry = 0;
+        i32 next  = lieu_poll_level_change(&entry);
+        if (next < 0 && getenv("DKE_GOTO")) {         /* test hook: force a room change */
+            static i32 fired = 0;
+            static i32 frames = 0;
+            if (!fired && ++frames > 60) { next = atoi(getenv("DKE_GOTO")); fired = 1; }
+        }
+        if (next >= 0 && next != g_scene_bg_level) {
+            print("scene: CHANGEPIECE -> load level %d (entry %d)\n", next, entry);
+            lieu_exit();
+            g_player_seeded = 0;
+            scene_load_level(next);
+            return 0;   /* new level loaded; resume next frame */
+        }
+    }
+
     /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script.
      * Each line HOLDS until the player advances (mouse click edge). Polled
      * here before the movement block so we get the want_action edge first. */
