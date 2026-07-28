@@ -82,6 +82,101 @@ static void ent_set_u32(void *ent, i32 off, u32 val) {
     ent_put(ent, off, val);
 }
 
+/* Scene hierarchy node offsets (from IDA — 32-bit layout). */
+#define SNODE_NAME         0x04  /* inline name string */
+#define SNODE_PARENT       0x78  /* parent back-pointer (set by wire_hierarchy) */
+#define SNODE_FIRST_CHILD  0x7C  /* first child */
+#define SNODE_PREV_SIB     0x80  /* previous sibling (set by wire_hierarchy) */
+#define SNODE_NEXT_SIB     0x84  /* next sibling */
+
+static inline void *snode_ptr(void *node, int off) {
+    return *(void **)((u8 *)node + off);
+}
+static inline void snode_set(void *node, int off, void *val) {
+    *(void **)((u8 *)node + off) = val;
+}
+
+static const char *bone_names[ENTITY_BONE_SLOTS] = {
+    "tree",   "basdos", "hangau", "handro", "gendro",
+    "piedro", "gengau", "piegau", "mildos", "haudos",
+    "bascou", "epagau", "epadro", "coudro", "poidro",
+    "cougau", "poigau", "tete",   "talgau", "taldro",
+    "ddpgau", "ddpdro", "acces0", "acces1", "acces2",
+    "acces3", "acces4", "pacdro", "pacgau", "hacdro",
+    "hacgau", "arme",   "armea",  "armem"
+};
+
+/* -------------------------------------------------------------------------
+ * sub_4699D9 — Scene Hierarchy Back-Pointer Init (47 instructions)
+ *
+ * Depth-first traversal of scene/skeleton tree using internal stack (256).
+ * For each node sets:
+ *   [child+0x78]   = parent node
+ *   [sibling+0x80] = previous sibling
+ * Tree links: [node+0x7C] = first child, [node+0x84] = next sibling.
+ * ---------------------------------------------------------------------- */
+void entity_wire_hierarchy(void *root_node) {
+    void *stack[256];
+    int sp = 0;
+
+    if (!root_node) return;
+
+    stack[sp++] = root_node;
+
+    while (sp > 0) {
+        void *node = stack[--sp];
+        void *child = snode_ptr(node, SNODE_FIRST_CHILD);
+        void *prev = NULL;
+
+        while (child) {
+            snode_set(child, SNODE_PARENT, node);
+            snode_set(child, SNODE_PREV_SIB, prev);
+
+            if (sp < 256)
+                stack[sp++] = child;
+
+            prev = child;
+            child = snode_ptr(child, SNODE_NEXT_SIB);
+        }
+    }
+}
+
+/* -------------------------------------------------------------------------
+ * sub_41F6BA — Skeleton Bone Registration (68 instructions)
+ *
+ * Walks scene hierarchy tree depth-first. For each node, compares node
+ * name at [node+4] against 34 bone names. On match, stores node pointer
+ * at entity+0xFC bone slot table.
+ * ---------------------------------------------------------------------- */
+void entity_register_bones(void *entity, void *scene_root) {
+    void *stack[256];
+    int sp = 0;
+
+    if (!entity || !scene_root) return;
+
+    stack[sp++] = scene_root;
+
+    while (sp > 0) {
+        void *node = stack[--sp];
+        const char *name = (const char *)((u8 *)node + SNODE_NAME);
+
+        for (int i = 0; i < ENTITY_BONE_SLOTS; i++) {
+            if (strcmp(name, bone_names[i]) == 0) {
+                void **bones = (void **)((u8 *)entity + 0xFC);
+                bones[i] = node;
+                break;
+            }
+        }
+
+        void *child = snode_ptr(node, SNODE_FIRST_CHILD);
+        while (child) {
+            if (sp < 256)
+                stack[sp++] = child;
+            child = snode_ptr(child, SNODE_NEXT_SIB);
+        }
+    }
+}
+
 /* -------------------------------------------------------------------------
  * 0046493B
  * player_entity_init — allocate + zero-init + default-field-set the player
@@ -193,13 +288,29 @@ void player_entity_init(void) {
      *   asm: mov edx,[var_114]; mov ecx,[var_84]; call create_single_control_point */
     print("player: TODO create_single_control_point\n");
 
-    /* TODO: sub_4699D9 — anim state init
+    /* sub_4699D9 — scene hierarchy back-pointer init
      *   asm: mov eax,[var_84]; mov ecx,[eax+50h]; call sub_4699D9 */
-    print("player: TODO sub_4699D9 (anim state init)\n");
+    {
+        void *scene_root = *(void **)((u8 *)ent + 0x50);
+        if (scene_root) {
+            entity_wire_hierarchy(scene_root);
+            print("player: sub_4699D9 (hierarchy wired)\n");
+        } else {
+            print("player: sub_4699D9 skipped (no scene root at ent+0x50)\n");
+        }
+    }
 
-    /* TODO: sub_41F6BA — entity registration
+    /* sub_41F6BA — skeleton bone registration
      *   asm: mov ecx,[var_84]; call sub_41F6BA */
-    print("player: TODO sub_41F6BA (entity registration)\n");
+    {
+        void *scene_root = *(void **)((u8 *)ent + 0x50);
+        if (scene_root) {
+            entity_register_bones(ent, scene_root);
+            print("player: sub_41F6BA (bones registered)\n");
+        } else {
+            print("player: sub_41F6BA skipped (no scene root at ent+0x50)\n");
+        }
+    }
 
     /* Store as global player entity */
     g_player_entity = ent;

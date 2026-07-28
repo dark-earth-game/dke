@@ -122,6 +122,14 @@ static i32 g_dword_4B787C        = 0;       /* dword_4B787C @ 004B787C  */
 /* Index buffer computed from gouraud table */
 static void *g_index_buffer       = NULL;   /* index_buffer (asm sym)   */
 
+/* Phase 17 misc global tables (raw asm addresses, locally mapped) */
+static u8 g_misc_4EC6A0[0x188]    = {0};    /* dword_4EC6A0 @ 004EC6A0  */
+static u8 g_misc_4EE0F0[0x6BD0]   = {0};    /* dword_4EE0F0 @ 004EE0F0  */
+static u8 g_misc_4DAB60[0x860]    = {0};    /* unk_4DAB60   @ 004DAB60  */
+static u8 g_misc_4DCDA0[0x9D8]    = {0};    /* dword_4DCDA0 @ 004DCDA0  */
+static u8 g_misc_4DC2E0[0x9D8]    = {0};    /* dword_4DC2E0 @ 004DC2E0  */
+static u8 g_misc_4DCCC0[0xD2]     = {0};    /* byte_4DCCC0  @ 004DCCC0  */
+
 /* Inverse-Z buffer (sub_421960) — 16KB from ui_health_buffer pool */
 static void *g_inv_z_array        = NULL;   /* dword_510F30 @ 00510F30  */
 
@@ -947,17 +955,17 @@ b8 game_init(state_t *state) {
 
     g_dword_4ECD3C = 0;                        /* dword_4ECD3C = 0 @ 46C21E */
 
-    /* TODO: memset(dword_4EC6A0, 0, 0x188) @ 004EC6A0 */
+    memset(g_misc_4EC6A0, 0, sizeof(g_misc_4EC6A0));       /* 004EC6A0 */
     /* TODO: memset(companion_entity, 0, 8)             */
-    /* TODO: memset(dword_4EE0F0, 0, 0x6BD0)            */
+    memset(g_misc_4EE0F0, 0, sizeof(g_misc_4EE0F0));       /* 004EE0F0 */
 
     /* dword_543B20 = 0; dword_543B1C = dword_543B20; */
     /* TODO: dword_543B20 / dword_543B1C @ 00543B20/1C */
 
-    /* TODO: memset(unk_4DAB60, 0, 0x860)               */
-    /* TODO: memset(dword_4DCDA0, 0xFF, 0x9D8)          */
-    /* TODO: memset(dword_4DC2E0, 0xFF, 0x9D8)          */
-    /* TODO: memset(byte_4DCCC0, 0, 0xD2)               */
+    memset(g_misc_4DAB60, 0,    sizeof(g_misc_4DAB60));     /* 004DAB60 */
+    memset(g_misc_4DCDA0, 0xFF, sizeof(g_misc_4DCDA0));     /* 004DCDA0 */
+    memset(g_misc_4DC2E0, 0xFF, sizeof(g_misc_4DC2E0));     /* 004DC2E0 */
+    memset(g_misc_4DCCC0, 0,    sizeof(g_misc_4DCCC0));     /* 004DCCC0 */
 
     /* ------------------------------------------------------------------ */
     /* Phase 18 — debug banner "Init Divers ..."                           */
