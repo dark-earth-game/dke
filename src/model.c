@@ -570,6 +570,19 @@ model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
         verts[i].z = OME_VERT_SCALE(atom->verts[i].z);
     }
 
+    if (getenv("DKE_MATDBG")) {
+        static i32 shown = 0;
+        if (shown++ < 3) {
+            print("matdbg: mat_count=%d\n", matr ? matr->mat_count : -1);
+            for (i32 k = 0; matr && k < matr->mat_count && k < 8; k++)
+                print("  mat[%d] rgb=(%d,%d,%d) '%s'\n", k,
+                      matr->mats[k].r, matr->mats[k].g, matr->mats[k].b,
+                      matr->mats[k].name);
+            for (i32 k = 0; k < atom->face_count && k < 6; k++)
+                print("  face[%d] mat_id=%d\n", k, atom->faces[k].mat_id);
+        }
+    }
+
     i32 tri = 0;
     for (i32 i = 0; i < atom->face_count; i++) {
         const ome_face_t *f = &atom->faces[i];

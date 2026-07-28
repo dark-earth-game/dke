@@ -1749,25 +1749,24 @@ i32 scene_render(system_t *sys) {
                 atom_ry[ri] = (i32)(kf->atoms[j].ry >> 4) & 0xFFF;
             }
         }
-        for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
-            i32 tx = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
-                       ? g_scene_objc.world_tx[ai] * ATOM_SCALE : 0;
-            i32 ty = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
-                       ? g_scene_objc.world_ty[ai] * ATOM_SCALE : 0;
-            i32 tz = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
-                       ? g_scene_objc.world_tz[ai] * ATOM_SCALE : 0;
-            model_render(g_scene_ome_atoms[ai],
-                         sys,
-                         screen_x, screen_y,
-                         focal,
-                         tick,
-                         render_depth,
-                         cube_world_size,
-                         z_far,
-                         g_scene_l_bmap,
-                         g_scene_z_bmap,
-                         atom_rx[ai] ? 1 : 0, atom_ry[ai], atom_rx[ai],
-                         tx, ty, tz);
+        /* Legacy placeholder: the scene's default OME mesh drawn at the player
+         * anchor via the old toy camera. The LIEU personas (below) now render
+         * the real cast (Arkhan/Kaly) through the world camera, so this is
+         * off by default — gate on DKE_SHOWPLAYER for debugging. */
+        if (getenv("DKE_SHOWPLAYER")) {
+            for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++) {
+                i32 tx = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                           ? g_scene_objc.world_tx[ai] * ATOM_SCALE : 0;
+                i32 ty = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                           ? g_scene_objc.world_ty[ai] * ATOM_SCALE : 0;
+                i32 tz = (g_scene_objc_loaded && ai < g_scene_objc.n_atomslots)
+                           ? g_scene_objc.world_tz[ai] * ATOM_SCALE : 0;
+                model_render(g_scene_ome_atoms[ai], sys, screen_x, screen_y,
+                             focal, tick, render_depth, cube_world_size, z_far,
+                             g_scene_l_bmap, g_scene_z_bmap,
+                             atom_rx[ai] ? 1 : 0, atom_ry[ai], atom_rx[ai],
+                             tx, ty, tz);
+            }
         }
 
         /* Render each LIEU-placed persona (P00ARR01, P12ARR01, ...) as the
@@ -1825,9 +1824,16 @@ i32 scene_render(system_t *sys) {
             /* Rasterize each atom through the real in-game camera (world
              * pipeline). Bone world_tx/ty/tz already reflect the animated
              * pose (objc_update_bone_positions from the CAN keyframe). */
-            i32 mshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : -2;
+            /* Empirical calibration for L01 cam0: MSHIFT=1 (OME<<1>>1 = OME
+             * units) sizes the figures to the backdrop; PosPerso ground is 0
+             * but the floor sits ~120000 world units below the camera plane,
+             * so drop the figures onto the beds. TODO: derive the floor Y from
+             * the room terrain instead of this per-camera constant. */
+            i32 mshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 1;
             i32 mflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
+            i32 myoff  = getenv("DKE_MYOFF")  ? atoi(getenv("DKE_MYOFF"))  : -120000;
             i32 pfac   = lieu_spawn_facing(pi) & 0xFFF;
+            i32 objy   = pground + myoff;
             (void)psx; (void)psy; (void)prx; (void)pry;
             for (i32 ai = 0; ai < pm->count; ai++) {
                 i32 tx = (pm->objc_loaded && ai < pm->objc.n_atomslots)
@@ -1838,7 +1844,7 @@ i32 scene_render(system_t *sys) {
                            ? pm->objc.world_tz[ai] : 0;
                 model_render_world(pm->atoms[ai],
                                    g_proj_R, g_proj_T, g_proj_gscale,
-                                   wxt * 600, pground, wzt * 600, pfac,
+                                   wxt * 600, objy, wzt * 600, pfac,
                                    mshift, mflip, tx, ty, tz,
                                    g_scene_l_bmap, NULL);
             }
@@ -1932,6 +1938,31 @@ i32 scene_render(system_t *sys) {
                 if (sx < boxx + pad) sx = boxx + pad;
                 draw_text_at(font_handle, sx, boxy + pad + li * lineh,
                              lines[li], 0xFFFFFFFFu);
+            }
+        }
+    }
+
+    /* Headless verification: dump the composed frame to a PPM at frame
+     * DKE_SHOT so the scene (backdrop + rasterized characters) can be
+     * inspected without a display. */
+    if (getenv("DKE_SHOT") && state && state->graphic.front_buffer) {
+        static i32 s_frame = 0;
+        i32 want = atoi(getenv("DKE_SHOT"));
+        if (s_frame++ == want) {
+            const c8 *out = getenv("DKE_SHOT_PATH");
+            FILE *f = fopen(out ? out : "/tmp/dke_shot.ppm", "wb");
+            if (f) {
+                u32 *fb = state->graphic.front_buffer;
+                i32 w = state->graphic.width, h = state->graphic.height;
+                fprintf(f, "P6\n%d %d\n255\n", w, h);
+                for (i32 i = 0; i < w * h; i++) {
+                    u32 p = fb[i];
+                    fputc((u8)(p & 0xFF), f);
+                    fputc((u8)((p >> 8) & 0xFF), f);
+                    fputc((u8)((p >> 16) & 0xFF), f);
+                }
+                fclose(f);
+                print("scene: DKE_SHOT wrote frame %d\n", want);
             }
         }
     }
