@@ -68,6 +68,7 @@
 #include "state.h"
 #include "game_init.h"
 #include "player.h"
+#include "material.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols not yet in state_t.
@@ -1250,9 +1251,8 @@ b8 game_init(state_t *state) {
             ? "DATAS>OBJETS>FLAM.MAT"          /* 46C2F4 — HDD path */
             : "OBJETS>FLAM>FLAM.MAT";          /* 46C30F — CD path  */
 
-        /* TODO: sub_45018B @ 0045018B — material/resource loader */
-        g_flam_mat = NULL; /* sub_45018B(flam_path, ui_health_buffer) */
-        (void)flam_path;
+        g_flam_mat = mat_load(flam_path, state->game_path,
+                              g_is_using_hdd, g_objets_gif);
     }
 
     /* ------------------------------------------------------------------ */
