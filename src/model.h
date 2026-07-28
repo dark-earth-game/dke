@@ -137,4 +137,5 @@ void model_render_world(const model_t *m,
                         i32 vshift, i32 flip_y,
                         i32 atom_tx, i32 atom_ty, i32 atom_tz,
                         const bmap_t *l_bmap, const bmap_t *z_bmap,
-                        const u8 *pal, const u8 *grd);
+                        const u8 *pal, const u8 *grd,
+                        float lx, float ly, float lz);

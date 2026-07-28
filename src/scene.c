@@ -1801,6 +1801,17 @@ i32 scene_render(system_t *sys) {
          * Placeholder: all personas share the player mesh until per-persona
          * models load; positions are clustered around the character stand. */
         clock_t s_pers = getenv("DKE_PERFDBG") ? clock() : 0;
+        /* Scene key light (L%02d.DAT lightN) rotated into camera space, so
+         * character shading is lit from the room's real light direction. */
+        float lcx = 0, lcy = 0, lcz = 0;
+        if (g_scene_cfg.loaded && g_scene_camera < SCENE_MAX_CAMERAS) {
+            i32 lwx = g_scene_cfg.lightx[g_scene_camera];
+            i32 lwy = g_scene_cfg.lighty[g_scene_camera];
+            i32 lwz = g_scene_cfg.lightz[g_scene_camera];
+            lcx = (float)((i64)lwx*g_proj_R[0] + (i64)lwy*g_proj_R[3] + (i64)lwz*g_proj_R[6]);
+            lcy = (float)((i64)lwx*g_proj_R[1] + (i64)lwy*g_proj_R[4] + (i64)lwz*g_proj_R[7]);
+            lcz = (float)((i64)lwx*g_proj_R[2] + (i64)lwy*g_proj_R[5] + (i64)lwz*g_proj_R[8]);
+        }
         for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
             i32 wxt = 0, wzt = 0, pview = 0;
             const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
@@ -1876,7 +1887,8 @@ i32 scene_render(system_t *sys) {
                                    mshift, mflip, tx, ty, tz,
                                    g_scene_l_bmap, NULL,
                                    g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
-                                   (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL);
+                                   (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
+                                   lcx, lcy, lcz);
             }
         }
         if (getenv("DKE_PERFDBG")) {

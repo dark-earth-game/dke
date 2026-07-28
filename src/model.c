@@ -401,8 +401,15 @@ void model_render_world(const model_t *m,
                         i32 vshift, i32 flip_y,
                         i32 atom_tx, i32 atom_ty, i32 atom_tz,
                         const bmap_t *l_bmap, const bmap_t *z_bmap,
-                        const u8 *pal, const u8 *grd) {
+                        const u8 *pal, const u8 *grd,
+                        float lx, float ly, float lz) {
     if (!m || !state) return;
+    /* Key light direction (camera space). Fall back to a fixed upper-front
+     * light when the caller passes none. */
+    double Lx = lx, Ly = ly, Lz = lz;
+    { double ln = Lx*Lx + Ly*Ly + Lz*Lz;
+      if (ln < 1e-6) { Lx = 0.30; Ly = 0.55; Lz = -0.78; }
+      else { ln = 1.0/sqrt(ln); Lx*=ln; Ly*=ln; Lz*=ln; } }
     u32 *fb   = state->graphic.front_buffer;
     i32  fb_w = state->graphic.width;
     i32  fb_h = state->graphic.height;
@@ -520,12 +527,13 @@ void model_render_world(const model_t *m,
             double nl = nx*nx + ny*ny + nz*nz;
             if (nl > 1.0) {
                 nl = 1.0 / sqrt(nl);
-                double dot = (nx*0.30 + ny*0.55 - nz*0.78) * nl;  /* upper-front light */
+                double dot = (nx*Lx + ny*Ly + nz*Lz) * nl;        /* scene key light */
                 /* Map dot (-1..1) into the ramp's lit-but-not-blown range.
-                 * The GRD ramp darkens below ~24 and blows toward 63. */
-                shade = 20 + (i32)(dot * 12);
-                if (shade < 4)  shade = 4;
-                if (shade > 40) shade = 40;
+                 * The GRD ramp darkens below ~16 and blows to pink/white past
+                 * ~34 (indices 189/125/130), so keep shade in ~10..33. */
+                shade = 22 + (i32)(dot * 11);
+                if (shade < 10) shade = 10;
+                if (shade > 33) shade = 33;
             }
         }
 
