@@ -390,6 +390,7 @@ void model_render(const model_t *m, system_t *sys,
  * ------------------------------------------------------------------------- */
 #define MRW_MAX_VERTS 2048
 #define MRW_MAX_FACES 2048
+#define MRW_SHADE_MID 32   /* GRD shade band (0..63) used until per-face lighting */
 
 typedef struct { i32 sx, sy; i64 cz; i32 vis; } mrw_vert_t;
 
@@ -398,7 +399,8 @@ void model_render_world(const model_t *m,
                         i32 obj_wx, i32 obj_wy, i32 obj_wz, i32 facing,
                         i32 vshift, i32 flip_y,
                         i32 atom_tx, i32 atom_ty, i32 atom_tz,
-                        const bmap_t *l_bmap, const bmap_t *z_bmap) {
+                        const bmap_t *l_bmap, const bmap_t *z_bmap,
+                        const u8 *pal, const u8 *grd) {
     if (!m || !state) return;
     u32 *fb   = state->graphic.front_buffer;
     i32  fb_w = state->graphic.width;
@@ -507,11 +509,24 @@ void model_render_world(const model_t *m,
                     - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
         if (cross_z >= 0) continue;
 
+        /* Face color: the material base index (MATR field[0]) into the scene
+         * palette; the scene light map (l_bmap) shades it per pixel. Optional
+         * GRD ramp could pick a shade band from the face normal. Falls back to
+         * the raw material RGB when no palette is available. */
+        u32 col = face->colour;
+        if (pal && face->mat_base) {
+            i32 idx = face->mat_base;
+            if (grd) idx = grd[MRW_SHADE_MID * 256 + idx];   /* mid shade band */
+            col = 0xFF000000u | ((u32)pal[3*idx+2] << 16)
+                              | ((u32)pal[3*idx+1] << 8)
+                              |  (u32)pal[3*idx+0];
+        }
+
         fill_triangle(fb, fb_w, fb_h,
                       a->sx, a->sy, 128,
                       b->sx, b->sy, 128,
                       c->sx, c->sy, 128,
-                      face->colour, l_bmap, z_bmap);
+                      col, l_bmap, z_bmap);
     }
 }
 
@@ -587,27 +602,29 @@ model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
     for (i32 i = 0; i < atom->face_count; i++) {
         const ome_face_t *f = &atom->faces[i];
         u32 colour;
+        u8  mat_base = 0;
         if (matr && f->mat_id >= 0 && f->mat_id < matr->mat_count) {
             const ome_mat_t *m = &matr->mats[f->mat_id];
             colour = 0xFF000000u | ((u32)m->b << 16) | ((u32)m->g << 8) | (u32)m->r;
+            mat_base = m->r;   /* MATR field[0] = base palette index */
         } else {
             i32 mat_idx = (f->mat_id >= 0) ? (f->mat_id & 0x0F) : 0;
             colour = MAT_COLOURS[mat_idx];
         }
 
-        faces[tri].colour = colour;
-        faces[tri].i0     = f->idx[0];
-        faces[tri].i1     = f->idx[1];
-        faces[tri].i2     = f->idx[2];
-        faces[tri]._pad   = 0;
+        faces[tri].colour   = colour;
+        faces[tri].i0       = f->idx[0];
+        faces[tri].i1       = f->idx[1];
+        faces[tri].i2       = f->idx[2];
+        faces[tri].mat_base = mat_base;
         tri++;
 
         if (f->vcnt == 4) {
-            faces[tri].colour = colour;
-            faces[tri].i0     = f->idx[0];
-            faces[tri].i1     = f->idx[2];
-            faces[tri].i2     = f->idx[3];
-            faces[tri]._pad   = 0;
+            faces[tri].colour   = colour;
+            faces[tri].i0       = f->idx[0];
+            faces[tri].i1       = f->idx[2];
+            faces[tri].i2       = f->idx[3];
+            faces[tri].mat_base = mat_base;
             tri++;
         }
     }

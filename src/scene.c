@@ -1874,7 +1874,9 @@ i32 scene_render(system_t *sys) {
                                    g_proj_R, g_proj_T, g_proj_gscale,
                                    wxt * 600, objy, wzt * 600, pfac,
                                    mshift, mflip, tx, ty, tz,
-                                   g_scene_l_bmap, NULL);
+                                   g_scene_l_bmap, NULL,
+                                   g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
+                                   (getenv("DKE_GRD") && g_scene_grd_loaded) ? g_scene_grd : NULL);
             }
         }
         if (getenv("DKE_PERFDBG")) {

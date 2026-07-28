@@ -28,7 +28,10 @@ typedef struct {
      * byte2=B, byte3=alpha). Renderer modulates by L before writing. */
     u32 colour;
     /* Indices into vertices[]. */
-    u8  i0, i1, i2, _pad;
+    u8  i0, i1, i2;
+    /* Material base palette index (MATR field[0]); indexes the GRD shade
+     * ramp for palette-correct character coloring. 0 = none. */
+    u8  mat_base;
 } model_face_t;
 
 typedef struct {
@@ -133,4 +136,5 @@ void model_render_world(const model_t *m,
                         i32 obj_wx, i32 obj_wy, i32 obj_wz, i32 facing,
                         i32 vshift, i32 flip_y,
                         i32 atom_tx, i32 atom_ty, i32 atom_tz,
-                        const bmap_t *l_bmap, const bmap_t *z_bmap);
+                        const bmap_t *l_bmap, const bmap_t *z_bmap,
+                        const u8 *pal, const u8 *grd);
