@@ -847,9 +847,9 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     g_proj_gscale    = param[24];
     g_proj_zone_z    = (i32)zone_z;
     g_proj_anchor_wx = zone_x;
-    /* Ground plane Y: eye Y (T[1] = ey) is a reasonable default; personas
-     * override with their own PosPerso ground when rendered. */
-    g_proj_ground_wy = param[10];
+    /* Floor plane Y = 0 (PosPerso characters are placed at world Y 0); the
+     * player shares it. Personas still use their own PosPerso ground. */
+    g_proj_ground_wy = 0;
     g_proj_valid     = 1;
 
     /* Project the zone centroid as the fallback anchor screen point. */
