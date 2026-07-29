@@ -1807,3 +1807,8 @@ bmap_t *game_init_get_halfres_buffer(void) {
 bmap_t *game_init_get_intfani3(void) {
     return (bmap_t *)g_dword_4F4DF4;
 }
+
+/* Accessor for g_index_buffer (index_buffer @ gouraud_table aligned+0x100). */
+void *game_init_get_index_buffer(void) {
+    return g_index_buffer;
+}

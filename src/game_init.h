@@ -57,6 +57,10 @@ bmap_t *game_init_get_halfres_buffer(void);
 /* Accessor for INTFANI3 bmap (dword_4F4DF4 @ 0x4F4DF4). */
 bmap_t *game_init_get_intfani3(void);
 
+/* Accessor for g_index_buffer (index_buffer @ gouraud_table+0x100).
+ * 256-entry shading LUT at offset +0x600 used by 8-bit HUD darken pass. */
+void *game_init_get_index_buffer(void);
+
 /* 0046BEEB — game-side bootstrap. Runs after ls_startup + init_all_systems. */
 b8 game_init(state_t *state);
 

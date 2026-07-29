@@ -115,16 +115,16 @@ i32 ls_set_video_mode(i32 width, i32 height, i32 bit_depth, i32 bpp_flags);
  * Blit primitives (Slice A)
  * ------------------------------------------------------------------------- */
 
-/*
- * ls_box — draw a debug outline rectangle (0x0047D466 area).
- *
- * Ported as stub: the original has complex fill/invert sub-paths depending on
- * flag bits in arg_10.  For now draws a 1-pixel solid outline in the dst bmap
- * pixel buffer (colour byte 0xFF), sufficient for debug purposes.
- *
- * TODO: port ls_fill_rect / ls_invert_rect sub-paths when needed.
- */
-void ls_box(bmap_t *dst, i32 x, i32 y, i32 w, i32 h, u8 color, i32 flags);
+/* ls_fill_rect @ 0x47DFC0 — fill clipped rectangle with solid colour.
+ * Handles 8/16/24/32 bpp. Coords are absolute (x1,y1)-(x2,y2). */
+void ls_fill_rect(bmap_t *bmap, i32 x1, i32 y1, i32 x2, i32 y2, u32 color);
+
+/* ls_invert_rect @ 0x47E2A0 — invert pixels in clipped rectangle (0xFF - pixel). */
+void ls_invert_rect(bmap_t *bmap, i32 x1, i32 y1, i32 x2, i32 y2);
+
+/* ls_box @ 0x47D3B0 — box with fill/invert/border modes via flag bits.
+ * Coords are absolute (x1,y1)-(x2,y2). Flag bits: 1=filled, 2=bordered, 4=invert. */
+void ls_box(bmap_t *dst, i32 x1, i32 y1, i32 x2, i32 y2, u32 color, i32 flags);
 
 /*
  * ls_bit_move — rectangular blit from src bmap to dst bmap (0x0047DC3C).

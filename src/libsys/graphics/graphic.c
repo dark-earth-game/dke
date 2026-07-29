@@ -199,49 +199,191 @@ void ls_release_graphic_system(graphic_t *graphic) {
  * Blit primitives — Slice A
  * ======================================================================= */
 
-/* 0x0047D466 area — ls_box
- *
- * Stub: draws a 1-pixel outline rectangle in the dst bmap's 8-bit pixel buffer.
- * The original ls_box has complex mode flags (bits 0/1/2 select between
- * ls_invert_rect, ls_fill_rect, and ls_set_rectangle sub-paths) which depend
- * on further unported primitives.  A simple outline is sufficient for debug use.
- *
- * TODO: port ls_fill_rect / ls_invert_rect when full debug-outline accuracy
- *       is required.
- */
-void ls_box(bmap_t *dst, i32 x, i32 y, i32 w, i32 h, u8 color, i32 flags) {
-    (void)flags; /* TODO: implement mode-flag dispatch per asm */
-    if (!dst || !dst->pixels || w <= 0 || h <= 0) return;
+/* ls_fill_rect @ 0x47DFC0 — fill a clipped rectangle with a solid colour.
+ * Original: ECX=bmap, EDX=x1, stack: y1, x2, y2, color (retn 10h).
+ * Handles 8/16/24/32 bpp via switch on (bit_depth - 8).
+ * sub_489340 (DirectDraw hardware fill) skipped in software port. */
+void ls_fill_rect(bmap_t *bmap, i32 x1, i32 y1, i32 x2, i32 y2, u32 color) {
+    /* ls_fill_rect @ 0x47DFC0 */
+    if (!bmap || !bmap->pixels) return;
 
-    i32 bpp  = (dst->bit_depth > 0) ? (dst->bit_depth / 8) : 1;
-    i32 str  = dst->stride;
-    i32 dw   = (i32)dst->width;
-    i32 dh   = dst->height;
-    u8 *pix  = dst->pixels;
+    i32 bw = (i32)bmap->width;
+    i32 bh = bmap->height;
 
-    /* Draw top and bottom rows */
-    for (i32 col = 0; col < w; col++) {
-        i32 px = x + col;
-        if (px < 0 || px >= dw) continue;
-        /* top row */
-        if (y >= 0 && y < dh)
-            pix[y * str + px * bpp] = color;
-        /* bottom row */
-        i32 by = y + h - 1;
-        if (by >= 0 && by < dh)
-            pix[by * str + px * bpp] = color;
+    /* Early reject: both endpoints on same side of bmap */
+    if (x1 < 0 && x2 < 0) return;
+    if (y1 < 0 && y2 < 0) return;
+    if (x1 >= bw && x2 >= bw) return;
+    if (y1 >= bh && y2 >= bh) return;
+
+    /* Clamp to bmap bounds */
+    if (x1 >= bw) x1 = bw - 1;
+    if (y1 >= bh) y1 = bh - 1;
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 >= bw) x2 = bw - 1;
+    if (y2 >= bh) y2 = bh - 1;
+    if (x2 < 0) x2 = 0;
+    if (y2 < 0) y2 = 0;
+
+    /* Sort so x1<=x2, y1<=y2 */
+    if (x2 < x1) { i32 t = x1; x1 = x2; x2 = t; }
+    if (y2 < y1) { i32 t = y1; y1 = y2; y2 = t; }
+
+    i32 bpp = (bmap->bit_depth > 0) ? (bmap->bit_depth / 8) : 1;
+    i32 w = x2 - x1 + 1;
+    i32 rows = y2 - y1 + 1;
+    if (w <= 0 || rows <= 0) return;
+
+    u8 *row_ptr = bmap->pixels + y1 * bmap->stride + x1 * bpp;
+
+    if (bpp == 1) {
+        /* 8-bit: replicate colour byte into dword for rep-stosd equivalent */
+        u8 c8 = (u8)(color & 0xFF);
+        for (i32 r = 0; r < rows; r++) {
+            memset(row_ptr, c8, (size_t)w);
+            row_ptr += bmap->stride;
+        }
+    } else if (bpp == 2) {
+        u16 c16 = (u16)(color & 0xFFFF);
+        for (i32 r = 0; r < rows; r++) {
+            u16 *p = (u16 *)row_ptr;
+            for (i32 c = 0; c < w; c++) p[c] = c16;
+            row_ptr += bmap->stride;
+        }
+    } else if (bpp == 3) {
+        u8 b0 = (u8)(color & 0xFF);
+        u8 b1 = (u8)((color >> 8) & 0xFF);
+        u8 b2 = (u8)((color >> 16) & 0xFF);
+        for (i32 r = 0; r < rows; r++) {
+            u8 *p = row_ptr;
+            for (i32 c = 0; c < w; c++) {
+                p[0] = b0; p[1] = b1; p[2] = b2;
+                p += 3;
+            }
+            row_ptr += bmap->stride;
+        }
+    } else {
+        /* 32-bit */
+        for (i32 r = 0; r < rows; r++) {
+            u32 *p = (u32 *)row_ptr;
+            for (i32 c = 0; c < w; c++) p[c] = color;
+            row_ptr += bmap->stride;
+        }
     }
-    /* Draw left and right columns */
-    for (i32 row = 1; row < h - 1; row++) {
-        i32 py = y + row;
-        if (py < 0 || py >= dh) continue;
-        /* left */
-        if (x >= 0 && x < dw)
-            pix[py * str + x * bpp] = color;
-        /* right */
-        i32 rx = x + w - 1;
-        if (rx >= 0 && rx < dw)
-            pix[py * str + rx * bpp] = color;
+}
+
+/* ls_invert_rect @ 0x47E2A0 — invert pixels in a clipped rectangle.
+ * Original: ECX=bmap, EDX=x1, stack: y1, x2, y2 (retn 0Ch).
+ * Each pixel byte becomes 0xFF - pixel (8-bit palette inversion). */
+void ls_invert_rect(bmap_t *bmap, i32 x1, i32 y1, i32 x2, i32 y2) {
+    /* ls_invert_rect @ 0x47E2A0 */
+    if (!bmap || !bmap->pixels) return;
+
+    i32 bw = (i32)bmap->width;
+    i32 bh = bmap->height;
+
+    /* Early reject */
+    if (x1 < 0 && x2 < 0) return;
+    if (y1 < 0 && y2 < 0) return;
+    if (x1 >= bw && x2 >= bw) return;
+    if (y1 >= bh && y2 >= bh) return;
+
+    /* Clamp to bmap bounds */
+    if (x1 >= bw) x1 = bw - 1;
+    if (y1 >= bh) y1 = bh - 1;
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 >= bw) x2 = bw - 1;
+    if (y2 >= bh) y2 = bh - 1;
+    if (x2 < 0) x2 = 0;
+    if (y2 < 0) y2 = 0;
+
+    /* Sort */
+    if (x2 < x1) { i32 t = x1; x1 = x2; x2 = t; }
+    if (y2 < y1) { i32 t = y1; y1 = y2; y2 = t; }
+
+    i32 w = x2 - x1 + 1;
+    i32 rows = y2 - y1 + 1;
+    if (w <= 0 || rows <= 0) return;
+
+    u8 *row_ptr = bmap->pixels + y1 * bmap->stride + x1;
+
+    for (i32 r = 0; r < rows; r++) {
+        for (i32 c = 0; c < w; c++) {
+            row_ptr[c] = 0xFF - row_ptr[c];
+        }
+        row_ptr += bmap->stride;
+    }
+}
+
+/* ls_box @ 0x47D3B0 — draw box with fill/invert/border modes.
+ * Original: ECX=bmap, EDX=x1, stack: y1, x2, y2, color, flags (retn 14h).
+ * Flag bits: bit0=filled, bit1=bordered, bit2=invert (use invert_rect vs fill_rect).
+ * Dispatch matrix builds 1px/3px/double borders or solid fills from primitives. */
+void ls_box(bmap_t *dst, i32 x1, i32 y1, i32 x2, i32 y2, u32 color, i32 flags) {
+    /* ls_box @ 0x47D3B0 */
+    if (!dst || !dst->pixels) return;
+
+    i32 bit0 = flags & 1;  /* filled */
+    i32 bit1 = flags & 2;  /* bordered */
+    i32 bit2 = flags & 4;  /* invert */
+
+    if (bit0 && bit1) {
+        /* Thick 3px border (5 rects) */
+        if (bit2) {
+            ls_invert_rect(dst, x1 + 3, y1, y2 - 3, y1);
+            ls_invert_rect(dst, x1 + 1, y1 + 1, y2 - 1, y1 + 1);
+            ls_invert_rect(dst, x1, x2, y2, x2 - 2);
+            ls_invert_rect(dst, x1 + 1, y2 - 1, y2 - 1, x2 - 1);
+            ls_invert_rect(dst, x1 + 3, y2 - 3, x2, x2);
+        } else {
+            ls_fill_rect(dst, x1 + 3, y1, y2 - 3, y1, color);
+            ls_fill_rect(dst, x1 + 1, y1 + 1, y2 - 1, y1 + 1, color);
+            ls_fill_rect(dst, x1, x2, y2, x2 - 2, color);
+            ls_fill_rect(dst, x1 + 1, y2 - 1, y2 - 1, x2 - 1, color);
+            ls_fill_rect(dst, x1 + 3, y2 - 3, x2, x2, color);
+        }
+    } else if (bit0) {
+        /* Simple filled rect */
+        if (bit2)
+            ls_invert_rect(dst, x1, y1, y2, x2);
+        else
+            ls_fill_rect(dst, x1, y1, y2, x2, color);
+    } else if (bit1) {
+        /* Double-thickness border (8 rects) */
+        if (bit2) {
+            ls_invert_rect(dst, x1 + 3, y1, y2 - 3, y1);
+            ls_invert_rect(dst, x1 + 1, y1 + 1, x1 + 2, y1 + 1);
+            ls_invert_rect(dst, x1, x2, y2, x2 - 2);
+            ls_invert_rect(dst, x1 + 1, y2 - 1, y2 - 2, y1 + 1);
+            ls_invert_rect(dst, y2, x2 - 2, y2, x2);
+            ls_invert_rect(dst, y2 - 1, y2 - 2, y2 - 1, x2 - 1);
+            ls_invert_rect(dst, x1 + 3, y2 - 3, x2, x2);
+            ls_invert_rect(dst, x1 + 1, x1 + 2, y1 + 1, x2 - 1);
+        } else {
+            ls_fill_rect(dst, x1 + 3, y1, y2 - 3, y1, color);
+            ls_fill_rect(dst, x1 + 1, y1 + 1, x1 + 2, y1 + 1, color);
+            ls_fill_rect(dst, x1, x2, y2, x2 - 2, color);
+            ls_fill_rect(dst, x1 + 1, y2 - 1, y2 - 2, y1 + 1, color);
+            ls_fill_rect(dst, y2, x2 - 2, y2, x2, color);
+            ls_fill_rect(dst, y2 - 1, y2 - 2, y2 - 1, x2 - 1, color);
+            ls_fill_rect(dst, x1 + 3, y2 - 3, x2, x2, color);
+            ls_fill_rect(dst, x1 + 1, x1 + 2, y1 + 1, x2 - 1, color);
+        }
+    } else {
+        /* 4-side outline (4 rects — one per edge) */
+        if (bit2) {
+            ls_invert_rect(dst, x1, y1, y2, y1);
+            ls_invert_rect(dst, x1, x2, y2, x2);
+            ls_invert_rect(dst, x1, y1, x1, x2);
+            ls_invert_rect(dst, y2, y1, y2, x2);
+        } else {
+            ls_fill_rect(dst, x1, y1, y2, y1, color);
+            ls_fill_rect(dst, x1, x2, y2, x2, color);
+            ls_fill_rect(dst, x1, y1, x1, x2, color);
+            ls_fill_rect(dst, y2, y1, y2, x2, color);
+        }
     }
 }
 

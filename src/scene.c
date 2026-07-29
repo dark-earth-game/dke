@@ -1457,59 +1457,103 @@ static void overlay_cursor_image(bmap_t *src, bmap_t *dst,
     ls_bit_move(dst, src, sx, sy, sw, sh, dx, dy, 1);
 }
 
-/* sub_45D27A — render buffer cursor/mask overlay (77 instructions).
- * Composites a 70x119 (0x46 x 0x77) mask region from g_intfani3_bmap
- * (dword_4F4DF4 / INTFANI3) into render_buffer2.
- *
- * If mode != 0: for each pixel in the source region starting at scanline
- * offset +0x56 (86), if source pixel != 0 write 0xFF to destination.
- * Destination Y starts at (render_buffer2.height - 0x77).
- *
- * EDX=mode, ECX=render_buffer1 (buf param, unused in mask path).
- * Mirrors asm: mov edx, 1 / mov ecx, render_buffer1 / call sub_45D27A */
+/* sub_45D27A @ 0x45D27A — HUD mask stamp + overlay (77 instructions).
+ * If mode != 0: stamps 0xFF into render_buffer2 wherever INTFANI3 has non-zero
+ * pixels in a 70×119 region starting at byte offset 0x56 from pixel base.
+ * Then always calls overlay_cursor_image to blit the HUD background sprite. */
 static void sub_45D27A(void *buf, i32 mode) {
-    (void)buf;
-
-    if (!g_intfani3_bmap || !g_intfani3_bmap->pixels) {
-        print("sub_45D27A: INTFANI3 bmap not available — skipping\n");
-        return;
-    }
+    /* sub_45D27A @ 0x45D27A */
+    if (!g_intfani3_bmap || !g_intfani3_bmap->pixels) return;
     if (!g_render_buffer2 || !g_render_buffer2->pixels) return;
 
-    if (mode == 0) return;
+    if (mode != 0) {
+        i32 width  = 0x46;  /* 70 */
+        i32 height = 0x77;  /* 119 */
 
-    /* Source: g_intfani3_bmap, 70 wide x 119 tall, starting at scanline 86 */
-    i32 src_w   = 0x46;  /* 70 */
-    i32 src_h   = 0x77;  /* 119 */
-    i32 src_y0  = 0x56;  /* 86 — scanline offset into source */
-    i32 src_stride = g_intfani3_bmap->stride;
-    u8 *src_pixels = g_intfani3_bmap->pixels;
+        /* src starts at flat byte offset 0x56 from INTFANI3 pixel base */
+        u8 *src = g_intfani3_bmap->pixels + 0x56;
+        /* dst starts at (rb2.height - 119) rows down in render_buffer2 */
+        u8 *dst = g_render_buffer2->pixels
+                  + (g_render_buffer2->height - height) * g_render_buffer2->stride;
 
-    /* Destination: render_buffer2, positioned at bottom */
-    i32 dst_y0  = g_render_buffer2->height - src_h;
-    i32 dst_stride = g_render_buffer2->stride;
-    u8 *dst_pixels = g_render_buffer2->pixels;
-
-    /* Bounds checks */
-    if (src_y0 + src_h > g_intfani3_bmap->height) return;
-    if (dst_y0 < 0) return;
-    if (src_w > g_render_buffer2->width) return;
-
-    for (i32 y = 0; y < src_h; y++) {
-        u8 *src_row = src_pixels + (src_y0 + y) * src_stride;
-        u8 *dst_row = dst_pixels + (dst_y0 + y) * dst_stride;
-        for (i32 x = 0; x < src_w; x++) {
-            if (src_row[x] != 0) {
-                dst_row[x] = 0xFF;
+        for (i32 row = 0; row < height; row++) {
+            for (i32 col = 0; col < width; col++) {
+                if (src[col] != 0)
+                    dst[col] = 0xFF;
             }
+            src += g_intfani3_bmap->stride;
+            dst += g_render_buffer2->stride;
         }
     }
+
+    overlay_cursor_image(g_intfani3_bmap, (bmap_t *)buf,
+                         0x56, 0, 0x9C, 0x77, 0, 0x169);
 }
 
-/* sub_45CAE8 @ 0x45CAE8 — HUD animation ticker (692 bytes, blocked). */
-static void hud_animate_ticker(i32 arg) {
+/* ls_lock_bmap / ls_unlock_bmap — DirectDraw surface lock/unlock.
+ * No-op in software renderer port: pixels are always accessible. */
+static void ls_lock_bmap(bmap_t *b) { (void)b; }
+static void ls_unlock_bmap(bmap_t *b) { (void)b; }
+
+/* sub_45CAE8 @ 0x45CAE8 — HUD masked darken pass.
+ * Applies a brightness remap (index_buffer[pixel+0x600]) to the HUD region,
+ * masked by INTFANI3 sprite pixels. Mode 1: health/stamina area (70×119).
+ * Mode !=1: combat meter area (32×84). Writes to both game_context and
+ * render_buffer1 so the effect persists across frames. */
+static void hud_animate_ticker(i32 mode) {
     /* sub_45CAE8 @ 0x45CAE8 */
-    (void)arg;
+    bmap_t *intfani3 = game_init_get_intfani3();
+    bmap_t *rb1 = game_init_get_render_buffer1();
+    bmap_t *gc = (bmap_t *)game_init_get_game_context();
+    if (!intfani3 || !rb1 || !gc) return;
+
+    u8 *idx_buf = (u8 *)game_init_get_index_buffer();
+    if (!idx_buf) return;
+
+    ls_lock_bmap(intfani3);
+    ls_lock_bmap(rb1);
+    ls_lock_bmap(gc);
+
+    i32 width, height;
+    u8 *src;   /* mask pixels from INTFANI3 */
+    u8 *dst_gc;
+    u8 *dst_rb;
+
+    if (mode == 1) {
+        /* Health/stamina area: 70×119 at bottom of screen */
+        width = 0x46;
+        height = 0x77;
+        dst_gc = gc->pixels + (gc->height - height) * gc->stride;
+        dst_rb = rb1->pixels + (rb1->height - height) * rb1->stride;
+        src = intfani3->pixels + 0x56;
+    } else {
+        /* Combat meter area: 32×84 at bottom-right */
+        width = 0x20;
+        height = 0x54;
+        dst_gc = gc->pixels + (gc->height - 0x14 - height) * gc->stride
+                 + 0x26C - width;
+        dst_rb = rb1->pixels + (rb1->height - 0x14 - height) * rb1->stride
+                 + 0x26C - width;
+        src = intfani3->pixels + 0x9D;
+    }
+
+    /* 8-bit darken pass (colour_mode == 0) */
+    for (i32 row = 0; row < height; row++) {
+        for (i32 col = 0; col < width; col++) {
+            if (src[col] != 0) {
+                u8 darkened = idx_buf[dst_rb[col] + 0x600];
+                dst_gc[col] = darkened;
+                dst_rb[col] = darkened;
+            }
+        }
+        src += intfani3->stride;
+        dst_rb += rb1->stride;
+        dst_gc += gc->stride;
+    }
+
+    ls_unlock_bmap(gc);
+    ls_unlock_bmap(intfani3);
+    ls_unlock_bmap(rb1);
 }
 
 /* sub_45CD9C @ 0x45CD9C — HUD health bar + weapon/special mode indicator.
