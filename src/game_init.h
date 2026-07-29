@@ -14,6 +14,25 @@
 #include "libsys/graphics/graphic.h"
 #include "state.h"
 
+/* Combat / creature definition table entry (sub_471C18).
+ * 100 entries × 20 bytes, loaded from DATAS>OBJETS>OBJETS.TXT.
+ * Original addresses: combat_ability_table @ 004DB860. */
+typedef struct {
+    i32 nbobj;          /* +0x00: object count */
+    i32 nbvie;          /* +0x04: health/lives */
+    i32 ptvie;          /* +0x08: health points */
+    i32 ptnrj;          /* +0x0C: energy points */
+    u8  flags;          /* +0x10: combat ability bitmask */
+    u8  poly_index;     /* +0x11: polygon object slot */
+    u8  weapon_index;   /* +0x12: weapon slot */
+    u8  linke;          /* +0x13: linked entity id */
+} creature_entry_t;
+
+/* Creature table accessors — hide the static arrays in game_init.c */
+const creature_entry_t *game_init_get_creature(i32 id);
+u8   game_init_get_ability(i32 creature_id, i32 slot);
+void game_init_set_ability(i32 creature_id, i32 slot, u8 mask_clear, u8 mask_set);
+
 /* 0046BEEB — game-side bootstrap. Runs after ls_startup + init_all_systems. */
 b8 game_init(state_t *state);
 

@@ -828,6 +828,248 @@ static void *find_degradable_object(const c8 *name) { /* sub_475BB6 @ 0x475BB6 *
     return NULL;
 }
 
+/* sub_4728DF @ 0x4728DF — resolve creature poly index from degradable object.
+ * Validates name at +0xA8: must be (O|Q)B<digit>. Parses "%c%c%02d" to get
+ * creature id. Returns poly_index if creature flag bit 0 set, else 0. */
+static i32 degrad_get_creature_poly(void *degrad_obj) { /* sub_4728DF @ 0x4728DF */
+    if (!degrad_obj) return 0;
+    u8 *obj = (u8 *)degrad_obj;
+    c8 type_c = (c8)obj[0xA8];
+    if (type_c != 'O' && type_c != 'Q') return 0;
+    if ((c8)obj[0xA9] != 'B') return 0;
+    c8 digit = (c8)obj[0xAA];
+    if (digit < '0' || digit > '9') return 0;
+
+    c8 c1, c2;
+    i32 id = 0;
+    sscanf((c8 *)(obj + 0xA8), "%c%c%02d", &c1, &c2, &id);
+
+    const creature_entry_t *cr = game_init_get_creature(id);
+    if (!cr) return 0;
+    if (!(cr->flags & 1)) return 0;
+    return (i32)cr->poly_index;
+}
+
+/* sub_472A48 @ 0x472A48 — check if degradable object is a weapon type.
+ * Validates name at +0xA8: must be (O|Q)<any><digit>. Parses "%c%c%02d",
+ * returns creature flags & 2 (non-zero = is weapon). */
+static i32 is_weapon_object(void *degrad_obj) { /* sub_472A48 @ 0x472A48 */
+    if (!degrad_obj) return 0;
+    u8 *obj = (u8 *)degrad_obj;
+    c8 type_c = (c8)obj[0xA8];
+    if (type_c != 'O' && type_c != 'Q') return 0;
+    c8 digit = (c8)obj[0xAA];
+    if (digit < '0' || digit > '9') return 0;
+
+    c8 c1, c2;
+    i32 id = 0;
+    sscanf((c8 *)(obj + 0xA8), "%c%c%02d", &c1, &c2, &id);
+
+    const creature_entry_t *cr = game_init_get_creature(id);
+    if (!cr) return 0;
+    return (i32)(cr->flags & 2);
+}
+
+/* sub_4373EF @ 0x4373EF — link two bone slots in entity hierarchy.
+ * ECX=entity, EDX=src_slot, arg0=dst_slot. Reads entity+0xFC bone table,
+ * links src->+0x7C = dst (first child) and dst->+0x78 = src (parent). */
+static void bone_link_slots(void *entity, i32 src_slot, i32 dst_slot) {
+    /* sub_4373EF @ 0x4373EF */
+    if (!entity) return;
+    u8 *ent = (u8 *)entity;
+    void **bones = (void **)(ent + 0xFC);
+    void *src = bones[src_slot];
+    void *dst = bones[dst_slot];
+    if (!src || !dst) return;
+    *(void **)((u8 *)src + 0x7C) = dst;   /* src->first_child = dst */
+    *(void **)((u8 *)dst + 0x78) = src;   /* dst->parent = src */
+}
+
+/* sub_474731 @ 0x474731 — weapon conflict resolution.
+ * When entity picks up weapon_obj, checks if any OTHER entity (player,
+ * companion, secondary companion) already holds it. If so, detaches it
+ * from the conflicting entity and clears their weapon fields.
+ * ECX=entity (new holder), EDX=weapon_obj. */
+static void weapon_resolve_conflicts(void *entity, void *weapon_obj) {
+    /* sub_474731 @ 0x474731 */
+    if (!entity || !weapon_obj) return;
+
+    void *others[3] = { NULL, NULL, NULL };
+    if (entity != g_player_entity)
+        others[0] = g_player_entity;
+    if (entity != g_companion_entity)
+        others[1] = g_companion_entity;
+    if (entity != g_secondary_companion_entity)
+        others[2] = g_secondary_companion_entity;
+
+    for (i32 i = 0; i < 3; i++) {
+        if (!others[i]) continue;
+        u8 *other = (u8 *)others[i];
+
+        for (i32 slot = 0; slot < 2; slot++) {
+            void *held = *(void **)(other + 0xD64 + slot * 4);
+            if (held != weapon_obj) continue;
+
+            /* Conflict: other entity holds same weapon */
+            print("weapon_resolve_conflicts: conflict entity=%p slot=%d\n",
+                  others[i], slot);
+
+            /* Clear weapon reference */
+            *(void **)(other + 0xD64 + slot * 4) = NULL;
+
+            if (slot == 0) {
+                /* Primary weapon: clear bone attach + weapon name + type */
+                *(void **)(other + 0x178) = NULL;
+                *(u8 *)(other + 0xD2) = 0;
+                u8 *other_desc = *(u8 **)(other + 0xAC);
+                if (other_desc) other_desc[0x97] = 0;
+            } else {
+                /* Secondary weapon: clear secondary fields */
+                *(i32 *)(other + 0x164) = 0;
+                *(u8 *)(other + 0xD8) = 0;
+            }
+        }
+    }
+}
+
+/* sub_472C5C @ 0x472C5C — weapon entity init (object mesh load).
+ * Takes degradable object entry. Formats "OBJETS>" path + "OB<name>" object
+ * name. Calls setup_creature to load mesh/animation data into the object's
+ * +0x50 slot. Special cases: weapon "27" → secondary OB54, weapons
+ * "23"/"35"/"66"/"68" → FLAM effect, "32" → FLAM2 effect.
+ *
+ * Dependencies: setup_creature (not ported), particle_effect_buffer (not
+ * ported). Structure preserved for when setup_creature lands. */
+static void weapon_entity_init(void *degrad_obj) { /* sub_472C5C @ 0x472C5C */
+    if (!degrad_obj) return;
+    u8 *obj = (u8 *)degrad_obj;
+
+    /* Already active? Skip re-init */
+    if (*(i32 *)(obj + 0x50) != 0) return;
+
+    /* Save + override render_mode @ 0x472C95 */
+    c8 path[64];
+    c8 obj_name[64];
+    snprintf(path, sizeof(path), "OBJETS>");
+
+    /* Format object name: digit at +0xAA → "OB%.2s", else "OB%s" */
+    c8 name_byte = (c8)obj[0xAA];
+    if (name_byte >= '0' && name_byte <= '9') {
+        snprintf(obj_name, sizeof(obj_name), "OB%.2s", (c8 *)(obj + 0xAA));
+    } else {
+        snprintf(obj_name, sizeof(obj_name), "OB%s", (c8 *)(obj + 0xAA));
+    }
+
+    /* setup_creature(path, obj_name, obj+0x88, obj+0x50, particle_buf[pfx_idx])
+     * Loads OME mesh + MAT materials + OBC animation data into obj+0x50. */
+    print("weapon_entity_init: setup_creature('%s', '%s') — TODO\n", path, obj_name);
+
+    /* Clear secondary inventory handle @ 0x472D76 */
+    *(i32 *)(obj + 0xF4) = 0;
+
+    /* Special case: weapon "27" → load OB54 secondary @ 0x472D8D */
+    if (strncmp((c8 *)(obj + 0xAA), "27", 2) == 0) {
+        print("weapon_entity_init: weapon '27' → secondary OB54 (TODO setup_creature)\n");
+    }
+
+    /* Special case: weapons "23"/"35"/"66"/"68" → FLAM effect @ 0x472DF7 */
+    if (strncmp((c8 *)(obj + 0xAA), "23", 2) == 0 ||
+        strncmp((c8 *)(obj + 0xAA), "35", 2) == 0 ||
+        strncmp((c8 *)(obj + 0xAA), "66", 2) == 0 ||
+        strncmp((c8 *)(obj + 0xAA), "68", 2) == 0) {
+        print("weapon_entity_init: flame weapon → FLAM effect (TODO setup_creature)\n");
+    }
+
+    /* Special case: weapon "32" → FLAM2 effect @ 0x472F09 */
+    if (strncmp((c8 *)(obj + 0xAA), "32", 2) == 0) {
+        print("weapon_entity_init: flame weapon → FLAM2 effect (TODO setup_creature)\n");
+    }
+
+    /* Restore render_mode @ 0x472FA5 */
+    print("weapon_entity_init: done for '%s'\n", obj_name);
+}
+
+/* sub_473756 @ 0x473756 — attach weapon entity to player bone hierarchy.
+ * ECX=entity, EDX=weapon degradable object, arg0=flag (1=full init, 0=reattach).
+ *
+ * Walks weapon's scene hierarchy to find deepest "armeb" chain → link to
+ * entity+0x178. Resets frame counters on non-"armeb" nodes. When weapon
+ * sub-type is 'B', updates creature ability table: clears bit 1, sets bit 2.
+ * Finally stores weapon at entity+0xD64 and dispatches animation event.
+ *
+ * Dependencies: sub_474731 (entity-weapon property sync — not ported),
+ * sub_4373EF (animation state dispatch — not ported). */
+static void weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
+    /* sub_473756 @ 0x473756 */
+    if (!entity || !weapon_obj) return;
+    u8 *ent = (u8 *)entity;
+    u8 *wobj = (u8 *)weapon_obj;
+
+    if (full_init) {
+        /* Traverse weapon's scene hierarchy: [wobj+0x50] is root creature node */
+        void *creature = *(void **)(wobj + 0x50);
+        if (creature) {
+            /* Find attachment point: if creature->+0x7C exists, walk to
+             * creature->+0x7C->+0x7C (two levels deep) @ 0x473782 */
+            u8 *cr = (u8 *)creature;
+            void *child = *(void **)(cr + 0x7C);
+            if (child) {
+                *(void **)(ent + 0x178) = *(void **)((u8 *)child + 0x7C);
+            } else {
+                *(void **)(ent + 0x178) = creature;
+            }
+
+            /* Walk hierarchy: reset frame counters on non-"armeb" nodes @ 0x4737BE */
+            void *node = creature;
+            while (node) {
+                u8 *n = (u8 *)node;
+                if (strcmp((c8 *)(n + 4), "armeb") != 0) {
+                    *(i32 *)(n + 0x44) = 0;
+                    *(i32 *)(n + 0x40) = 0;
+                    *(i32 *)(n + 0x3C) = 0;
+                }
+                node = *(void **)(n + 0x7C);
+            }
+        }
+    } else {
+        /* Reattach: just set entity+0x178 = weapon->+0x50 @ 0x473854 */
+        *(void **)(ent + 0x178) = *(void **)(wobj + 0x50);
+    }
+
+    /* Clear attachment offsets if link exists @ 0x47380F */
+    void *attach = *(void **)(ent + 0x178);
+    if (attach) {
+        u8 *a = (u8 *)attach;
+        *(i32 *)(a + 0x54) = 0;
+        *(i32 *)(a + 0x58) = 0;
+        *(i32 *)(a + 0x5C) = 0;
+    }
+
+    /* Creature ability table update: if weapon sub-type is 'B' @ 0x473863 */
+    if ((c8)wobj[0xA9] == 'B') {
+        i32 creature_id = degrad_get_creature_poly(weapon_obj);
+        i32 slot = (c8)wobj[0xAC] - 'A';
+        if (slot == -0x41) slot = 0;   /* NUL char → slot 0 */
+
+        if (creature_id > 0 && creature_id < 0x23 && slot >= 0) {
+            /* byte_4DCCC0[slot + creature_id*6] &= ~2, |= 4 @ 0x4738C0 */
+            game_init_set_ability(creature_id, slot, 0x02, 0x04);
+        } else {
+            /* Out of range: clear bit 1 on weapon flags @ 0x473919 */
+            *(i32 *)(wobj + 0xC4) &= ~2;
+        }
+    }
+
+    /* sub_474731 @ 0x474731 — resolve weapon conflicts with other entities */
+    weapon_resolve_conflicts(entity, weapon_obj);
+
+    /* Store weapon reference at entity+0xD64 @ 0x473934 */
+    *(void **)(ent + 0xD64) = weapon_obj;
+
+    /* sub_4373EF — dispatch animation event @ 0x47395C */
+    print("weapon_entity_attach: TODO sub_4373EF (animation dispatch)\n");
+}
+
 /* sub_47398A @ 0x47398A — process zone transition for player entity.
  * Parses zone object name as "%c%c%02d" (e.g. "OB03" -> type='O', sub='B',
  * weapon_id=3). Swaps player weapon type, copies name to entity+0xD2,
@@ -870,8 +1112,10 @@ static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
     /* Store zone object pointer at entity+0xD64 */
     *(i32 *)(pe + 0xD64) = (i32)(intptr_t)zone_obj;
 
-    /* TODO: sub_472A48 — check if object has scene hierarchy */
-    /* TODO: sub_473756 — attach weapon entity to bone */
+    /* sub_472A48 @ 0x472A48 — check if this is a weapon object */
+    i32 has_weapon = is_weapon_object(zone_obj);
+    print("process_zone_transition: is_weapon_object = %d\n", has_weapon);
+    /* TODO: sub_473756 — attach weapon entity to bone (needs scene hierarchy) */
 
     /* Update weapon globals */
     u8 new_weapon = desc[0x97];

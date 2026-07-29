@@ -134,11 +134,11 @@ static u8 g_unk_4DDF30[0x300];              /* unk_4DDF30 @ 004DDF30 */
 static u8  g_pal_sort_r[256];               /* byte_4D973C @ 004D973C */
 static u8  g_pal_sort_g[256];               /* byte_4D983C @ 004D983C */
 static u8  g_pal_sort_b[256];               /* byte_4D993C @ 004D993C */
-static i32 g_pal_range_r[256] __attribute__((unused)); /* dword_4D943C @ 004D943C */
-static i32 g_pal_range_g[256] __attribute__((unused)); /* dword_4D953C @ 004D953C */
-static i32 g_pal_range_b[256] __attribute__((unused)); /* dword_4D963C @ 004D963C */
+static i32 g_pal_range_r[256];              /* dword_4D943C @ 004D943C */
+static i32 g_pal_range_g[256];              /* dword_4D953C @ 004D953C */
+static i32 g_pal_range_b[256];              /* dword_4D963C @ 004D963C */
 static u8 *g_ls_palette_colour_ptr = NULL;  /* _ls_palette_colour */
-static i32 g_pal_sort_channel __attribute__((unused)) = 0; /* dword_4BF594 @ 004BF594 */
+static const u8 *g_sort_pal_channel = NULL; /* dword_4BF594 @ 004BF594 — comparator channel ptr */
 
 /* Misc */
 static i32 g_dword_4ECD3C        = 0;       /* dword_4ECD3C @ 004ECD3C  */
@@ -149,6 +149,10 @@ static i32 g_dword_4B787C        = 0;       /* dword_4B787C @ 004B787C  */
 
 /* Index buffer computed from gouraud table */
 static void *g_index_buffer       = NULL;   /* index_buffer (asm sym)   */
+
+/* 16-bit gouraud shading LUT (sub_491ED0 @ 0x491ED0) */
+static void *g_gouraud_16bit_raw     = NULL;   /* dword_4C76F8 @ 004C76F8 */
+static void *g_gouraud_16bit_aligned = NULL;   /* dword_5681D0 @ 005681D0 */
 
 /* Phase 17 misc global tables (raw asm addresses, locally mapped) */
 static u8 g_misc_4EC6A0[0x188]    = {0};    /* dword_4EC6A0 @ 004EC6A0  */
@@ -208,17 +212,6 @@ static void *g_textures_gif     = NULL;     /* TEXTURES.GIF base atlas */
 #define CREATURE_TABLE_SIZE 100
 #define MAX_POLY_OBJECTS    35
 #define MAX_WEAPONS         35
-
-typedef struct {
-    i32 nbobj;          /* +0x00: object count */
-    i32 nbvie;          /* +0x04: health/lives */
-    i32 ptvie;          /* +0x08: health points */
-    i32 ptnrj;          /* +0x0C: energy points */
-    u8  flags;          /* +0x10: combat ability bitmask */
-    u8  poly_index;     /* +0x11: polygon object slot */
-    u8  weapon_index;   /* +0x12: weapon slot */
-    u8  linke;          /* +0x13: linked entity id */
-} creature_entry_t;
 
 static creature_entry_t g_creature_table[CREATURE_TABLE_SIZE];
 
@@ -739,6 +732,62 @@ static void text_find_value(const c8 *buf, i32 buf_len, const c8 *key, c8 *out) 
     out[1] = '\0';
 }
 
+/* ls_palette_sort @ 0x483130 — qsort comparator for palette index arrays.
+ * Compares palette channel values at sorted indices. g_sort_pal_channel points
+ * to palette + channel_offset (0=R, 1=G, 2=B). */
+static int palette_sort_cmp(const void *a, const void *b) { /* ls_palette_sort @ 0x483130 */
+    u8 idx_a = *(const u8 *)a;
+    u8 idx_b = *(const u8 *)b;
+    return (int)g_sort_pal_channel[idx_a * 3] - (int)g_sort_pal_channel[idx_b * 3];
+}
+
+/* ls_build_palette_colour @ 0x482F40 — sort palette indices by R/G/B channel
+ * and build range tables for fast nearest-colour lookup. */
+static void build_palette_colour(u8 *palette) {
+    if (!palette) return;
+    g_ls_palette_colour_ptr = palette;
+
+    for (i32 i = 0; i < 256; i++) {
+        g_pal_sort_r[i] = (u8)i;
+        g_pal_sort_g[i] = (u8)i;
+        g_pal_sort_b[i] = (u8)i;
+    }
+
+    /* Sort by R channel */
+    g_sort_pal_channel = palette;
+    qsort(g_pal_sort_r, 256, 1, palette_sort_cmp);
+
+    /* Sort by G channel */
+    g_sort_pal_channel = palette + 1;
+    qsort(g_pal_sort_g, 256, 1, palette_sort_cmp);
+
+    /* Sort by B channel */
+    g_sort_pal_channel = palette + 2;
+    qsort(g_pal_sort_b, 256, 1, palette_sort_cmp);
+
+    /* Build range tables: for each unique value, store (last<<8)|first packed.
+     * Mirrors asm loops at 0x482FEF / 0x483059 / 0x4830C4. */
+    struct { u8 *sorted; i32 *range; i32 channel; } passes[3] = {
+        { g_pal_sort_r, g_pal_range_r, 0 },
+        { g_pal_sort_g, g_pal_range_g, 1 },
+        { g_pal_sort_b, g_pal_range_b, 2 },
+    };
+    for (i32 p = 0; p < 3; p++) {
+        memset(passes[p].range, 0xFF, 256 * sizeof(i32));
+        i32 start = 0;
+        while (start < 256) {
+            u8 val = palette[passes[p].sorted[start] * 3 + passes[p].channel];
+            i32 end = start;
+            while (end + 1 < 256 &&
+                   palette[passes[p].sorted[end + 1] * 3 + passes[p].channel] == val)
+                end++;
+            passes[p].range[val] = (end << 8) | start;
+            start = end + 1;
+        }
+    }
+    print("build_palette_colour: sorted + range tables built\n");
+}
+
 /* -------------------------------------------------------------------------
  * 004723C0 — sub_4723C0 (pre-check / cache loader).
  *
@@ -1137,15 +1186,9 @@ b8 game_init(state_t *state) {
          * for fast nearest-colour matching. Sorts 3 index arrays (R/G/B channels)
          * via qsort, then builds range tables for each channel. */
         if (g_menugen_palette) {
-            g_ls_palette_colour_ptr = (u8 *)g_menugen_palette;
-            for (i32 ci = 0; ci < 256; ci++) {
-                g_pal_sort_r[ci] = (u8)ci;
-                g_pal_sort_g[ci] = (u8)ci;
-                g_pal_sort_b[ci] = (u8)ci;
-            }
-            /* Sort by R, G, B channels using qsort (deferred — needs comparator
-             * with global channel state). Tables initialized with identity. */
-            print("game_init: ls_build_palette_colour — identity init (qsort deferred)\n");
+            /* ls_build_palette_colour @ 0x482F40 — sort palette indices and
+             * build range tables for fast nearest-colour matching. */
+            build_palette_colour((u8 *)g_menugen_palette);
         }
     }
 
@@ -1551,9 +1594,20 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     if (state->colour_mode != 0) {
         print("game_init: sub_491ED0 + sub_491FD0 (16-bit colour init)\n");
-        /* sub_491ED0 @ 0x491ED0 — 16-bit colour conversion table setup (stub) */
-        /* sub_491FD0 @ 0x491FD0 — push 0x3C; ECX=dword_4B71F8;
-         *   EDX=graphics_context[+2Ch]; 16-bit palette mapping (stub) */
+        /* sub_491ED0 @ 0x491ED0 — allocate 0x18000-byte gouraud 16-bit LUT.
+         * Stores raw pointer at dword_4C76F8; aligned-to-64KB at dword_5681D0. */
+        if (!g_gouraud_16bit_raw) {
+            g_gouraud_16bit_raw = calloc(1, 0x18000);
+            if (g_gouraud_16bit_raw) {
+                /* Align to 64KB boundary (original: AND 0xFFFF0000 + 0x10000) */
+                uintptr_t raw = (uintptr_t)g_gouraud_16bit_raw;
+                g_gouraud_16bit_aligned = (void *)((raw & ~(uintptr_t)0xFFFF) + 0x10000);
+                print("game_init: gouraud 16-bit LUT allocated (%p aligned=%p)\n",
+                      g_gouraud_16bit_raw, g_gouraud_16bit_aligned);
+            }
+        }
+        /* sub_491FD0 @ 0x491FD0 — build gouraud 16-bit colour ramp
+         * (256-entry RGB565/555 interpolation table). Complex palette math — stub. */
     }
 
     /* ------------------------------------------------------------------ */
@@ -1613,4 +1667,27 @@ void game_init_get_menu_backdrop(bmap_t **out_bmap, u8 **out_palette) {
     }
     print("game_init_get_menu_backdrop: bmap=%p palette=%p\n",
           (void *)bmap, (void *)color_table);
+}
+
+/* -------------------------------------------------------------------------
+ * Creature table accessors — expose static arrays to scene.c / player.c
+ * ---------------------------------------------------------------------- */
+const creature_entry_t *game_init_get_creature(i32 id) {
+    if (id < 0 || id >= CREATURE_TABLE_SIZE) return NULL;
+    return &g_creature_table[id];
+}
+
+u8 game_init_get_ability(i32 creature_id, i32 slot) {
+    /* byte_4DCCC0 @ 0x4DCCC0 — per-creature per-slot ability flags.
+     * Layout: 6 bytes per creature, indexed as [slot + creature_id * 6]. */
+    i32 idx = slot + creature_id * 6;
+    if (idx < 0 || idx >= (i32)sizeof(g_misc_4DCCC0)) return 0;
+    return g_misc_4DCCC0[idx];
+}
+
+void game_init_set_ability(i32 creature_id, i32 slot, u8 mask_clear, u8 mask_set) {
+    /* byte_4DCCC0 @ 0x4DCCC0 */
+    i32 idx = slot + creature_id * 6;
+    if (idx < 0 || idx >= (i32)sizeof(g_misc_4DCCC0)) return;
+    g_misc_4DCCC0[idx] = (g_misc_4DCCC0[idx] & ~mask_clear) | mask_set;
 }
