@@ -43,6 +43,11 @@ static i32 g_weapon_class_index = 0;  /* sub_471B80 @ 0x471B80 */
 /* dword_505DDC — raw weapon type byte from persona descriptor +0x97 */
 static u8 g_active_weapon_type = 0;   /* 0x505DDC */
 
+/* byte_4F60E0 @ 0x4F60E0 — dialogue/animation state buffer.
+ * 12KB split across 3 entity slots: player (+0x0000), companion (+0x1000),
+ * secondary companion (+0x2000). Stored at entity+0xCD8. */
+static u8 g_dialogue_buffer[0x3000] = {0};
+
 /* -------------------------------------------------------------------------
  * Entity struct allocation size from asm:
  *   mov ecx, 0EA0h
@@ -401,8 +406,8 @@ void player_entity_init_secondary(void) {
     /* Phase 1: +0xCD8 — dialogue/animation buffer pointer
      * asm: cmp [var_98], player_entity; jnz ...; mov [ecx+0CD8h], offset byte_4F60E0
      * byte_4F60E0 is a fixed game-data segment address; NULL placeholder here. */
-    /* TODO: wire +0xCD8 to byte_4F60E0 once that data segment is mapped */
-    print("player: TODO +0xCD8 dialogue buffer ptr (byte_4F60E0 not mapped)\n");
+    /* byte_4F60E0 @ 0x4F60E0 — player gets slot 0 of dialogue buffer */
+    *(void **)((u8 *)g_player_entity + 0xCD8) = &g_dialogue_buffer[0];
 
     /* Phase 2: read weapon type from persona descriptor at [entity+0xACh]+0x97 */
     u8 *desc = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
