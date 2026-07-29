@@ -332,7 +332,13 @@ void ls_build_virtual_root(void) {
     memset(g_ls_workspace_a, 0, sizeof(g_ls_workspace_a));
     memset(g_ls_workspace_b, 0, sizeof(g_ls_workspace_b));
 
-    /* TODO: sub_48C5D0 */
+    /* sub_48C5D0 @ 0x48C5D0 — Win32 drive enumeration (205 instructions).
+     * Calls GetLogicalDriveStringsA / GetDriveTypeA / GetVolumeInformationA
+     * to populate g_ls_workspace_a with per-drive records (type, number,
+     * volume label). Compares current directory against drive roots to fill
+     * g_ls_workspace_b with the matching entry. Dev-environment only: maps
+     * network volume labels "DEV1/DEV2/TOOLS/TEMP/USERS" to REMOTE_* types.
+     * No-op on Unix — g_ls_drive_type is pre-set to 10 (HDISK). */
 
     /* Derive drive-type name from g_ls_drive_type */
     const c8 *drive_name = NULL;

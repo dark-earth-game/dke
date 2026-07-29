@@ -58,10 +58,10 @@ i16 word_509B40[0x310] = {0};
  * word_509B40 layout: 98 persona entries (outer loop 0..97), each with 8 i16
  * inventory-slot values (inner loop). Total = 0x310 words = 0x620 bytes.
  *
- * Unported dependencies (stubs):
+ * Local helpers:
  *   select_language_version — tests whether a language-specific file variant
  *     exists; here used to test CTX existence.  Returns non-NULL if present.
- *   ls_switch_memory        — switches active memory context for allocations.
+ *   ls_switch_memory        — switches active memory context (no-op in port).
  *   ls_load_file_at         — loads an entire file into a caller-supplied buffer.
  *   ls_get_filedate         — returns a 4-byte opaque file modification date.
  * --------------------------------------------------------------------------*/
@@ -81,14 +81,13 @@ static i32 select_language_version_palette(const c8 *path) {
 }
 
 /*
- * ls_get_filedate_stub — returns an opaque 4-byte file modification stamp.
- * Original asm: "ls_get_filedate" via ECX=path. Not yet ported; returns 0.
- * TODO: port ls_get_filedate from sub_XXXXXX
+ * ls_get_filedate — returns an opaque 4-byte file modification stamp.
+ * Original asm: "ls_get_filedate" via ECX=path.
+ * Returns file mtime as u32 timestamp.  Original packs DOS date/time;
+ * we return Unix epoch (good enough for comparison — the only caller
+ * checks newer-than).
  */
-static u32 ls_get_filedate_stub(const c8 *path) {
-    /* ls_get_filedate — return file mtime as u32 timestamp.
-     * Original packs DOS date/time; we return Unix epoch (good enough for
-     * comparison — the only caller checks newer-than). */
+static u32 ls_get_filedate(const c8 *path) {
     if (!path) return 0;
     struct stat st;
     if (stat(path, &st) != 0) return 0;
@@ -96,22 +95,20 @@ static u32 ls_get_filedate_stub(const c8 *path) {
 }
 
 /*
- * ls_switch_memory_stub — switches the active memory pool for allocations.
- * Original: ECX = memory-slot id.  Not yet ported; NOP.
- * TODO: port ls_switch_memory from sub_XXXXXX
+ * ls_switch_memory — switches the active memory pool for allocations.
+ * Original: ECX = memory-slot id.  Intentionally a no-op — Dark Earth's
+ * per-pool memory management is not needed in the port.
  */
-static void ls_switch_memory_stub(i32 slot) {
+static void ls_switch_memory(i32 slot) {
     (void)slot;
-    /* TODO: ls_switch_memory */
 }
 
 /*
- * ls_load_file_at_stub — loads the file at 'path' into 'buf' (size bytes).
- * Original: ECX=path, EDX=buf, call ls_load_file_at.  Not yet ported.
+ * ls_load_file_at — loads the file at 'path' into 'buf' (size bytes).
+ * Original: ECX=path, EDX=buf, call ls_load_file_at.
  * Returns number of bytes loaded, 0 on failure.
- * TODO: port ls_load_file_at from sub_XXXXXX
  */
-static i32 ls_load_file_at_stub(const c8 *path, void *buf, i32 size) {
+static i32 ls_load_file_at(const c8 *path, void *buf, i32 size) {
     FILE *f = fopen(path, "rb");
     if (!f) return 0;
     i32 n = (i32)fread(buf, 1, (size_t)size, f);
@@ -153,7 +150,7 @@ void palette_postprocess_configure(const c8 *game_path_arg, i32 is_using_hdd) {
                 return;
             } else {
                 /* Non-HDD: accept CTX only if date matches TXT mtime */
-                u32 txt_date = ls_get_filedate_stub(txt_path);
+                u32 txt_date = ls_get_filedate(txt_path);
                 if (txt_date == ctx_date) {
                     fread(word_509B40, 0x620, 1, f);
                     fclose(f);
@@ -194,7 +191,7 @@ void palette_postprocess_configure(const c8 *game_path_arg, i32 is_using_hdd) {
      *   free_memory(buf)
      *   write CTX cache: open ctx_path, write date+word_509B40
      *
-     * Unported: ls_switch_memory, ls_load_file_at (stubbed), ls_get_filedate.
+     * Helpers: ls_switch_memory, ls_load_file_at, ls_get_filedate.
      */
 
     i32 txt_size = ls_get_filesize(txt_path);
@@ -203,8 +200,8 @@ void palette_postprocess_configure(const c8 *game_path_arg, i32 is_using_hdd) {
         return;
     }
 
-    /* TODO: ls_switch_memory(ui_special_meter_buffer) @ 425E73 */
-    ls_switch_memory_stub(MEM_SLOT_SPECIAL);
+    /* ls_switch_memory(ui_special_meter_buffer) @ 425E73 */
+    ls_switch_memory(MEM_SLOT_SPECIAL);
 
     /* Allocate a buffer for the TXT content */
     c8 *buf = (c8 *)allocate_memory(MEM_SLOT_SPECIAL, txt_size + 1);
@@ -213,11 +210,11 @@ void palette_postprocess_configure(const c8 *game_path_arg, i32 is_using_hdd) {
         return;
     }
 
-    /* TODO: ls_switch_memory(ui_special_meter_buffer) @ 425E88 */
-    ls_switch_memory_stub(MEM_SLOT_SPECIAL);
+    /* ls_switch_memory(ui_special_meter_buffer) @ 425E88 */
+    ls_switch_memory(MEM_SLOT_SPECIAL);
 
-    /* TODO: ls_load_file_at(txt_path, buf) — stub reads via fopen */
-    i32 loaded = ls_load_file_at_stub(txt_path, buf, txt_size);
+    /* ls_load_file_at(txt_path, buf) @ 425E9B */
+    i32 loaded = ls_load_file_at(txt_path, buf, txt_size);
     buf[loaded] = '\0'; /* NUL-terminate for safety */
 
     i32 txt_len = txt_size; /* var_110 = filesize (re-read in orig) */
@@ -271,7 +268,7 @@ void palette_postprocess_configure(const c8 *game_path_arg, i32 is_using_hdd) {
 
     /* -- Write CTX cache -------------------------------------------------- */
     {
-        u32 txt_date = ls_get_filedate_stub(txt_path);
+        u32 txt_date = ls_get_filedate(txt_path);
         FILE *cf = fopen(ctx_path, "wb");
         if (cf) {
             fwrite(&txt_date, 4, 1, cf);

@@ -1410,12 +1410,22 @@ static void build_nav_grid(void) { /* sub_45619D @ 0x45619D */
                    g_world.num_collisions);
 }
 
-/* set_entities_combat_mode — activate combat AI for placed entities.
- * Sets entity+0xC44=1 (combat ready flag) on player and companions.
- * Non-essential during initial level load. */
-static void set_entities_combat_mode(void) { /* @ 0x46C4D2 */
-    if (g_player_entity)
-        ent_put(g_player_entity, ENT_OFF_COMBAT_READY, 1);
+/* set_entities_combat_mode @ 0x406AC3 — (re)assert entity type flags.
+ * Sets entity+0x90=2 and entity+0x94=2 on player, companion, and
+ * secondary companion. Called from game_init phase 38 and scene_load_level. */
+static void set_entities_combat_mode(void) { /* set_entities_combat_mode @ 0x406AC3 */
+    if (g_player_entity) {
+        ent_put(g_player_entity, 0x90, 2);
+        ent_put(g_player_entity, 0x94, 2);
+    }
+    if (g_companion_entity) {
+        ent_put(g_companion_entity, 0x90, 2);
+        ent_put(g_companion_entity, 0x94, 2);
+    }
+    if (g_secondary_companion_entity) {
+        ent_put(g_secondary_companion_entity, 0x90, 2);
+        ent_put(g_secondary_companion_entity, 0x94, 2);
+    }
 }
 
 /* sub_448F4D — LIEU DLL loader / combat-scripting bootstrap.
@@ -2273,7 +2283,7 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     print("scene: phase 17 — render_sprite_time_based_effect + sub_45619D\n");
     render_sprite_time_based_effect();   /* sub_404F80 @ 0x404F80 */
-    build_nav_grid();                        /* TODO: sub_45619D */
+    build_nav_grid();                        /* sub_45619D @ 0x45619D */
 
     /* -----------------------------------------------------------------
      * Phase 18 — viewport globals
@@ -2295,8 +2305,8 @@ i32 scene_load_level(i32 level_id) {
      * Phase 19 — set_entities_combat_mode + sub_448F4D
      * ----------------------------------------------------------------- */
     print("scene: phase 19 — set_entities_combat_mode + init_level_scripting\n");
-    set_entities_combat_mode();   /* TODO: set_entities_combat_mode */
-    init_level_scripting();                 /* TODO: sub_448F4D */
+    set_entities_combat_mode();   /* set_entities_combat_mode @ 0x406AC3 */
+    init_level_scripting();                 /* sub_448F4D @ 0x448F4D */
 
     /* -----------------------------------------------------------------
      * Phase 20 — ls_clear_bmap (graphics_context, game_context)
