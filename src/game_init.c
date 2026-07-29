@@ -1790,3 +1790,13 @@ void *game_init_get_game_context(void) {
 bmap_t *game_init_get_render_buffer1(void) {
     return g_render_buffer1;
 }
+
+/* Accessor for g_bmap_507474 (dword_507474 @ 0x507474) — 320×240 half-res buffer. */
+bmap_t *game_init_get_halfres_buffer(void) {
+    return (bmap_t *)g_bmap_507474;
+}
+
+/* Accessor for g_dword_4F4DF4 (INTFANI3 bmap @ 0x4F4DF4). */
+bmap_t *game_init_get_intfani3(void) {
+    return (bmap_t *)g_dword_4F4DF4;
+}

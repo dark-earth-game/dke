@@ -1417,6 +1417,19 @@ static void clear_bmap(void *bmap) {
         memset(b->pixels, 0, (u32)(b->stride * b->height));
 }
 
+/* overlay_cursor_image @ 0x45459A — blit sprite region with colour-key.
+ * Thin wrapper around ls_bit_move(mode=1). Optional debug outline when
+ * global_state_flags bit 1 set and dst==debug_surface. Skips if
+ * dword_4B69BC!=0 and dst==graphics_context. */
+static void overlay_cursor_image(bmap_t *src, bmap_t *dst,
+                                 i32 sx, i32 sy, i32 sw, i32 sh,
+                                 i32 dx, i32 dy) {
+    /* overlay_cursor_image @ 0x45459A */
+    if (!src || !dst) return;
+    if (dst == g_graphics_context) return;   /* dword_4B69BC skip simplified */
+    ls_bit_move(dst, src, sx, sy, sw, sh, dx, dy, 1);
+}
+
 /* sub_45D27A — render buffer cursor/mask overlay (77 instructions).
  * Composites a 70x119 (0x46 x 0x77) mask region from g_intfani3_bmap
  * (dword_4F4DF4 / INTFANI3) into render_buffer2.
@@ -1466,13 +1479,22 @@ static void sub_45D27A(void *buf, i32 mode) {
     }
 }
 
-/* update_player_interface @ 0x45D1F6 — HUD/inventory render.
- * Blits INTFANI3 HUD frame overlay, then calls sub_45CD9C (health bar,
- * stamina, weapon indicator) and sub_45D0BA (companion HUD).
- * Depends on overlay_cursor_image + HUD sub-renderers — no-op until those land. */
-static void stub_update_player_interface(void *ctx, i32 mode) {
-    (void)ctx; (void)mode;
-    /* update_player_interface @ 0x45D1F6 — needs overlay_cursor_image */
+/* update_player_interface @ 0x45D1F6 — HUD overlay controller.
+ * Composites INTFANI3 health bar + mode indicator sprites onto game_context.
+ * ECX=game_context bmap, EDX=mode (2=full init). */
+static void update_player_interface(void *ctx, i32 mode) {
+    /* update_player_interface @ 0x45D1F6 */
+    (void)mode;
+    bmap_t *intfani3 = game_init_get_intfani3();
+    bmap_t *dst = (bmap_t *)ctx;
+    if (!intfani3 || !dst) return;
+
+    /* Primary HUD overlay — health bar area @ 0x45D205 */
+    overlay_cursor_image(intfani3, dst,
+                         0x56, 0, 0x9C, 0x77, 0, 0x169);
+
+    /* sub_45CD9C @ 0x45CD9C — HUD health bar renderer (195 inst, deferred) */
+    /* sub_45D0BA @ 0x45D0BA — HUD mode indicator (76 inst, deferred) */
 }
 
 /* sub_45E070 @ 0x45E070 — screen light intensity map downsampler.
@@ -1518,14 +1540,58 @@ static void stub_render_entity_with_ui(void *entity, i32 mode) {
     /* render_entity_with_ui @ 0x4024AF — needs rendering subsystem */
 }
 
+/* dword_511624 @ 0x511624 — rendering state flag, set during effect position init. */
+static i32 g_dword_511624 = 0;
+
+/* initialize_effect_position @ 0x4357CF — project entity to screen, sample
+ * half-res lightmap for background brightness at entity position.
+ * ECX=scene_root (entity+0x50 bone hierarchy), EDX=transform context,
+ * arg0=output brightness pointer (entity+0x64).
+ * Uses sub_4915C0 (camera projection) — substituted with scene_project_world. */
+static void initialize_effect_position(void *scene_root, void *transform, i32 *out) {
+    /* initialize_effect_position @ 0x4357CF */
+    bmap_t *halfres = game_init_get_halfres_buffer();
+    if (!halfres || !halfres->pixels) return;
+    if (!scene_root) return;
+
+    u8 *root = (u8 *)scene_root;
+    i32 wx = *(i32 *)(root + 0x3C);
+    i32 wy = (i32)(intptr_t)transform;
+    i32 wz = *(i32 *)(root + 0x44);
+
+    g_dword_511624 = 2;  /* dword_511624 @ 0x511624 */
+
+    i32 sx = 0, sy = 0;
+    scene_project_world(wx, wy, wz, &sx, &sy);
+
+    if (sx < 0) sx = 0;
+    if (sx > 639) sx = 639;
+    if (sy < 0) sy = 0;
+    if (sy > 479) sy = 479;
+
+    /* Half coordinates → index into 320×240 buffer */
+    sx >>= 1;
+    sy >>= 1;
+
+    i32 stride = halfres->stride > 0 ? halfres->stride : (i32)halfres->width;
+    i32 offset = stride * sy + sx;
+    u8 brightness = halfres->pixels[offset];
+
+    if (out) *out = (i32)(brightness * 0.75);  /* dbl_4B05E8 = 0.75 */
+}
+
 /* apply_model_transform @ 0x4359FF — position entity model in screen space.
- * 61 bytes: sets entity+0x54=2 (transforming), calls initialize_effect_position
- * (0x4357CF) which projects world coords to screen via sub_4915C0 and samples
- * background depth/light buffer, then sets entity+0x54=1 (ready).
- * Depends on sub_4915C0 (camera projection) — no-op until projection lands. */
-static void stub_apply_model_transform(void *entity, void *transform) {
-    (void)entity; (void)transform;
-    /* apply_model_transform @ 0x4359FF — needs sub_4915C0 projection */
+ * Sets entity+0x54=2 (transforming), calls initialize_effect_position to
+ * project world coords and sample background brightness, then sets
+ * entity+0x54=1 (ready). */
+static void apply_model_transform(void *entity, void *transform) {
+    /* apply_model_transform @ 0x4359FF */
+    if (!entity) return;
+    u8 *ent = (u8 *)entity;
+    *(i32 *)(ent + 0x54) = 2;  /* transforming state */
+    void *scene_root = *(void **)(ent + 0x50);
+    initialize_effect_position(scene_root, transform, (i32 *)(ent + 0x64));
+    *(i32 *)(ent + 0x54) = 1;  /* ready state */
 }
 
 /* system_get_gametime — read current system game timer.
@@ -2080,7 +2146,7 @@ i32 scene_load_level(i32 level_id) {
     clear_bmap(g_graphics_context);                      /* ls_clear_bmap(graphics_context) @ 0x46E63B */
     clear_bmap(game_init_get_game_context());             /* ls_clear_bmap(game_context) @ 0x46E644 */
     sub_45D27A(game_init_get_render_buffer1(), 1);        /* sub_45D27A(render_buffer1, 1) */
-    stub_update_player_interface(game_init_get_game_context(), 2); /* update_player_interface — needs overlay_cursor_image */
+    update_player_interface(game_init_get_game_context(), 2); /* update_player_interface @ 0x45D1F6 */
     build_brightness_map();                     /* TODO: sub_45E070 */
     stub_sub_47674F(0);                    /* TODO: sub_47674F(0) */
 
@@ -2098,8 +2164,8 @@ i32 scene_load_level(i32 level_id) {
     /* -----------------------------------------------------------------
      * Phase 22 — apply_model_transform for player + companions
      * ----------------------------------------------------------------- */
-    print("scene: phase 22 — apply_model_transform — STUB\n");
-    stub_apply_model_transform(NULL, NULL); /* TODO: g_player_entity */
+    print("scene: phase 22 — apply_model_transform\n");
+    apply_model_transform(g_player_entity, NULL);  /* apply_model_transform @ 0x4359FF */
 
     /* -----------------------------------------------------------------
      * Phase 23 — system_get_gametime → last_event_check_time

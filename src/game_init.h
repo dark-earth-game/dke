@@ -50,6 +50,13 @@ void *game_init_get_game_context(void);
 /* Accessor for g_render_buffer1 (render_buffer1 @ 0x4B720C). */
 bmap_t *game_init_get_render_buffer1(void);
 
+/* Accessor for g_bmap_507474 (dword_507474 @ 0x507474) — 320×240 half-res buffer.
+ * Used by initialize_effect_position to sample scene brightness at entity position. */
+bmap_t *game_init_get_halfres_buffer(void);
+
+/* Accessor for INTFANI3 bmap (dword_4F4DF4 @ 0x4F4DF4). */
+bmap_t *game_init_get_intfani3(void);
+
 /* 0046BEEB — game-side bootstrap. Runs after ls_startup + init_all_systems. */
 b8 game_init(state_t *state);
 
