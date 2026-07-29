@@ -79,6 +79,30 @@ static void seb_release_all(void) {
     seb_allocation_size = 0;
 }
 
+/* cp_init / cp_uninit @ 0x4328E7 / 0x4329EE — colour-pack codec buffers.
+ * 6 buffers × 0xFC00 bytes, zeroed (0xFA00 active region each).
+ * Original uses ls_get_memory_heap; we use malloc since heap not ported. */
+#define CP_BUF_SIZE  0xFC00
+#define CP_ZERO_SIZE 0xFA00
+#define CP_BUF_COUNT 6
+static void *cp_buffers[CP_BUF_COUNT] = {0};
+
+static void cp_init(void) {
+    /* cp_init @ 0x4328E7 */
+    for (i32 i = 0; i < CP_BUF_COUNT; i++) {
+        cp_buffers[i] = malloc(CP_BUF_SIZE);
+        if (cp_buffers[i]) memset(cp_buffers[i], 0, CP_ZERO_SIZE);
+    }
+}
+
+static void cp_uninit(void) {
+    /* cp_uninit @ 0x4329EE */
+    for (i32 i = 0; i < CP_BUF_COUNT; i++) {
+        free(cp_buffers[i]);
+        cp_buffers[i] = NULL;
+    }
+}
+
 /* 00431EA0 */
 void ls_init_movie(i32 a, i32 b) {
     (void)a;
@@ -120,8 +144,10 @@ void ls_init_movie(i32 a, i32 b) {
     movie_heap_slot = malloc(0x9EB10);
     if (movie_heap_slot) memset(movie_heap_slot, 0, 0x9EB10);
 
-    /* cp_init — colour-pack / palette codec init. Not yet ported. */
-    /* TODO: cp_init */
+    /* cp_init @ 0x4328E7 — colour-pack codec init.
+     * Allocates 6 × 0xFC00 byte buffers for palette compression tables.
+     * Original uses ls_get_memory_heap (not ported); we use malloc. */
+    cp_init();
 
     /* Original reads win.ini [LIBSYS] COMPR=<TRUE|FALSE>. Default: FALSE -> 0. */
     movie_compression = 0;
@@ -129,7 +155,7 @@ void ls_init_movie(i32 a, i32 b) {
 
 /* 00432120 */
 void ls_shut_movie(void) {
-    /* TODO: cp_uninit */
+    cp_uninit();  /* cp_uninit @ 0x4329EE */
     if (movie_heap_slot) {
         free(movie_heap_slot);
         movie_heap_slot = NULL;
