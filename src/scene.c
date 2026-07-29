@@ -1413,7 +1413,7 @@ static void build_nav_grid(void) { /* sub_45619D @ 0x45619D */
 /* set_entities_combat_mode @ 0x406AC3 — (re)assert entity type flags.
  * Sets entity+0x90=2 and entity+0x94=2 on player, companion, and
  * secondary companion. Called from game_init phase 38 and scene_load_level. */
-static void set_entities_combat_mode(void) { /* set_entities_combat_mode @ 0x406AC3 */
+void set_entities_combat_mode(void) { /* set_entities_combat_mode @ 0x406AC3 */
     if (g_player_entity) {
         ent_put(g_player_entity, 0x90, 2);
         ent_put(g_player_entity, 0x94, 2);

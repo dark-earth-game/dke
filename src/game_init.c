@@ -71,6 +71,7 @@
 #include "player.h"
 #include "entity.h"
 #include "material.h"
+#include "scene.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols not yet in state_t.
@@ -1579,10 +1580,8 @@ b8 game_init(state_t *state) {
     /* Phase 38 — set_entities_combat_mode                                 */
     /* ------------------------------------------------------------------ */
     print("game_init: set_entities_combat_mode\n");
-    /* set_entities_combat_mode @ 0x46C4D2 */
-    if (g_player_entity) {
-        ent_put(g_player_entity, ENT_OFF_COMBAT_READY, 1);
-    }
+    /* call set_entities_combat_mode @ 0x46C536 */
+    set_entities_combat_mode();
 
     /* ------------------------------------------------------------------ */
     /* Phase 39 — sub_426335                                               */
@@ -1811,4 +1810,9 @@ bmap_t *game_init_get_intfani3(void) {
 /* Accessor for g_index_buffer (index_buffer @ gouraud_table aligned+0x100). */
 void *game_init_get_index_buffer(void) {
     return g_index_buffer;
+}
+
+/* Accessor for g_weapon_slot_table (dword_4ECD50 @ 0x4ECD50). */
+void *game_init_get_weapon_slot_table(void) {
+    return g_weapon_slot_table;
 }

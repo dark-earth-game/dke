@@ -52,6 +52,10 @@ void scene_release(void);
  */
 i32 scene_get_camera_zfar(i32 camera);
 
+/* set_entities_combat_mode @ 0x406AC3 — set entity+0x90=2 and entity+0x94=2
+ * on player, companion, and secondary companion. Called from game_init and scene_load_level. */
+void set_entities_combat_mode(void);
+
 /* Weapon system — degradable object pool + weapon entity lifecycle.
  * Used by player.c during player_entity_init_secondary. */
 void *scene_find_degradable_object(const c8 *name);

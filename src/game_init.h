@@ -61,6 +61,10 @@ bmap_t *game_init_get_intfani3(void);
  * 256-entry shading LUT at offset +0x600 used by 8-bit HUD darken pass. */
 void *game_init_get_index_buffer(void);
 
+/* Accessor for g_weapon_slot_table (dword_4ECD50 @ 0x4ECD50).
+ * 4 entries × 0x88 bytes — player weapon descriptor slots. */
+void *game_init_get_weapon_slot_table(void);
+
 /* 0046BEEB — game-side bootstrap. Runs after ls_startup + init_all_systems. */
 b8 game_init(state_t *state);
 

@@ -290,8 +290,8 @@ void player_entity_init(void) {
     ent_put(ent, ENT_OFF_UNK_E94,   0xFFFF);
 
     /* Player weapon-slot table link at +0xACh: player always uses the
-     * main weapon slot (dword_4ECD50 ptr — not yet tracked; NULL for now). */
-    /* TODO: [ent+0xACh] = &dword_4ECD50 once weapon-slot table exported */
+     * main weapon slot (dword_4ECD50 @ 0x4ECD50). */
+    *(void **)((u8 *)ent + 0xAC) = game_init_get_weapon_slot_table();
 
     /* Nested sub-calls — all >100 asm lines, stubbed per spec: ---------- */
 
