@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "palette.h"
 #include "../common.h"
@@ -85,9 +86,13 @@ static i32 select_language_version_palette(const c8 *path) {
  * TODO: port ls_get_filedate from sub_XXXXXX
  */
 static u32 ls_get_filedate_stub(const c8 *path) {
-    (void)path;
-    /* TODO: ls_get_filedate — read mtime and pack into u32 */
-    return 0;
+    /* ls_get_filedate — return file mtime as u32 timestamp.
+     * Original packs DOS date/time; we return Unix epoch (good enough for
+     * comparison — the only caller checks newer-than). */
+    if (!path) return 0;
+    struct stat st;
+    if (stat(path, &st) != 0) return 0;
+    return (u32)st.st_mtime;
 }
 
 /*

@@ -130,6 +130,13 @@ static bmap_t *g_unk_4EDC00       = NULL;   /* unk_4EDC00 @ 004EDC00     */
 /* Palette buffer for upper-half palette (indices 128-255 from MENUGEN.GIF) */
 static u8 g_unk_4DDF30[0x300];              /* unk_4DDF30 @ 004DDF30 */
 
+/* input_state_table @ 0x548E00 — 256-byte input state flags, zeroed during init. */
+static u8 g_input_state_table[0x100] = {0};
+
+/* word_4D0A40 @ 0x4D0A40 — font glyph bitmask table.
+ * Size: 0x976*4+2 = 9596 bytes. Zeroed then populated from FONTE11 atlas. */
+static u8 g_word_4D0A40[0x976 * 4 + 2] = {0};
+
 /* Palette colour lookup tables (ls_build_palette_colour @ 0x482F40) */
 static u8  g_pal_sort_r[256];               /* byte_4D973C @ 004D973C */
 static u8  g_pal_sort_g[256];               /* byte_4D983C @ 004D983C */
@@ -687,10 +694,8 @@ static void sub_415FB0(const c8 *base_name, u8 *desc) {
     }
 
     /* ---- Step 3: zero word_4D0A40 (≈0x4ED words) ---- */
-    /* word_4D0A40 is a global bitmask table, not yet mapped in our port.
-     * Original: xor eax,eax; mov ecx,976h; rep stosd; stosw
-     * This is a ~2.5 KB zero-init; safe to skip until the table is mapped. */
-    /* TODO: memset(word_4D0A40, 0, 0x976*4 + 2) when word_4D0A40 lands in state */
+    /* Original: xor eax,eax; mov ecx,976h; rep stosd; stosw */
+    memset(g_word_4D0A40, 0, sizeof(g_word_4D0A40));  /* word_4D0A40 @ 0x4D0A40 */
 
     /* ---- Step 4: glyph bitmask walk ---- */
     /* TODO: walk unk_4CFFC4..unk_4D0A44 (stride 0Ch, 0x260 entries), populate
@@ -1157,7 +1162,7 @@ b8 game_init(state_t *state) {
         ls_free_palette(menugen_palette);       /* 46C076 */
 
         /* memset input_state_table[0x100] to 0 @ 46C07B */
-        /* TODO: input_state_table global not yet in state_t */
+        memset(g_input_state_table, 0, sizeof(g_input_state_table));  /* input_state_table @ 0x548E00 */
 
         /* Second pass: load MENUGEN.GIF palette into dword_4B71F8          */
         /* TODO: load_image_color_data @ 46C083 */
