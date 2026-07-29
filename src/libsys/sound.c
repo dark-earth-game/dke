@@ -1,7 +1,15 @@
+#include <string.h>
 #include "sound.h"
 #include "common.h"
 
 u16 g_audio_enabled = 0;
+
+/* Active sound handle table (sub_44D1C5).
+ * byte_4FB270[128] — sound state flags, dword_4FB2F0[16] — handle pointers,
+ * dword_4FB370 — active count. */
+static u8   g_sound_table[128]  = {0};  /* byte_4FB270 @ 0x4FB270 */
+static void *g_sound_handles[16] = {0}; /* dword_4FB2F0 @ 0x4FB2F0 */
+static i32  g_sound_count        = 0;   /* dword_4FB370 @ 0x4FB370 */
 
 /*
  * lsys_init_sound_system — inner DirectSound init (0x0048502B)
@@ -45,4 +53,29 @@ void ls_shut_sound_system(void) {
     // TODO: release native audio backend resources
     g_audio_enabled = 0;
     print("ls_shut_sound_system: audio disabled\n");
+}
+
+/* ls_free_sound @ 0x47FF70 — stop and release a sound handle.
+ * Original: ls_stop_sound → lsys_free_sound (IDirectSoundBuffer::Release)
+ * → ls_release (free memory). Decrements active sound count.
+ * Stub: no real DirectSound backend — just log. */
+void ls_free_sound(void *sound_handle) {
+    /* ls_free_sound @ 0x47FF70 */
+    if (!g_audio_enabled || !sound_handle) return;
+    print("ls_free_sound: releasing handle %p (stub)\n", sound_handle);
+}
+
+/* sub_44D1C5 @ 0x44D1C5 — clear active sound table and free all handles.
+ * Called during level transitions to release sounds from previous level. */
+void sound_table_cleanup(void) {
+    /* sub_44D1C5 @ 0x44D1C5 */
+    memset(g_sound_table, 0, sizeof(g_sound_table));
+    g_sound_count = 0;
+
+    for (i32 i = 15; i >= 0; i--) {
+        if (g_sound_handles[i]) {
+            ls_free_sound(g_sound_handles[i]);
+            g_sound_handles[i] = NULL;
+        }
+    }
 }

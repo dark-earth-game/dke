@@ -1768,3 +1768,18 @@ void setup_creature(const c8 *path_prefix, const c8 *name,
         print("  OBC: parser not yet ported (sub_4538FB)\n");
     }
 }
+
+/* Accessor for g_inv_z_array (dword_510F30) — used by build_inverse_z_lut. */
+void **game_init_get_inv_z_array_ptr(void) {
+    return &g_inv_z_array;
+}
+
+/* Accessor for g_game_context (game_context @ 0x4B7208). */
+void *game_init_get_game_context(void) {
+    return g_game_context;
+}
+
+/* Accessor for g_render_buffer1 (render_buffer1 @ 0x4B720C). */
+bmap_t *game_init_get_render_buffer1(void) {
+    return g_render_buffer1;
+}

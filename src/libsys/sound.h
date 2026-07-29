@@ -27,3 +27,11 @@ b8 ls_init_sound_system(void);
 
 /* mirrors ls_shut_sound_system */
 void ls_shut_sound_system(void);
+
+/* 0x0047FF70 — free a sound handle (stop + release DirectSound buffer).
+ * ecx = sound handle pointer. No-op if audio disabled or handle NULL. */
+void ls_free_sound(void *sound_handle);
+
+/* sub_44D1C5 @ 0x44D1C5 — clear active sound table and free all handles.
+ * Called during level transitions (from sub_46D305 world controller load). */
+void sound_table_cleanup(void);

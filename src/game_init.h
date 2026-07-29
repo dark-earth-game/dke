@@ -40,6 +40,16 @@ void game_init_set_ability(i32 creature_id, i32 slot, u8 mask_clear, u8 mask_set
 void setup_creature(const c8 *path_prefix, const c8 *name,
                     void **mat_out, void **obc_out, i32 mem_slot);
 
+/* Accessor for g_inv_z_array (dword_510F30 @ 0x510F30).
+ * Returns pointer-to-pointer so callers can read the allocated array. */
+void **game_init_get_inv_z_array_ptr(void);
+
+/* Accessor for g_game_context (game_context @ 0x4B7208). */
+void *game_init_get_game_context(void);
+
+/* Accessor for g_render_buffer1 (render_buffer1 @ 0x4B720C). */
+bmap_t *game_init_get_render_buffer1(void);
+
 /* 0046BEEB — game-side bootstrap. Runs after ls_startup + init_all_systems. */
 b8 game_init(state_t *state);
 

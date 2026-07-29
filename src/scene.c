@@ -48,6 +48,7 @@
 #include <time.h>
 #include <string.h>
 
+#include <math.h>
 #include "libsys/common.h"
 #include "libsys/file_system.h"
 #include "libsys/movie.h"
@@ -122,6 +123,14 @@ static bmap_t *g_intfani3_bmap = NULL;
  * per 20x20 tile of render_buffer2. Built by sub_45E070, queried for
  * approximate screen-space brightness when shading 3D character models. */
 static u8 g_brightness_map[768];
+
+/* Viewport globals — set in Phase 18, used by rendering pipeline. */
+static i32 g_viewport_active = 0;  /* dword_4DDE20 @ 0x4DDE20 */
+static i32 g_viewport_x0 = 0;     /* dword_4B7B14 @ 0x4B7B14 */
+static i32 g_viewport_y0 = 0;     /* dword_4B7B18 @ 0x4B7B18 */
+static i32 g_viewport_x1 = 639;   /* dword_4B7B1C @ 0x4B7B1C */
+static i32 g_viewport_y1 = 479;   /* dword_4B7B20 @ 0x4B7B20 */
+static i32 g_viewport_flags = 0;  /* dword_4B7B24 @ 0x4B7B24 */
 
 /* -------------------------------------------------------------------------
  * External globals referenced from asm — declared here as opaque pointers
@@ -646,6 +655,9 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     return 1;
 }
 
+/* Forward declarations for functions defined later in this file. */
+static void build_inverse_z_lut(i32 zfar_value);
+
 /* -------------------------------------------------------------------------
  * Stub declarations for sub-functions called by scene_load_level_46DFEC.
  * Each corresponds to one asm CALL that is NOT ported in this skeleton pass.
@@ -690,7 +702,11 @@ static void load_world_controller(void) { /* sub_46D305 @ 0x46D305 */
  * Level assets loaded from DATAS>L{nn}>.
  * Currently handled by scene_load_camera_backdrop + scene_load_dat_config. */
 static void stub_sub_46D0EA(void) {
-    /* sub_46D0EA @ 0x46D0EA — asset loading via scene_load_camera_backdrop */
+    /* sub_46D0EA @ 0x46D0EA — asset loading via scene_load_camera_backdrop.
+     * Full 7-phase pipeline not yet ported; build inverse-Z LUT from
+     * current camera's zbuffer far-plane value. */
+    i32 zfar = scene_get_camera_zfar(0);
+    build_inverse_z_lut(zfar);
 }
 
 /* can_do_32k — colour-mode capability check. Always true on modern HW. */
@@ -1287,12 +1303,56 @@ static void process_color_palette(void *entity) { /* process_color_palette @ 0x4
     }
 }
 
+/* Perspective frustum normal components — computed by build_inverse_z_lut.
+ * dbl_510F48: A/sqrt(A²+1) where A = -10240/zfar
+ * dbl_510F50: -1/sqrt(A²+1)
+ * dbl_510F68: B/sqrt(B²+1) where B = 7680/zfar
+ * dbl_510F60: -1/sqrt(B²+1) */
+static f64 g_frustum_nx = 0.0;  /* dbl_510F48 @ 0x510F48 */
+static f64 g_frustum_nz = 0.0;  /* dbl_510F50 @ 0x510F50 */
+static f64 g_frustum_ny = 0.0;  /* dbl_510F68 @ 0x510F68 */
+static f64 g_frustum_nw = 0.0;  /* dbl_510F60 @ 0x510F60 */
+
+/* sub_4219B0 @ 0x4219B0 — build inverse-Z lookup table + frustum normals.
+ * Fills g_inv_z_array[0..4095] with (zfar * 2^-14) / i.
+ * Then computes 4 frustum plane normal components from zfar. */
+static void build_inverse_z_lut(i32 zfar_value) {
+    /* sub_4219B0 @ 0x4219B0 */
+    void **arr_ptr = game_init_get_inv_z_array_ptr();
+    if (!arr_ptr || !*arr_ptr || zfar_value <= 0) return;
+
+    f32 *arr = (f32 *)(*arr_ptr);
+    f64 scale = (f64)zfar_value * (1.0 / 16384.0); /* 2^(-14) = dbl_4B0408 */
+
+    for (i32 i = 1; i <= 0x1000; i++)
+        arr[i - 1] = (f32)(scale / (f64)i);
+
+    f64 timer = (f64)zfar_value;
+    f64 a = -10240.0 / timer;  /* dbl_4B0430 / timer */
+    f64 b =   7680.0 / timer;  /* dbl_4B0440 / timer */
+
+    f64 inv_len_a = 1.0 / sqrt(a * a + 1.0);
+    f64 inv_len_b = 1.0 / sqrt(b * b + 1.0);
+
+    g_frustum_nx =  a * inv_len_a;  /* dbl_510F48 */
+    g_frustum_nz = -inv_len_a;      /* dbl_510F50 */
+    g_frustum_ny =  b * inv_len_b;  /* dbl_510F68 */
+    g_frustum_nw = -inv_len_b;      /* dbl_510F60 */
+}
+
 /* render_sprite_time_based_effect @ 0x404F80 — periodic animated effect.
  * Reads system timer, extracts 3-bit frame index (0..7) from timer>>6,
- * blits a 64x406 strip from graphics_context at (frame*64, 0).
- * Depends on graphics_context + draw_image not yet ported — no-op. */
-static void stub_render_sprite_time_based_effect(void) {
-    /* render_sprite_time_based_effect @ 0x404F80 — needs draw_image */
+ * blits a 64-pixel strip from graphics_context into loading bmap. */
+static void render_sprite_time_based_effect(void) {
+    /* render_sprite_time_based_effect @ 0x404F80 */
+    bmap_t *loading_bmap = NULL;
+    u8 *pal = NULL;
+    game_init_get_menu_backdrop(&loading_bmap, &pal);
+    if (!loading_bmap || !g_graphics_context) return;
+
+    i32 frame = (ls_tick() >> 6) & 7;
+    draw_image(loading_bmap, g_graphics_context,
+               frame * 64, 0, frame * 64 + 64, 64, 10, 406);
 }
 
 /* sub_45619D — build 64×64 navigation grid from world controller zones. */
@@ -1936,8 +1996,8 @@ i32 scene_load_level(i32 level_id) {
     /* -----------------------------------------------------------------
      * Phase 17 — render_sprite_time_based_effect + sub_45619D
      * ----------------------------------------------------------------- */
-    print("scene: phase 17 — render_sprite_time_based_effect + sub_45619D — STUB\n");
-    stub_render_sprite_time_based_effect();   /* TODO: render_sprite_time_based_effect */
+    print("scene: phase 17 — render_sprite_time_based_effect + sub_45619D\n");
+    render_sprite_time_based_effect();   /* sub_404F80 @ 0x404F80 */
     build_nav_grid();                        /* TODO: sub_45619D */
 
     /* -----------------------------------------------------------------
@@ -1948,7 +2008,13 @@ i32 scene_load_level(i32 level_id) {
      *      mov dword_4B7B20, 1DFh   ; 479
      * ----------------------------------------------------------------- */
     print("scene: phase 18 — viewport globals (640x480)\n");
-    /* dword_4DDE20 = 1, dword_4B7B1C = 0x27F, dword_4B7B20 = 0x1DF: TODO globals */
+    /* dword_4DDE20 = 1 (viewport active flag) @ 0x4DDE20 */
+    g_viewport_active = 1;
+    g_viewport_x0 = 0;         /* dword_4B7B14 @ 0x4B7B14 */
+    g_viewport_y0 = 0;         /* dword_4B7B18 @ 0x4B7B18 */
+    g_viewport_x1 = 0x27F;    /* dword_4B7B1C @ 0x4B7B1C (639) */
+    g_viewport_y1 = 0x1DF;    /* dword_4B7B20 @ 0x4B7B20 (479) */
+    g_viewport_flags = 0;     /* dword_4B7B24 @ 0x4B7B24 */
 
     /* -----------------------------------------------------------------
      * Phase 19 — set_entities_combat_mode + sub_448F4D
@@ -1963,11 +2029,11 @@ i32 scene_load_level(i32 level_id) {
      *           update_player_interface(game_context, 2)
      *           sub_45E070, sub_47674F(0)
      * ----------------------------------------------------------------- */
-    print("scene: phase 20 — clear bmaps + interface update — STUB\n");
-    clear_bmap(NULL);              /* TODO: ls_clear_bmap(graphics_context) */
-    clear_bmap(NULL);              /* TODO: ls_clear_bmap(game_context) */
-    sub_45D27A(NULL, 1);                  /* sub_45D27A(render_buffer1, 1) */
-    stub_update_player_interface(NULL, 2); /* TODO: update_player_interface(game_context,2) */
+    print("scene: phase 20 — clear bmaps + interface update\n");
+    clear_bmap(g_graphics_context);                      /* ls_clear_bmap(graphics_context) @ 0x46E63B */
+    clear_bmap(game_init_get_game_context());             /* ls_clear_bmap(game_context) @ 0x46E644 */
+    sub_45D27A(game_init_get_render_buffer1(), 1);        /* sub_45D27A(render_buffer1, 1) */
+    stub_update_player_interface(game_init_get_game_context(), 2); /* update_player_interface — needs overlay_cursor_image */
     build_brightness_map();                     /* TODO: sub_45E070 */
     stub_sub_47674F(0);                    /* TODO: sub_47674F(0) */
 
