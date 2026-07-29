@@ -104,6 +104,62 @@ static i32 menu_hitbox_test(i32 mx, i32 my, i32 mouse_btn,
 }
 
 /* -------------------------------------------------------------------------
+ * sub_4374B0 @ 0x4374B0 — fade scan: compute per-row first-nonzero pixel offset.
+ *
+ * Scans a bmap (480 rows × 640 cols) to find the position of the first
+ * non-zero (non-transparent) pixel in each row.  Results stored in
+ * row_offsets[480].  Also patches trailing zero pixels with index 1 so the
+ * curtain-reveal wipe (sub_4375DF) has solid pixel data to copy.
+ *
+ * Parameters (thiscall):
+ *   ECX = bmap pointer (source sprite)
+ *   EDX = row_offsets array (i32[480])
+ *   arg_0 = out_min (i32*) — smallest offset across all rows
+ *   arg_4 = out_max (i32*) — largest offset across all rows
+ *
+ * Log message: "Fred : Trait couleur 0 pas bon ligne %d" when offset > 640.
+ * ------------------------------------------------------------------------- */
+static void fade_scan_offsets(bmap_t *bmap, i32 *row_offsets,
+                              i32 *out_min, i32 *out_max) {
+    /* sub_4374B0 @ 0x4374B0 */
+    if (!bmap || !bmap->pixels || !row_offsets || !out_min || !out_max) return;
+
+    *out_min = 640;
+    *out_max = -1;
+
+    i32 stride = bmap->stride > 0 ? bmap->stride : (i32)bmap->width;
+    i32 h = bmap->height;
+    if (h > 480) h = 480;
+
+    for (i32 row = 0; row < h; row++) {
+        u8 *rowp = bmap->pixels + row * stride;
+
+        /* Find first non-zero pixel from left */
+        i32 offset = 0;
+        while (offset < 640 && rowp[offset] == 0) offset++;
+
+        row_offsets[row] = offset;
+
+        /* Patch remaining zero pixels after the first non-zero with index 1.
+         * This fills the "transparent right curtain" so the reveal wipe
+         * has solid pixel data everywhere past the boundary. */
+        if (offset < 640) {
+            for (i32 x = offset; x < 640 && x < stride; x++) {
+                if (rowp[x] == 0) rowp[x] = 1;
+            }
+        }
+
+        if (row_offsets[row] > 640) {
+            print("Fred : Trait couleur 0 pas bon ligne %d\n", row);
+        }
+
+        /* Track min/max */
+        if (row_offsets[row] < *out_min) *out_min = row_offsets[row];
+        if (row_offsets[row] > *out_max) *out_max = row_offsets[row];
+    }
+}
+
+/* -------------------------------------------------------------------------
  * Menu item table — MAIN_MENU_ITEMS
  *
  * Positions decoded from asm init block (process_mainmenu_437EB7 prologue):

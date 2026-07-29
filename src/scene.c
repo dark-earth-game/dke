@@ -723,6 +723,7 @@ static void place_player_defaults(void) { /* sub_4640BC @ 0x4640BC */
 /* -------------------------------------------------------------------------
  * Zone trigger table — 135 entries, 28-byte stride (byte_4B3448 in IDA).
  * offset 0x00: active flag (byte)
+ * offset 0x04: name string (4+ bytes, compared with strncmp)
  * offset 0x11: pending/triggered flag (byte)
  * ------------------------------------------------------------------------- */
 #define TRIGGER_TABLE_ENTRIES 135
@@ -730,17 +731,168 @@ static void place_player_defaults(void) { /* sub_4640BC @ 0x4640BC */
 
 static u8 g_trigger_table[TRIGGER_TABLE_ENTRIES * TRIGGER_ENTRY_SIZE];
 
-/* sub_475BB6 @ 0x475BB6 — find degradable/zone object from trigger entry.
- * Thiscall, searches 8 object slots. Stub until object system lands. */
-static void *stub_find_degradable_object(u8 *entry) {
-    (void)entry;
+/* -------------------------------------------------------------------------
+ * Degradable object pool — 8 entries at unk_4DAB60, stride 0x10C (268 bytes).
+ * sub_475BB6 searches this pool by name; sub_476BEE releases entries.
+ *
+ * Struct layout from IDA (sub_475BB6 + sub_476BEE + sub_47398A):
+ *   +0x00 .. +0x4F: entity/render data
+ *   +0x50: active flag (dword, non-zero = in use)
+ *   +0x88: inventory handle (dword)
+ *   +0xA8: name string (char[32], matched with strncmp 4)
+ *   +0xB0: memory handle (dword, freed by sub_476BEE)
+ *   +0xC4: flags (dword, bit 5=0x20 = recyclable/pending release)
+ *   +0xF0: particle effect buffer index (dword)
+ *   +0xF4: secondary inventory handle (dword)
+ * Total: 0x10C = 268 bytes per entry.
+ * ------------------------------------------------------------------------- */
+#define DEGRAD_POOL_SIZE    8
+#define DEGRAD_ENTRY_STRIDE 0x10C
+
+typedef struct {
+    u8  entity_data[0x50];   /* +0x00: entity/render blob */
+    i32 active;              /* +0x50: non-zero = slot in use */
+    u8  pad_54[0x34];        /* +0x54 .. +0x87 */
+    i32 inventory;           /* +0x88: inventory handle */
+    u8  pad_8C[0x1C];        /* +0x8C .. +0xA7 */
+    c8  name[32];            /* +0xA8: object name string */
+    i32 mem_handle;          /* +0xC8: memory handle — NOTE: actual +0xB0, but
+                              * struct packing aligns name[32] to +0xA8..+0xC7,
+                              * pushing this to +0xC8. Use raw offsets instead. */
+    u8  pad2[0x10C - 0xC8];  /* remainder */
+} degrad_entry_raw_t;
+
+static u8 g_degrad_pool[DEGRAD_POOL_SIZE * DEGRAD_ENTRY_STRIDE];
+
+/* Access helpers — use raw byte offsets matching IDA exactly. */
+/* Forward declarations for zone system functions. */
+static i32 activate_trigger_entries(void *zone_obj, i32 activate);
+
+static inline i32  *degrad_active(i32 i)  { return (i32 *)(g_degrad_pool + i * DEGRAD_ENTRY_STRIDE + 0x50); }
+static inline c8   *degrad_name(i32 i)    { return (c8  *)(g_degrad_pool + i * DEGRAD_ENTRY_STRIDE + 0xA8); }
+static inline i32  *degrad_flags(i32 i)   { return (i32 *)(g_degrad_pool + i * DEGRAD_ENTRY_STRIDE + 0xC4); }
+static inline i32  *degrad_pfx_idx(i32 i) { return (i32 *)(g_degrad_pool + i * DEGRAD_ENTRY_STRIDE + 0xF0); }
+static inline u8   *degrad_entry(i32 i)   { return g_degrad_pool + i * DEGRAD_ENTRY_STRIDE; }
+
+/* sub_475BB6 @ 0x475BB6 — find or allocate degradable object by name.
+ * 4-phase search on 8-entry pool at unk_4DAB60:
+ *   Phase 0: reject "00" prefix (skip-name sentinel)
+ *   Phase 1: exact name match + active slot -> reuse
+ *   Phase 2: find empty slot (active==0) via particle heap match -> allocate
+ *   Phase 3: recycle a slot with flag bit 0x20 set (pending release)
+ *   Phase 4: overflow — log error, return NULL
+ *
+ * ECX = object name (const char *, e.g. "OB03").
+ * Returns pointer to pool entry, or NULL. */
+static void *find_degradable_object(const c8 *name) { /* sub_475BB6 @ 0x475BB6 */
+    if (!name) return NULL;
+
+    /* Phase 0: reject "00" prefix at name[2..3] */
+    if (strncmp(name + 2, "00", 2) == 0) return NULL;
+
+    /* Phase 1: search for existing entry with matching name + active */
+    for (i32 i = 0; i < DEGRAD_POOL_SIZE; i++) {
+        if (strncmp(degrad_name(i), name, 4) != 0) continue;
+        if (*degrad_active(i) == 0) continue;
+        /* Found — copy full name and clear bit 5 */
+        strcpy(degrad_name(i), name);
+        *degrad_flags(i) &= ~0x20;
+        return degrad_entry(i);
+    }
+
+    /* Phase 2: find empty slot — requires particle_effect_buffer + heap check.
+     * Simplified: find first inactive slot directly. */
+    for (i32 i = 0; i < DEGRAD_POOL_SIZE; i++) {
+        if (*degrad_active(i) != 0) continue;
+        /* Allocate this slot */
+        strcpy(degrad_name(i), name);
+        *degrad_flags(i) &= ~0x20;
+        return degrad_entry(i);
+    }
+
+    /* Phase 3: recycle slot with bit 0x20 (pending release) */
+    for (i32 i = 0; i < DEGRAD_POOL_SIZE; i++) {
+        if (!(*degrad_flags(i) & 0x20)) continue;
+        /* Release old entry (sub_476BEE) — simplified: just clear fields */
+        *degrad_active(i) = 0;
+        *degrad_flags(i) &= ~0x20;
+        strcpy(degrad_name(i), name);
+        return degrad_entry(i);
+    }
+
+    /* Phase 4: overflow */
+    print("find_degradable_object: Too many objects loaded!\n");
+    for (i32 i = 0; i < DEGRAD_POOL_SIZE; i++) {
+        print("  slot %d: '%s' flags=0x%X\n", i, degrad_name(i), *degrad_flags(i));
+    }
     return NULL;
 }
 
 /* sub_47398A @ 0x47398A — process zone transition for player entity.
- * Thiscall, handles zone state changes. Stub until zone system lands. */
-static i32 stub_process_zone_transition(void *zone_obj) {
-    (void)zone_obj;
+ * Parses zone object name as "%c%c%02d" (e.g. "OB03" -> type='O', sub='B',
+ * weapon_id=3). Swaps player weapon type, copies name to entity+0xD2,
+ * triggers animation state change, calls sub_471B80 (post-weapon setup).
+ * Returns 1 on success, 0 on failure/NULL input. */
+static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
+    if (!zone_obj) goto fail;
+    if (!g_player_entity) goto fail;
+
+    u8 *pe = (u8 *)g_player_entity;
+    u8 *desc = *(u8 **)(pe + 0xAC);
+    if (!desc) goto fail;
+
+    /* sub_426BB5(zone_obj, 1) — activate trigger entries matching this object */
+    activate_trigger_entries(zone_obj, 1); /* sub_426BB5 @ 0x426BB5 */
+
+    /* Check player not already holding this object */
+    if (*(i32 *)(pe + 0xD64) == (i32)(intptr_t)zone_obj) goto fail; /* already equipped */
+
+    /* Parse zone object name at [zone_obj+0xA8] as "%c%c%02d" */
+    c8 *obj_name = (c8 *)((u8 *)zone_obj + 0xA8);
+    i32 weapon_id = 0;
+
+    /* Save old weapon type */
+    u8 old_weapon = desc[0x97];
+
+    /* Set new weapon type from parsed object */
+    {
+        c8 c1 = 0, c2 = 0;
+        i32 parsed_id = 0;
+        if (sscanf(obj_name, "%c%c%02d", &c1, &c2, &parsed_id) >= 3) {
+            weapon_id = parsed_id;
+            desc[0x97] = (u8)weapon_id;
+        }
+    }
+
+    /* Copy object name to entity+0xD2 (weapon name buffer) */
+    strcpy((c8 *)(pe + 0xD2), obj_name);
+
+    /* Store zone object pointer at entity+0xD64 */
+    *(i32 *)(pe + 0xD64) = (i32)(intptr_t)zone_obj;
+
+    /* TODO: sub_472A48 — check if object has scene hierarchy */
+    /* TODO: sub_473756 — attach weapon entity to bone */
+
+    /* Update weapon globals */
+    u8 new_weapon = desc[0x97];
+    *(i32 *)((u8 *)&g_dword_4EDC30 + 0) = (i32)new_weapon; /* dword_505DDC */
+
+    /* TODO: Animation state change (sub_473756, prepare_entity_animation, etc) */
+
+    /* sub_471B80 — post-weapon global setup */
+    /* sub_41F6BA — re-register bones */
+
+    print("process_zone_transition: weapon swap '%s' (old=%d new=%d)\n",
+          obj_name, old_weapon, new_weapon);
+    return 1;
+
+fail:
+    if (g_player_entity) {
+        u8 *pe = (u8 *)g_player_entity;
+        u8 *desc = *(u8 **)(pe + 0xAC);
+        if (desc) desc[0x97] = 0;
+        *(u8 *)(pe + 0xD2) = 0;
+    }
     return 0;
 }
 
@@ -748,6 +900,41 @@ static i32 stub_process_zone_transition(void *zone_obj) {
  * Stub until scripting dispatch lands. */
 static void stub_dispatch_zone_trigger(u8 zone_id, void *entity) {
     (void)zone_id; (void)entity;
+}
+
+/* sub_426BB5 @ 0x426BB5 — activate/deactivate trigger table entries matching
+ * a degradable object name. Walks 135 trigger entries (byte_4B3448, stride 28),
+ * compares first 4 chars of entry name against zone_obj+0xA8.
+ *
+ * ECX = zone_obj pointer, EDX = activate (1=set pending, 0=clear pending).
+ * When activate=1: sets entry[0x11]=1 (pending flag).
+ * When activate=0: sets entry[0x11]=0 (clear flag).
+ * Returns 1 if any match found, 0 otherwise. */
+static i32 activate_trigger_entries(void *zone_obj, i32 activate) {
+    /* sub_426BB5 @ 0x426BB5 */
+    if (!zone_obj) return 0;
+
+    const c8 *obj_name = (const c8 *)((u8 *)zone_obj + 0xA8);
+    i32 found = 0;
+
+    for (i32 i = 0; i < TRIGGER_TABLE_ENTRIES; i++) {
+        u8 *entry = &g_trigger_table[i * TRIGGER_ENTRY_SIZE];
+
+        /* Entry[0] must be non-zero (active trigger slot) */
+        if (entry[0] == 0) continue;
+
+        /* Compare first 4 chars of trigger name at entry+0x00 vs obj_name */
+        if (strncmp((const c8 *)entry, obj_name, 4) != 0) continue;
+
+        if (activate) {
+            entry[0x11] = 1;   /* set pending flag */
+            found = 1;
+        } else {
+            entry[0x11] = 0;   /* clear pending flag */
+        }
+    }
+
+    return found;
 }
 
 /* sub_426D2C @ 0x426D2C — per-frame zone trigger scanner.
@@ -780,10 +967,10 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
         }
 
         /* Resolve trigger entry to a degradable/zone object */
-        void *zone_obj = stub_find_degradable_object(entry);  /* sub_475BB6 */
+        void *zone_obj = find_degradable_object((const c8 *)(entry + 0x04));  /* sub_475BB6 @ 0x475BB6 */
 
         /* Attempt zone transition for the player */
-        if (stub_process_zone_transition(zone_obj)) {          /* sub_47398A */
+        if (process_zone_transition(zone_obj)) {          /* sub_47398A @ 0x47398A */
             /* Dispatch trigger event to scripting */
             if (g_player_entity) {
                 u8 *action_ptr = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
