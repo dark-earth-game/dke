@@ -1165,7 +1165,7 @@ b8 game_init(state_t *state) {
         memset(g_input_state_table, 0, sizeof(g_input_state_table));  /* input_state_table @ 0x548E00 */
 
         /* Second pass: load MENUGEN.GIF palette into dword_4B71F8          */
-        /* TODO: load_image_color_data @ 46C083 */
+        /* load_image_color_data @ 0x46C083 */
         g_menugen_palette = load_image_color_data(
             "DATAS>MENUS>MENUGEN.GIF",
             state->game.ui_health_buffer);      /* ui_health_buffer */
@@ -1442,7 +1442,7 @@ b8 game_init(state_t *state) {
         /* 8-bit palette mode */
         /* render_buffer1 = create_image_buffer(0x280, 0x1E0, 8) @ 46C3D2 */
         g_render_buffer1 = ls_init_bmap_ex(0x280, 0x1E0, 8, 8);
-        /* TODO: create_image_buffer is a thin alias; ls_init_bmap_ex suffices */
+        /* create_image_buffer is a thin alias for ls_init_bmap_ex */
 
         /* debug_surface = create_image_buffer(0x280, 0x1E0, 8) @ 46C3DC */
         g_debug_surface = ls_init_bmap_ex(0x280, 0x1E0, 8, 8);
@@ -1548,8 +1548,10 @@ b8 game_init(state_t *state) {
     if (g_render_buffer1) {
         g_render_buffer1->reserved_18 = (i32)(intptr_t)g_palette_data;
     }
-    /* graphics_context+18h = palette_data @ 46C4B1 — graphics_context
-     * not yet mapped; will wire when state_t exposes it */
+    /* graphics_context+18h = palette_data @ 46C4B1 */
+    if (g_graphics_context) {
+        g_graphics_context->reserved_18 = (i32)(intptr_t)g_palette_data;
+    }
 
     /* ------------------------------------------------------------------ */
     /* Phase 36 — system_get_gametime → player_entity +D5Ch               */
