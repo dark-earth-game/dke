@@ -26,6 +26,7 @@
 #include "state.h"
 #include "entity.h"
 #include "player.h"
+#include "scene.h"
 
 /* -------------------------------------------------------------------------
  * g_player_entity — global player entity opaque blob.
@@ -408,10 +409,23 @@ void player_entity_init_secondary(void) {
         c8 weapon_name[8];
         snprintf(weapon_name, sizeof(weapon_name), "O%c%02d", class_char, weapon_type);
         print("player: weapon object name = '%s'\n", weapon_name);
-        /* TODO: sub_475BB6 — object slot lookup by name (needs slot array) */
-        /* TODO: sub_472C5C — weapon entity init */
-        /* TODO: sub_473756 — weapon entity attach to bone */
-        /* TODO: sub_41F6BA — entity registration */
+
+        /* sub_475BB6 @ 0x475BB6 — find/allocate degradable object slot */
+        void *weapon_obj = scene_find_degradable_object(weapon_name);
+        if (weapon_obj) {
+            /* sub_472C5C @ 0x472C5C — load weapon mesh + materials */
+            scene_weapon_entity_init(weapon_obj);
+
+            /* sub_473756 @ 0x473756 — attach weapon to player skeleton */
+            scene_weapon_entity_attach(g_player_entity, weapon_obj, 1);
+
+            /* sub_41F6BA @ 0x41F6BA — re-register bone table */
+            void *scene_root = *(void **)((u8 *)g_player_entity + 0x50);
+            if (scene_root)
+                entity_register_bones(g_player_entity, scene_root);
+        } else {
+            print("player: weapon '%s' not found in degradable pool\n", weapon_name);
+        }
     }
 
     /* Phase 4: set weapon globals + post-weapon setup */

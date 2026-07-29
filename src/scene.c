@@ -784,7 +784,7 @@ static inline u8   *degrad_entry(i32 i)   { return g_degrad_pool + i * DEGRAD_EN
  *
  * ECX = object name (const char *, e.g. "OB03").
  * Returns pointer to pool entry, or NULL. */
-static void *find_degradable_object(const c8 *name) { /* sub_475BB6 @ 0x475BB6 */
+void *scene_find_degradable_object(const c8 *name) { /* sub_475BB6 @ 0x475BB6 */
     if (!name) return NULL;
 
     /* Phase 0: reject "00" prefix at name[2..3] */
@@ -940,7 +940,7 @@ static void weapon_resolve_conflicts(void *entity, void *weapon_obj) {
  *
  * Dependencies: setup_creature (not ported), particle_effect_buffer (not
  * ported). Structure preserved for when setup_creature lands. */
-static void weapon_entity_init(void *degrad_obj) { /* sub_472C5C @ 0x472C5C */
+void scene_weapon_entity_init(void *degrad_obj) { /* sub_472C5C @ 0x472C5C */
     if (!degrad_obj) return;
     u8 *obj = (u8 *)degrad_obj;
 
@@ -999,7 +999,7 @@ static void weapon_entity_init(void *degrad_obj) { /* sub_472C5C @ 0x472C5C */
  *
  * Dependencies: sub_474731 (entity-weapon property sync — not ported),
  * sub_4373EF (animation state dispatch — not ported). */
-static void weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
+void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
     /* sub_473756 @ 0x473756 */
     if (!entity || !weapon_obj) return;
     u8 *ent = (u8 *)entity;
@@ -1115,16 +1115,18 @@ static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
     /* sub_472A48 @ 0x472A48 — check if this is a weapon object */
     i32 has_weapon = is_weapon_object(zone_obj);
     print("process_zone_transition: is_weapon_object = %d\n", has_weapon);
-    /* TODO: sub_473756 — attach weapon entity to bone (needs scene hierarchy) */
+
+    /* sub_472C5C @ 0x472C5C — init weapon mesh (if weapon type) */
+    if (has_weapon) {
+        scene_weapon_entity_init(zone_obj);
+    }
+
+    /* sub_473756 @ 0x473756 — attach weapon entity to player */
+    scene_weapon_entity_attach(g_player_entity, zone_obj, has_weapon ? 1 : 0);
 
     /* Update weapon globals */
     u8 new_weapon = desc[0x97];
     *(i32 *)((u8 *)&g_dword_4EDC30 + 0) = (i32)new_weapon; /* dword_505DDC */
-
-    /* TODO: Animation state change (sub_473756, prepare_entity_animation, etc) */
-
-    /* sub_471B80 — post-weapon global setup */
-    /* sub_41F6BA — re-register bones */
 
     print("process_zone_transition: weapon swap '%s' (old=%d new=%d)\n",
           obj_name, old_weapon, new_weapon);
@@ -1211,7 +1213,7 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
         }
 
         /* Resolve trigger entry to a degradable/zone object */
-        void *zone_obj = find_degradable_object((const c8 *)(entry + 0x04));  /* sub_475BB6 @ 0x475BB6 */
+        void *zone_obj = scene_find_degradable_object((const c8 *)(entry + 0x04));  /* sub_475BB6 @ 0x475BB6 */
 
         /* Attempt zone transition for the player */
         if (process_zone_transition(zone_obj)) {          /* sub_47398A @ 0x47398A */

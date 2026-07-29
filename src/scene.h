@@ -51,3 +51,9 @@ void scene_release(void);
  * Callers use this to un-normalise the 8-bit Z bmap into world depth.
  */
 i32 scene_get_camera_zfar(i32 camera);
+
+/* Weapon system — degradable object pool + weapon entity lifecycle.
+ * Used by player.c during player_entity_init_secondary. */
+void *scene_find_degradable_object(const c8 *name);
+void  scene_weapon_entity_init(void *degrad_obj);
+void  scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init);
