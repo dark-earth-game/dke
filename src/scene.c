@@ -48,7 +48,6 @@
 #include <time.h>
 #include <string.h>
 
-#include <math.h>
 #include "libsys/common.h"
 #include "libsys/file_system.h"
 #include "libsys/movie.h"
@@ -110,6 +109,29 @@ static u8 g_byte_511760 = 0;
  * dword_505C54 — zeroed at entry.
  */
 static i32 g_dword_505C54 = 0;
+
+/* dword_4DD9B4 @ 0x4DD9B4 — combat-enabled flag, set to 1 during scene load. */
+static i32 g_combat_enabled = 0;
+
+/* dword_505C58 @ 0x505C58 — shadow of world_state, set in Phase 25. */
+static i32 g_dword_505C58 = 0;
+
+/* dword_4B2AB8 @ 0x4B2AB8 — zeroed in Phase 25 (level transition counter?). */
+static i32 g_dword_4B2AB8 = 0;
+
+/* last_event_check_time — gametime snapshot from Phase 23. */
+static i32 g_last_event_check_time = 0;
+
+/* dword_543C60 @ 0x543C60 — 0xF00-byte buffer cleared before world controller init.
+ * Used by sub_46D305 as staging area for INF/camera data. */
+static u8 g_dword_543C60[0xF00] = {0};
+
+/* game_structures @ 0x543CD0 — 16-entry array, stride 0xF0 (240 bytes).
+ * Each entry holds an entity/object state block. Field +0x00 = entity pointer
+ * (non-NULL = active), field +0x2C = last-synced game time. */
+#define GAME_STRUCT_COUNT  16
+#define GAME_STRUCT_STRIDE 0xF0
+static u8 g_game_structures[GAME_STRUCT_COUNT * GAME_STRUCT_STRIDE] = {0};
 
 /* render_buffer2 — 640x480 8bpp bmap (allocated in game_init phase 28).
  * Used by sub_45E070 to build the coarse brightness map. */
@@ -1096,8 +1118,16 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
     /* Store weapon reference at entity+0xD64 @ 0x473934 */
     *(void **)(ent + 0xD64) = weapon_obj;
 
-    /* sub_4373EF — dispatch animation event @ 0x47395C */
-    print("weapon_entity_attach: TODO sub_4373EF (animation dispatch)\n");
+    /* sub_4373EF @ 0x4373EF — link weapon bone to entity skeleton.
+     * Path 1 (full_init || entity==player): bone_link_slots(entity, 0x1B, 0x1F)
+     * Path 2 (reattach, non-player): slot = desc[0x99], bone_link_slots(entity, slot, 0x1F) */
+    if (full_init || entity == g_player_entity) {
+        bone_link_slots(entity, 0x1B, 0x1F);  /* @ 0x473952 */
+    } else {
+        u8 *desc = (u8 *)(uintptr_t)ent_get(entity, 0xAC);
+        i32 slot = desc ? (i32)(u32)desc[0x99] : 0x1B;
+        bone_link_slots(entity, slot, 0x1F);   /* @ 0x473966 */
+    }
 }
 
 /* sub_47398A @ 0x47398A — process zone transition for player entity.
@@ -1512,22 +1542,37 @@ static void stub_restore_display_mode(i32 ecx, i32 edx) {
     print("scene: restore_display_mode(ecx=%d, edx=0x%X) — no-op (no DirectDraw)\n", ecx, edx);
 }
 
+/* sub_406316 @ 0x406316 — per-entity time sync.
+ * Zeros +0xC40, sets +0xC34/+0xC2C/+0xC28 = current_game_time. */
+static void sync_entity_time(void *entity, i32 game_time) {
+    /* sub_406316 @ 0x406316 */
+    if (!entity) return;
+    u8 *e = (u8 *)entity;
+    *(i32 *)(e + 0xC40) = 0;
+    *(i32 *)(e + 0xC34) = game_time;
+    *(i32 *)(e + 0xC2C) = game_time;
+    *(i32 *)(e + 0xC28) = game_time;
+}
+
 /* sub_40636D @ 0x40636D — game time update + entity time sync.
- * Backs up current_game_time, calls system_get_gametime, then for each
- * entity (player, companion, secondary_companion) zeros +0xC40 and sets
- * +0xC34/+0xC2C/+0xC28 = current_game_time.
- * Also walks 16 game_structures slots, syncing their time fields. */
+ * Backs up current_game_time, refreshes from system timer, syncs all
+ * entities and game_structures time fields. */
 static void update_game_time_entities(void) { /* sub_40636D @ 0x40636D */
-    /* sub_406316 @ 0x406316 — per-entity time sync */
-    if (g_player_entity) {
-        u8 *pe = (u8 *)g_player_entity;
-        *(i32 *)(pe + 0xC40) = 0;
-        i32 t = (i32)ls_tick();
-        *(i32 *)(pe + 0xC34) = t;
-        *(i32 *)(pe + 0xC2C) = t;
-        *(i32 *)(pe + 0xC28) = t;
+    if (!state) return;
+    state->time_backup = state->current_game_time;  /* time_backup @ 0x4ED9D0 */
+    state->current_game_time = (u32)system_get_gametime(); /* current_game_time @ 0x4EDFB4 */
+    i32 t = (i32)state->current_game_time;
+
+    sync_entity_time(g_player_entity, t);
+    sync_entity_time(g_companion_entity, t);
+    sync_entity_time(g_secondary_companion_entity, t);
+
+    for (i32 i = 0; i < GAME_STRUCT_COUNT; i++) {
+        u8 *entry = g_game_structures + i * GAME_STRUCT_STRIDE;
+        if (*(void **)entry) {  /* +0x00: entity pointer non-NULL = active */
+            *(i32 *)(entry + 0x2C) = t;  /* +0x2C: time field */
+        }
     }
-    /* companion_entity + secondary_companion_entity: NULL for now */
 }
 
 /*
@@ -1858,7 +1903,9 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     print("scene: phase 5 — zero byte_511760, clear current_entity->+0xA0\n");
     g_byte_511760 = 0;
-    /* current_entity->+0xA0: handled by entity system (TODO) */
+    if (g_player_entity) {
+        *(i32 *)((u8 *)g_player_entity + 0xA0) = 0;  /* current_entity->+0xA0 @ asm */
+    }
 
     /* -----------------------------------------------------------------
      * Phase 6 — set byte_4B7280=1, world_state=level_id, zero 4EDC30/34/38
@@ -1895,8 +1942,8 @@ i32 scene_load_level(i32 level_id) {
     print("scene: phase 8 — world_controller check\n");
     if (!g_world_controller) {
         print("scene: world_controller is NULL — memset dword_543C60 + sub_46D305\n");
-        /* memset dword_543C60 0xF00: TODO once dword_543C60 is declared */
-        load_world_controller();   /* TODO: sub_46D305 — world controller alloc */
+        memset(g_dword_543C60, 0, sizeof(g_dword_543C60));  /* dword_543C60 @ 0x543C60 */
+        load_world_controller();   /* sub_46D305 @ 0x46D305 — world controller alloc */
     } else {
         print("scene: world_controller already set, skip alloc\n");
     }
@@ -1961,7 +2008,7 @@ i32 scene_load_level(i32 level_id) {
         *(i32 *)(pe + 0xC64) = 0x10000;
         *(i32 *)(pe + 0xC68) = 0x4000;
     }
-    /* dword_4DD9B4 = 1 (TODO: add global) */
+    g_combat_enabled = 1;  /* dword_4DD9B4 @ 0x4DD9B4 */
 
     /* -----------------------------------------------------------------
      * Phase 15 — process_color_palette for player + companions
@@ -2058,9 +2105,7 @@ i32 scene_load_level(i32 level_id) {
      * Phase 23 — system_get_gametime → last_event_check_time
      * ----------------------------------------------------------------- */
     print("scene: phase 23 — system_get_gametime\n");
-    i32 t = system_get_gametime();
-    (void)t;
-    /* last_event_check_time = t;  TODO global */
+    g_last_event_check_time = system_get_gametime();  /* last_event_check_time @ asm */
 
     /* -----------------------------------------------------------------
      * Phase 24 — restore_display_mode(1, 0x1D)
@@ -2077,7 +2122,8 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     print("scene: phase 25 — update_game_time_entities, wire dword_505C58\n");
     update_game_time_entities();   /* sub_40636D @ 0x40636D */
-    /* dword_505C58 = g_world_state; dword_4B2AB8 = 0; TODO globals */
+    g_dword_505C58 = g_world_state;  /* dword_505C58 @ 0x505C58 */
+    g_dword_4B2AB8 = 0;              /* dword_4B2AB8 @ 0x4B2AB8 */
 
     /* -----------------------------------------------------------------
      * Parse L%02d.INF header (32 bytes decoded so far).
