@@ -12,6 +12,7 @@
 
 #include "libsys/common.h"
 #include "libsys/graphics/graphic.h"
+#include "material.h"
 #include "state.h"
 
 /* Combat / creature definition table entry (sub_471C18).
@@ -32,6 +33,12 @@ typedef struct {
 const creature_entry_t *game_init_get_creature(i32 id);
 u8   game_init_get_ability(i32 creature_id, i32 slot);
 void game_init_set_ability(i32 creature_id, i32 slot, u8 mask_clear, u8 mask_set);
+
+/* sub_44F2A0 @ 0x44F2A0 — load MAT/OBC files for an entity.
+ * Builds paths from path_prefix + name, calls mat_load for materials.
+ * OBC animation cache parser not yet ported — obc_out set to NULL. */
+void setup_creature(const c8 *path_prefix, const c8 *name,
+                    void **mat_out, void **obc_out, i32 mem_slot);
 
 /* 0046BEEB — game-side bootstrap. Runs after ls_startup + init_all_systems. */
 b8 game_init(state_t *state);

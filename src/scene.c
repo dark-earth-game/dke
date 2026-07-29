@@ -960,16 +960,26 @@ void scene_weapon_entity_init(void *degrad_obj) { /* sub_472C5C @ 0x472C5C */
         snprintf(obj_name, sizeof(obj_name), "OB%s", (c8 *)(obj + 0xAA));
     }
 
-    /* setup_creature(path, obj_name, obj+0x88, obj+0x50, particle_buf[pfx_idx])
-     * Loads OME mesh + MAT materials + OBC animation data into obj+0x50. */
-    print("weapon_entity_init: setup_creature('%s', '%s') — TODO\n", path, obj_name);
+    /* setup_creature @ 0x44F2A0 — load MAT + OBC for this weapon object.
+     * mat_out = obj+0x88 (inventory handle), obc_out = obj+0x50 (active/scene ptr) */
+    {
+        void *mat_result = NULL;
+        void *obc_result = NULL;
+        i32 pfx_idx = *(i32 *)(obj + 0xF0);
+        setup_creature(path, obj_name, &mat_result, &obc_result, pfx_idx);
+        if (mat_result) *(void **)(obj + 0x88) = mat_result;
+        if (obc_result) *(void **)(obj + 0x50) = obc_result;
+    }
 
     /* Clear secondary inventory handle @ 0x472D76 */
     *(i32 *)(obj + 0xF4) = 0;
 
     /* Special case: weapon "27" → load OB54 secondary @ 0x472D8D */
     if (strncmp((c8 *)(obj + 0xAA), "27", 2) == 0) {
-        print("weapon_entity_init: weapon '27' → secondary OB54 (TODO setup_creature)\n");
+        void *mat2 = NULL, *obc2 = NULL;
+        setup_creature("OBJETS>", "OB54", &mat2, &obc2,
+                       *(i32 *)(obj + 0xF0));
+        if (obc2) *(void **)(obj + 0xF4) = obc2;
     }
 
     /* Special case: weapons "23"/"35"/"66"/"68" → FLAM effect @ 0x472DF7 */
@@ -977,12 +987,16 @@ void scene_weapon_entity_init(void *degrad_obj) { /* sub_472C5C @ 0x472C5C */
         strncmp((c8 *)(obj + 0xAA), "35", 2) == 0 ||
         strncmp((c8 *)(obj + 0xAA), "66", 2) == 0 ||
         strncmp((c8 *)(obj + 0xAA), "68", 2) == 0) {
-        print("weapon_entity_init: flame weapon → FLAM effect (TODO setup_creature)\n");
+        void *flam_mat = NULL, *flam_obc = NULL;
+        setup_creature("OBJETS>", "FLAM", &flam_mat, &flam_obc,
+                       *(i32 *)(obj + 0xF0));
     }
 
     /* Special case: weapon "32" → FLAM2 effect @ 0x472F09 */
     if (strncmp((c8 *)(obj + 0xAA), "32", 2) == 0) {
-        print("weapon_entity_init: flame weapon → FLAM2 effect (TODO setup_creature)\n");
+        void *flam2_mat = NULL, *flam2_obc = NULL;
+        setup_creature("OBJETS>", "FLAM2", &flam2_mat, &flam2_obc,
+                       *(i32 *)(obj + 0xF0));
     }
 
     /* Restore render_mode @ 0x472FA5 */

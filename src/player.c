@@ -27,6 +27,7 @@
 #include "entity.h"
 #include "player.h"
 #include "scene.h"
+#include "game_init.h"
 
 /* -------------------------------------------------------------------------
  * g_player_entity — global player entity opaque blob.
@@ -293,9 +294,15 @@ void player_entity_init(void) {
      *   asm: lea ecx,[var_108]; mov edx,abs(ecx_param); call sub_462BCC */
     print("player: TODO sub_462BCC (creature descriptor load)\n");
 
-    /* TODO: setup_creature — mesh + animation init
+    /* setup_creature @ 0x44F2A0 — mesh + animation init
      *   asm: lea edx,[var_80]; mov ecx,offset aPersos_12; call setup_creature */
-    print("player: TODO setup_creature\n");
+    {
+        void *mat_result = NULL;
+        void *obc_result = NULL;
+        setup_creature("PERSOS>", "SERPENT", &mat_result, &obc_result, 0);
+        if (mat_result) *(void **)((u8 *)ent + 0x88) = mat_result;
+        if (obc_result) *(void **)((u8 *)ent + 0x50) = obc_result;
+    }
 
     /* TODO: process_scene_hierarchy_with_memory
      *   asm: mov edx,[var_114]; mov ecx,[var_84]; call process_scene_hierarchy_with_memory */

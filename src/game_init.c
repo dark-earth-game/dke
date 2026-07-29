@@ -1392,8 +1392,13 @@ b8 game_init(state_t *state) {
         };
         i32 creature_type = 1; /* ECX=1 from call site @ 0x46C32C */
         if (creature_type >= 1 && creature_type <= 6) {
-            print("game_init: creature type %d = '%s' (setup_creature TODO)\n",
+            print("game_init: creature type %d = '%s'\n",
                   creature_type, creature_names[creature_type]);
+            /* setup_creature @ 0x44F2A0 — load PERSOS>{name} MAT+OBC */
+            void *mat_result = NULL;
+            void *obc_result = NULL;
+            setup_creature("PERSOS>", creature_names[creature_type],
+                           &mat_result, &obc_result, 0);
         }
     }
 
@@ -1690,4 +1695,76 @@ void game_init_set_ability(i32 creature_id, i32 slot, u8 mask_clear, u8 mask_set
     i32 idx = slot + creature_id * 6;
     if (idx < 0 || idx >= (i32)sizeof(g_misc_4DCCC0)) return;
     g_misc_4DCCC0[idx] = (g_misc_4DCCC0[idx] & ~mask_clear) | mask_set;
+}
+
+/* -------------------------------------------------------------------------
+ * setup_creature — sub_44F2A0 @ 0x44F2A0
+ *
+ * Builds file paths for entity mesh data (OME/MAT/OBC), then loads:
+ *   - MAT file via mat_load (sub_45018B) — material/texture library
+ *   - OBC file (sub_4538FB) — animation/bone cache (TODO: full parser)
+ *
+ * Parameters (original __fastcall + stack):
+ *   path_prefix : directory prefix, e.g. "PERSOS>" or "OBJETS>"
+ *   name        : entity name, e.g. "SERPENT" or "OB03"
+ *   mat_out     : receives mat_load result (mat_lib_t*). NULL to skip.
+ *   obc_out     : receives OBC parse result. NULL to skip.
+ *   mem_slot    : memory pool slot for allocations
+ * ---------------------------------------------------------------------- */
+void setup_creature(const c8 *path_prefix, const c8 *name,
+                    void **mat_out, void **obc_out, i32 mem_slot) {
+    /* sub_44F2A0 @ 0x44F2A0 */
+    if (!path_prefix || !name) return;
+
+    c8 base_dir[256];
+    c8 mat_path[256];
+    c8 obc_path[256];
+    c8 ome_path[256];
+
+    /* Build base directory: "{prefix}{name}>" */
+    snprintf(base_dir, sizeof(base_dir), "%s%s>", path_prefix, name);
+
+    /* Build MAT path: "{dir}{name}.MAT" */
+    snprintf(mat_path, sizeof(mat_path), "%s%s.MAT", base_dir, name);
+
+    /* Build OBC path: "{dir}{name}.OBC" */
+    snprintf(obc_path, sizeof(obc_path), "%s%s.OBC", base_dir, name);
+
+    /* Build OME path — for "objets"/"persos" prefix, prepend game_path */
+    if (strncasecmp(path_prefix, "objets", 6) == 0 ||
+        strncasecmp(path_prefix, "persos", 6) == 0) {
+        const c8 *gp = (state && state->game_path) ? state->game_path : "";
+        snprintf(ome_path, sizeof(ome_path), "%s%s%s.OME", gp, path_prefix, name);
+    } else {
+        snprintf(ome_path, sizeof(ome_path), "%s%s.OME", base_dir, name);
+    }
+
+    /* Store FLAM mat cache reference if mat_out provided */
+    if (mat_out) {
+        /* dword_4FB1E4 = mat_out @ 0x44F3AF */
+    }
+
+    print("setup_creature: prefix='%s' name='%s'\n", path_prefix, name);
+    print("  MAT: '%s'\n", mat_path);
+    print("  OBC: '%s'\n", obc_path);
+    print("  OME: '%s'\n", ome_path);
+
+    /* Load MAT file via mat_load (sub_45018B @ 0x45018B) */
+    if (mat_out) {
+        const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+        mat_lib_t *mat = mat_load(mat_path, gp, g_is_using_hdd, NULL);
+        *mat_out = (void *)mat;
+        if (mat) {
+            print("  MAT loaded: %u materials\n", mat->nmaterials);
+        } else {
+            print("  MAT load failed\n");
+        }
+    }
+
+    /* OBC file — animation/bone cache (sub_4538FB @ 0x4538FB).
+     * Full OBC parser (sub_452B20) not yet ported. Log and set NULL. */
+    if (obc_out) {
+        *obc_out = NULL;
+        print("  OBC: parser not yet ported (sub_4538FB)\n");
+    }
 }
