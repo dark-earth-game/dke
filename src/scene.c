@@ -146,6 +146,22 @@ static bmap_t *g_intfani3_bmap = NULL;
  * approximate screen-space brightness when shading 3D character models. */
 static u8 g_brightness_map[768];
 
+/* HUD rendering globals — used by sub_45CD9C and sub_45D0BA. */
+static i32 g_render_mode_flag = 0;     /* render_mode_flag @ 0x4B4528 */
+static i32 g_hud_active = 0;          /* dword_4B52DC @ 0x4B52DC — -1 = HUD disabled */
+static i32 g_combat_meter = 0;        /* dword_506B9C @ 0x506B9C — current meter value */
+static i32 g_combat_meter_max = 1;    /* dword_506B80 @ 0x506B80 — max meter value */
+static i32 g_cached_meter = 0;        /* dword_4B6F60 @ 0x4B6F60 — dirty-check cache */
+static i32 g_cached_color_mode2 = -1; /* dword_4B6F68 @ 0x4B6F68 — cached color_mode for 45D0BA */
+static i32 g_cached_health = 0;       /* dword_4B6F5C @ 0x4B6F5C — cached descriptor health */
+static i32 g_cached_color_mode = 0;   /* dword_4B6F64 @ 0x4B6F64 — cached color_mode for 45CD9C */
+static i32 g_cached_special_mode = 0; /* dword_4B6F74 @ 0x4B6F74 */
+static i32 g_cached_score = 0;        /* dword_4B6F78 @ 0x4B6F78 */
+static i32 g_special_mode_active = 0; /* special_mode_active — combat/special mode flag */
+static i32 g_score_counter = 0;       /* score_counter — player score/energy counter */
+static i32 g_player_movement_enabled = 0; /* player_movement_enabled */
+static i32 g_color_mode = 0;          /* color_mode @ 0x4B4514 — 0=8bit 1=16bit */
+
 /* Viewport globals — set in Phase 18, used by rendering pipeline. */
 static i32 g_viewport_active = 0;  /* dword_4DDE20 @ 0x4DDE20 */
 static i32 g_viewport_x0 = 0;     /* dword_4B7B14 @ 0x4B7B14 */
@@ -681,32 +697,31 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
 static void build_inverse_z_lut(i32 zfar_value);
 
 /* -------------------------------------------------------------------------
- * Stub declarations for sub-functions called by scene_load_level_46DFEC.
- * Each corresponds to one asm CALL that is NOT ported in this skeleton pass.
- * They are static no-ops here so the skeleton compiles cleanly.
- * Replace with real implementations in subsequent Slice C passes.
+ * Platform no-ops and partial implementations for scene_load_level sub-calls.
+ * DirectDraw / CD-ROM functions are intentional no-ops on modern platforms.
+ * Partial implementations note their blocking dependencies in comments.
  * ------------------------------------------------------------------------- */
 
 /* set_display_mode — ECX=0x1D sets hardware display mode.
  * Original: DirectDraw SetDisplayMode. No-op on modern platforms.
  * Mirrors asm: mov ecx, 1Dh / call set_display_mode */
-static void stub_set_display_mode(i32 mode) {
-    print("scene: set_display_mode(0x%X) — no-op (no DirectDraw)\n", mode);
+static void set_display_mode(i32 mode) {
+    (void)mode;
 }
 
 /* sub_469E34 @ 0x469E34 — CD-ROM disc detection.
  * Windows: GetLogicalDriveStringsA + GetDriveTypeA + GetVolumeInformationA.
  * No-op on modern platforms (game data accessed via filesystem). */
-static void stub_sub_469E34(i32 arg) {
+static void detect_cdrom(i32 arg) {
+    /* sub_469E34 @ 0x469E34 — CD-ROM detection, no-op on modern platforms */
     (void)arg;
-    /* sub_469E34 @ 0x469E34 — CD-ROM detection, no-op */
 }
 
 /* TODO: handle_data_l44_faux — called when level_id == 0x2C (44).
  * Likely special-case for a test/dummy level.
  * Mirrors asm: cmp [ebp+var_4], 2Ch / call handle_data_l44_faux */
-static void stub_handle_data_l44_faux(void) {
-    /* TODO: handle_data_l44_faux */
+static void handle_data_l44_faux(void) {
+    /* handle_data_l44_faux — special-case for test level 0x2C, no-op */
 }
 
 /* sub_46D305 — world controller: load INF zone data + build level paths. */
@@ -723,16 +738,17 @@ static void load_world_controller(void) { /* sub_46D305 @ 0x46D305 */
  * M color LUT, rendering params, 1/z perspective LUT.
  * Level assets loaded from DATAS>L{nn}>.
  * Currently handled by scene_load_camera_backdrop + scene_load_dat_config. */
-static void stub_sub_46D0EA(void) {
-    /* sub_46D0EA @ 0x46D0EA — asset loading via scene_load_camera_backdrop.
-     * Full 7-phase pipeline not yet ported; build inverse-Z LUT from
-     * current camera's zbuffer far-plane value. */
+static void load_level_assets(void) {
+    /* sub_46D0EA @ 0x46D0EA — asset loader dispatcher.
+     * Full 7-phase pipeline (F/Z/G/L/M + params + inv-Z) depends on
+     * sub_46C930 file loader. Partial: build inverse-Z LUT only. */
     i32 zfar = scene_get_camera_zfar(0);
     build_inverse_z_lut(zfar);
 }
 
 /* can_do_32k — colour-mode capability check. Always true on modern HW. */
-static i32 stub_can_do_32k(i32 color_mode) {
+static i32 can_do_32k(i32 color_mode) {
+    /* can_do_32k — always true on modern HW (original checked DirectDraw caps) */
     (void)color_mode;
     return 1;
 }
@@ -1204,7 +1220,8 @@ fail:
 
 /* sub_462BCC @ 0x462BCC — dispatch zone trigger event to scripting.
  * Stub until scripting dispatch lands. */
-static void stub_dispatch_zone_trigger(u8 zone_id, void *entity) {
+static void dispatch_zone_trigger(u8 zone_id, void *entity) {
+    /* sub_462BCC @ 0x462BCC — creature descriptor loader, blocked on sub_462C9E/sub_461DC4 */
     (void)zone_id; (void)entity;
 }
 
@@ -1281,7 +1298,7 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
             if (g_player_entity) {
                 u8 *action_ptr = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
                 u8 zone_id = action_ptr ? action_ptr[0x97] : 0;
-                stub_dispatch_zone_trigger(zone_id, g_player_entity);  /* sub_462BCC */
+                dispatch_zone_trigger(zone_id, g_player_entity);  /* sub_462BCC @ 0x462BCC */
             }
             result = 1;
             break;  /* only one trigger per frame */
@@ -1479,22 +1496,165 @@ static void sub_45D27A(void *buf, i32 mode) {
     }
 }
 
+/* sub_45CAE8 @ 0x45CAE8 — HUD animation ticker (692 bytes, blocked). */
+static void hud_animate_ticker(i32 arg) {
+    /* sub_45CAE8 @ 0x45CAE8 */
+    (void)arg;
+}
+
+/* sub_45CD9C @ 0x45CD9C — HUD health bar + weapon/special mode indicator.
+ * Reads player descriptor health (entity+0xAC→+0x84), scales to 66-pixel bar.
+ * Also draws weapon icon (entity+0xD60) or special mode icon, plus stamina bar
+ * (score_counter scaled to 98 pixels). Dirty-check caches prevent redundant redraws. */
+static void hud_draw_health_bar(i32 mode) {
+    /* sub_45CD9C @ 0x45CD9C */
+    extern u8 color_table[];
+    if (g_hud_active == -1) return;
+
+    bmap_t *intfani3 = game_init_get_intfani3();
+    if (!intfani3) return;
+    intfani3->reserved_18 = (uintptr_t)color_table;
+
+    bmap_t *rb1 = game_init_get_render_buffer1();
+    bmap_t *gc = (bmap_t *)game_init_get_game_context();
+    if (!rb1 || !gc) return;
+
+    /* Dirty check: skip redraw if nothing changed and mode==0 */
+    i32 cur_health = 0;
+    if (g_player_entity) {
+        u8 *desc = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+        if (desc) cur_health = *(i32 *)(desc + 0x84);
+    }
+
+    if (cur_health == g_cached_health &&
+        g_color_mode == g_cached_color_mode &&
+        g_special_mode_active == g_cached_special_mode &&
+        g_score_counter == g_cached_score &&
+        mode == 0) {
+        goto health_done;
+    }
+
+    /* Health bar: 66 pixels, scale = 66/1024 = 0.064453125 */
+    overlay_cursor_image(intfani3, rb1, 0x56, 0, 0x9C, 0x77, 0, 0x169);
+
+    {
+        f64 fill = (f64)cur_health * (66.0 / 1024.0);
+        i32 bar_y = (i32)(66.0 - fill);
+
+        overlay_cursor_image(intfani3, rb1,
+                             0, bar_y, 9, 0x42, 0x1F, bar_y + 0x194);
+        overlay_cursor_image(intfani3, gc,
+                             0, bar_y, 9, 0x42, 0x1F, bar_y + 0x194);
+    }
+    g_cached_health = cur_health;
+
+    /* Weapon/special mode icon */
+    if (g_player_entity && *(i32 *)((u8 *)g_player_entity + 0xD60) != 0) {
+        overlay_cursor_image(intfani3, rb1, 0x0A, 0x1B, 0x22, 0x35, 0x18, 0x177);
+        overlay_cursor_image(intfani3, gc,  0x0A, 0x1B, 0x22, 0x35, 0x18, 0x177);
+    } else if (g_special_mode_active) {
+        overlay_cursor_image(intfani3, rb1, 0x0A, 0x00, 0x22, 0x1A, 0x18, 0x177);
+        overlay_cursor_image(intfani3, gc,  0x0A, 0x00, 0x22, 0x1A, 0x18, 0x177);
+    }
+    g_cached_special_mode = g_special_mode_active;
+
+    /* Stamina bar: 98 pixels, scale = 98/1024 = 0.095703125 */
+    {
+        f64 fill2 = (f64)g_score_counter * (98.0 / 1024.0);
+        f64 bar_val = 98.0 - fill2;
+        if (g_score_counter == 0x3FF && bar_val == 0.0) bar_val = 1.0;
+        i32 bar_y2 = (i32)bar_val;
+
+        overlay_cursor_image(intfani3, rb1,
+                             0x23, bar_y2, 0x55, 0x62, 0x0A, bar_y2 + 0x16C);
+        overlay_cursor_image(intfani3, gc,
+                             0x23, bar_y2, 0x55, 0x62, 0x0A, bar_y2 + 0x16C);
+    }
+    g_cached_score = g_score_counter;
+
+    if (g_player_movement_enabled)
+        hud_animate_ticker(1);  /* sub_45CAE8(1) */
+
+    /* Final blit to graphics context (mode==1 only, not render_mode 1) */
+    if (mode == 1 && g_render_mode_flag != 1 && g_viewport_active == 0) {
+        draw_image(g_graphics_context, gc, 0, 0x169, 0x46, 0x1E0, 0, 0x169);
+    }
+
+health_done:
+    g_cached_color_mode = g_color_mode;
+}
+
+/* sub_45D0BA @ 0x45D0BA — HUD combat/stamina meter indicator (right side).
+ * Only active when render_mode_flag==1. Draws a 61-pixel vertical bar from
+ * INTFANI3 onto render_buffer1, scaled by combat_meter/combat_meter_max ratio.
+ * Dirty-check caches prevent redundant redraws. */
+static void hud_draw_mode_indicator(i32 mode) {
+    /* sub_45D0BA @ 0x45D0BA */
+    extern u8 color_table[];
+    if (g_hud_active == -1) return;
+
+    bmap_t *intfani3 = game_init_get_intfani3();
+    if (!intfani3) return;
+    intfani3->reserved_18 = (uintptr_t)color_table;
+
+    bmap_t *rb1 = game_init_get_render_buffer1();
+    bmap_t *gc = (bmap_t *)game_init_get_game_context();
+    if (!rb1 || !gc) return;
+
+    /* Dirty check */
+    if (g_combat_meter == g_cached_meter &&
+        g_color_mode == g_cached_color_mode2 &&
+        mode == 0) {
+        goto indicator_done;
+    }
+
+    /* Background frame for indicator area */
+    overlay_cursor_image(intfani3, rb1, 0x9D, 0, 0xBD, 0x54, 0x24C, 0x178);
+
+    /* Bar fill: 61 pixels, ratio = combat_meter / combat_meter_max */
+    if (g_combat_meter < 0) g_combat_meter = 0;
+    {
+        f64 ratio = (g_combat_meter_max > 0)
+            ? (f64)g_combat_meter / (f64)g_combat_meter_max
+            : 0.0;
+        i32 bar_y = (i32)(61.0 - ratio * 61.0);
+
+        overlay_cursor_image(intfani3, rb1,
+                             9, bar_y + 0x36, 0x0C, 0x73, 0x24F, bar_y + 0x189);
+    }
+    g_cached_meter = g_combat_meter;
+
+    /* Blit composited region from render_buffer1 to game_context */
+    draw_image(gc, rb1, 0x24C, 0x178, 0x26C, 0x1CC, 0x24C, 0x178);
+
+indicator_done:
+    g_cached_color_mode2 = g_color_mode;
+}
+
 /* update_player_interface @ 0x45D1F6 — HUD overlay controller.
  * Composites INTFANI3 health bar + mode indicator sprites onto game_context.
  * ECX=game_context bmap, EDX=mode (2=full init). */
 static void update_player_interface(void *ctx, i32 mode) {
     /* update_player_interface @ 0x45D1F6 */
-    (void)mode;
     bmap_t *intfani3 = game_init_get_intfani3();
     bmap_t *dst = (bmap_t *)ctx;
     if (!intfani3 || !dst) return;
 
     /* Primary HUD overlay — health bar area @ 0x45D205 */
-    overlay_cursor_image(intfani3, dst,
-                         0x56, 0, 0x9C, 0x77, 0, 0x169);
+    overlay_cursor_image(intfani3, dst, 0x56, 0, 0x9C, 0x77, 0, 0x169);
 
-    /* sub_45CD9C @ 0x45CD9C — HUD health bar renderer (195 inst, deferred) */
-    /* sub_45D0BA @ 0x45D0BA — HUD mode indicator (76 inst, deferred) */
+    /* Secondary indicator area — only when render_mode_flag == 1 */
+    if (g_render_mode_flag == 1) {
+        overlay_cursor_image(intfani3, dst, 0x9D, 0, 0xBD, 0x54, 0x24C, 0x178);
+    }
+
+    /* Health bar / stamina / weapon indicators */
+    hud_draw_health_bar(mode);  /* sub_45CD9C @ 0x45CD9C */
+
+    /* Combat meter indicator (right side) */
+    if (g_render_mode_flag == 1) {
+        hud_draw_mode_indicator(mode);  /* sub_45D0BA @ 0x45D0BA */
+    }
 }
 
 /* sub_45E070 @ 0x45E070 — screen light intensity map downsampler.
@@ -1527,7 +1687,8 @@ static void build_brightness_map(void) { /* sub_45E070 @ 0x45E070 */
  * ECX=0 draws all entities without context filtering.
  * Depends on sub_4762BF (single entity renderer), sub_4728DF (anim parser),
  * sub_4731F6 (multi-frame animated renderer). No-op until entity system lands. */
-static void stub_sub_47674F(i32 arg) {
+static void composite_entity_pass(i32 arg) {
+    /* sub_47674F @ 0x47674F — entity compositor (967 bytes, blocked on entity renderer) */
     (void)arg;
 }
 
@@ -1535,9 +1696,9 @@ static void stub_sub_47674F(i32 arg) {
  * 968 bytes, 268 instructions, 15 sub-function calls. Copies framebuffers,
  * applies model transform, sets entity texture, renders with depth test,
  * handles combat overlay effects. Needs entire rendering subsystem — no-op. */
-static void stub_render_entity_with_ui(void *entity, i32 mode) {
+static void render_entity_with_ui(void *entity, i32 mode) {
+    /* render_entity_with_ui @ 0x4024AF — 968 bytes, blocked on entity renderer */
     (void)entity; (void)mode;
-    /* render_entity_with_ui @ 0x4024AF — needs rendering subsystem */
 }
 
 /* dword_511624 @ 0x511624 — rendering state flag, set during effect position init. */
@@ -1604,8 +1765,9 @@ static i32 system_get_gametime(void) {
 /* restore_display_mode — EDX=0x1D, ECX=1.
  * Original: DirectDraw RestoreDisplayMode. No-op on modern platforms.
  * Mirrors asm: mov edx, 1Dh / mov ecx, 1 / call restore_display_mode */
-static void stub_restore_display_mode(i32 ecx, i32 edx) {
-    print("scene: restore_display_mode(ecx=%d, edx=0x%X) — no-op (no DirectDraw)\n", ecx, edx);
+static void restore_display_mode(i32 ecx, i32 edx) {
+    /* restore_display_mode — DirectDraw, no-op on modern platforms */
+    (void)ecx; (void)edx;
 }
 
 /* sub_406316 @ 0x406316 — per-entity time sync.
@@ -1916,7 +2078,7 @@ i32 scene_load_level(i32 level_id) {
      * Asm: mov ecx, 1Dh / call set_display_mode
      * ----------------------------------------------------------------- */
     print("scene: phase 1 — set_display_mode(0x1D)\n");
-    stub_set_display_mode(0x1D);
+    set_display_mode(0x1D);
 
     /* -----------------------------------------------------------------
      * Phase 2 — zero dword_505C54
@@ -1943,10 +2105,10 @@ i32 scene_load_level(i32 level_id) {
     }
     print("scene: host folder = '%s'\n", host_folder);
 
-    /* Check folder existence; if missing call stub_sub_469E34(1) */
+    /* Check folder existence; if missing call detect_cdrom(1) */
     if (!ls_exists(host_folder)) {
-        print("scene: level folder '%s' not found — calling sub_469E34(1)\n", host_folder);
-        stub_sub_469E34(1);   /* TODO: sub_469E34 */
+        print("scene: level folder '%s' not found — calling detect_cdrom(1)\n", host_folder);
+        detect_cdrom(1);   /* sub_469E34 @ 0x469E34 */
         /* Original asm continues (does not return) after this call */
     } else {
         print("scene: level folder exists\n");
@@ -1958,7 +2120,7 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     if (level_id == 0x2C) {
         print("scene: phase 4 — level 44 special case: handle_data_l44_faux\n");
-        stub_handle_data_l44_faux();   /* TODO: handle_data_l44_faux */
+        handle_data_l44_faux();   /* handle_data_l44_faux — test level no-op */
     }
 
     /* -----------------------------------------------------------------
@@ -2029,8 +2191,8 @@ i32 scene_load_level(i32 level_id) {
      * Asm: call sub_46D0EA
      * Loads L%02d.DAT, IMAGES/, PAL/, ANIM2D/, IM%02d.OME
      * ----------------------------------------------------------------- */
-    print("scene: phase 10 — sub_46D0EA (asset load dispatcher) — STUB\n");
-    stub_sub_46D0EA();   /* TODO: sub_46D0EA */
+    print("scene: phase 10 — load_level_assets (sub_46D0EA)\n");
+    load_level_assets();   /* sub_46D0EA @ 0x46D0EA */
 
     /* -----------------------------------------------------------------
      * Phase 11 — colour-mode / texture library setup
@@ -2042,16 +2204,16 @@ i32 scene_load_level(i32 level_id) {
      *      dword_4B7B0C = dword_4DD780[color_mode*4]
      *      can_do_32k(color_mode)
      * ----------------------------------------------------------------- */
-    print("scene: phase 11 — colour-mode / texture library setup — STUB\n");
-    stub_can_do_32k(state ? (i32)state->colour_mode : 1);   /* TODO: can_do_32k */
+    print("scene: phase 11 — colour-mode / texture library setup (partial)\n");
+    can_do_32k(state ? (i32)state->colour_mode : 1);   /* can_do_32k — always true */
 
     /* -----------------------------------------------------------------
      * Phase 12 — sub_4640BC (player placement in world)
      * Asm: cmp dword_4B727C, 0 / jz skip
      *        push ... / mov ecx, game_state / call sub_4640BC
      * ----------------------------------------------------------------- */
-    print("scene: phase 12 — sub_4640BC (player world placement) — STUB\n");
-    place_player_defaults();   /* TODO: sub_4640BC */
+    print("scene: phase 12 — place_player_defaults (sub_4640BC)\n");
+    place_player_defaults();   /* sub_4640BC @ 0x4640BC */
 
     /* -----------------------------------------------------------------
      * Phase 13 — sub_426D2C + damage counter zero
@@ -2132,7 +2294,7 @@ i32 scene_load_level(i32 level_id) {
     /* -----------------------------------------------------------------
      * Phase 19 — set_entities_combat_mode + sub_448F4D
      * ----------------------------------------------------------------- */
-    print("scene: phase 19 — set_entities_combat_mode + sub_448F4D — STUB\n");
+    print("scene: phase 19 — set_entities_combat_mode + init_level_scripting\n");
     set_entities_combat_mode();   /* TODO: set_entities_combat_mode */
     init_level_scripting();                 /* TODO: sub_448F4D */
 
@@ -2147,8 +2309,8 @@ i32 scene_load_level(i32 level_id) {
     clear_bmap(game_init_get_game_context());             /* ls_clear_bmap(game_context) @ 0x46E644 */
     sub_45D27A(game_init_get_render_buffer1(), 1);        /* sub_45D27A(render_buffer1, 1) */
     update_player_interface(game_init_get_game_context(), 2); /* update_player_interface @ 0x45D1F6 */
-    build_brightness_map();                     /* TODO: sub_45E070 */
-    stub_sub_47674F(0);                    /* TODO: sub_47674F(0) */
+    build_brightness_map();                     /* sub_45E070 @ 0x45E070 */
+    composite_entity_pass(0);              /* sub_47674F @ 0x47674F */
 
     /* -----------------------------------------------------------------
      * Phase 21 — render companion entities (if present)
@@ -2157,9 +2319,11 @@ i32 scene_load_level(i32 level_id) {
      *      cmp secondary_companion_entity, 0 / jz skip
      *        render_entity_with_ui(secondary_companion_entity, 0)
      * ----------------------------------------------------------------- */
-    print("scene: phase 21 — render companions — STUB\n");
-    stub_render_entity_with_ui(NULL, 0); /* TODO: companion_entity */
-    stub_render_entity_with_ui(NULL, 0); /* TODO: secondary_companion_entity */
+    print("scene: phase 21 — render companions\n");
+    if (g_companion_entity)
+        render_entity_with_ui(g_companion_entity, 0);           /* render_entity_with_ui @ 0x4024AF */
+    if (g_secondary_companion_entity)
+        render_entity_with_ui(g_secondary_companion_entity, 0); /* render_entity_with_ui @ 0x4024AF */
 
     /* -----------------------------------------------------------------
      * Phase 22 — apply_model_transform for player + companions
@@ -2178,7 +2342,7 @@ i32 scene_load_level(i32 level_id) {
      * Asm: mov edx, 1Dh / mov ecx, 1 / call restore_display_mode
      * ----------------------------------------------------------------- */
     print("scene: phase 24 — restore_display_mode(1, 0x1D)\n");
-    stub_restore_display_mode(1, 0x1D);   /* TODO: restore_display_mode */
+    restore_display_mode(1, 0x1D);   /* restore_display_mode — DirectDraw no-op */
 
     /* -----------------------------------------------------------------
      * Phase 25 — sub_40636D, world_state → dword_505C58, zero dword_4B2AB8

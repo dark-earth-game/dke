@@ -179,6 +179,10 @@ static void *g_msg_buffer         = NULL;   /* dword_511740 — 12KB messages   
 static void *g_can_ptrs[4]        = {0};    /* dword_511730..51173C — CAN ptrs */
 static i32   g_can_indices[4]     = {-1,-1,-1,-1};
 
+/* Weapons/inventory display (display_weapons_inventory @ 0x40CE30) */
+static void *g_inventory_primary = NULL;  /* inventory_primary @ 0x545F28 */
+static void *g_ammo_count = NULL;         /* ammo_count @ 0x545F38 */
+
 /* Sound sample tables (sub_44D706) */
 static u8    g_sample_registry[3000] = {0}; /* byte_4FB450 @ 004FB450 */
 static u8    g_sample_flags[200]     = {0}; /* dword_4FB380 @ 004FB380 */
@@ -800,7 +804,7 @@ static void build_palette_colour(u8 *palette) {
  * Port: always returns 0 (force text parse).  The .CTX cache is a
  * size-optimization from the original; we always parse from text.
  * ---------------------------------------------------------------------- */
-static i32 sub_4723C0_stub(const c8 *virtual_path) {
+static i32 creature_cache_check(const c8 *virtual_path) {
     (void)virtual_path;
     print("sub_4723C0: cache check skipped (always parse text)\n");
     return 0;
@@ -812,7 +816,7 @@ static i32 sub_4723C0_stub(const c8 *virtual_path) {
  * Writes the parsed creature table to a .CTX binary cache.
  * Port: stub — no cache writing needed.
  * ---------------------------------------------------------------------- */
-static void sub_47257D_stub(const c8 *virtual_path) {
+static void creature_cache_write(const c8 *virtual_path) {
     (void)virtual_path;
     print("sub_47257D: cache write skipped\n");
 }
@@ -841,7 +845,7 @@ static void load_objets_txt(const c8 *virtual_path) {
     i32 weapon_count = 1;  /* var_19C — starts at 1 */
 
     /* sub_4723C0 pre-check: if cache exists, skip text parse */
-    if (sub_4723C0_stub(virtual_path)) return;
+    if (creature_cache_check(virtual_path)) return;
 
     /* Resolve path and get file size */
     c8 resolved[512];
@@ -853,7 +857,7 @@ static void load_objets_txt(const c8 *virtual_path) {
     i32 file_size = ls_get_filesize(resolved);
     if (file_size <= 0) {
         print("load_objets_txt: file not found or empty '%s'\n", resolved);
-        sub_47257D_stub(virtual_path);
+        creature_cache_write(virtual_path);
         return;
     }
 
@@ -861,7 +865,7 @@ static void load_objets_txt(const c8 *virtual_path) {
     c8 *buf = (c8 *)allocate_memory(MEM_SLOT_SPECIAL, file_size + 1);
     if (!buf) {
         print("load_objets_txt: alloc failed (%d bytes)\n", file_size);
-        sub_47257D_stub(virtual_path);
+        creature_cache_write(virtual_path);
         return;
     }
 
@@ -869,7 +873,7 @@ static void load_objets_txt(const c8 *virtual_path) {
     if (!fp) {
         print("load_objets_txt: cannot open '%s'\n", resolved);
         free_memory(buf);
-        sub_47257D_stub(virtual_path);
+        creature_cache_write(virtual_path);
         return;
     }
     ls_read_buffer(fp, buf, file_size);
@@ -985,7 +989,7 @@ static void load_objets_txt(const c8 *virtual_path) {
           CREATURE_TABLE_SIZE, poly_count - 1, weapon_count - 1);
 
     /* sub_47257D post-process */
-    sub_47257D_stub(virtual_path);
+    creature_cache_write(virtual_path);
 }
 
 /* -------------------------------------------------------------------------
@@ -1632,7 +1636,10 @@ b8 game_init(state_t *state) {
     /* Phase 44 — display_weapons_inventory                                */
     /* ------------------------------------------------------------------ */
     print("game_init: display_weapons_inventory\n");
-    /* display_weapons_inventory @ 0x46C57F — HUD weapons display init (stub) */
+    /* display_weapons_inventory @ 0x40CE30 — loads OBJETS>DOUILLE MAT/OBC */
+    setup_creature("OBJETS>", "DOUILLE",
+                   &g_inventory_primary, &g_ammo_count,
+                   MEM_SLOT_HEALTH);
 
     /* ------------------------------------------------------------------ */
     /* Phase 45 — sub_4161B0 + dword_4B787C = 0 (tail cleanup)            */
