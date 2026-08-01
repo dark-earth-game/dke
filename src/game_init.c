@@ -703,9 +703,41 @@ static void sub_415FB0(const c8 *base_name, u8 *desc) {
     memset(g_word_4D0A40, 0, sizeof(g_word_4D0A40));  /* word_4D0A40 @ 0x4D0A40 */
 
     /* ---- Step 4: glyph bitmask walk ---- */
-    /* TODO: walk unk_4CFFC4..unk_4D0A44 (stride 0Ch, 0x260 entries), populate
-     * word_4D0A40[edx*2] from atlas pixel data (sub_415FB0+15E..+1BAh).
-     * Requires word_4D0A40 global and unk_4CFFC4 layout — deferred. */
+    /* sub_415FB0+15E..+1E6 @ 0x41610E..0x416196
+     * For each glyph entry (stride 12: x_offset, y_offset, width), scan atlas
+     * pixel rows and set bitmask bits in g_word_4D0A40 for non-zero pixels.
+     * Entries start at desc+0x184 (skip 32 control chars), stride 0x0C. */
+    {
+        bmap_t *atlas = NULL;
+        memcpy(&atlas, desc, sizeof(bmap_t *));
+        if (atlas && atlas->pixels) {
+            i32 gh = *(i32 *)(desc + 0xBF8); /* glyph height = 0x13 @ dword_4D0A38 */
+            u16 *bitmask = (u16 *)g_word_4D0A40;
+            i32 bitmask_max = (i32)(sizeof(g_word_4D0A40) / sizeof(u16));
+            i32 row_base = 0x260; /* edx @ 0x4160EA */
+            u8 *glyph_ptr = desc + 0x184; /* unk_4CFFC4 @ 0x4CFFC4 */
+            u8 *glyph_end = desc + 0xC04; /* unk_4D0A44 @ 0x4D0A44 */
+            while (glyph_ptr < glyph_end) {
+                i32 gx = *(i32 *)(glyph_ptr + 0);
+                i32 gy = *(i32 *)(glyph_ptr + 4);
+                i32 gw = *(i32 *)(glyph_ptr + 8);
+                for (i32 row = 0; row < gh; row++) {
+                    i32 bi = row_base + row;
+                    if (bi < 0 || bi >= bitmask_max) continue;
+                    u8 *scanline = atlas->pixels + (gy + row) * atlas->stride + gx;
+                    for (i32 col = 0; col < gw; col++) {
+                        if (scanline[col] != 0)
+                            bitmask[bi] |= (u16)(1 << col);
+                    }
+                }
+                row_base += 0x13;
+                glyph_ptr += 0x0C;
+            }
+            /* ls_free_bmap + desc[0]=NULL @ 0x41617D..0x41618A */
+            ls_free_bmap(atlas);
+            memset(desc, 0, sizeof(void *));
+        }
+    }
 
     print("sub_415FB0: font descriptor built (using FONTE11 atlas)\n");
 }
@@ -740,6 +772,40 @@ static void text_find_value(const c8 *buf, i32 buf_len, const c8 *key, c8 *out) 
     }
     out[0] = 'x';
     out[1] = '\0';
+}
+
+/* -------------------------------------------------------------------------
+ * text_find_int — port of sub_457CB4.
+ *
+ * Searches 'buf' (length 'buf_len') for the key string 'key'.  When found,
+ * copies the value token (chars > 0x20) into a temp buffer and returns
+ * atoi(value).  Returns 0x7FFFFFFF if key not found.
+ *
+ * Similar to text_find_value but returns the parsed integer directly
+ * and does not skip leading spaces before the value token.
+ *
+ * Original calling convention:
+ *   ECX = buffer, EDX = buffer length, arg_0 = key.
+ * ---------------------------------------------------------------------- */
+static i32 text_find_int(const c8 *buf, i32 buf_len, const c8 *key) { /* sub_457CB4 @ 0x457CB4 */
+    i32 klen = (i32)strlen(key);                                /* 0x457CCE */
+    i32 limit = buf_len - klen;                                 /* 0x457CF1 */
+    for (i32 i = 0; i <= limit; i++) {                          /* 0x457CDF..CF7 */
+        i32 match = 0;                                          /* 0x457CFD */
+        while (match < klen && buf[i + match] == key[match])    /* 0x457D10..D30 */
+            match++;
+        if (match == klen) {                                    /* 0x457D3E..D44 */
+            const c8 *p = buf + i + klen;                       /* 0x457D7C..D7F */
+            const c8 *end = buf + buf_len;
+            c8 tmp[64];                                         /* var_40 @ [ebp-0x40] */
+            c8 *dst = tmp;                                      /* 0x457D82..D85 */
+            while (p < end && (u8)*p > 0x20)                    /* 0x457D88..D91 */
+                *dst++ = *p++;                                  /* 0x457D97..DA7 */
+            *dst = '\0';                                        /* 0x457DAF */
+            return atoi(tmp);                                   /* 0x457DB6..DBE */
+        }
+    }
+    return 0x7FFFFFFF;                                          /* 0x457D66 */
 }
 
 /* ls_palette_sort @ 0x483130 — qsort comparator for palette index arrays.

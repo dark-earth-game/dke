@@ -1361,7 +1361,7 @@ static f64 g_frustum_ny = 0.0;  /* dbl_510F68 @ 0x510F68 */
 static f64 g_frustum_nw = 0.0;  /* dbl_510F60 @ 0x510F60 */
 
 /* sub_4219B0 @ 0x4219B0 — build inverse-Z lookup table + frustum normals.
- * Fills g_inv_z_array[0..4095] with (zfar * 2^-14) / i.
+ * Fills g_inv_z_array[1..4095] with (zfar * 2^-14) / i; arr[0] stays 0.
  * Then computes 4 frustum plane normal components from zfar. */
 static void build_inverse_z_lut(i32 zfar_value) {
     /* sub_4219B0 @ 0x4219B0 */
@@ -1369,10 +1369,11 @@ static void build_inverse_z_lut(i32 zfar_value) {
     if (!arr_ptr || !*arr_ptr || zfar_value <= 0) return;
 
     f32 *arr = (f32 *)(*arr_ptr);
-    f64 scale = (f64)zfar_value * (1.0 / 16384.0); /* 2^(-14) = dbl_4B0408 */
+    f64 scale = (f64)zfar_value * (1.0 / 16384.0); /* 2^(-14) = dbl_4B0408 @ 0x4B0408 */
 
-    for (i32 i = 1; i <= 0x1000; i++)
-        arr[i - 1] = (f32)(scale / (f64)i);
+    /* arr[0] stays 0 from memset at allocation — sub_421960 @ 0x421960 */
+    for (i32 i = 1; i < 0x1000; i++)  /* 0x4219DD–0x4219F7: eax=1..4095 */
+        arr[i] = (f32)(scale / (f64)i);
 
     f64 timer = (f64)zfar_value;
     f64 a = -10240.0 / timer;  /* dbl_4B0430 / timer */
@@ -2297,7 +2298,9 @@ i32 scene_load_level(i32 level_id) {
      * Asm: mov ecx, [eax+50h] / call process_color_palette (×3)
      * ----------------------------------------------------------------- */
     print("scene: phase 15 — process_color_palette (player+companions)\n");
-    process_color_palette(g_player_entity);   /* process_color_palette @ 0x40C2A0 */
+    process_color_palette(g_player_entity);                /* process_color_palette @ 0x40C2A0 */
+    process_color_palette(g_companion_entity);             /* process_color_palette @ 0x40C2A0 */
+    process_color_palette(g_secondary_companion_entity);   /* process_color_palette @ 0x40C2A0 */
 
     /* -----------------------------------------------------------------
      * Phase 16 — player entity position / viewport defaults
@@ -2374,16 +2377,37 @@ i32 scene_load_level(i32 level_id) {
      *        render_entity_with_ui(secondary_companion_entity, 0)
      * ----------------------------------------------------------------- */
     print("scene: phase 21 — render companions\n");
-    if (g_companion_entity)
-        render_entity_with_ui(g_companion_entity, 0);           /* render_entity_with_ui @ 0x4024AF */
-    if (g_secondary_companion_entity)
-        render_entity_with_ui(g_secondary_companion_entity, 0); /* render_entity_with_ui @ 0x4024AF */
+    /* asm: guard on entity != NULL && entity+0xAC != NULL && descriptor[0x96] != 0 */
+    if (g_companion_entity) {
+        u8 *ce = (u8 *)g_companion_entity;
+        void *desc = *(void **)(ce + 0xAC);
+        if (desc && *((u8 *)desc + 0x96) != 0)
+            render_entity_with_ui(g_companion_entity, 0);           /* render_entity_with_ui @ 0x4024AF */
+    }
+    if (g_secondary_companion_entity) {
+        u8 *se = (u8 *)g_secondary_companion_entity;
+        void *desc = *(void **)(se + 0xAC);
+        if (desc && *((u8 *)desc + 0x96) != 0)
+            render_entity_with_ui(g_secondary_companion_entity, 0); /* render_entity_with_ui @ 0x4024AF */
+    }
 
     /* -----------------------------------------------------------------
      * Phase 22 — apply_model_transform for player + companions
      * ----------------------------------------------------------------- */
     print("scene: phase 22 — apply_model_transform\n");
-    apply_model_transform(g_player_entity, NULL);  /* apply_model_transform @ 0x4359FF */
+    /* asm: EDX = entity+0x8C (transform context), ECX = entity */
+    if (g_player_entity) {
+        void *xf = *(void **)((u8 *)g_player_entity + 0x8C);
+        apply_model_transform(g_player_entity, xf);  /* apply_model_transform @ 0x4359FF */
+    }
+    if (g_companion_entity) {
+        void *xf = *(void **)((u8 *)g_companion_entity + 0x8C);
+        apply_model_transform(g_companion_entity, xf);            /* apply_model_transform @ 0x4359FF */
+    }
+    if (g_secondary_companion_entity) {
+        void *xf = *(void **)((u8 *)g_secondary_companion_entity + 0x8C);
+        apply_model_transform(g_secondary_companion_entity, xf);  /* apply_model_transform @ 0x4359FF */
+    }
 
     /* -----------------------------------------------------------------
      * Phase 23 — system_get_gametime → last_event_check_time
