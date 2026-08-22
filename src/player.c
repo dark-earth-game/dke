@@ -43,10 +43,15 @@ static i32 g_weapon_class_index = 0;  /* sub_471B80 @ 0x471B80 */
 /* dword_505DDC — raw weapon type byte from persona descriptor +0x97 */
 static u8 g_active_weapon_type = 0;   /* 0x505DDC */
 
-/* byte_4F60E0 @ 0x4F60E0 — dialogue/animation state buffer.
- * 12KB split across 3 entity slots: player (+0x0000), companion (+0x1000),
- * secondary companion (+0x2000). Stored at entity+0xCD8. */
-static u8 g_dialogue_buffer[0x3000] = {0};
+/* byte_4F60E0 @ 0x4F60E0 — per-entity NAVIGATION workspace, not a dialogue
+ * buffer as this was previously labelled. sub_45720D @ 0x45720D copies the
+ * 64x64 nav grid into it (free -> 0xFF, blocked -> 0) and flood fills from
+ * the entity's own cell via sub_477FD4, giving that entity a reachability
+ * map; sub_456E6A @ 0x456E6A reads byte_4F60E0 back as a 64x64 grid when
+ * drawing the debug overlay. Hence 0x1000 bytes each: player (+0x0000),
+ * companion (+0x1000), secondary companion (+0x2000). Stored at entity+0xCD8.
+ * Nothing in the port fills it yet — see docs/functions/nav_collision.md. */
+static u8 g_nav_workspace[0x3000] = {0};
 
 /* -------------------------------------------------------------------------
  * Entity struct allocation size from asm:
@@ -403,14 +408,18 @@ void player_entity_init_secondary(void) {
         return;
     }
 
-    /* Phase 1: +0xCD8 — dialogue/animation buffer pointer
+    /* Phase 1: +0xCD8 — per-entity nav workspace pointer (0x1000 bytes).
      * asm: cmp [var_98], player_entity; jnz ...; mov [ecx+0CD8h], offset byte_4F60E0
-     * byte_4F60E0 is a fixed game-data segment address; NULL placeholder here. */
-    /* byte_4F60E0 @ 0x4F60E0 — player gets slot 0 of dialogue buffer */
-    *(void **)((u8 *)g_player_entity + 0xCD8) = &g_dialogue_buffer[0];
+     * The player takes slot 0; companions take +0x1000 / +0x2000. */
+    *(void **)((u8 *)g_player_entity + 0xCD8) = &g_nav_workspace[0];
 
-    /* Phase 2: read weapon type from persona descriptor at [entity+0xACh]+0x97 */
-    u8 *desc = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+    /* Phase 2: read weapon type from persona descriptor at [entity+0xACh]+0x97
+     * (asm 0x464F94: mov eax,[ecx+0ACh]; movzx eax,byte ptr [eax+97h]).
+     * Read the slot as a native pointer — player_entity_init stores a real
+     * host pointer there via *(void **), so the 32-bit ent_get accessor
+     * truncates it and the deref segfaults. Same access form as
+     * post_weapon_global_setup (sub_471B80). */
+    u8 *desc = *(u8 **)((u8 *)g_player_entity + 0xAC);
     u8 weapon_type = desc ? desc[0x97] : 0;
     print("player: weapon_type = %d (from persona descriptor)\n", weapon_type);
 

@@ -41,6 +41,152 @@ For every landed port:
 
 ## Recently landed
 
+- **Engine: character rig, animation channels, stray faces** (Opus, 2026-08):
+  three separate defects behind "the actors look wrong".
+  1. **Rig hierarchy.** `ome_parse_objc` took each bone's parent from the OBJC
+     record's +0x78. That field is *runtime state*: `sub_4699D9` @ 0x4699D9
+     walks the first-child/next-sibling links at +0x7C/+0x84 and WRITES the
+     parent to +0x78 (and the previous sibling to +0x80). What the modelling
+     tool left in the file is stale and disagrees with the real rig wherever a
+     sibling chain starts — P00's 'hangau' (left hip) claimed 'piedro' (the
+     RIGHT foot) as parent and 'epagau' (left shoulder) claimed 'poidro' (the
+     right wrist), so the entire left side hung off the end of the right limb.
+     Parents are now derived from the child/sibling links, as the engine does.
+     Verified: left/right bones are siblings again with mirrored translations.
+  2. **Animation channels.** A CAN keyframe is 34 channels in the engine's
+     fixed bone order (the table `sub_41F6BA` @ 0x41F6BA matches names
+     against). The port indexed keyframes by the bone's position in the OME
+     file, a completely different order (P00 file: tree, basdos, handro,
+     gendro...; channel order: tree, basdos, hangau, handro...), so every bone
+     was driven by another bone's channel. `ome_objc_t` now carries
+     `can_slot[]` and all three keyframe sites index through it.
+  3. **Stray white geometry.** Faces with `mat_id == -1` ("no material") were
+     painted with `MAT_COLOURS[0]`, a bright debug colour, and appeared as
+     white shards stuck to the characters. They are now skipped.
+  Also settled: the bone record's +0x20 is the ATOMF slot index, so bone ->
+  atom mapping no longer relies on matching names.
+  **Textures: none ship.** Every persona OME references a `Pnn.TGA`
+  (P00.TGA, P12.TGA, P26.TGA...) but the only TGA in the game tree *or* inside
+  data.z is FLAM.TGA. Character colour therefore comes from the MATR palette
+  index plus the per-camera GRD ramp, which is what the port already does —
+  missing data, not a port defect.
+- **Engine: room transitions carry their own world** (Opus, 2026-08): walking
+  to another room loaded the new backdrop but kept the PREVIOUS room's boundary
+  polygon, collision zones and camera regions — L02 was building a nav grid
+  byte-identical to L01's. `scene_load_level` phase 8 faithfully mirrors the
+  asm's "cmp world_controller, 0 / jnz skip", but the port's CHANGEPIECE path
+  never ran the engine's teardown (`sub_46E4A8` @ 0x46E4A8) that clears it.
+  Now frees the world data on room change: L02 loads `dll=LIEU02` and builds
+  its own grid (`cell=33013x16041 free=2164 wall=534 blocked=1247`) and the
+  hall renders.
+  That transition also **crashed** before reaching the new room, in
+  `process_color_palette` walking entity+0x50 as a scene hierarchy. Same
+  entity-blob overlap: `apply_model_transform` wrote i32 state at entity+0x54,
+  which is the high half of the 64-bit pointer at +0x50, turning a NULL root
+  into `0x0000000200000000`. Nothing reads +0x54, so both writes are dropped.
+  Also corrected: `entity+0xCD8` is the per-entity 0x1000-byte **nav
+  workspace** that `sub_45720D` flood fills, not the "dialogue buffer" it was
+  named (the 0x3000 size was already right — three entity slots).
+  Verified `sub_459CD2` @ 0x459CD2: the port's collision classification is
+  faithful (point-in-polygon, flags&1 gate, flags&2 = wall).
+- **Engine: facing tests + player heading** (Opus, 2026-08): `DirectionPerso`
+  (`sub_44599B` @ 0x44599B) and `DirectionZone` (`sub_445C82` @ 0x445C82)
+  decoded and ported — they were returning a blanket "yes". Shared maths:
+  `target = -(atan2(dx, dz) * 65536 / 2pi)`, signed shortest arc, pass under
+  0x2400 (+/- 50.6 deg); DirectionPerso also passes unconditionally within
+  30000 units (dbl_4B0678). Note the atan2 argument order — the X delta goes
+  first. `bam_angle` was computing it the other way round, which also affected
+  JOINDRE's facing.
+  The other half was plumbing: **nothing ever wrote the player's heading**, so
+  `player_get_facing()` read a slot that was always 0 and every script query
+  about the player's orientation was answered with heading 0. scene.c now
+  mirrors the live heading into entity+0x1E0 (cosine-table units << 4 = BAM).
+  DirectionSpec (`sub_445E99`) stays permissive — its target resolution is not
+  decoded. Neither test is reached by L01's opening, so this is groundwork.
+  **Found while verifying**: the opening conversation has been riding on an
+  accident. It fires from zone 4's trigger, and the player only lands in zone 4
+  because the seed came from the camera-anchor solve. trig00's PosPerso for P00
+  puts Arkhan ~34000 units away on Z, outside every zone, where nothing fires
+  at all. One of the two mappings is wrong; the anchor stays the default
+  because it is the one that plays, and `DKE_SCRIPTSEED=1` selects the scripted
+  placement. Also: scripted placements are no longer snapped to a walkable cell
+  (Arkhan starts on the bed, which the grid calls furniture).
+- **Engine: collision + character scale** (Opus, 2026-08): the nav grid
+  `sub_45619D` @ 0x45619D built has been consulted by nothing since it landed —
+  the player walked through walls. Ported the engine's grid queries
+  (`sub_456FB7` @ 0x456FB7 snap-out-of-blocked, plus cell lookups) and wired
+  them to the player input path, per axis so a diagonal into a wall slides.
+  The player seed is now snapped onto a walkable cell. Grid axes documented:
+  it spans world (X, Z), and the `sol_limit_t` field the port calls `min_y`
+  actually holds Z — the room polygon's Y components are all ~0, so there is
+  no floor height in the INF at all.
+  **Character rendering fixed**: personas rendered as scattered triangles
+  because the default vertex shift was 1 (half scale); at 0 the figures are
+  coherent — Kaly now reads as a person asleep on the bed. The hand-tuned
+  `-120000` ground drop was really the model's own root-to-feet distance along
+  bone X (P00: X[-121123..34416]), so it is taken per persona from the
+  skeleton instead of hardcoded; P12's feet are at -109645 and it had been
+  sinking ~11k units into the floor. `DKE_MSHIFT` / `DKE_MYOFF` still override.
+  Also recorded, not yet acted on: `entity+0xCD8` is the per-entity 0x1000-byte
+  nav workspace flood-filled by `sub_45720D`, **not** a dialogue buffer, and
+  `sub_469222` @ 0x469222 is the actor walk state machine JOINDRE hands off to.
+- **LIEU action queue** (Opus, 2026-08): the deferred-action machinery every
+  LIEU primitive actually targets. New `src/lieu_action.[ch]`: 3 piles x 100
+  nodes x 0x78 (`sub_4441A5` @ 0x4441A5 alloc, `sub_4442EE` @ 0x4442EE pop,
+  `sub_44CDB8` @ 0x44CDB8 per-frame drain of one head node per pile), plus the
+  20-slot object-timer table from `sub_44968B` @ 0x4499A5 whose expiry fires
+  FonctionEditor **opcode 4** — the path that drives every timed script beat
+  and had no driver before. `lieu_action_dispatch` in `src/lieu_cb.c` ports the
+  reachable half of the 40-case switch in `sub_44A58B` @ 0x44A58B. Ten
+  previously log-only callbacks now build real nodes (ANIMATION, EVENEMENT,
+  ETATOBJET, JOINDRE, BRUITAGE, ANIMOBJET, STOPJOINDRE, VIRECOL, JOINDREPERM,
+  LINKOBJET, PLAY/FREEANIM), and SELECTPILE (`sub_446A05` @ 0x446A05) now does
+  the real thing: pick the pile, set its enable flag, reset it on mode 2. Zone/
+  camera/room-change/POSPERSO/dialogue/cutscene callbacks stay immediate on
+  purpose (see docs/functions/lieu_action_queue.md — "Queued vs immediate").
+  Verified headless: 46 actions dispatched over 400 frames of the L01 opening,
+  dialogue and camera behaviour unchanged, `DKE_NOQUEUE=1` A/B switch added.
+  **Coordinate calibration settled**: zone rects, PosPerso spawns, JOINDRE
+  destinations, INF camera regions and the player transform are all script
+  tile x600 — no LIEU-vs-world conversion needed on X/Z. `lieu_zone_debug` now
+  prints all three together so drift is visible. Floor Y remains a per-camera
+  constant.
+- **JOINDRE decoded + script-driven animation** (Opus, 2026-08): case 8 of
+  `sub_44A58B` @ 0x44B5E3 disassembled, settling the argument shape:
+  `Joindre(actor, tileX, tileZ, facing, target)` where node+0x10 is a target
+  actor (> 0), a zone reference `-(v)-1` (< 0) or nothing (0), and node+0x24 is
+  a FACING angle from `sub_4440A6` @ 0x4440A6 — not a coordinate. Crucially the
+  action **completes immediately** and the entity update walks the actor over
+  later frames; the first pass held the node until arrival, which stalls every
+  dialogue line behind a walk. `lieu_walk_update` now plays the movement
+  system's part. ANIMATION names are CAN clip ids carrying their own persona
+  ("p12arr03" -> P12), so they are published via `lieu_persona_clip` and
+  `persona_apply_script_clip` swaps the persona's CAN over: the L01 opening now
+  animates from the script (P12 lev01 -> arr03 -> arr01, P00 dia05/06/07)
+  instead of looping a hardcoded arrival clip.
+- **Shutdown crash fixed** (Opus, 2026-08): `ls_release` in
+  `src/libsys/platforms/macos.m` called `free()` on the `NSWindow`, which
+  aborted in libsystem_malloc ("pointer being freed was not allocated")
+  whenever the autorelease-pool drain above it had not already reclaimed the
+  window — intermittent SIGABRT on exit, ~1 run in 3 on longer sessions.
+  `-close` already drops the window's own reference (releasedWhenClosed
+  defaults YES), so neither `free()` nor `release` is correct: the pointer is
+  simply cleared. Pre-existing and unrelated to LIEU (reproduced with
+  `DKE_NOQUEUE=1`). Exit is now clean over 400/600/1000-frame runs and the
+  menu-only path.
+- **64-bit entity-blob pointer collisions** (Opus, 2026-08): three crashes on
+  the new-game path, all the same root cause — the entity blob keeps the
+  original's 32-bit field offsets while the port stores 8-byte host pointers in
+  it, so a pointer at +N spans N..N+7 and the neighbouring 4-byte slot shreds
+  its high half. Fixed: `player.c` read +0xAC through the 32-bit `ent_get`
+  accessor (truncated pointer -> segfault in `player_entity_init_secondary`);
+  `game_init.c` @ 0x46C484 stored a pointer at +0xB0 over the top half of the
+  descriptor pointer at +0xAC (segfault in `hud_draw_health_bar`); and
+  `apply_model_transform` set +0x54 before loading the scene root at +0x50,
+  shredding it (segfault in scene phase 22). +0x8C is a 32-bit field consumed
+  as a world Y, not a pointer — now read as one. **The blob still has no
+  64-bit-safe layout; expect more of these** until it gets one.
+
 - **Slice B pass 4** (Opus, 2026-07): Real `var_4AE0[8]` hitboxes; GENICO_<lang>.CIF as single sprite sheet with per-item sub-rect crop (no more animation cycling); CURS128 shape crop per hover state; `blit_bmap_subrect_masked` helper with correct BGR-order XRGB packing (previous helper had R/B swap → blueish hover art). See Slice B section for detail.
 - **Slice B pass 3 refinement** (Sonnet, 2026-07): Real menu image overlay + INVENT1.WAV path fix. `MENU_1.CIF` (640×480 full-screen sprite) loaded in `menu_init` → `menu->overlay_bmap`; blitted with `blit_bmap_masked_to_framebuffer` after MENUGEN backdrop; plain text suppressed when overlay present. `menu_load_click_sfx` search order fixed — `wav/ANIMS/INVENT1.WAV` first (real asm path). Per-frame cursor log noise suppressed (log only on frame_idx change). `overlay_bmap` field added to `menu_t`; freed by `menu_release_cursors`. Build clean, exit 143 confirmed. Smoke log: `menu: overlay loaded MENU_1.CIF -> 640x480`, `wav_load: .../wav/ANIMS/INVENT1.WAV -> 1ch/11025Hz/16bit/samples=26711`.
 - **Slice B pass 3 cursor** (Sonnet, 2026-07): Animated mouse cursor sprite overlay landed. `CURS128.CIF` (65×35 pointer) + `GENICO_0..6.CIF` (7-frame animated icon) loaded in `menu_init`. `blit_bmap_masked_to_framebuffer` added (index-0 transparent). `bmap_t` extended with `palette`/`owns_palette` fields; `image_load_compressed` preserves per-image CIF palette. `game_init_load_cursor` exported. GENICO drawn at (item.x-20, item.y+2) next to hovered item; CURS128 drawn at (motion_x, motion_y). Build clean, exit 143 confirmed. Smoke log: `menu: cursor loaded CURS128.CIF -> 65x35`, `menu: GENICO frames loaded 7/7`, `menu: render cursor frame=N`.

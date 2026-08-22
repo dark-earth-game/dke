@@ -642,8 +642,16 @@ model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
                 print("  mat[%d] rgb=(%d,%d,%d) '%s'\n", k,
                       matr->mats[k].r, matr->mats[k].g, matr->mats[k].b,
                       matr->mats[k].name);
-            for (i32 k = 0; k < atom->face_count && k < 6; k++)
-                print("  face[%d] mat_id=%d\n", k, atom->faces[k].mat_id);
+            i32 bad = 0, zero = 0, hist[8] = {0};
+            for (i32 k = 0; k < atom->face_count; k++) {
+                i32 id = atom->faces[k].mat_id;
+                if (!matr || id < 0 || id >= matr->mat_count) bad++;
+                else if (id == 0) zero++;
+                if (id >= 0 && id < 8) hist[id]++;
+            }
+            print("  faces=%d out-of-range=%d mat0=%d hist=[%d %d %d %d %d %d %d %d]\n",
+                  atom->face_count, bad, zero, hist[0], hist[1], hist[2], hist[3],
+                  hist[4], hist[5], hist[6], hist[7]);
         }
     }
 
@@ -652,13 +660,17 @@ model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
         const ome_face_t *f = &atom->faces[i];
         u32 colour;
         u8  mat_base = 0;
-        if (matr && f->mat_id >= 0 && f->mat_id < matr->mat_count) {
+        /* mat_id -1 means "no material" — those faces are not drawn. They
+         * were being painted with MAT_COLOURS[0], a bright debug colour, and
+         * showed up as white shards stuck to the characters. */
+        if (f->mat_id < 0) continue;
+        if (matr && f->mat_id < matr->mat_count) {
             const ome_mat_t *m = &matr->mats[f->mat_id];
             colour = 0xFF000000u | ((u32)m->b << 16) | ((u32)m->g << 8) | (u32)m->r;
             mat_base = m->r;   /* MATR field[0] = base palette index */
         } else {
-            i32 mat_idx = (f->mat_id >= 0) ? (f->mat_id & 0x0F) : 0;
-            colour = MAT_COLOURS[mat_idx];
+            /* No MATR (debug meshes): fall back to the placeholder palette. */
+            colour = MAT_COLOURS[f->mat_id & 0x0F];
         }
 
         faces[tri].colour   = colour;

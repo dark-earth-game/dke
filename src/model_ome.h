@@ -174,7 +174,12 @@ typedef struct {
 typedef struct {
     char name[16];
     i32  tx, ty, tz;
-    i32  h2;               /* parent index; -1 = root */
+    i32  h2;               /* parent index; -1 = root. DERIVED from the
+                            * child/sibling links, not read from +0x78 —
+                            * see ome_parse_objc. */
+    i32  first_child;      /* +0x7C, -1 = none */
+    i32  next_sib;         /* +0x84, -1 = none */
+    i32  slot;             /* +0x20 atom slot index, -1 = no geometry */
 } ome_bone_t;
 
 typedef struct {
@@ -189,7 +194,11 @@ typedef struct {
      * from the CAN keyframe hierarchy — applied to the atom's vertices so the
      * limb geometry rotates with the pose, not just its pivot position. */
     i32         world_rot[OME_MAX_ATOMSLOTS][9];
-    i32         can_to_render[OME_MAX_BONES]; /* CAN slot j → render atom (-1 = no geo) */
+    i32         can_to_render[OME_MAX_BONES]; /* bone j → render atom (-1 = no geo) */
+    /* bone j → index into the engine's fixed 34-entry CAN slot order, i.e.
+     * which keyframe channel drives this bone. -1 when the bone is not one
+     * of the 34 the animation system knows about. */
+    i32         can_slot[OME_MAX_BONES];
 } ome_objc_t;
 
 /* Parse OBJC chunk body. objc_sig_off = offset of "3DITOR v2.0 OBJC" in raw[]. */

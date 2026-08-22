@@ -124,4 +124,55 @@ Sorted by address.
 | — | blit_bmap_to_framebuffer | `blit_bmap_to_framebuffer` | src/libsys/graphics/graphic.c | ported | expand 8bpp indexed bmap → u32 XRGB front_buffer via palette lookup; clips to fb bounds; fires every frame in main loop |
 | — | game_init_get_menu_backdrop | `game_init_get_menu_backdrop` | src/game_init.c | ported | returns g_loading_bmap + color_table pointers for ls_main backdrop blit |
 
+### Facing tests
+
+| addr | asm name | C name | file | status | notes |
+|---|---|---|---|---|---|
+| 0044599B | sub_44599B | `cb_query_954` | src/lieu_cb.c | ported | DirectionPerso: target is a persona (arg >= 0) or an object named "OB%02d" / "IM%02d" (arg < 0, -arg > 1000 selects IM with -arg-1000). Returns true unconditionally within 30000 world units (dbl_4B0678 = 9e8 squared), otherwise abs(shortest arc) < 0x2400 |
+| 00445C82 | sub_445C82 | `cb_query_944` | src/lieu_cb.c | partial | DirectionZone: prefers the entity attached to the zone record (dword_506CA0[n], zone struct +0x20) and falls back to the zone centre (dword_506C80[n] +0 / +8); the port only tracks centres. No distance bypass |
+| 00445E99 | sub_445E99 | `cb_query_998` | src/lieu_cb.c | stub | DirectionSpec: target resolution not decoded; stays permissive |
+| — | — | `bam_angle` | src/lieu_cb.c | ported | -(atan2(dx, dz) * 65536 / 2pi) & 0xFFFF. The X delta is atan2's FIRST argument (asm 0x445BBE pushes dz then dx) |
+
+Zone record stride is 0x24: centre X at +0, centre Z at +8, attached entity at +0x20.
+
+### Navigation / collision grid — see [functions/nav_collision.md](functions/nav_collision.md)
+
+| addr | asm name | C name | file | status | notes |
+|---|---|---|---|---|---|
+| 0045619D | sub_45619D | `nav_grid_build` | src/nav_grid.c | ported | rasterises the room polygon + INF collision zones into the 64x64 byte grid `interaction_data_array` @ 0x4FA0F0, indexed via global_x_offset/divisor @ 0x4F945C/0x4F5E28 and their Z pair. Grid axes are world (X, Z) — the struct field the port calls `min_y` holds Z |
+| 00456FB7 | sub_456FB7 | `nav_snap_to_walkable` | src/nav_grid.c | ported | snap a point out of blocked space: ring outward (3, 5, 7, ...) until a free cell is found, rewrite the point to that cell's origin. Port bounds the ring count; the original loops forever if no cell is free |
+| — | — | `nav_is_walkable` / `nav_cell` | src/nav_grid.c | ported | grid lookups. Only NAV_FREE passes, matching the original's `grid != 0` blocked test |
+| 0045720D | sub_45720D | — | — | todo | per-entity reachability flood-fill into the 0x1000-byte workspace at entity+0xCD8, seeded at the entity's cell via sub_477FD4. NOTE: +0xCD8 is this nav workspace, not the "dialogue buffer" the port currently labels it |
+| 00456E6A | sub_456E6A | — | — | todo | debug overlay: draws every grid cell's value via sub_45A976 |
+| 00469222 | sub_469222 | — | — | todo | actor walk state machine. entity+0xCB4 set = follow the joined actor (resolves it by matching entity+0xCB8 against target+0xB0, faces it via sub_4440A6/sub_428714); otherwise runs the walk states at entity+0xCBC (1 = new request -> sub_468FFE waypoint -> state 2, 4 = arrived), with a 15 s idle timeout to sub_461BA0 |
+| 00468FFE | sub_468FFE | — | — | todo | next-waypoint query used by the walk state machine |
+| 00428714 | sub_428714 | — | — | todo | start an entity walking toward (x, z) |
+
+### LIEU action queue ("les piles") — see [functions/lieu_action_queue.md](functions/lieu_action_queue.md)
+
+| addr | asm name | C name | file | status | notes |
+|---|---|---|---|---|---|
+| 004441A5 | sub_4441A5 | `lieu_action_push` | src/lieu_action.c | ported | allocate a node in the active pile (dword_505C30); 3 piles x 100 nodes x 0x78; overflow -> scratch node + "la pile N est saturee". Port zeroes the node and defaults +0x40 to -1 (original leaves stale bytes) |
+| 004442EE | sub_4442EE | `lieu_action_done` | src/lieu_action.c | ported | head action complete: carry the type to head+4 (dword_4FC1A4, MODIFYVAR excepted), shift the pile down, stamp the drain time, clear dword_4FFB50 when all three piles empty |
+| 0044CDB8 | sub_44CDB8 | `lieu_action_run` | src/lieu_action.c | partial | per-frame drain of each enabled pile's head node. The 500 ms post-drain re-run of sub_44A2B5 is not ported (debug overlay only) |
+| 0044A58B | sub_44A58B | `lieu_action_dispatch` | src/lieu_cb.c | partial | 40-case action switch. Implemented: ANIMATION, EVENEMENT, ETATOBJET, JOINDRE (case 8 @ 0x44B5E3, fully decoded), BRUITAGE, ANIMOBJET, STOPJOINDRE, VIRECOL, JOINDREPERM, LINKOBJET, PLAY/PAUSE/LOAD/FREEANIM. Others log and complete |
+| 0044A2B5 | sub_44A2B5 | — | — | todo | debug overlay: draws the pile contents as text via draw_image/draw_text. Confirms node stride 0x78 |
+| 0044968B | sub_44968B | `lieu_timer_add/remove` + internal `lieu_timer_tick` | src/lieu_action.c | partial | object-timer scan at 0x4499A5..0x449ADD ported: 20 records of 16 bytes at object_timers @ 0x4FFB90, expiry fires FonctionEditor opcode 4. Rest of the function (frame pacing, debug HUD) not ported |
+| 0045D560 | sub_45D560 | — | — | todo | demo/replay recorder: every primitive fills dword_4F4CC0 (0x30 bytes) and calls this to ls_write the record plus player/companion transforms. Only active when dword_4B6FA4 == 1 |
+| 00446A05 | sub_446A05 | `cb_state_toggle` | src/lieu_cb.c | ported | SELECTPILE: sets dword_505C30 + the pile's enable flag; mode 2 resets the pile (memset 0x2EE0 to -1, count 0, enable 1) |
+| 0044453E | sub_44453E | `cb_named_object` | src/lieu_cb.c | partial | ANIMATION: lowercase, '2' = 2D sprite (actor -2), 's' prefix = sound flag +0x70, "_NN" suffix -> +0x5C, "ar*" holds 500 ms. The ANI load path (sub_41333A + anim2d slot list) is not replayed |
+| 00444A3E | sub_444A3E | `cb_named_two_ints` | src/lieu_cb.c | ported | EVENEMENT: id -> +0x48, delay -> +0x40; dispatch arms/cancels an object timer |
+| 00445189 | sub_445189 | `cb_named_ex_988` | src/lieu_cb.c | ported | ETATOBJET: _strupr name -> +0x30; p/a1/a2 scaled x600 into +0x14/+0x18/+0x1C; a3/a4/a5 -> +0x20/+0x24/+0x28; a6 -> +0x0C; a7 -> +0x54 |
+| 004453E1 | sub_4453E1 | `cb_actor_934` | src/lieu_cb.c | ported | JOINDRE: abs(actor) -> +0x0C, X*600 -> +0x14, Z*600 -> +0x1C, target -> +0x10, facing -> +0x24. Arg 2 is a COORDINATE; arg 4 is the facing. Refuses when the actor is already walking and the id is not negative |
+| 0044569A | sub_44569A | `cb_place_95C` | src/lieu_cb.c | partial | BRUITAGE: name/source/coord queued; the 'Z'-prefix zone-sound path (sub_44D23D) is not ported |
+| 00446159 | sub_446159 | `cb_cb_98C` | src/lieu_cb.c | ported | ANIMOBJET: name -> +0x30, p -> +0x20, a1 -> +0x24, a3 -> +0x28, a2 -> +0x40 (hold ms) |
+| 0044648B | sub_44648B | `cb_select_468` | src/lieu_cb.c | partial | STOPJOINDRE: id > 4 with an unloaded entity is refused ("Perso %d non charge"); negative id stops the actor immediately (clears entity+0xCB4/0xCBC blocks), non-negative queues the action |
+| 0044660D | sub_44660D | `cb_cb_964` | src/lieu_cb.c | ported | VIRECOL: flag id -> +0x68, value -> +0x4C |
+| 00446808 | sub_446808 | `cb_flush_958` | src/lieu_cb.c | ported | JOINDREPERM: abs(actor) -> +0x0C, target -> +0x10; refused when the entity is missing, or already joined and the id is not negative |
+| 00446BE9 | sub_446BE9 | `cb_attach_99C` | src/lieu_cb.c | ported | LINKOBJET: _strupr name -> +0x30, holder -> +0x0C, a -> +0x54, b -> +0x5C |
+| 00443273 | sub_443273 | `cb_cb_950` | src/lieu_cb.c | ported | FREEANIM (type 0x27): slot -> +0x48 |
+| 0044356F | sub_44356F | `cb_cb_97C` | src/lieu_cb.c | ported | PLAYANIM (type 0x23): slot -> +0x48, mode -> +0x70; slots >= 20 rejected ("Plantage! animation invalid") |
+| 004440A6 | sub_4440A6 | `bam_angle` | src/lieu_cb.c | ported | angle from one world point to another, BAM u16; used by JOINDRE to face a target or zone |
+| — | action type table @ 0x4B5438 | `LA_NAMES` / `lieu_action_name` | src/lieu_action.c | ported | 40 entries of 16 bytes: ANIMATION..FREEANIM. Index == action type == the engine callback slot the script called |
+
 Update this table whenever a function's status changes.

@@ -122,6 +122,80 @@ static void spread_col_reverse(u8 *grid, i32 col, i32 limit) {
     }
 }
 
+/* -------------------------------------------------------------------------
+ * Grid queries (engine: interaction_data_array @ 0x4FA0F0 indexed through
+ * global_x_offset/global_x_divisor @ 0x4F945C/0x4F5E28 and their Z pair).
+ * ---------------------------------------------------------------------- */
+
+/* Cell indices for a world point; returns 0 when the point is off-grid. */
+static i32 nav_cell_index(i32 world_x, i32 world_z, i32 *out_cx, i32 *out_cz) {
+    if (g_nav.cell_width <= 0 || g_nav.cell_height <= 0) return 0;
+    i32 cx = (world_x - g_nav.world_x_origin) / g_nav.cell_width;
+    i32 cz = (world_z - g_nav.world_y_origin) / g_nav.cell_height;
+    if (out_cx) *out_cx = cx;
+    if (out_cz) *out_cz = cz;
+    return (cx >= 0 && cx < NAV_GRID_SIZE && cz >= 0 && cz < NAV_GRID_SIZE);
+}
+
+i32 nav_cell(i32 world_x, i32 world_z) {
+    i32 cx = 0, cz = 0;
+    if (!nav_cell_index(world_x, world_z, &cx, &cz)) return NAV_BLOCKED;
+    return g_nav.grid[cz * NAV_GRID_SIZE + cx];
+}
+
+i32 nav_is_walkable(i32 world_x, i32 world_z) {
+    /* An unbuilt grid (no world controller) must not block everything —
+     * levels whose INF failed to load would become unplayable. */
+    if (g_nav.cell_width <= 0) return 1;
+    return nav_cell(world_x, world_z) == NAV_FREE;
+}
+
+/*
+ * sub_456FB7 @ 0x456FB7 — walk outward from a blocked cell until a free one
+ * is found, then snap the point to that cell's origin. The original rings
+ * outward forever (top edge, right edge, bottom edge, left edge, ring += 2)
+ * and relies on the room always containing a free cell; we stop once the
+ * ring can no longer intersect the grid so a fully blocked grid cannot hang
+ * the frame.
+ */
+i32 nav_snap_to_walkable(i32 *world_x, i32 *world_z) {
+    if (!world_x || !world_z || g_nav.cell_width <= 0) return 0;
+
+    i32 cx = 0, cz = 0;
+    if (nav_cell_index(*world_x, *world_z, &cx, &cz) &&
+        g_nav.grid[cz * NAV_GRID_SIZE + cx] == NAV_FREE)
+        return 0;                             /* already free — unchanged */
+
+    for (i32 ring = 3; ring <= NAV_GRID_SIZE * 2 + 3; ring += 2) {
+        cx--; cz--;                           /* step to the ring's corner */
+
+        for (i32 pass = 0; pass < 4; pass++) {
+            for (i32 i = 0; i < ring; i++) {
+                if (cx >= 0 && cx < NAV_GRID_SIZE &&
+                    cz >= 0 && cz < NAV_GRID_SIZE &&
+                    g_nav.grid[cz * NAV_GRID_SIZE + cx] == NAV_FREE) {
+                    *world_x = cx * g_nav.cell_width  + g_nav.world_x_origin;
+                    *world_z = cz * g_nav.cell_height + g_nav.world_y_origin;
+                    return 1;
+                }
+                switch (pass) {
+                case 0: cx++; break;           /* along the top edge    */
+                case 1: cz++; break;           /* down the right edge   */
+                case 2: cx--; break;           /* back along the bottom */
+                default: cz--; break;          /* up the left edge      */
+                }
+            }
+            switch (pass) {                    /* undo the last overstep */
+            case 0: cx--; break;
+            case 1: cz--; break;
+            case 2: cx++; break;
+            default: cz++; break;
+            }
+        }
+    }
+    return 0;                                  /* nothing walkable at all */
+}
+
 void nav_grid_build(const sol_limit_t *world_ctrl,
                     sol_limit_t *const *collision_zones, i32 num_collisions) {
     memset(&g_nav, 0, sizeof(g_nav));

@@ -1603,11 +1603,15 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     print("game_init: entity/context cross-wiring\n");
     /* pointer writes @ 46C484-46C4B1 */
-    if (g_player_entity) {
-        /* player_entity+B0h = dword_4B70E8 @ 46C484 */
-        u8 *pe = (u8 *)g_player_entity;
-        *(void **)(pe + 0xB0) = g_dword_4B70E8;
-    }
+    /* player_entity+B0h = dword_4B70E8 @ 0x46C484 — NOT replayed.
+     * +0xAC and +0xB0 are adjacent 32-bit pointer slots in the original; on
+     * LP64 the host pointer parked at +0xAC (the persona descriptor, written
+     * by player_entity_init) spans 0xAC..0xB3, so an 8-byte store at +0xB0
+     * shreds its high half and every later [entity+0xAC] deref crashes.
+     * Nothing in the port reads entity+0xB0 back as a pointer — the same
+     * value is already reachable through g_game_state (set above) — so the
+     * write is dropped rather than given a fake home. Both slots need real
+     * addresses once the entity blob gets a proper 64-bit-safe layout. */
     /* game_context = entity_buffer_base @ 46C48E */
     g_game_context = g_entity_buffer_base;
     /* game_context+18h = palette_data @ 46C498 */

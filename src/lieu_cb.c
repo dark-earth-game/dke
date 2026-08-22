@@ -6,11 +6,26 @@
  *   - the per-level state buffer (engine dword_505C40, 0xFA0 bytes),
  *   - lieu_enter / lieu_tick / lieu_exit for scene.c to drive.
  *
- * The callbacks are currently LOG-ONLY stubs: the dke engine does not yet
- * expose the object-queue / audio / cinematic / layer primitives the
- * original engine (dkev.exe sub_44xxxx) provided. This lets the ported
- * control flow RUN and be traced without crashing; wire real effects
- * incrementally as the engine grows. Grep "TODO wire" for the work list.
+ * Two kinds of callback live here:
+ *
+ *  - DEFERRED. The original primitives (dkev sub_444xxx..sub_446xxx) do not
+ *    act: they allocate an action node, fill it, and let the per-frame
+ *    driver sub_44CDB8 @ 0x44CDB8 dispatch it one head node per pile per
+ *    frame. Those now go through src/lieu_action.c and land in
+ *    lieu_action_dispatch() at the bottom of this file — the port of the
+ *    40-case switch in sub_44A58B @ 0x44A58B.
+ *
+ *  - IMMEDIATE. A handful of callbacks are queued in the original but are
+ *    still applied straight away here: zones (AJOUTEZONE/RETIREZONE),
+ *    camera (CHANGECAMERA), room change (CHANGEPIECE), persona placement
+ *    (POSPERSO), dialogue, cutscenes and the BLOQUE brackets. INIT emits a
+ *    burst of those and the scene code consumes them the same frame; moving
+ *    them behind the queue would stagger level setup over ~40 frames. They
+ *    stay immediate until the scene side can cope with staggered setup.
+ *
+ * Effects that need engine subsystems dke has not ported (positional audio,
+ * 2D anim playback, object meshes) record their state in the small
+ * registries below and log once, so scripts still advance.
  */
 
 #include <string.h>
@@ -19,6 +34,7 @@
 
 #include "libsys/common.h"
 #include "lieu_cb.h"
+#include "lieu_action.h"
 #include "lieu01.h"
 #include "player.h"
 #include "dialogue.h"
@@ -56,27 +72,89 @@ static void zones_clear(void) {
 }
 
 void lieu_zone_debug(void) {
+    i32 minx = 0x7FFFFFFF, maxx = -0x7FFFFFFF;
+    i32 minz = 0x7FFFFFFF, maxz = -0x7FFFFFFF;
+    i32 n = 0;
+
     for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {
         if (g_zones[i].center_x == -1) continue;
         print("zone[%d] c=(%d,%d) half=(%d,%d) active=%d\n", i,
               g_zones[i].center_x, g_zones[i].center_z,
               g_zones[i].size_x / 2, g_zones[i].size_z / 2, g_zones[i].active);
+        if (g_zones[i].center_x < minx) minx = g_zones[i].center_x;
+        if (g_zones[i].center_x > maxx) maxx = g_zones[i].center_x;
+        if (g_zones[i].center_z < minz) minz = g_zones[i].center_z;
+        if (g_zones[i].center_z > maxz) maxz = g_zones[i].center_z;
+        n++;
+    }
+
+    /*
+     * Coordinate-space check. AjouteZone rectangles, PosPerso placements and
+     * the player transform must all live in the same space: LIEU script tile
+     * x600 (LIEU_ZONE_SCALE, engine 0x258 — the same divisor the HUD uses).
+     * Printing the three side by side makes any future drift obvious instead
+     * of showing up as triggers that never fire.
+     */
+    if (n) {
+        i32 px = 0, pz = 0;
+        i32 have_player = player_get_pos(&px, NULL, &pz);
+        print("lieu: zone space X[%d..%d] Z[%d..%d] over %d zones\n",
+              minx, maxx, minz, maxz, n);
+        for (i32 i = 0; i < lieu_spawn_count(); i++) {
+            i32 tx = 0, tz = 0, view = 0;
+            const c8 *nm = lieu_spawn_get(i, &tx, &tz, &view);
+            print("lieu: spawn '%s' world=(%d,%d)\n", nm ? nm : "?",
+                  tx * LIEU_ZONE_SCALE, tz * LIEU_ZONE_SCALE);
+        }
+        /* The player transform is seeded from the camera anchor after INIT,
+         * so at room-entry time it is still (0,0) — report that rather than
+         * a misleading "outside every zone". */
+        if (have_player && (px || pz))
+            print("lieu: player world=(%d,%d) zone=%d\n", px, pz, lieu_detect_zone());
+        else if (have_player)
+            print("lieu: player not placed yet (transform seeded after INIT)\n");
     }
 }
 
-/* Facing helpers — currently unused (facing queries are permissive, see
- * cb_query_944/954/998), kept for when player-facing input lands. */
-/* Facing tolerance ~50.6 deg (0x2400 BAM). Signed shortest-arc compare. */
-static i32 __attribute__((unused)) facing_ok(i32 player_ang, i32 target_ang) {
+/* -------------------------------------------------------------------------
+ * Facing tests — DirectionPerso / DirectionZone / DirectionSpec.
+ *
+ * These gate most script triggers: "is the player looking at the thing?".
+ * Decoded from sub_44599B @ 0x44599B (DirectionPerso) and sub_445C82 @
+ * 0x445C82 (DirectionZone), which share the same maths:
+ *
+ *   target_ang = -(atan2(dx, dz) * 65536 / 2pi) & 0xFFFF
+ *   diff       = signed shortest arc (target_ang - player_ang)
+ *   facing     = abs(diff) < 0x2400            (+/- 50.6 degrees)
+ *
+ * Note the atan2 argument order: the engine passes the X delta FIRST
+ * (asm 0x445BBE pushes dz then dx, so dx lands as argument 1).
+ *
+ * DirectionPerso additionally returns true regardless of angle when the
+ * target is within 30000 world units (asm 0x445A8B compares the squared
+ * distance against dbl_4B0678 = 9e8). DirectionZone has no such bypass.
+ * ---------------------------------------------------------------------- */
+#define LIEU_FACE_TOLERANCE  0x2400      /* +/- 50.6 degrees, BAM        */
+#define LIEU_FACE_NEAR_SQ    900000000.0 /* dbl_4B0678: (30000 units)^2  */
+
+/* Signed shortest-arc compare against the tolerance. */
+static i32 facing_ok(i32 player_ang, i32 target_ang) {
     i32 d = (target_ang - player_ang) & 0xFFFF;
     if (d > 0x8000) d -= 0x10000;
-    return (d < 0 ? -d : d) < 0x2400;
+    return (d < 0 ? -d : d) < LIEU_FACE_TOLERANCE;
 }
 
-/* BAM angle from (dx,dz), matching engine: -(atan2*65536/2pi) & 0xFFFF. */
-static i32 __attribute__((unused)) bam_angle(i32 dx, i32 dz) {
-    double a = atan2((double)dz, (double)dx) * 65536.0 / (2.0 * M_PI);
+/* BAM angle toward (dx,dz). The engine passes the X delta as atan2's first
+ * argument (sub_44599B @ 0x445BBE), so keep that order here too. */
+static i32 bam_angle(i32 dx, i32 dz) {
+    double a = atan2((double)dx, (double)dz) * 65536.0 / (2.0 * M_PI);
     return (i32)(-(i32)a) & 0xFFFF;
+}
+
+/* Player heading in BAM. scene.c keeps the live heading in cosine-table
+ * units (4096 per turn) and mirrors it into entity+0x1E0. */
+static i32 player_facing_bam(void) {
+    return (i32)player_get_facing() & 0xFFFF;
 }
 
 /* Log a callback the first time it fires (avoid per-frame spam). */
@@ -117,8 +195,23 @@ typedef struct {
     i32 visible;      /* 1 = visible; layer_op(12) toggles */
     i32 combat_ready; /* 1 = in combat mode; layer_op(18) tests */
     i32 anim_state;   /* layer_op(6) r/w with entity anim tag */
+    i32 walking;      /* JOINDRE in flight (engine: entity+0xCBC != 0) */
+    i32 joined;       /* JOINDREPERM in flight (engine: entity+0xCB4 != 0) */
+    /* Walk destination handed over by JOINDRE (engine: entity+0xCC0/0xCC4/
+     * 0xCC8, consumed by the entity movement system). */
+    i32 dest_x, dest_z, dest_facing;
+    u32 walk_ms;      /* last time the walk stepper advanced this actor */
 } ent_state_t;
 static ent_state_t g_ents[ENT_MAX];
+
+/* Engine tests entity+0xCBC / +0xCB4 before accepting a new join
+ * (sub_4453E1 @ 0x445446, sub_446808 @ 0x446871). */
+static i32 ent_is_walking(i32 id) {
+    return (id >= 0 && id < ENT_MAX) ? g_ents[id].walking : 0;
+}
+static i32 ent_is_joined(i32 id) {
+    return (id >= 0 && id < ENT_MAX) ? g_ents[id].joined : 0;
+}
 
 static void ents_clear(void) {
     for (i32 i = 0; i < ENT_MAX; i++) {
@@ -127,6 +220,12 @@ static void ents_clear(void) {
         g_ents[i].visible = 1;
         g_ents[i].combat_ready = 0;
         g_ents[i].anim_state = 0;
+        g_ents[i].walking = 0;
+        g_ents[i].joined = 0;
+        g_ents[i].dest_x = 0;
+        g_ents[i].dest_z = 0;
+        g_ents[i].dest_facing = 0;
+        g_ents[i].walk_ms = 0;
     }
     for (i32 i = 0; i < 4; i++) { g_ents[i].alive = 1; g_ents[i].hp = 0x3FF; }
     g_ents[12].alive = 1;
@@ -155,15 +254,58 @@ static i32 g_op9c_counter = 0;
  * Callback implementations. Signatures match lieu_cb_t exactly.
  * ---------------------------------------------------------------------- */
 
-/* slot 0 sub_44453E "Animation": dispatch by name prefix.
- * 'a' = actor anim, 'p'/'g' = placement, 's' = sound, '2' = 2D sprite. */
+/*
+ * slot 0 sub_44453E @ 0x44453E "Animation" — queue an ANIMATION action.
+ *
+ * asm: strcpy + _strlwr the name, then dispatch on its first character:
+ *   '2'  2D sprite: build "<prefix><name>.ANI", register it in the anim2d
+ *        list (dword_505A90 / byte_505AA0, cap 20 "too many anim2d"), load it
+ *        via sub_41333A @ 0x41333A, node+0x0C = -2 (no owning entity).
+ *   's'  sound-prefixed: drop the 's', node+0x70 = 1.
+ *   'a'  actor animation; "ar..." holds for 500 ms (node+0x40 = 0x1F4),
+ *        anything else completes as soon as the animation is handed over
+ *        (node+0x40 = -1).
+ * A "_NN" suffix is split off the name and stored as a number at node+0x5C.
+ */
 static void cb_named_object(const c8 *name) {
-    if (!name || !name[0]) return;
-    c8 low = name[0];
-    if (low >= 'A' && low <= 'Z') low += 32;
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: named_object first='%c' name='%s'\n", low, name); }
-    (void)low;
+    if (!name || !name[0]) {
+        /* asm 0x444595: "Scripteur, tu es un bougre d'ane" — empty name. */
+        print("lieu_cb: ANIMATION with empty name — ignored\n");
+        return;
+    }
+
+    c8 buf[32];
+    i32 k = 0;
+    while (name[k] && k < (i32)sizeof(buf) - 1) {
+        c8 ch = name[k];
+        if (ch >= 'A' && ch <= 'Z') ch += 32;            /* _strlwr */
+        buf[k] = ch;
+        k++;
+    }
+    buf[k] = '\0';
+
+    lieu_action_t *n = lieu_action_push(LA_ANIMATION);
+    n->actor = 0;                                        /* sub_44411D(0) = player */
+
+    const c8 *body = buf;
+    if (buf[0] == '2') {
+        n->actor = -2;                                   /* 2D sprite, no entity */
+    } else if (buf[0] == 's') {
+        body = buf + 1;                                  /* drop the 's' prefix */
+        n->flag70 = 1;
+    }
+
+    /* "_NN" suffix -> node+0x5C, name truncated at the underscore. */
+    i32 j = 0;
+    while (body[j] && body[j] != '_') j++;
+    n->num5C = (body[j] == '_') ? atoi(body + j + 1) : 0;
+
+    i32 len = (j < (i32)sizeof(n->name) - 1) ? j : (i32)sizeof(n->name) - 1;
+    memcpy(n->name, body, (size_t)len);
+    n->name[len] = '\0';
+
+    /* "ar..." animations hold for 500 ms; everything else runs to handover. */
+    n->duration = (n->name[0] == 'a' && n->name[1] == 'r') ? 500 : -1;
 }
 
 /* slot 1 sub_4449A5 "Dialogue": enqueue dialogue line. */
@@ -173,12 +315,17 @@ static void cb_named_object_int(const c8 *name, i32 v) {
         dlg_say(name);
 }
 
-/* slot 2 sub_444A3E "Evenement": sound/event trigger.
- * id = event source, param = -1 to arm, positive to trigger. */
+/*
+ * slot 2 sub_444A3E @ 0x444A3E "Evenement" — queue an EVENEMENT action.
+ * id lands at node+0x48, the delay at node+0x40. The dispatcher (case 2 of
+ * sub_44A58B @ 0x44AD41) turns it into an object-timer entry: delay >= 0
+ * arms a timer that fires FonctionEditor opcode 4 with `id` once it
+ * expires, delay == -1 cancels the pending timer for that id.
+ */
 static void cb_named_two_ints(i32 id, i32 p) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: named_two_ints id=%d param=%d\n", id, p); }
-    (void)id; (void)p;
+    lieu_action_t *n = lieu_action_push(LA_EVENEMENT);
+    n->id48     = id;
+    n->duration = p;
 }
 /* Cinematique(name): the LIEU script asks to play cutscene <name> (e.g.
  * "SC22_500"). Map to "SCnn.CRH" and QUEUE it — the movie player must run
@@ -260,23 +407,62 @@ const c8 *lieu_spawn_get(i32 i, i32 *wx, i32 *wz, i32 *view) {
     if (view) *view = g_spawns[i].view;
     return g_spawns[i].name;
 }
-/* slot 6 sub_445189 "EtatObjet": object state/placement with 7 stack args.
- * Uppercases name, stores position (tile*600) and flags into action slot.
- * Without action processor: log and no-op. */
+/*
+ * slot 6 sub_445189 @ 0x445189 "EtatObjet" — queue an ETATOBJET action.
+ * asm field map (name is _strupr'd first):
+ *   node+0x30 = name      node+0x14 = p  * 600   (world X)
+ *   node+0x0C = a6        node+0x18 = a1 * 600   (world Y)
+ *   node+0x54 = a7        node+0x1C = a2 * 600   (world Z)
+ *   node+0x20 = a3        node+0x24 = a4         node+0x28 = a5
+ */
 static void cb_named_ex_988(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
                             i32 a4, i32 a5, i32 a6, i32 a7) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: named_ex_988 '%s' p=%d\n", name ? name : "", p); }
-    (void)a1; (void)a2; (void)a3; (void)a4; (void)a5; (void)a6; (void)a7;
+    lieu_action_t *n = lieu_action_push(LA_ETATOBJET);
+    if (name) {
+        i32 k = 0;
+        while (name[k] && k < (i32)sizeof(n->name) - 1) {
+            c8 ch = name[k];
+            if (ch >= 'a' && ch <= 'z') ch -= 32;        /* _strupr */
+            n->name[k] = ch;
+            k++;
+        }
+        n->name[k] = '\0';
+    }
+    n->x     = p  * LIEU_ZONE_SCALE;
+    n->y     = a1 * LIEU_ZONE_SCALE;
+    n->z     = a2 * LIEU_ZONE_SCALE;
+    n->p20   = a3;
+    n->p24   = a4;
+    n->p28   = a5;
+    n->actor = a6;
+    n->p54   = a7;
 }
 
-/* slot 8 sub_4453E1 "Joindre": make actor move to position.
- * Negative actor_id forces join even if already walking.
- * Without entity system: log only. */
-static void cb_actor_934(i32 zone, i32 facing, i32 a2, i32 a3, i32 a4) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: actor_934 id=%d facing=%d\n", zone, facing); }
-    (void)a2; (void)a3; (void)a4;
+/*
+ * slot 8 sub_4453E1 @ 0x4453E1 "Joindre" — walk an actor to a point.
+ *
+ * Signature is (ecx = actor, edx = tile X, a2 = tile Z, a3, a4): the second
+ * argument is a COORDINATE, not a facing angle — asm 0x4454A7/0x4454BC scale
+ * both by 600 the same way PosPerso does. A negative actor id forces the
+ * join even while the actor is already walking; the engine otherwise drops
+ * the request (asm 0x445446: entity+0xCBC != 0 && actor >= 0 -> return).
+ *
+ * asm: node+0x0C = abs(actor)  node+0x14 = X*600  node+0x1C = Z*600
+ *      node+0x10 = a4          node+0x24 = a3
+ */
+static void cb_actor_934(i32 actor, i32 tile_x, i32 tile_z, i32 a3, i32 a4) {
+    i32 id = actor < 0 ? -actor : actor;
+
+    /* Engine guard: skip if this actor already has a walk in flight and the
+     * caller did not force it with a negative id. */
+    if (actor >= 0 && ent_is_walking(id)) return;
+
+    lieu_action_t *n = lieu_action_push(LA_JOINDRE);
+    n->actor = id;
+    n->x     = tile_x * LIEU_ZONE_SCALE;
+    n->z     = tile_z * LIEU_ZONE_SCALE;
+    n->p10   = a4;
+    n->p24   = a3;
 }
 /* ChangeCamera (slot 9, dkev sub_4454F2): a = camera index, b = mode
  * (1 = auto-follow, 2 = forced/locked). The LIEU script drives the in-game
@@ -313,13 +499,13 @@ i32 lieu_poll_level_change(i32 *entry) {
     if (t >= 0) { if (entry) *entry = g_next_entry; g_next_level = -1; }
     return t;
 }
-/* slot 11 sub_44569A "Bruitage": sound placement.
- * If name starts with 'Z', calls sub_44D23D (zone sound). Otherwise enqueues
- * action type 11 with name/id/coord. */
+/* slot 11 sub_44569A @ 0x44569A "Bruitage" — queue a positional sound.
+ * name = WAV base name, id = source entity/object, coord = placement. */
 static void cb_place_95C(const c8 *name, i32 id, i32 coord) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: place_95C '%s' id=%d coord=%d\n", name ? name : "", id, coord); }
-    (void)id; (void)coord;
+    lieu_action_t *n = lieu_action_push(LA_BRUITAGE);
+    if (name) snprintf(n->name, sizeof(n->name), "%s", name);
+    n->actor = id;
+    n->p20   = coord;
 }
 /* slot 12 sub_445765 AjouteZone(id, cx, cz, sizeX, sizeZ, flag): register
  * a static zone rectangle (spatial args scaled tile->world by 600). */
@@ -348,13 +534,71 @@ static void cb_cb_970(i32 a, i32 b) {
             g_ents[a].combat_ready = 0;
     }
 }
-/* Facing tests (DirectionPerso/Zone/Spec). dke has no player-facing control
- * yet, so these are PERMISSIVE (return 1 = "facing satisfied") — the RE
- * recommendation, so zone/conversation triggers fire on entry rather than
- * never. Restore the real facing math once facing input + math land. */
-static i32  cb_query_954(i32 a) { (void)a; return 1; }   /* DirectionPerso */
-static i32  cb_query_944(i32 n) { (void)n; return 1; }   /* DirectionZone  */
-static i32  cb_query_998(i32 a) { (void)a; return 1; }   /* DirectionSpec  */
+/* Defined further down with the object registry / spawn helpers. */
+typedef struct lieu_obj_s lieu_obj_t;
+static const lieu_obj_t *obj_lookup(const c8 *name);
+static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz);
+static i32 obj_world(const lieu_obj_t *o, i32 *x, i32 *z);
+
+/*
+ * slot 15 sub_44599B @ 0x44599B "DirectionPerso" — is the player looking at
+ * actor/object `a`?
+ *   a >= 0  a persona id; its placement is the target.
+ *   a <  0  an object: -a > 1000 selects "IM%02d" (-a - 1000), otherwise
+ *           "OB%02d" (-a), looked up by name.
+ * Within 30000 world units the angle is not consulted at all.
+ * Falls back to permissive when the target or the player transform is
+ * unknown, so a missing placement cannot deadlock a script.
+ */
+static i32 cb_query_954(i32 a) {
+    i32 px, pz;
+    if (!player_get_pos(&px, NULL, &pz)) return 1;
+
+    i32 tx = 0, tz = 0;
+    if (a >= 0) {
+        if (!spawn_get_world(a, &tx, &tz)) return 1;
+    } else {
+        i32 v = -a;
+        c8 name[16];
+        if (v > 1000) snprintf(name, sizeof(name), "IM%02d", v - 1000);
+        else          snprintf(name, sizeof(name), "OB%02d", v);
+        const lieu_obj_t *o = obj_lookup(name);
+        if (!o || !obj_world(o, &tx, &tz)) return 1;
+    }
+
+    double dx = (double)(tx - px), dz = (double)(tz - pz);
+    if (dx * dx + dz * dz < LIEU_FACE_NEAR_SQ) return 1;    /* close enough */
+    i32 pa = player_facing_bam(), ta = bam_angle(tx - px, tz - pz);
+    i32 ok = facing_ok(pa, ta);
+    if (getenv("DKE_FACEDBG"))
+        print("face: DirectionPerso(%d) player=(%d,%d)@0x%X target=(%d,%d)@0x%X dist=%.0f -> %d\n",
+              a, px, pz, pa, tx, tz, ta, sqrt(dx*dx+dz*dz), ok);
+    return ok;
+}
+
+/*
+ * slot 16 sub_445C82 @ 0x445C82 "DirectionZone" — is the player looking at
+ * zone `n`? The engine prefers the entity attached to the zone record
+ * (dword_506CA0[n], zone struct +0x20) and falls back to the zone centre
+ * (dword_506C80[n] / +8); the port only tracks centres. No distance bypass.
+ */
+static i32 cb_query_944(i32 n) {
+    i32 px, pz;
+    if (n < 1 || n >= LIEU_ZONE_COUNT) return 1;
+    if (g_zones[n].center_x == -1) return 1;
+    if (!player_get_pos(&px, NULL, &pz)) return 1;
+    i32 pa = player_facing_bam();
+    i32 ta = bam_angle(g_zones[n].center_x - px, g_zones[n].center_z - pz);
+    i32 ok = facing_ok(pa, ta);
+    if (getenv("DKE_FACEDBG"))
+        print("face: DirectionZone(%d) player=(%d,%d)@0x%X zone=(%d,%d)@0x%X -> %d\n",
+              n, px, pz, pa, g_zones[n].center_x, g_zones[n].center_z, ta, ok);
+    return ok;
+}
+
+/* slot 17 sub_445E99 "DirectionSpec" — target resolution not yet decoded,
+ * so this stays permissive rather than guessing which thing it aims at. */
+static i32 cb_query_998(i32 a) { (void)a; return 1; }
 /* query_990: distance between zone a and b, world units / 600. */
 static i32  cb_query_990(i32 a, i32 b) {
     if (a < 1 || a >= LIEU_ZONE_COUNT || b < 1 || b >= LIEU_ZONE_COUNT) return 0;
@@ -362,12 +606,16 @@ static i32  cb_query_990(i32 a, i32 b) {
     double dz = (double)(g_zones[a].center_z - g_zones[b].center_z);
     return (i32)(sqrt(dx * dx + dz * dz) / LIEU_ZONE_SCALE);
 }
-/* slot 19 sub_446159 "AnimObjet": object animation with params.
- * Enqueues action type 19 with name/coords/flags. */
+/* slot 19 sub_446159 @ 0x446159 "AnimObjet" — queue an object animation.
+ * asm: node+0x30 = name, node+0x20 = p, node+0x24 = a1, node+0x28 = a3,
+ *      node+0x40 = a2 (hold time in ms). */
 static void cb_cb_98C(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: cb_98C '%s' p=%d\n", name ? name : "", p); }
-    (void)a1; (void)a2; (void)a3;
+    lieu_action_t *n = lieu_action_push(LA_ANIMOBJET);
+    if (name) snprintf(n->name, sizeof(n->name), "%s", name);
+    n->p20      = p;
+    n->p24      = a1;
+    n->p28      = a3;
+    n->duration = a2;
 }
 
 /* slot 20 sub_446227 "Bloque": dialogue/cutscene group brackets.
@@ -398,36 +646,57 @@ static void cb_cb_454(i32 a) {
     if (a >= 0 && a < ENT_MAX) ent_kill(a);
 }
 
-/* slot 22 sub_44648B: camera select (positive) or actor stop (negative).
- * Positive a: enqueues camera/zone select action (type 22).
- * Negative a: IMMEDIATE — stops actor movement (clears entity walk/join state).
- * Without entity system, negative branch logs only. */
+/*
+ * slot 22 sub_44648B @ 0x44648B "StopJoindre".
+ *   a < 0  IMMEDIATE: stop actor -a. asm clears the join block
+ *          (entity+0xCB4 = 0, +0xCEC = 0, +0xCF0 = 1, +0xCF4 = 0) and the
+ *          walk block (+0xCBC = 0, +0xD14 = 0, +0xCDC = 1, +0xC44 = 0).
+ *   a >= 0 queue a STOPJOINDRE action.
+ * Both paths first refuse ids > 4 whose entity slot dword_4DF5D0 is empty
+ * ("DirectionPerso : Perso %d non charge !!").
+ */
 static void cb_select_468(i32 a) {
-    if (a < 0) {
-        print("lieu_cb: select_468 stop actor %d\n", -a);
-    } else {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: select_468 select=%d\n", a); }
+    i32 id = a < 0 ? -a : a;
+    if (id > 4 && (id >= ENT_MAX || !g_ents[id].alive)) {
+        print("lieu_cb: StopJoindre : Perso %d non charge !!\n", id);
+        return;
     }
+    if (a < 0) {
+        if (id < ENT_MAX) { g_ents[id].walking = 0; g_ents[id].joined = 0; }
+        print("lieu_cb: StopJoindre — actor %d stopped\n", id);
+        return;
+    }
+    lieu_action_t *n = lieu_action_push(LA_STOPJOINDRE);
+    n->actor = a;
 }
 
-/* slot 23 sub_44660D: flag/state set.
- * Enqueues action type 23 with flag_id and value. */
-static void cb_cb_964(i32 a, i32 b) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: cb_964 flag=%d val=%d\n", a, b); }
-    (void)a; (void)b;
+/* slot 23 sub_44660D @ 0x44660D "VireCol" — queue a script flag write.
+ * asm: node+0x68 = ecx (flag id), node+0x4C = edx (value). */
+static void cb_cb_964(i32 flag_id, i32 value) {
+    lieu_action_t *n = lieu_action_push(LA_VIRECOL);
+    n->p68 = flag_id;
+    n->p4C = value;
 }
 
 /* slot 25: debug/subtitle text — no-op. */
 static void cb_debug_text(const c8 *t, i32 edx, i32 len) { (void)t; (void)edx; (void)len; }
 
-/* slot 27 sub_446808 "JoindrePerm": permanent actor join.
- * Like actor_934 (Joindre) but persistent. Negative zone forces join. */
-static void cb_flush_958(i32 zone, i32 sub) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: flush_958 zone=%d sub=%d\n", zone, sub); }
-    (void)zone; (void)sub;
+/*
+ * slot 27 sub_446808 @ 0x446808 "JoindrePerm" — permanent actor join.
+ * Like Joindre but the actor keeps following its target. Engine drops the
+ * request when the actor already has a permanent join and the id is not
+ * negative (asm 0x446871: entity+0xCB4 != 0 && actor >= 0 -> return), and
+ * when the entity does not exist at all.
+ * asm: node+0x0C = abs(actor), node+0x10 = target.
+ */
+static void cb_flush_958(i32 actor, i32 target) {
+    i32 id = actor < 0 ? -actor : actor;
+    if (id >= ENT_MAX || !g_ents[id].alive) return;      /* sub_44411D -> NULL */
+    if (actor >= 0 && ent_is_joined(id)) return;
+
+    lieu_action_t *n = lieu_action_push(LA_JOINDREPERM);
+    n->actor = id;
+    n->p10   = target;
 }
 
 /* slot 28: cb_46C sets the state slot the handler passed. */
@@ -438,24 +707,48 @@ static i32  cb_query_940(i32 n) {
     return (i32)(((u32)n * ((u32)rand() & 0x7FFFu)) / 32767u) & 0xFFFF;
 }
 
-/* slot 30 sub_446A05: state_toggle(mode, layer).
- * Manages 3 independent dialogue layer tables. When layer=2 the table is
- * reset (memset to -1) and mode set to 1 with counter 0. */
-static void cb_state_toggle(i32 mode, i32 layer) {
-    if (mode < 0 || mode > 2) return;
-    g_layer_mode[mode] = layer;
-    if (layer == 2) {
-        g_layer_mode[mode]    = 1;
-        g_layer_counter[mode] = 0;
+/*
+ * slot 30 sub_446A05 @ 0x446A05 "SelectPile" — pick the action pile.
+ *
+ * `pile` becomes the allocation target (dword_505C30 @ 0x505C30) and `mode`
+ * is written to that pile's enable flag (dword_4FC194 / dword_507274 /
+ * dword_507270). mode == 2 means RESET: the engine memsets the pile's 0x2EE0
+ * bytes (100 nodes x 0x78) to -1, forces the enable flag back to 1 and zeroes
+ * the count. Anything else is stored as-is, so mode 0 parks the pile.
+ */
+static void cb_state_toggle(i32 pile, i32 mode) {
+    if (pile < 0 || pile > 2) return;
+
+    lieu_action_select_pile(pile);
+    g_layer_mode[pile] = mode;
+
+    if (mode == 2) {
+        lieu_action_clear_pile(pile);
+        g_layer_mode[pile]    = 1;
+        g_layer_counter[pile] = 0;
+    } else {
+        lieu_action_enable_pile(pile, mode);
     }
 }
 
-/* slot 32 sub_446BE9 "LinkObjet": object attach/toggle.
- * Enqueues action type 32 with name/zone/flags. */
-static void cb_attach_99C(i32 zone, const c8 *name, i32 a, i32 b) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: attach_99C zone=%d '%s'\n", zone, name ? name : ""); }
-    (void)a; (void)b;
+/* slot 32 sub_446BE9 @ 0x446BE9 "LinkObjet" — attach an object to a holder.
+ * asm: name _strupr'd into node+0x30, node+0x0C = holder id,
+ *      node+0x54 = a, node+0x5C = b. */
+static void cb_attach_99C(i32 holder, const c8 *name, i32 a, i32 b) {
+    lieu_action_t *n = lieu_action_push(LA_LINKOBJET);
+    if (name) {
+        i32 k = 0;
+        while (name[k] && k < (i32)sizeof(n->name) - 1) {
+            c8 ch = name[k];
+            if (ch >= 'a' && ch <= 'z') ch -= 32;        /* _strupr */
+            n->name[k] = ch;
+            k++;
+        }
+        n->name[k] = '\0';
+    }
+    n->actor = holder;
+    n->p54   = a;
+    n->num5C = b;
 }
 
 /* -------------------------------------------------------------------------
@@ -604,20 +897,24 @@ static i32 cb_layer_op(i32 op, i32 layer, i32 arg) {
     }
 }
 
-/* slot 36 sub_443273: enqueues action type 39 with ecx at action[0x48].
- * Without action processor: no-op. */
-static void cb_cb_950(i32 a) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: cb_950 a=%d\n", a); }
-    (void)a;
+/* slot 36 sub_443273 @ 0x443273 "FreeAnim" — release a 2D anim slot.
+ * asm: type 0x27 (FREEANIM), node+0x48 = slot. */
+static void cb_cb_950(i32 slot) {
+    lieu_action_t *n = lieu_action_push(LA_FREEANIM);
+    n->id48 = slot;
 }
 
-/* slot 37 sub_44356F: enqueues action type 35 with a1 at action[0x70] and
- * a2 at action[0x48]. Guards a1 < 20. */
-static void cb_cb_97C(i32 a, i32 b) {
-    static i32 w = 0;
-    if (!w) { w = 1; print("lieu_cb: cb_97C a=%d b=%d\n", a, b); }
-    (void)a; (void)b;
+/* slot 37 sub_44356F @ 0x44356F "PlayAnim" — start a 2D anim slot.
+ * asm: type 0x23 (PLAYANIM), node+0x48 = slot, node+0x70 = mode. Slots
+ * >= 20 are rejected with "Plantage! animation invalid". */
+static void cb_cb_97C(i32 slot, i32 mode) {
+    if (slot >= 20) {
+        print("lieu_cb: Plantage! animation invalid (slot %d)\n", slot);
+        return;
+    }
+    lieu_action_t *n = lieu_action_push(LA_PLAYANIM);
+    n->id48   = slot;
+    n->flag70 = mode;
 }
 
 /* slot 39 sub_446D84 "Diversempile": deferred action dispatch.
@@ -739,6 +1036,385 @@ static const lieu_cb_t g_lieu_cb_impl = {
 };
 
 /* -------------------------------------------------------------------------
+ * Script-visible object state.
+ *
+ * ETATOBJET / LINKOBJET / VIRECOL / the 2D-anim opcodes all mutate engine
+ * state dke has not ported (object meshes at dword_4DF5D0, the anim2d slot
+ * table at anim_state_531BE0, the collision flag table). We keep the values
+ * in these registries so the state is real and queryable rather than lost,
+ * and so a later render/audio pass can consume it without re-reversing the
+ * scripts.
+ * ---------------------------------------------------------------------- */
+#define LIEU_OBJ_MAX 64
+struct lieu_obj_s {
+    c8  name[32];
+    i32 x, y, z;      /* world units (tile x600) */
+    i32 p20, p24, p28;
+    i32 owner;        /* entity the object belongs to, -1 = none */
+    i32 linked_to;    /* LINKOBJET holder id, -1 = unlinked      */
+    i32 used;
+};
+static lieu_obj_t g_objs[LIEU_OBJ_MAX];
+static i32        g_obj_count = 0;
+
+static const lieu_obj_t *obj_lookup(const c8 *name) {
+    if (!name || !name[0]) return NULL;
+    for (i32 i = 0; i < g_obj_count; i++)
+        if (strcmp(g_objs[i].name, name) == 0) return &g_objs[i];
+    return NULL;
+}
+
+/* World position recorded for an object by ETATOBJET. */
+static i32 obj_world(const lieu_obj_t *o, i32 *x, i32 *z) {
+    if (!o) return 0;
+    if (x) *x = o->x;
+    if (z) *z = o->z;
+    return 1;
+}
+
+static lieu_obj_t *obj_find(const c8 *name, i32 create) {
+    if (!name || !name[0]) return NULL;
+    for (i32 i = 0; i < g_obj_count; i++)
+        if (strcmp(g_objs[i].name, name) == 0) return &g_objs[i];
+    if (!create || g_obj_count >= LIEU_OBJ_MAX) return NULL;
+    lieu_obj_t *o = &g_objs[g_obj_count++];
+    memset(o, 0, sizeof(*o));
+    snprintf(o->name, sizeof(o->name), "%s", name);
+    o->owner = -1;
+    o->linked_to = -1;
+    o->used = 1;
+    return o;
+}
+
+/* VIRECOL flag table (engine: per-level collision/state flags). */
+#define LIEU_FLAG_MAX 128
+static i32 g_flags[LIEU_FLAG_MAX];
+
+/* 2D anim slots driven by PLAYANIM / PAUSEANIM / LOADANIM / FREEANIM.
+ * 0 = free, 1 = loaded, 2 = playing, 3 = paused. */
+#define LIEU_ANIM_SLOTS 20
+static i32 g_anim_slot[LIEU_ANIM_SLOTS];
+
+static void objs_clear(void) {
+    memset(g_objs, 0, sizeof(g_objs));
+    g_obj_count = 0;
+    memset(g_flags, 0, sizeof(g_flags));
+    memset(g_anim_slot, 0, sizeof(g_anim_slot));
+}
+
+/* Move a placed persona to a world position (spawn registry holds tiles). */
+static void spawn_set_world(i32 id, i32 wx, i32 wz) {
+    for (i32 i = 0; i < g_spawn_count; i++) {
+        if (g_spawns[i].id != id) continue;
+        g_spawns[i].wx = wx / LIEU_ZONE_SCALE;
+        g_spawns[i].wz = wz / LIEU_ZONE_SCALE;
+        return;
+    }
+}
+
+static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz) {
+    for (i32 i = 0; i < g_spawn_count; i++) {
+        if (g_spawns[i].id != id) continue;
+        if (wx) *wx = g_spawns[i].wx * LIEU_ZONE_SCALE;
+        if (wz) *wz = g_spawns[i].wz * LIEU_ZONE_SCALE;
+        return 1;
+    }
+    return 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Requested animation clips.
+ *
+ * An ANIMATION action's name is the CAN clip id and carries its own persona:
+ * "p12arr03" is Kaly's arrival-03 clip, "p00mar25" is Arkhan walking. The
+ * engine resolves the entity and calls play_entity_animation; the port has no
+ * entity animation player, so the clip is published here and the scene
+ * renderer swaps the persona's CAN over to it.
+ * ---------------------------------------------------------------------- */
+#define LIEU_CLIP_PERSONAS 100
+typedef struct {
+    c8  clip[16];
+    i32 serial;      /* bumped on every change so the renderer can notice */
+} lieu_clip_t;
+static lieu_clip_t g_clips[LIEU_CLIP_PERSONAS];
+
+/* "p12arr03" -> 12; -1 when the name does not start with p/g + 2 digits. */
+static i32 clip_persona_num(const c8 *name) {
+    if (!name) return -1;
+    c8 c = name[0];
+    if (c != 'p' && c != 'g' && c != 'P' && c != 'G') return -1;
+    if (name[1] < '0' || name[1] > '9') return -1;
+    if (name[2] < '0' || name[2] > '9') return -1;
+    return (name[1] - '0') * 10 + (name[2] - '0');
+}
+
+static void lieu_clip_set(i32 persona, const c8 *clip) {
+    if (persona < 0 || persona >= LIEU_CLIP_PERSONAS || !clip) return;
+    if (strcmp(g_clips[persona].clip, clip) == 0) return;
+    snprintf(g_clips[persona].clip, sizeof(g_clips[persona].clip), "%s", clip);
+    g_clips[persona].serial++;
+}
+
+const c8 *lieu_persona_clip(i32 persona, i32 *serial) {
+    if (persona < 0 || persona >= LIEU_CLIP_PERSONAS) return NULL;
+    if (!g_clips[persona].clip[0]) return NULL;
+    if (serial) *serial = g_clips[persona].serial;
+    return g_clips[persona].clip;
+}
+
+/* Walk speed for scripted joins: 3 tiles/second (1800 world units/s). */
+#define LIEU_WALK_UNITS_PER_SEC 1800
+
+/*
+ * lieu_walk_update — stand-in for the engine's entity movement system.
+ *
+ * JOINDRE (case 8 of sub_44A58B @ 0x44B5E3) only writes a destination to
+ * entity+0xCC0/0xCC4/0xCC8 and raises the walk flags entity+0xCBC / +0xC44,
+ * then completes; the entity update walks the actor there over the following
+ * frames while the action pile keeps draining. dke has no entity movement
+ * system, so we advance the recorded placements here instead — same effect,
+ * same non-blocking behaviour.
+ */
+static void lieu_walk_update(u32 now_ms) {
+    for (i32 id = 0; id < ENT_MAX; id++) {
+        if (!g_ents[id].walking) continue;
+
+        i32 cx = 0, cz = 0;
+        if (!spawn_get_world(id, &cx, &cz)) { g_ents[id].walking = 0; continue; }
+
+        u32 last = g_ents[id].walk_ms;
+        g_ents[id].walk_ms = now_ms;
+        if (last == 0 || now_ms <= last) continue;
+
+        i32 dx = g_ents[id].dest_x - cx;
+        i32 dz = g_ents[id].dest_z - cz;
+        double dist = sqrt((double)dx * dx + (double)dz * dz);
+        double step = (double)LIEU_WALK_UNITS_PER_SEC * (now_ms - last) / 1000.0;
+
+        if (dist <= step || dist < 1.0) {
+            spawn_set_world(id, g_ents[id].dest_x, g_ents[id].dest_z);
+            g_ents[id].walking = 0;
+            print("lieu_act: actor %d arrived at (%d,%d)\n",
+                  id, g_ents[id].dest_x, g_ents[id].dest_z);
+            continue;
+        }
+        spawn_set_world(id, cx + (i32)(dx * step / dist),
+                            cz + (i32)(dz * step / dist));
+    }
+}
+
+/*
+ * lieu_action_dispatch — port of the 40-case switch in sub_44A58B @ 0x44A58B.
+ *
+ * Returns 1 when the action is complete (the driver then calls
+ * lieu_action_done -> sub_4442EE @ 0x4442EE), 0 to hold it at the head of the
+ * pile for another frame. The original expresses "hold" through the entity
+ * struct (entity+0xC28 start time vs node+0x40) and the per-pile busy flag
+ * dword_4B5418[]; we hold on node->start_ms instead.
+ */
+i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
+    if (!n) return 1;
+
+    /* Generic hold: a node with a positive duration stays at the head until
+     * it elapses (asm 0x44ACB2: now - entity[0xC28] > node[0x40]). */
+    i32 held = (n->duration >= 0 &&
+                (i32)(now_ms - n->start_ms) <= n->duration);
+
+    switch (n->type) {
+
+    case LA_ANIMATION: {                       /* case 0 @ 0x44ABB7 */
+        if (n->aux_state == 0) {
+            n->aux_state = 1;
+            /* asm: get_animation_id(node+0x30) -> play_entity_animation, then
+             * entity+0xC48 = node+0x5C. The name IS the CAN clip id and
+             * encodes its persona ("p12arr03" -> P12), so publish it for the
+             * renderer to pick up; sub_44411D(0) only supplies the fallback
+             * entity for clips that name no persona. */
+            i32 pn = clip_persona_num(n->name);
+            if (pn >= 0) {
+                lieu_clip_set(pn, n->name);
+            } else if (n->actor >= 0 && n->actor < ENT_MAX) {
+                g_ents[n->actor].anim_state = n->num5C ? n->num5C : 1;
+            }
+            print("lieu_act: ANIMATION '%s' persona=%d num=%d sound=%d hold=%d\n",
+                  n->name, pn, n->num5C, n->flag70, n->duration);
+        }
+        return held ? 0 : 1;
+    }
+
+    case LA_EVENEMENT:                         /* case 2 @ 0x44AD41 */
+        /* duration -1 cancels the pending timer, otherwise arm one that
+         * fires opcode 4 with node+0x48 (asm 0x44AE21..0x44AEF0). */
+        if (n->duration == -1) {
+            lieu_timer_remove(n->id48);
+            print("lieu_act: EVENEMENT cancel id=%d\n", n->id48);
+        } else {
+            lieu_timer_add(n->id48, n->duration, now_ms);
+            print("lieu_act: EVENEMENT arm id=%d in %d ms\n", n->id48, n->duration);
+        }
+        return 1;
+
+    case LA_ETATOBJET: {                       /* case 6 @ 0x44B00F */
+        lieu_obj_t *o = obj_find(n->name, 1);
+        if (o) {
+            /* asm writes entity+0xCC/0xD0/0xD4 = node+0x14/0x18/0x1C and
+             * entity+0xE0/0xE4/0xE8/0xEC = node+0x20/0x24/0x28/0x54. */
+            o->x = n->x; o->y = n->y; o->z = n->z;
+            o->p20 = n->p20; o->p24 = n->p24; o->p28 = n->p28;
+            o->owner = n->actor;
+        }
+        print("lieu_act: ETATOBJET '%s' owner=%d w=(%d,%d,%d) p=(%d,%d,%d)\n",
+              n->name, n->actor, n->x, n->y, n->z, n->p20, n->p24, n->p28);
+        return 1;
+    }
+
+    case LA_JOINDRE: {                         /* case 8 @ 0x44B5E3 */
+        /*
+         * Resolve the destination, hand it to the actor, and COMPLETE. The
+         * original does not hold the node while the actor walks — the entity
+         * movement system consumes entity+0xCC0/0xCC4/0xCC8 on later frames,
+         * so the pile keeps draining behind the walk. lieu_walk_update()
+         * below plays the part of that movement system.
+         *
+         * node+0x10 discriminates the three call shapes:
+         *   > 0   target actor id — walk to that actor
+         *   < 0   zone reference, index -(v)-1 into the zone table
+         *         (engine dword_506C80, stride 0x24)
+         *   == 0  plain destination in node+0x14 / node+0x1C
+         * node+0x24 is a FACING angle, supplied by the script or computed
+         * from actor -> target by sub_4440A6 @ 0x4440A6.
+         */
+        i32 id = n->actor;
+        if (id < 0 || id >= ENT_MAX) return 1;
+
+        i32 ax = 0, az = 0;
+        i32 have_actor = spawn_get_world(id, &ax, &az);
+        if (!have_actor) {
+            /* No placement record: the player (driven by input here) and any
+             * actor the port has not spawned. asm 0x44B608 bails the same way
+             * when sub_44411D returns NULL. */
+            print("lieu_act: JOINDRE actor=%d has no placement — skipped\n", id);
+            return 1;
+        }
+
+        g_ents[id].joined = 0;                  /* asm 0x44B622: entity+0xCB4 = 0 */
+
+        i32 tx = 0, tz = 0;
+        i32 have_target = (n->p10 > 0) ? spawn_get_world(n->p10, &tx, &tz) : 0;
+
+        if (have_target) {
+            /* asm 0x44B63C: with an explicit destination the TARGET's
+             * position wins; without one the actor holds station and only
+             * the facing is computed. */
+            if (n->x || n->z || n->p24) { n->x = tx; n->z = tz; }
+            else                        { n->x = ax; n->z = az; }
+            n->p24 = bam_angle(tx - ax, tz - az);
+        } else if (n->x == 0 && n->z == 0) {
+            if (n->p10 < 0 && n->p24 == 0) {
+                /* Zone reference: face the zone centre, stay put. */
+                i32 zi = -n->p10 - 1;
+                if (zi >= 0 && zi < LIEU_ZONE_COUNT && g_zones[zi].center_x != -1)
+                    n->p24 = bam_angle(g_zones[zi].center_x - ax,
+                                       g_zones[zi].center_z - az);
+            }
+            n->x = ax;
+            n->z = az;
+        }
+
+        /* asm 0x44B838: a non-player actor in combat refuses the join. */
+        if (g_ents[id].combat_ready && id != 0) {
+            print("lieu_act: JOINDRE executed during COMBAT by perso %d\n", id);
+            return 1;
+        }
+
+        g_ents[id].dest_x      = n->x;
+        g_ents[id].dest_z      = n->z;
+        g_ents[id].dest_facing = n->p24;
+        g_ents[id].walking     = 1;
+        g_ents[id].walk_ms     = now_ms;
+        print("lieu_act: JOINDRE actor=%d (%d,%d) -> (%d,%d) facing=0x%X\n",
+              id, ax, az, n->x, n->z, n->p24);
+        return 1;
+    }
+
+    case LA_JOINDREPERM: {                     /* case 0x1B */
+        i32 id = n->actor;
+        if (id < 0 || id >= ENT_MAX) return 1;
+        /* Permanent join: the actor keeps following its target. Without a
+         * follow controller we record the link; the one-shot walk toward the
+         * target is left to the JOINDRE the scripts pair it with. */
+        g_ents[id].joined = 1;
+        print("lieu_act: JOINDREPERM actor=%d target=%d\n", id, n->p10);
+        return 1;
+    }
+
+    case LA_BRUITAGE:                          /* case 0x0B */
+        /* Positional sound: needs the sound emitter path (sub_44D23D for
+         * 'Z'-prefixed zone sounds). Recorded, not yet audible. */
+        print("lieu_act: BRUITAGE '%s' src=%d coord=%d (no emitter yet)\n",
+              n->name, n->actor, n->p20);
+        return 1;
+
+    case LA_ANIMOBJET: {                       /* case 0x13 */
+        if (n->aux_state == 0) {
+            n->aux_state = 1;
+            lieu_obj_t *o = obj_find(n->name, 1);
+            if (o) { o->p20 = n->p20; o->p24 = n->p24; o->p28 = n->p28; }
+            print("lieu_act: ANIMOBJET '%s' p=(%d,%d,%d) hold=%d\n",
+                  n->name, n->p20, n->p24, n->p28, n->duration);
+        }
+        return held ? 0 : 1;
+    }
+
+    case LA_STOPJOINDRE:                       /* case 0x16 */
+        if (n->actor >= 0 && n->actor < ENT_MAX) {
+            g_ents[n->actor].walking = 0;
+            g_ents[n->actor].joined  = 0;
+        }
+        print("lieu_act: STOPJOINDRE actor=%d\n", n->actor);
+        return 1;
+
+    case LA_VIRECOL:                           /* case 0x17 */
+        if (n->p68 >= 0 && n->p68 < LIEU_FLAG_MAX) g_flags[n->p68] = n->p4C;
+        print("lieu_act: VIRECOL flag[%d] = %d\n", n->p68, n->p4C);
+        return 1;
+
+    case LA_LINKOBJET: {                       /* case 0x20 */
+        lieu_obj_t *o = obj_find(n->name, 1);
+        if (o) o->linked_to = n->actor;
+        print("lieu_act: LINKOBJET '%s' -> holder %d (%d,%d)\n",
+              n->name, n->actor, n->p54, n->num5C);
+        return 1;
+    }
+
+    case LA_PLAYANIM:                          /* case 0x23 */
+        if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 2;
+        print("lieu_act: PLAYANIM slot=%d mode=%d\n", n->id48, n->flag70);
+        return 1;
+
+    case LA_PAUSEANIM:                         /* case 0x24 */
+        if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 3;
+        print("lieu_act: PAUSEANIM slot=%d\n", n->id48);
+        return 1;
+
+    case LA_LOADANIM:                          /* case 0x26 */
+        if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 1;
+        print("lieu_act: LOADANIM slot=%d\n", n->id48);
+        return 1;
+
+    case LA_FREEANIM:                          /* case 0x27 */
+        if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 0;
+        print("lieu_act: FREEANIM slot=%d\n", n->id48);
+        return 1;
+
+    default:
+        print("lieu_act: %s (type %d) not wired — completing\n",
+              lieu_action_name(n->type), n->type);
+        return 1;
+    }
+}
+
+/* -------------------------------------------------------------------------
  * Public driver — scene.c calls these.
  * ---------------------------------------------------------------------- */
 void lieu_enter(i32 level_id) {
@@ -747,6 +1423,8 @@ void lieu_enter(i32 level_id) {
     memset(g_lieu_state, 0, sizeof(g_lieu_state));
     zones_clear();   /* engine memsets dword_506C80 to -1 before INIT arms */
     ents_clear();    /* reset entity alive/HP/visibility state              */
+    objs_clear();    /* object/flag/anim-slot registries                    */
+    lieu_action_reset();  /* drop stale actions + object timers            */
     g_spawn_count = 0;
     g_op9c_counter = 0;
     g_lieu_room_entered = 0;
@@ -807,10 +1485,17 @@ i32 lieu_detect_zone(void) {
     return -1;
 }
 
-void lieu_tick(void) {
+void lieu_tick(u32 now_ms) {
     /* Per-frame: engine calls op -1 every frame (drain + tick_body). */
     if (g_lieu_level == 1)
         lieu01_fonction_editor(LIEU_OP_TICK, g_lieu_state, 0, 0);   /* op -1 */
+
+    /* Then drain the action piles and fire expired object timers, as the
+     * engine does from sub_461468 @ 0x46180A -> sub_44CDB8 @ 0x44CDB8. */
+    lieu_action_run(now_ms);
+
+    /* Walk any actor JOINDRE handed a destination (engine: entity update). */
+    lieu_walk_update(now_ms);
 }
 
 void lieu_exit(void) {

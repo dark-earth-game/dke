@@ -351,10 +351,12 @@ typedef struct {
     i32        count;
     ome_objc_t objc;                           /* skeleton for FK            */
     i32        objc_loaded;
-    can_anim_t can;                            /* ARR01 arrival clip         */
+    can_anim_t can;                            /* current clip               */
     i32        can_loaded;
     i32        frame;
     u32        can_last;
+    i32        clip_serial;                    /* last LIEU clip applied     */
+    i32        foot_off;                       /* lowest bone, model units   */
 } persona_mesh_t;
 static persona_mesh_t g_persona_cache[PERSONA_CACHE_MAX];
 static i32            g_persona_cache_n = 0;
@@ -439,9 +441,60 @@ static i32 persona_mesh_load(i32 num) {
         pm->can_loaded = can_load_named(chost, "g01arr01", &pm->can);
     }
 
+    pm->clip_serial = 0;
+    /* Ground offset. A persona's skeleton is laid out along bone X — head at
+     * the positive end, feet at the negative end (P00: X[-121123..34416]) —
+     * and the render transform maps that axis to world height. The root sits
+     * at the hips, so dropping the model by its lowest bone puts the feet on
+     * the ground. This replaces the hand-tuned -120000 that only ever suited
+     * P00 (P12's feet are at -109645, so it sank ~11k units into the floor). */
+    pm->foot_off = -120000;
+    if (pm->objc_loaded && pm->objc.n_atomslots > 0) {
+        i32 lo = 0x7FFFFFFF;
+        for (i32 b = 0; b < pm->objc.n_atomslots; b++)
+            if (pm->objc.world_tx[b] < lo) lo = pm->objc.world_tx[b];
+        if (lo != 0x7FFFFFFF) pm->foot_off = lo;
+        print("scene: P%02d ground offset %d (lowest bone)\n", num, pm->foot_off);
+    }
     print("scene: loaded persona P%02d.OME (%d atoms, objc=%d, can=%d)\n",
           num, pm->count, pm->objc_loaded, pm->can_loaded);
     return g_persona_cache_n++;
+}
+
+/*
+ * persona_apply_script_clip — swap a persona onto the CAN clip the LIEU
+ * script asked for.
+ *
+ * ANIMATION actions carry the clip id ("p12arr03"), which is what the engine
+ * feeds play_entity_animation. We reload the persona's CAN when the requested
+ * clip changes, falling back to whatever was loaded if the clip is missing
+ * from the file.
+ */
+static void persona_apply_script_clip(persona_mesh_t *pm) {
+    if (!pm || pm->num < 0) return;
+
+    i32 serial = 0;
+    const c8 *clip = lieu_persona_clip(pm->num, &serial);
+    if (!clip || serial == pm->clip_serial) return;
+    pm->clip_serial = serial;
+
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    c8 cvp[32], chost[512];
+    snprintf(cvp, sizeof(cvp), "ANM>P%02d.CAN", pm->num);
+    if (!ls_resolve_path(base, cvp, chost, (i32)sizeof(chost))) return;
+
+    can_anim_t next = {0};
+    if (!can_load_named(chost, clip, &next)) {
+        print("scene: P%02d clip '%s' not in %s — keeping current\n",
+              pm->num, clip, cvp);
+        return;
+    }
+    pm->can        = next;
+    pm->can_loaded = 1;
+    pm->frame      = 0;
+    pm->can_last   = 0;
+    print("scene: P%02d -> script clip '%s' (%d frames)\n",
+          pm->num, clip, next.n_frames);
 }
 
 
@@ -1140,7 +1193,7 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
     if (full_init || entity == g_player_entity) {
         bone_link_slots(entity, 0x1B, 0x1F);  /* @ 0x473952 */
     } else {
-        u8 *desc = (u8 *)(uintptr_t)ent_get(entity, 0xAC);
+        u8 *desc = *(u8 **)((u8 *)entity + 0xAC);
         i32 slot = desc ? (i32)(u32)desc[0x99] : 0x1B;
         bone_link_slots(entity, slot, 0x1F);   /* @ 0x473966 */
     }
@@ -1278,7 +1331,7 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
             i32 phase = ent_get_i32(g_player_entity, 0xB0);
             if (phase >= 4) {
                 /* action_ptr = [entity+0xAC], zone_id = [action_ptr+0x97] */
-                u8 *action_ptr = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+                u8 *action_ptr = *(u8 **)((u8 *)g_player_entity + 0xAC);
                 if (action_ptr) {
                     u8 cur_zone = action_ptr[0x97];
                     if (cur_zone != 0) {
@@ -1296,7 +1349,7 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
         if (process_zone_transition(zone_obj)) {          /* sub_47398A @ 0x47398A */
             /* Dispatch trigger event to scripting */
             if (g_player_entity) {
-                u8 *action_ptr = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+                u8 *action_ptr = *(u8 **)((u8 *)g_player_entity + 0xAC);
                 u8 zone_id = action_ptr ? action_ptr[0x97] : 0;
                 dispatch_zone_trigger(zone_id, g_player_entity);  /* sub_462BCC @ 0x462BCC */
             }
@@ -1577,7 +1630,7 @@ static void hud_draw_health_bar(i32 mode) {
     /* Dirty check: skip redraw if nothing changed and mode==0 */
     i32 cur_health = 0;
     if (g_player_entity) {
-        u8 *desc = (u8 *)(uintptr_t)ent_get(g_player_entity, 0xAC);
+        u8 *desc = *(u8 **)((u8 *)g_player_entity + 0xAC);
         if (desc) cur_health = *(i32 *)(desc + 0x84);
     }
 
@@ -1804,10 +1857,19 @@ static void apply_model_transform(void *entity, void *transform) {
     /* apply_model_transform @ 0x4359FF */
     if (!entity) return;
     u8 *ent = (u8 *)entity;
-    *(i32 *)(ent + 0x54) = 2;  /* transforming state */
+    /* Read the scene root BEFORE touching +0x54. The original walks the two
+     * as separate 32-bit slots; here +0x50 holds a 64-bit host pointer that
+     * spans 0x50..0x57, so the asm's "set state, then load root" order would
+     * shred the pointer's high half and hand a wild address to
+     * initialize_effect_position. */
     void *scene_root = *(void **)(ent + 0x50);
+    /* The original brackets this with entity+0x54 = 2 (transforming) then 1
+     * (ready). Both writes are DROPPED here: +0x50 holds a 64-bit host
+     * pointer spanning 0x50..0x57, so storing an i32 at +0x54 overwrites its
+     * high half. That corruption persisted across level loads and crashed
+     * process_color_palette on the next room, which walks entity+0x50 as a
+     * scene hierarchy. Nothing in the port reads +0x54. */
     initialize_effect_position(scene_root, transform, (i32 *)(ent + 0x64));
-    *(i32 *)(ent + 0x54) = 1;  /* ready state */
 }
 
 /* system_get_gametime — read current system game timer.
@@ -2331,6 +2393,27 @@ i32 scene_load_level(i32 level_id) {
     print("scene: phase 17 — render_sprite_time_based_effect + sub_45619D\n");
     render_sprite_time_based_effect();   /* sub_404F80 @ 0x404F80 */
     build_nav_grid();                        /* sub_45619D @ 0x45619D */
+    if (getenv("DKE_FLOORDBG") && g_world.world_controller) {
+        const sol_limit_t *w = g_world.world_controller;
+        print("floor: world_ctrl verts=%d minY=%d maxY=%d\n",
+              w->vertex_count, w->min_y, w->max_y);
+        for (i32 vi = 0; vi < w->vertex_count && vi < 16; vi++)
+            print("floor:   v%d = (%d, %d, %d)\n", vi,
+                  w->vertices[vi][0], w->vertices[vi][1], w->vertices[vi][2]);
+        for (i32 zi = 0; zi < g_world.num_collisions; zi++) {
+            const sol_limit_t *z = g_world.collision_zones[zi];
+            if (!z) continue;
+            print("floor: coll[%d] '%s' flags=0x%X X[%d..%d] Z[%d..%d] cx=%d cy=%d\n",
+                  zi, z->name, z->flags, z->min_x, z->max_x, z->min_y, z->max_y,
+                  z->center_x, z->center_y);
+        }
+        for (i32 zi = 0; zi < g_world.num_cameras; zi++) {
+            const sol_limit_t *z = g_world.camera_zones[zi];
+            if (!z) continue;
+            print("floor: cam[%d] '%s' X[%d..%d] Z[%d..%d]\n",
+                  zi, z->name, z->min_x, z->max_x, z->min_y, z->max_y);
+        }
+    }
 
     /* -----------------------------------------------------------------
      * Phase 18 — viewport globals
@@ -2397,15 +2480,24 @@ i32 scene_load_level(i32 level_id) {
     print("scene: phase 22 — apply_model_transform\n");
     /* asm: EDX = entity+0x8C (transform context), ECX = entity */
     if (g_player_entity) {
-        void *xf = *(void **)((u8 *)g_player_entity + 0x8C);
+        /* +0x8C is a 32-bit field in the original (consumed as a world Y by
+         * initialize_effect_position @ 0x4357CF), not a host pointer — read it
+         * as i32 so the adjacent +0x90 slot is not folded into the value. */
+        void *xf = (void *)(intptr_t)ent_get_i32(g_player_entity, 0x8C);
         apply_model_transform(g_player_entity, xf);  /* apply_model_transform @ 0x4359FF */
     }
     if (g_companion_entity) {
-        void *xf = *(void **)((u8 *)g_companion_entity + 0x8C);
+        /* +0x8C is a 32-bit field in the original (consumed as a world Y by
+         * initialize_effect_position @ 0x4357CF), not a host pointer — read it
+         * as i32 so the adjacent +0x90 slot is not folded into the value. */
+        void *xf = (void *)(intptr_t)ent_get_i32(g_companion_entity, 0x8C);
         apply_model_transform(g_companion_entity, xf);            /* apply_model_transform @ 0x4359FF */
     }
     if (g_secondary_companion_entity) {
-        void *xf = *(void **)((u8 *)g_secondary_companion_entity + 0x8C);
+        /* +0x8C is a 32-bit field in the original (consumed as a world Y by
+         * initialize_effect_position @ 0x4357CF), not a host pointer — read it
+         * as i32 so the adjacent +0x90 slot is not folded into the value. */
+        void *xf = (void *)(intptr_t)ent_get_i32(g_secondary_companion_entity, 0x8C);
         apply_model_transform(g_secondary_companion_entity, xf);  /* apply_model_transform @ 0x4359FF */
     }
 
@@ -2710,9 +2802,10 @@ static void objc_update_bone_positions(ome_objc_t *objc, const can_frame_t *kf) 
     for (i32 j = 0; j < n; j++) {
         const ome_bone_t *b = &objc->bones[j];
         i32 rx_idx = 0, ry_idx = 0;
-        if (kf && j < CAN_MAX_ATOMSLOTS) {
-            rx_idx = (i32)((u32)kf->atoms[j].rx >> 4) & 0xFFF;
-            ry_idx = (i32)((u32)kf->atoms[j].ry >> 4) & 0xFFF;
+        i32 ch = objc->can_slot[j];      /* keyframe channel for this bone */
+        if (kf && ch >= 0 && ch < CAN_MAX_ATOMSLOTS) {
+            rx_idx = (i32)((u32)kf->atoms[ch].rx >> 4) & 0xFFF;
+            ry_idx = (i32)((u32)kf->atoms[ch].ry >> 4) & 0xFFF;
         }
         scene_mat3_t local_rot = scene_mat3_from_rx_ry(rx_idx, ry_idx);
 
@@ -2756,7 +2849,7 @@ i32 scene_render(system_t *sys) {
     /* Per-frame LIEU scripting (native hand-port; level 1 only for now),
      * mirroring the engine's per-frame driver (dkev sub_44968B):
      *   op -1 tick every frame, then op 3 for the current zone (if any). */
-    lieu_tick();
+    lieu_tick(sys ? sys->timer.tick : 0);
     {
         static i32 s_last_zone = -2;
         i32 zone = lieu_detect_zone();
@@ -2783,6 +2876,15 @@ i32 scene_render(system_t *sys) {
             print("scene: CHANGEPIECE -> load level %d (entry %d)\n", next, entry);
             lieu_exit();
             g_player_seeded = 0;
+            /* Release the old room's world data (the engine's teardown
+             * sub_46E4A8 @ 0x46E4A8 does this before loading the target).
+             * scene_load_level's phase 8 mirrors the asm's
+             * "cmp world_controller, 0 / jnz skip", so without clearing it
+             * the new room silently keeps the previous room's boundary
+             * polygon, collision zones and camera regions — L02 was building
+             * a nav grid byte-identical to L01's. */
+            world_free();
+            g_world_controller = NULL;
             scene_load_level(next);
             return 0;   /* new level loaded; resume next frame */
         }
@@ -2923,8 +3025,54 @@ i32 scene_render(system_t *sys) {
      * projection is available. Then WASD moves it in LIEU world units so
      * lieu_detect_zone (world-space rect test) fires when walking a zone. */
     if (!g_player_seeded && g_proj_valid) {
-        g_player_wx = g_proj_anchor_wx;
-        g_player_wz = g_proj_zone_z;
+        /* Prefer the script's own placement for the player's persona: P00 is
+         * Arkhan, and trig00's PosPerso is where the room actually puts him.
+         * The camera-zone anchor below is only a fallback for rooms that
+         * place nobody — it is solved from the zone centroid and lands tens
+         * of thousands of units off, which throws every distance and facing
+         * test the script runs against the player. */
+        i32 seeded_from_script = 0;
+        /*
+         * UNRESOLVED — two sources disagree about where the player starts.
+         *
+         *  - trig00's PosPerso for P00 (Arkhan) puts him at (378000,-1837200),
+         *    which is the placement the engine uses on a room entry and is
+         *    almost certainly right. It sits outside EVERY LIEU zone, so no
+         *    trigger fires and the opening conversation never starts.
+         *  - The camera-zone anchor solve lands at (305083,-1802945), inside
+         *    zone 4, whose trigger is what has actually been driving that
+         *    conversation.
+         *
+         * They differ by ~34000 units on Z, so one of the two mappings (the
+         * PosPerso tile scale or the anchor solve) is off. Until that is
+         * settled the anchor stays the default because it is the one that
+         * produces a playable opening; DKE_SCRIPTSEED=1 selects the scripted
+         * placement. See docs/functions/nav_collision.md.
+         */
+        for (i32 pi = 0; getenv("DKE_SCRIPTSEED") && pi < lieu_spawn_count(); pi++) {
+            i32 stx = 0, stz = 0, sview = 0;
+            const c8 *snm = lieu_spawn_get(pi, &stx, &stz, &sview);
+            if (!snm || persona_num_from_name(snm) != 0) continue;
+            g_player_wx = stx * 600;
+            g_player_wz = stz * 600;
+            g_player_facing = (lieu_spawn_facing(pi) >> 4) & 0xFFF;
+            seeded_from_script = 1;
+            print("scene: player seeded from %s at (%d,%d) facing=0x%X\n",
+                  snm, g_player_wx, g_player_wz, g_player_facing);
+            break;
+        }
+        if (!seeded_from_script) {
+            g_player_wx = g_proj_anchor_wx;
+            g_player_wz = g_proj_zone_z;
+        }
+        /* Only the guessed anchor gets snapped (sub_456FB7 @ 0x456FB7). A
+         * scripted placement is authoritative even when it sits in a blocked
+         * cell — L01 starts Arkhan lying on the bed, which the grid marks as
+         * furniture, and snapping would slide him off it. */
+        if (!seeded_from_script &&
+            nav_snap_to_walkable(&g_player_wx, &g_player_wz))
+            print("scene: player seed snapped to walkable (%d,%d)\n",
+                  g_player_wx, g_player_wz);
         g_player_seeded = 1;
     }
 
@@ -2941,20 +3089,48 @@ i32 scene_render(system_t *sys) {
 
         /* ~50k world units/s (LIEU zones are ~50-90k wide). */
         i32 step = (50000 * dt_ms) / 1000;
-        g_player_wx += (i32)(pin.velocity_x * step);   /* A/D -> world X */
-        g_player_wz += (i32)(pin.velocity_z * step);   /* W/S -> world Z */
+        i32 want_x = g_player_wx + (i32)(pin.velocity_x * step);
+        i32 want_z = g_player_wz + (i32)(pin.velocity_z * step);
+
+        /* Debug headless sweeps (fixed step, dt-independent). They go through
+         * the same collision path as real input so they exercise it. */
+        g_player_moving = 0;
+        if (getenv("DKE_WALK"))  { want_x -= 6000; g_player_moving = 1; }
+        if (getenv("DKE_WALKZ")) { want_z += 6000; g_player_moving = 1; }
+
+        /* Collide against the nav grid (sub_45619D's interaction_data_array).
+         * Each axis is committed on its own so a diagonal into a wall slides
+         * along it instead of stopping dead. The engine never does this — its
+         * actors are walked by the pathfinder (sub_469222 @ 0x469222), which
+         * only ever asks for waypoints that are already free — but dke drives
+         * the player directly, so the check belongs on the input path. */
+        i32 blocked = 0;
+        if (want_x != g_player_wx) {
+            if (nav_is_walkable(want_x, g_player_wz)) g_player_wx = want_x;
+            else                                      blocked |= 1;
+        }
+        if (want_z != g_player_wz) {
+            if (nav_is_walkable(g_player_wx, want_z)) g_player_wz = want_z;
+            else                                      blocked |= 2;
+        }
+        if (blocked) {
+            static u32 last_blocked_log = 0;
+            if (tick - last_blocked_log > 500) {
+                last_blocked_log = tick;
+                print("scene: movement blocked (axes 0x%X) at (%d,%d) cell=%d\n",
+                      blocked, g_player_wx, g_player_wz,
+                      nav_cell(want_x, want_z));
+            }
+        }
 
         /* Face the movement direction (cosine_table units). */
-        g_player_moving = (pin.velocity_x != 0.0f || pin.velocity_z != 0.0f);
-        if (g_player_moving) {
+        g_player_moving = g_player_moving ||
+                          (pin.velocity_x != 0.0f || pin.velocity_z != 0.0f);
+        if (pin.velocity_x != 0.0f || pin.velocity_z != 0.0f) {
             double ang = atan2((double)pin.velocity_x, (double)pin.velocity_z);
             i32 f = (i32)(ang * 4096.0 / (2.0 * 3.14159265358979));
             g_player_facing = f & 0xFFF;
         }
-
-        /* Debug headless sweep (fixed step, dt-independent). */
-        if (getenv("DKE_WALK"))  { g_player_wx -= 6000; g_player_moving = 1; }
-        if (getenv("DKE_WALKZ")) { g_player_wz += 6000; g_player_moving = 1; }
 
         /* Loose clamp around the character start. */
         i32 lim = 400000;
@@ -2971,6 +3147,13 @@ i32 scene_render(system_t *sys) {
     if (g_player_entity) {
         *(i32 *)((u8 *)g_player_entity + 0x1C0) = g_player_wx;
         *(i32 *)((u8 *)g_player_entity + 0x1C8) = g_player_wz;
+        /* Heading too (gravit+0x5C = entity+0x1E0, 16-bit BAM). Without this
+         * player_get_facing() reads a slot nothing ever wrote, and every
+         * DirectionPerso / DirectionZone test compares against heading 0.
+         * g_player_facing is in cosine-table units (4096 per turn); BAM is
+         * 65536 per turn, hence the <<4. */
+        *(i32 *)((u8 *)g_player_entity + ENT_OFF_FACING) =
+            (g_player_facing << 4) & 0xFFFF;
     }
 
     /* Auto camera switch: pick the camera whose region contains the player
@@ -3017,11 +3200,13 @@ i32 scene_render(system_t *sys) {
         i32 atom_rx[20] = {0}, atom_ry[20] = {0};
         if (g_scene_can_loaded && g_scene_objc_loaded) {
             const can_frame_t *kf = &g_scene_can.frames[g_scene_can_frame];
-            for (i32 j = 0; j < g_scene_objc.n_bones && j < CAN_MAX_ATOMSLOTS; j++) {
+            for (i32 j = 0; j < g_scene_objc.n_bones; j++) {
                 i32 ri = g_scene_objc.can_to_render[j];
+                i32 ch = g_scene_objc.can_slot[j];
                 if (ri < 0 || ri >= g_scene_ome_atom_count) continue;
-                atom_rx[ri] = (i32)(kf->atoms[j].rx >> 4) & 0xFFF;
-                atom_ry[ri] = (i32)(kf->atoms[j].ry >> 4) & 0xFFF;
+                if (ch < 0 || ch >= CAN_MAX_ATOMSLOTS) continue;
+                atom_rx[ri] = (i32)(kf->atoms[ch].rx >> 4) & 0xFFF;
+                atom_ry[ri] = (i32)(kf->atoms[ch].ry >> 4) & 0xFFF;
             }
         }
         /* Legacy placeholder: the scene's default OME mesh drawn at the player
@@ -3065,6 +3250,13 @@ i32 scene_render(system_t *sys) {
             i32 wxt = 0, wzt = 0, pview = 0;
             const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
             if (!nm) continue;
+            /* Arkhan is both a scripted placement and the player avatar.
+             * While a BLOQUE bracket is open the script owns him, so his
+             * PosPerso placement is what renders; once control returns to the
+             * player the avatar below takes over and this placement is
+             * skipped, otherwise he is drawn twice. */
+            if (!lieu_player_blocked() && persona_num_from_name(nm) == 0)
+                continue;
             /* Project the persona's world position (tile x600, its own
              * PosPerso ground Y) to screen. */
             i32 pground = lieu_spawn_ground(pi);
@@ -3091,6 +3283,7 @@ i32 scene_render(system_t *sys) {
                 continue;
             }
             persona_mesh_t *pm = &g_persona_cache[ci];
+            persona_apply_script_clip(pm);   /* LIEU ANIMATION action */
             /* Advance the persona's animation frame. */
             if (pm->can_loaded && pm->can.n_frames > 0 &&
                 tick - pm->can_last >= CAN_FRAME_MS) {
@@ -3102,11 +3295,13 @@ i32 scene_render(system_t *sys) {
             /* Per-atom rotation table from the keyframe (via OBJC slot map). */
             i32 prx[SCENE_OME_MAX_ATOMS] = {0}, pry[SCENE_OME_MAX_ATOMS] = {0};
             if (kf && pm->objc_loaded) {
-                for (i32 jj = 0; jj < pm->objc.n_bones && jj < CAN_MAX_ATOMSLOTS; jj++) {
+                for (i32 jj = 0; jj < pm->objc.n_bones; jj++) {
                     i32 ri = pm->objc.can_to_render[jj];
+                    i32 ch = pm->objc.can_slot[jj];
                     if (ri < 0 || ri >= pm->count) continue;
-                    prx[ri] = (i32)((u32)kf->atoms[jj].rx >> 4) & 0xFFF;
-                    pry[ri] = (i32)((u32)kf->atoms[jj].ry >> 4) & 0xFFF;
+                    if (ch < 0 || ch >= CAN_MAX_ATOMSLOTS) continue;
+                    prx[ri] = (i32)((u32)kf->atoms[ch].rx >> 4) & 0xFFF;
+                    pry[ri] = (i32)((u32)kf->atoms[ch].ry >> 4) & 0xFFF;
                 }
             }
             /* Rasterize each atom through the real in-game camera (world
@@ -3117,9 +3312,14 @@ i32 scene_render(system_t *sys) {
              * but the floor sits ~120000 world units below the camera plane,
              * so drop the figures onto the beds. TODO: derive the floor Y from
              * the room terrain instead of this per-camera constant. */
-            i32 mshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 1;
+            i32 mshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 0;
             i32 mflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
-            i32 myoff  = getenv("DKE_MYOFF")  ? atoi(getenv("DKE_MYOFF"))  : -120000;
+            /* The drop is a WORLD-space offset applied to the character's
+             * position, not a model-space one, so it takes the bone value as
+             * it stands — scaling it by mshift the way the vertices are
+             * scaled pushes the figure straight through the floor. */
+            i32 myoff  = getenv("DKE_MYOFF")  ? atoi(getenv("DKE_MYOFF"))
+                                             : pm->foot_off;
             i32 pfac   = lieu_spawn_facing(pi) & 0xFFF;
             i32 objy   = pground + myoff;
             (void)psx; (void)psy; (void)prx; (void)pry;
@@ -3146,16 +3346,20 @@ i32 scene_render(system_t *sys) {
          * scripted personas but the room becomes playable with a visible,
          * movement-facing avatar. */
         {
-            i32 dx = g_player_wx - g_proj_anchor_wx;
-            i32 dz = g_player_wz - g_proj_zone_z;
-            i32 walked = (dx > 3000 || dx < -3000 || dz > 3000 || dz < -3000);
-            if ((walked || getenv("DKE_PLAYER")) && g_proj_valid) {
-                i32 pmshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 1;
+            /* Under player control whenever the script is not holding a
+             * BLOQUE bracket open (group(3)/group(0), sub_446227 @ 0x446227).
+             * This replaces the old "has walked >3000 units" heuristic, which
+             * left the avatar invisible until the player happened to move. */
+            i32 controlled = !lieu_player_blocked();
+            if ((controlled || getenv("DKE_PLAYER")) && g_proj_valid) {
+                i32 pmshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 0;
                 i32 pmflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
-                i32 pfloor  = getenv("DKE_MYOFF") ? atoi(getenv("DKE_MYOFF")) : -120000;
                 i32 ci = persona_mesh_load(0);   /* P00 = Arkhan */
                 if (ci >= 0) {
                     persona_mesh_t *pm = &g_persona_cache[ci];
+                    i32 pfloor = getenv("DKE_MYOFF") ? atoi(getenv("DKE_MYOFF"))
+                                                     : pm->foot_off;
+                    persona_apply_script_clip(pm);   /* LIEU ANIMATION action */
                     if (pm->can_loaded && pm->can.n_frames > 0 &&
                         tick - pm->can_last >= CAN_FRAME_MS) {
                         pm->frame = (pm->frame + 1) % pm->can.n_frames;

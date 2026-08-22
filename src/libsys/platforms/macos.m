@@ -499,5 +499,12 @@ void ls_release(system_t *system) {
     pool = [[NSAutoreleasePool alloc] init];
 
     free(surface);
-    free(window);
+    surface = NULL;
+
+    /* `window` is an NSWindow, not a malloc'd block. free()ing it aborted in
+     * libsystem_malloc ("pointer being freed was not allocated"); releasing it
+     * here over-releases, because -close already dropped the window's own
+     * reference (releasedWhenClosed defaults to YES) and the pool drain
+     * reclaimed it. Just forget the pointer. */
+    window = NULL;
 }

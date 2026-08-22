@@ -18,6 +18,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#define CAN_SLOT_COUNT 34
 #include <string.h>
 
 #include "libsys/common.h"
@@ -412,7 +414,32 @@ i32 ome_parse_objc(const u8 *raw, i32 raw_len, i32 objc_sig_off, ome_objc_t *out
         b->tx = read_i32_le(dat + 0x38);
         b->ty = read_i32_le(dat + 0x3C);
         b->tz = read_i32_le(dat + 0x40);
-        b->h2 = read_i32_le(dat + 0x74);
+        b->first_child = read_i32_le(dat + 0x78);   /* rec + 0x7C */
+        b->next_sib    = read_i32_le(dat + 0x80);   /* rec + 0x84 */
+        b->slot        = read_i32_le(dat + 0x1C);   /* rec + 0x20 */
+        b->h2 = -1;                                  /* derived below */
+    }
+
+    /*
+     * Derive each bone's parent by walking the first-child / next-sibling
+     * links, exactly as the engine does at load time: sub_4699D9 @ 0x4699D9
+     * traverses +0x7C / +0x84 and WRITES the parent back to +0x78 (and the
+     * previous sibling to +0x80). Those two fields are runtime state — what
+     * the modelling tool left in the file is stale and disagrees with the
+     * real rig wherever a new sibling chain starts. Reading +0x78 directly
+     * gave P00 'hangau' (left hip) a parent of 'piedro' (the RIGHT foot) and
+     * 'epagau' (left shoulder) a parent of 'poidro' (the right wrist), so the
+     * whole left side hung off the end of the right limb — wrong rest pose
+     * and wrong animation, with limbs swinging far from the body.
+     */
+    for (i32 i = 0; i < n_bones; i++) {
+        i32 c = out->bones[i].first_child;
+        while (c >= 0 && c < n_bones) {
+            out->bones[c].h2 = i;
+            i32 nxt = out->bones[c].next_sib;
+            if (nxt == c) break;                     /* malformed self-link */
+            c = nxt;
+        }
     }
 
     /* Parse ATOMF slot names */
@@ -425,15 +452,68 @@ i32 ome_parse_objc(const u8 *raw, i32 raw_len, i32 objc_sig_off, ome_objc_t *out
         out->atomf_slot_name[i][nlen] = '\0';
     }
 
-    /* Build can_to_render[]: for each bone j, find ATOMF slot i with matching name */
-    for (i32 j = 0; j < n_bones; j++) out->can_to_render[j] = -1;
+    /*
+     * Bone -> CAN keyframe channel.
+     *
+     * A CAN keyframe is 34 fixed channels in the engine's own bone order
+     * (the table sub_41F6BA @ 0x41F6BA matches scene-node names against when
+     * filling the bone pointer array at entity+0xFC). That order has nothing
+     * to do with the order bones happen to appear in an OME file: P00 stores
+     * tree, basdos, handro, gendro, ... while channel 2 is 'hangau' and
+     * channel 3 is 'handro'. Indexing the keyframe by the file position — as
+     * this did — drives every bone from another bone's channel, which is why
+     * the animations looked wrong.
+     */
+    static const c8 *const CAN_SLOT_NAMES[CAN_SLOT_COUNT] = {
+        "tree",   "basdos", "hangau", "handro", "gendro",
+        "piedro", "gengau", "piegau", "mildos", "haudos",
+        "bascou", "epagau", "epadro", "coudro", "poidro",
+        "cougau", "poigau", "tete",   "talgau", "taldro",
+        "ddpgau", "ddpdro", "acces0", "acces1", "acces2",
+        "acces3", "acces4", "pacdro", "pacgau", "hacdro",
+        "hacgau", "arme",   "armea",  "armem"
+    };
     for (i32 j = 0; j < n_bones; j++) {
+        out->can_slot[j] = -1;
+        for (i32 c = 0; c < CAN_SLOT_COUNT; c++) {
+            if (strcmp(out->bones[j].name, CAN_SLOT_NAMES[c]) == 0) {
+                out->can_slot[j] = c;
+                break;
+            }
+        }
+    }
+
+    /* Bone -> ATOMF slot. The record carries the slot index directly at
+     * +0x20 (-1 when the bone has no geometry); fall back to matching the
+     * bone name against the slot name table when it looks out of range. */
+    for (i32 j = 0; j < n_bones; j++) {
+        i32 slot = out->bones[j].slot;
+        if (slot >= 0 && slot < n_atomslots) {
+            out->can_to_render[j] = slot;
+            continue;
+        }
+        out->can_to_render[j] = -1;
         for (i32 i = 0; i < n_atomslots; i++) {
             if (strcmp(out->bones[j].name, out->atomf_slot_name[i]) == 0) {
                 out->can_to_render[j] = i;
                 break;
             }
         }
+    }
+
+    if (getenv("DKE_BONEDBG")) {
+        print("objc: %d bones, %d atom slots\n", n_bones, n_atomslots);
+        for (i32 i = 0; i < n_atomslots; i++)
+            print("objc:   slot[%2d] name='%s'\n", i, out->atomf_slot_name[i]);
+        i32 mapped = 0;
+        for (i32 j = 0; j < n_bones; j++) {
+            print("objc:   bone[%2d] '%-10s' parent=%-3d t=(%d,%d,%d) -> slot %d\n",
+                  j, out->bones[j].name, out->bones[j].h2,
+                  out->bones[j].tx, out->bones[j].ty, out->bones[j].tz,
+                  out->can_to_render[j]);
+            if (out->can_to_render[j] >= 0) mapped++;
+        }
+        print("objc: %d/%d bones carry geometry\n", mapped, n_bones);
     }
 
     /* Compute world translations for each render atom i:

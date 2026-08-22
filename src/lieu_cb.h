@@ -140,7 +140,7 @@ extern const lieu_cb_t *g_lieu_cb;
  * Only level 1 is hand-ported (src/lieu01.c); other levels are no-ops.
  * ---------------------------------------------------------------------- */
 void lieu_enter(i32 level_id);
-void lieu_tick(void);
+void lieu_tick(u32 now_ms);   /* now_ms = game clock, drives holds + timers */
 void lieu_exit(void);
 
 /* Runtime event feeders (see lieu_cb.c). Call when the engine detects the
@@ -185,5 +185,11 @@ i32 lieu_spawn_facing(i32 i);   /* PosPerso y = facing angle              */
 /* Player movement blocking from group(3)/group(0) brackets.
  * Returns 1 while a dialogue/cutscene group is open. */
 i32 lieu_player_blocked(void);
+
+/* CAN clip the script last asked a persona to play (ANIMATION actions, whose
+ * name is the clip id: "p12arr03" -> persona 12). Returns NULL when the
+ * script has not driven that persona; *serial changes whenever the clip does,
+ * so a renderer can reload only on change. */
+const c8 *lieu_persona_clip(i32 persona, i32 *serial);
 
 #endif /* DKE_LIEU_CB_H */
