@@ -83,6 +83,18 @@ runtime scratch dword at +0x60 that the loader zeroes.
 - **Chunks are located by signature search, not sequentially.** Chunk spans are
   not recorded anywhere and the over-read above makes a sequential walk
   unreliable.
+- **The on-disk parent / previous-sibling links are stale.** `+0x78` and
+  `+0x80` survive edits to the rig that the child/sibling chains at `+0x7C` /
+  `+0x84` do reflect. In `PERSOS/P00.OME` the file claims `hangau` (left hip)
+  hangs off `piedro` (the **right** foot) and `epagau` (left shoulder) off
+  `poidro` (the right wrist) — the whole left side dangling from the end of
+  the right limb. Across `persos` + `objets`, **99 of 208 files carry at least
+  one bad link, 258 in total**. The engine does not trust them either:
+  `sub_4699D9 @ 0x4699D9` walks the child/sibling chains and writes both
+  fields back before anything reads them. `obc_parse_body` therefore re-derives
+  them at load time so no consumer can pick up the stale values.
+  (`src/model_ome.c`'s heuristic OBJC parser hit this same trap and documents
+  the identical symptom, which is a useful independent confirmation.)
 - **The `.COB` cache is not reproduced.** `sub_4538FB @ 0x4538FB` writes a
   pre-parsed copy next to the object directory to avoid re-parsing from CD; the
   port always parses the source.

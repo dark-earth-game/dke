@@ -689,6 +689,31 @@ static obc_node_t *obc_parse_body(const u8 *base, i32 size, i32 chunk_off,
 
     obc_node_t *root = nodes[0];
 
+    /*
+     * Re-derive parent and previous-sibling from the child/next chains.
+     *
+     * The +0x78 and +0x80 the exporter wrote are stale: they survive edits to
+     * the rig that the child/sibling chains do reflect. On PERSOS/P00.OME the
+     * file claims "hangau" (left hip) hangs off "piedro" (the RIGHT foot) and
+     * "epagau" (left shoulder) off "poidro" (the right wrist) — the whole left
+     * side dangling from the end of the right limb. Across persos+objets, 99
+     * of 208 files carry at least one such link, 258 in total.
+     *
+     * The engine never trusts them either: sub_4699D9 @ 0x4699D9 walks +0x7C /
+     * +0x84 and writes both fields back before anything reads them. Doing it
+     * here means no consumer of this loader can pick up the stale values.
+     */
+    for (i32 i = 0; i < node_count; i++) {
+        obc_node_t *prev = NULL;
+        for (obc_node_t *c = nodes[i]->child; c; c = c->next) {
+            c->parent = nodes[i];
+            c->prev   = prev;
+            prev      = c;
+        }
+    }
+    root->parent = NULL;
+    root->prev   = NULL;
+
     free(atoms);
     free(links);
     free(nodes);
