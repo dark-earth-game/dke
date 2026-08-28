@@ -71,6 +71,7 @@
 #include "player.h"
 #include "entity.h"
 #include "material.h"
+#include "obc.h"
 #include "scene.h"
 
 /* -------------------------------------------------------------------------
@@ -1813,11 +1814,14 @@ void setup_creature(const c8 *path_prefix, const c8 *name,
     /* Build OBC path: "{dir}{name}.OBC" */
     snprintf(obc_path, sizeof(obc_path), "%s%s.OBC", base_dir, name);
 
-    /* Build OME path — for "objets"/"persos" prefix, prepend game_path */
+    /* Build OME path. For "objets"/"persos" the mesh lives flat in that
+     * directory rather than in the per-object subdirectory the MAT/OBC pair
+     * uses — asm @ 0x44F354 builds "<game_path>OBJETS>OB03.OME" where
+     * game_path is the LIBSYS virtual root. The port keeps the path virtual
+     * and lets ls_resolve_path attach the host root. */
     if (strncasecmp(path_prefix, "objets", 6) == 0 ||
         strncasecmp(path_prefix, "persos", 6) == 0) {
-        const c8 *gp = (state && state->game_path) ? state->game_path : "";
-        snprintf(ome_path, sizeof(ome_path), "%s%s%s.OME", gp, path_prefix, name);
+        snprintf(ome_path, sizeof(ome_path), "%s%s.OME", path_prefix, name);
     } else {
         snprintf(ome_path, sizeof(ome_path), "%s%s.OME", base_dir, name);
     }
@@ -1844,11 +1848,24 @@ void setup_creature(const c8 *path_prefix, const c8 *name,
         }
     }
 
-    /* OBC file — animation/bone cache (sub_4538FB @ 0x4538FB).
-     * Full OBC parser (sub_452B20) not yet ported. Log and set NULL. */
+    /* Object hierarchy. On an HDD install the original skips the .OBC/.ATM
+     * pair entirely and pulls the node tree straight out of the .OME
+     * (sub_44F454 @ 0x44F454); on a CD install it goes through sub_4538FB
+     * @ 0x4538FB instead. Both land in the same parser — see obc.c. */
     if (obc_out) {
-        *obc_out = NULL;
-        print("  OBC: parser not yet ported (sub_4538FB)\n");
+        const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+        obc_node_t *root = NULL;
+
+        /* The original picks the branch off is_using_hdd. The port always runs
+         * from a full local install, i.e. the HDD branch; the .OBC/.ATM pair is
+         * kept as a fallback because a handful of objects (OBJETS>FLAM) ship
+         * only in that form. */
+        root = obc_load_ome(ome_path, gp);
+        if (!root)
+            root = obc_load(obc_path, base_dir, gp);
+
+        *obc_out = (void *)root;
+        if (!root) print("  OBC: no object tree for '%s'\n", name);
     }
 }
 

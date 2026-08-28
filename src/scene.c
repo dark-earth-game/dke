@@ -64,6 +64,7 @@
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
+#include "obc.h"
 #include "entity.h"
 #include "lieu_cb.h"
 #include "player.h"
@@ -984,12 +985,12 @@ static void bone_link_slots(void *entity, i32 src_slot, i32 dst_slot) {
     /* sub_4373EF @ 0x4373EF */
     if (!entity) return;
     u8 *ent = (u8 *)entity;
-    void **bones = (void **)(ent + 0xFC);
-    void *src = bones[src_slot];
-    void *dst = bones[dst_slot];
+    obc_node_t **bones = (obc_node_t **)(ent + 0xFC);
+    obc_node_t *src = bones[src_slot];
+    obc_node_t *dst = bones[dst_slot];
     if (!src || !dst) return;
-    *(void **)((u8 *)src + 0x7C) = dst;   /* src->first_child = dst */
-    *(void **)((u8 *)dst + 0x78) = src;   /* dst->parent = src */
+    src->child  = dst;   /* src->+0x7C = first child */
+    dst->parent = src;   /* dst->+0x78 = parent      */
 }
 
 /* sub_474731 @ 0x474731 — weapon conflict resolution.
@@ -1128,28 +1129,24 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
 
     if (full_init) {
         /* Traverse weapon's scene hierarchy: [wobj+0x50] is root creature node */
-        void *creature = *(void **)(wobj + 0x50);
+        obc_node_t *creature = *(obc_node_t **)(wobj + 0x50);
         if (creature) {
             /* Find attachment point: if creature->+0x7C exists, walk to
              * creature->+0x7C->+0x7C (two levels deep) @ 0x473782 */
-            u8 *cr = (u8 *)creature;
-            void *child = *(void **)(cr + 0x7C);
+            obc_node_t *child = creature->child;
             if (child) {
-                *(void **)(ent + 0x178) = *(void **)((u8 *)child + 0x7C);
+                *(void **)(ent + 0x178) = child->child;
             } else {
                 *(void **)(ent + 0x178) = creature;
             }
 
             /* Walk hierarchy: reset frame counters on non-"armeb" nodes @ 0x4737BE */
-            void *node = creature;
-            while (node) {
-                u8 *n = (u8 *)node;
-                if (strcmp((c8 *)(n + 4), "armeb") != 0) {
-                    *(i32 *)(n + 0x44) = 0;
-                    *(i32 *)(n + 0x40) = 0;
-                    *(i32 *)(n + 0x3C) = 0;
+            for (obc_node_t *node = creature; node; node = node->child) {
+                if (strcmp(node->name, "armeb") != 0) {
+                    node->pos[2] = 0;   /* +0x44 */
+                    node->pos[1] = 0;   /* +0x40 */
+                    node->pos[0] = 0;   /* +0x3C */
                 }
-                node = *(void **)(n + 0x7C);
             }
         }
     } else {
@@ -1364,41 +1361,40 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
  * Walks the gravit/model hierarchy tree from entity+0x50, remaps each face's
  * packed colour through g_color_lookup[]. Sets g_palette_state = 0xFC.
  * Face structure: +0x5C = packed RGB, +0x28 = remapped colour index.
- * Node structure: +0x20 = face-data sub-node, +0x7C = sibling, +0x84 = child.
- * Sub-node: +0x3C = face array base, +0x24 = face count, face stride = 0x64. */
+ * Node structure: +0x20 = atom, +0x7C = first child, +0x84 = next sibling —
+ * the walk parks the sibling and descends into the child, same shape as
+ * get_node_bounds @ 0x436651.
+ * Atom: +0x3C = face array base, +0x24 = face count, face stride = 0x64. */
 static u8 g_color_lookup[4096];  /* color_lookup table — populated from GRD */
 static u8 g_palette_state = 0;
 
 static void process_color_palette(void *entity) { /* process_color_palette @ 0x40C2A0 */
     if (!entity) return;
-    void *root = *(void **)((u8 *)entity + 0x50);
+    obc_node_t *root = *(obc_node_t **)((u8 *)entity + 0x50);
     if (!root) return;
 
     g_palette_state = 0xFC;
 
-    void *stack[64];
+    obc_node_t *stack[64];
     i32 sp = 0;
-    void *node = root;
+    obc_node_t *node = root;
 
     while (node) {
-        void *sub = *(void **)((u8 *)node + 0x20);
-        if (sub) {
-            u8 *face_ptr = *(u8 **)((u8 *)sub + 0x3C);
-            i32 count = *(i32 *)((u8 *)sub + 0x24);
-            for (i32 i = 0; i < count && face_ptr; i++) {
-                u32 val = *(u32 *)(face_ptr + 0x5C);
+        atm_atom_t *atom = node->atom[0];
+        if (atom && atom->faces) {
+            for (i32 i = 0; i < atom->face_count; i++) {
+                i32 *face = atom->faces + (size_t)i * ATM_FACE_STRIDE;
+                u32 val = (u32)face[0x5C / 4];
                 u32 r_part = ((val & 0xF00000) >> 16) << 4;
                 u32 g_part = (val & 0xE0) >> 5;
                 u32 b_part = (val & 0xF800) >> 8;
                 u32 idx = r_part + g_part;
                 if (idx + b_part < sizeof(g_color_lookup))
-                    *(u32 *)(face_ptr + 0x28) = g_color_lookup[idx + b_part];
-                face_ptr += 0x64;
+                    face[0x28 / 4] = (i32)g_color_lookup[idx + b_part];
             }
         }
-        void *child = *(void **)((u8 *)node + 0x84);
-        if (child && sp < 64) stack[sp++] = child;
-        node = *(void **)((u8 *)node + 0x7C);
+        if (node->next && sp < 64) stack[sp++] = node->next;
+        node = node->child;
         if (!node && sp > 0) node = stack[--sp];
     }
 }

@@ -25,6 +25,7 @@
 #include "libsys/system.h"
 #include "state.h"
 #include "entity.h"
+#include "obc.h"
 #include "player.h"
 #include "scene.h"
 #include "game_init.h"
@@ -103,19 +104,10 @@ static void ent_set_u32(void *ent, i32 off, u32 val) {
     ent_put(ent, off, val);
 }
 
-/* Scene hierarchy node offsets (from IDA — 32-bit layout). */
-#define SNODE_NAME         0x04  /* inline name string */
-#define SNODE_PARENT       0x78  /* parent back-pointer (set by wire_hierarchy) */
-#define SNODE_FIRST_CHILD  0x7C  /* first child */
-#define SNODE_PREV_SIB     0x80  /* previous sibling (set by wire_hierarchy) */
-#define SNODE_NEXT_SIB     0x84  /* next sibling */
-
-static inline void *snode_ptr(void *node, int off) {
-    return *(void **)((u8 *)node + off);
-}
-static inline void snode_set(void *node, int off, void *val) {
-    *(void **)((u8 *)node + off) = val;
-}
+/* Scene hierarchy nodes are obc_node_t (0xB4 bytes in the original): name at
+ * +0x04, parent +0x78, first child +0x7C, previous sibling +0x80, next
+ * sibling +0x84. See obc.h — the port names those fields rather than poking
+ * raw offsets, because the 32-bit blob layout aliases on a 64-bit host. */
 
 static const char *bone_names[ENTITY_BONE_SLOTS] = {
     "tree",   "basdos", "hangau", "handro", "gendro",
@@ -136,8 +128,8 @@ static const char *bone_names[ENTITY_BONE_SLOTS] = {
  *   [sibling+0x80] = previous sibling
  * Tree links: [node+0x7C] = first child, [node+0x84] = next sibling.
  * ---------------------------------------------------------------------- */
-void entity_wire_hierarchy(void *root_node) {
-    void *stack[256];
+void entity_wire_hierarchy(obc_node_t *root_node) {
+    obc_node_t *stack[256];
     int sp = 0;
 
     if (!root_node) return;
@@ -145,19 +137,19 @@ void entity_wire_hierarchy(void *root_node) {
     stack[sp++] = root_node;
 
     while (sp > 0) {
-        void *node = stack[--sp];
-        void *child = snode_ptr(node, SNODE_FIRST_CHILD);
-        void *prev = NULL;
+        obc_node_t *node = stack[--sp];
+        obc_node_t *child = node->child;
+        obc_node_t *prev = NULL;
 
         while (child) {
-            snode_set(child, SNODE_PARENT, node);
-            snode_set(child, SNODE_PREV_SIB, prev);
+            child->parent = node;
+            child->prev   = prev;
 
             if (sp < 256)
                 stack[sp++] = child;
 
             prev = child;
-            child = snode_ptr(child, SNODE_NEXT_SIB);
+            child = child->next;
         }
     }
 }
@@ -169,8 +161,8 @@ void entity_wire_hierarchy(void *root_node) {
  * name at [node+4] against 34 bone names. On match, stores node pointer
  * at entity+0xFC bone slot table.
  * ---------------------------------------------------------------------- */
-void entity_register_bones(void *entity, void *scene_root) {
-    void *stack[256];
+void entity_register_bones(void *entity, obc_node_t *scene_root) {
+    obc_node_t *stack[256];
     int sp = 0;
 
     if (!entity || !scene_root) return;
@@ -178,22 +170,21 @@ void entity_register_bones(void *entity, void *scene_root) {
     stack[sp++] = scene_root;
 
     while (sp > 0) {
-        void *node = stack[--sp];
-        const char *name = (const char *)((u8 *)node + SNODE_NAME);
+        obc_node_t *node = stack[--sp];
 
         for (int i = 0; i < ENTITY_BONE_SLOTS; i++) {
-            if (strcmp(name, bone_names[i]) == 0) {
+            if (strcmp(node->name, bone_names[i]) == 0) {
                 void **bones = (void **)((u8 *)entity + 0xFC);
                 bones[i] = node;
                 break;
             }
         }
 
-        void *child = snode_ptr(node, SNODE_FIRST_CHILD);
+        obc_node_t *child = node->child;
         while (child) {
             if (sp < 256)
                 stack[sp++] = child;
-            child = snode_ptr(child, SNODE_NEXT_SIB);
+            child = child->next;
         }
     }
 }
@@ -309,41 +300,43 @@ void player_entity_init(void) {
     {
         void *mat_result = NULL;
         void *obc_result = NULL;
-        setup_creature("PERSOS>", "SERPENT", &mat_result, &obc_result, 0);
+        setup_creature("PERSOS>", "P00", &mat_result, &obc_result, 0);
         if (mat_result) *(void **)((u8 *)ent + 0x88) = mat_result;
         if (obc_result) *(void **)((u8 *)ent + 0x50) = obc_result;
     }
 
-    /* TODO: process_scene_hierarchy_with_memory
-     *   asm: mov edx,[var_114]; mov ecx,[var_84]; call process_scene_hierarchy_with_memory */
-    print("player: TODO process_scene_hierarchy_with_memory\n");
+    obc_node_t *scene_root = *(obc_node_t **)((u8 *)ent + 0x50);
 
-    /* TODO: create_single_control_point
+    /* process_scene_hierarchy_with_memory @ 0x404C26 — per-node control
+     * points. It picks the root's first child when there is one, else the root
+     * itself, and hands it to process_scene_hierarchy_control_points
+     * @ 0x4040B8, which is the only piece of this chain still unported. */
+    print("player: TODO process_scene_hierarchy_with_memory (0x404C26 -> 0x4040B8)\n");
+
+    /* create_single_control_point @ 0x404D92 — root bounding sphere.
      *   asm: mov edx,[var_114]; mov ecx,[var_84]; call create_single_control_point */
-    print("player: TODO create_single_control_point\n");
+    if (scene_root) {
+        obc_create_control_point(scene_root);
+    } else {
+        print("player: create_single_control_point skipped (no scene root)\n");
+    }
 
     /* sub_4699D9 — scene hierarchy back-pointer init
      *   asm: mov eax,[var_84]; mov ecx,[eax+50h]; call sub_4699D9 */
-    {
-        void *scene_root = *(void **)((u8 *)ent + 0x50);
-        if (scene_root) {
-            entity_wire_hierarchy(scene_root);
-            print("player: sub_4699D9 (hierarchy wired)\n");
-        } else {
-            print("player: sub_4699D9 skipped (no scene root at ent+0x50)\n");
-        }
+    if (scene_root) {
+        entity_wire_hierarchy(scene_root);
+        print("player: sub_4699D9 (hierarchy wired)\n");
+    } else {
+        print("player: sub_4699D9 skipped (no scene root at ent+0x50)\n");
     }
 
     /* sub_41F6BA — skeleton bone registration
      *   asm: mov ecx,[var_84]; call sub_41F6BA */
-    {
-        void *scene_root = *(void **)((u8 *)ent + 0x50);
-        if (scene_root) {
-            entity_register_bones(ent, scene_root);
-            print("player: sub_41F6BA (bones registered)\n");
-        } else {
-            print("player: sub_41F6BA skipped (no scene root at ent+0x50)\n");
-        }
+    if (scene_root) {
+        entity_register_bones(ent, scene_root);
+        print("player: sub_41F6BA (bones registered)\n");
+    } else {
+        print("player: sub_41F6BA skipped (no scene root at ent+0x50)\n");
     }
 
     /* Store as global player entity */
@@ -441,7 +434,8 @@ void player_entity_init_secondary(void) {
             scene_weapon_entity_attach(g_player_entity, weapon_obj, 1);
 
             /* sub_41F6BA @ 0x41F6BA — re-register bone table */
-            void *scene_root = *(void **)((u8 *)g_player_entity + 0x50);
+            obc_node_t *scene_root =
+                *(obc_node_t **)((u8 *)g_player_entity + 0x50);
             if (scene_root)
                 entity_register_bones(g_player_entity, scene_root);
         } else {
