@@ -168,6 +168,36 @@ void obc_free(obc_node_t *root);
  */
 void obc_node_bounds(const obc_node_t *root, i32 *out_min, i32 *out_max);
 
+/* -------------------------------------------------------------------------
+ * Node types
+ *
+ * get_node_type @ 0x41DE03 maps a node name to an index into a fixed 34-entry
+ * table at 0x4B2BA0 (stride 7) — the same table sub_41F6BA @ 0x41F6BA uses to
+ * fill the entity bone slots, so a node's "type" and its bone slot are one and
+ * the same number. "armeb" is special-cased to 0x22; anything unknown is -1.
+ * ---------------------------------------------------------------------- */
+#define OBC_NODE_TYPE_COUNT 34
+#define OBC_NODE_TYPE_TREE  0x00
+#define OBC_NODE_TYPE_ARME  0x1F
+#define OBC_NODE_TYPE_ARMEB 0x22
+
+extern const c8 *const obc_node_type_names[OBC_NODE_TYPE_COUNT];
+
+i32 obc_node_type(const c8 *name);
+
+/*
+ * obc_process_hierarchy — process_scene_hierarchy_with_memory @ 0x404C26 and
+ * process_scene_hierarchy_control_points @ 0x4040B8.
+ *
+ * Gives every limb node a chain of 1..4 collision spheres sized from its own
+ * mesh AABB, laid out along the limb's longest axis. How many spheres and how
+ * fat they are is a per-bone constant — see the table in obc.c.
+ *
+ * Starts at `entity_root`'s first child when it has one, else at the root
+ * itself, so the entity's own transform node is skipped.
+ */
+void obc_process_hierarchy(obc_node_t *entity_root);
+
 /*
  * obc_create_control_point — create_single_control_point @ 0x404D92.
  *

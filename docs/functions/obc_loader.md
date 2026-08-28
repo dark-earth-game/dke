@@ -122,25 +122,76 @@ The table the original calls `sine_table` is a full-period **cosine** table,
 which the port already builds as `cosine_table`; the "+8" index form is
 `cos(a)` and the "−0x3FF8" form is `sin(a)`.
 
-## Bounds and control points
+## Bounds, boxes and control points
 
 - `obc_node_bounds` — `get_node_bounds @ 0x436651`. Walks the sub-tree with an
   explicit 16-level stack (the original's frame allows exactly 16),
   accumulating each node's local transform, transforms every vertex of every
   face and keeps the component-wise min/max. Both outputs are relative to the
   root node's own pivot.
+- `atm_vertex_bounds` — `sub_436AB0 @ 0x436AB0`. Untransformed AABB over one
+  atom's own vertices. Note it returns max in the register argument and min in
+  the stack one — the opposite of `get_node_bounds`.
+- `obc_build_box_atoms` — `sub_436C56 @ 0x436C56`. Every node with geometry
+  gets an 8-vertex / 6-quad proxy box in its **second** atom slot (node+0x24)
+  spanning that atom's AABB, faces pre-set to colour `0x2222` and index
+  `0xFF`, the two fields `process_color_palette @ 0x40C2A0` reads and writes.
+  Then the "arme" → "armem" → "arme" weapon-chain check, which only logs.
 - `obc_create_control_point` — `create_single_control_point @ 0x404D92`.
   radius = largest AABB extent / 2 (`scaling_constant` is 2.0), centre = AABB
   centre, stored in a 0x1C-byte "Clefs" block at node+0xA0.
+- `obc_process_hierarchy` — `process_scene_hierarchy_with_memory @ 0x404C26`
+  and `process_scene_hierarchy_control_points @ 0x4040B8`. Per-limb collision
+  spheres, `Clefs[count]` at node+0xA0 with count in node+0x9C.
+
+### Per-limb collision spheres
+
+`get_node_type @ 0x41DE03` maps a node name to an index in the 34-entry table
+at 0x4B2BA0 — **the same table and the same index as the entity bone slots**
+(`sub_41F6BA @ 0x41F6BA`), so a node's "type" *is* its bone slot. `"armeb"` is
+special-cased to 0x22, unknown names give -1.
+
+The 34-case switch at 0x4043BD (dispatched through the byte table at
+0x40442D, on `type - 1`) gives each bone a sphere count and a fatness:
+
+| bone | type | spheres | scale |
+|---|--:|--:|--:|
+| basdos | 1 | 1 | 0.7 |
+| hangau / handro | 2, 3 | 1 | 0.3 |
+| gendro / gengau | 4, 6 | 2 | 0.4 |
+| piedro / piegau | 5, 7 | 2 | 0.5 |
+| haudos | 9 | 1 | 0.6 |
+| epagau / epadro | 11, 12 | 2 | 0.4 |
+| coudro | 13 | 2 | 0.5 |
+| poidro / poigau | 14, 16 | 1 | 0.8 |
+| cougau | 15 | 1 | 0.5 |
+| tete | 17 | 1 | 0.7 |
+| arme | 31 | 3 | 0.3 |
+| armem | 34 | 4 | 0.3 |
+
+Everything else falls to the default slot and gets no spheres — including
+`tree` (type 0, so `type - 1` wraps negative), and deliberately `mildos` and
+`bascou`, the mid-torso and lower neck. The `coudro` / `cougau` asymmetry (2
+vs 1 sphere) is in the original table, not a porting slip.
+
+Given the atom's AABB, the longest axis becomes the chain direction,
+`step = length / count`, and
+`radius = (longest + shortest) * scale / 2`. The first centre sits half a step
+in from the far end on the primary axis and mid-span on the other two; each
+subsequent sphere steps back by `step`.
+
+For P00 this produces a symmetric ragdoll — `epadro`/`epagau` and
+`gendro`/`gengau` mirror exactly on Z — which is a good end-to-end check that
+the vertex decode and the bone naming both line up.
+
+**Deviation:** when a node already has control points the original jumps past
+the type lookup into the "arme" test with a *stale* type still in its stack
+slot, which can move the traversal cursor. The port initialises the type per
+node instead.
 
 ## Still unported
 
-- `process_scene_hierarchy_control_points @ 0x4040B8` (~640 instructions), the
-  per-node control points behind `process_scene_hierarchy_with_memory
-  @ 0x404C26`.
-- `sub_436C56 @ 0x436C56` — builds an 8-vertex bounding-box proxy atom at
-  node+0x24 for every node that has geometry, plus the "arme"/"armea"/"armem"
-  weapon-chain sanity checks.
+- `sub_491470 @ 0x491470`, called at the tail of `sub_452B20`.
 - The "gravit" re-point in `sub_46493B @ 0x46493B` (`464C53..464C90`): the
   original zeroes the loaded tree root's translation, re-parents it under the
   embedded node at entity+0x184, caches it at entity+0x200 and makes
@@ -154,6 +205,17 @@ which the port already builds as `cosine_table`; the "+8" index form is
 - launch: yes — `DKE_NEWGAME=1 DKE_NOMOVIE=1 DKE_FRAMES=200`, exit 0
 - behaviour: `PERSOS/P00.OME` loads as 29 nodes / 20 atoms with the expected
   bone names (`tree` → `basdos` → `mildos` → `haudos` → …), bone table fills,
-  control point `r=55126 centre=(-11926,1901,-37)`. Loader run over the whole
-  corpus: 105/106 `persos` and 103/105 `objets` `.OME` files, plus the single
-  `.OBC` (`OBJETS/FLAM`); the 3 misses are the MATR-only files listed above.
+  proxy boxes on all 20 geometry nodes, root control point
+  `r=55126 centre=(-11926,1901,-37)`, and a left/right-symmetric sphere chain
+  on every limb. Loader run over the whole corpus: 105/106 `persos` and
+  103/105 `objets` `.OME` files, plus the single `.OBC` (`OBJETS/FLAM`); the 3
+  misses are the MATR-only files listed above. All 211 files are
+  AddressSanitizer-clean through load → boxes → control points → free.
+
+## Not a useful target
+
+`sub_462BCC @ 0x462BCC` loads the persona descriptor
+`PERSOS>p%02d>p%02d.txt` (via `sub_462C9E` / `sub_461DC4` / `sub_46319A`).
+No `persos/p00/` directory and no `.txt` descriptors ship in the retail
+install — they are dev-only assets — so that path cannot succeed regardless of
+whether it is ported. This is why `weapon_type` reads back as 255.

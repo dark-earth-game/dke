@@ -109,15 +109,10 @@ static void ent_set_u32(void *ent, i32 off, u32 val) {
  * sibling +0x84. See obc.h — the port names those fields rather than poking
  * raw offsets, because the 32-bit blob layout aliases on a 64-bit host. */
 
-static const char *bone_names[ENTITY_BONE_SLOTS] = {
-    "tree",   "basdos", "hangau", "handro", "gendro",
-    "piedro", "gengau", "piegau", "mildos", "haudos",
-    "bascou", "epagau", "epadro", "coudro", "poidro",
-    "cougau", "poigau", "tete",   "talgau", "taldro",
-    "ddpgau", "ddpdro", "acces0", "acces1", "acces2",
-    "acces3", "acces4", "pacdro", "pacgau", "hacdro",
-    "hacgau", "arme",   "armea",  "armem"
-};
+/* Bone slot i is the node whose name is obc_node_type_names[i] — the engine's
+ * node "type" and its bone slot are the same number (get_node_type @ 0x41DE03
+ * and sub_41F6BA @ 0x41F6BA share the table at 0x4B2BA0). Table lives in
+ * obc.c so the control-point pass and this one cannot drift apart. */
 
 /* -------------------------------------------------------------------------
  * sub_4699D9 — Scene Hierarchy Back-Pointer Init (47 instructions)
@@ -172,12 +167,10 @@ void entity_register_bones(void *entity, obc_node_t *scene_root) {
     while (sp > 0) {
         obc_node_t *node = stack[--sp];
 
-        for (int i = 0; i < ENTITY_BONE_SLOTS; i++) {
-            if (strcmp(node->name, bone_names[i]) == 0) {
-                void **bones = (void **)((u8 *)entity + 0xFC);
-                bones[i] = node;
-                break;
-            }
+        const i32 slot = obc_node_type(node->name);
+        if (slot >= 0 && slot < ENTITY_BONE_SLOTS) {
+            void **bones = (void **)((u8 *)entity + 0xFC);
+            bones[slot] = node;
         }
 
         obc_node_t *child = node->child;
@@ -307,11 +300,14 @@ void player_entity_init(void) {
 
     obc_node_t *scene_root = *(obc_node_t **)((u8 *)ent + 0x50);
 
-    /* process_scene_hierarchy_with_memory @ 0x404C26 — per-node control
-     * points. It picks the root's first child when there is one, else the root
-     * itself, and hands it to process_scene_hierarchy_control_points
-     * @ 0x4040B8, which is the only piece of this chain still unported. */
-    print("player: TODO process_scene_hierarchy_with_memory (0x404C26 -> 0x4040B8)\n");
+    /* process_scene_hierarchy_with_memory @ 0x404C26 — per-limb collision
+     * spheres.
+     *   asm: mov edx,[var_114]; mov ecx,[var_84]; call process_scene_hierarchy_with_memory */
+    if (scene_root) {
+        obc_process_hierarchy(scene_root);
+    } else {
+        print("player: process_scene_hierarchy skipped (no scene root)\n");
+    }
 
     /* create_single_control_point @ 0x404D92 — root bounding sphere.
      *   asm: mov edx,[var_114]; mov ecx,[var_84]; call create_single_control_point */

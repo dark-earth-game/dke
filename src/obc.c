@@ -200,6 +200,23 @@ static i32 rec_i32(const u8 *payload, i32 disk_off) {
  * ATM atom loader — sub_453346 @ 0x453346
  * ====================================================================== */
 
+/* Traversal stack depth. The original's get_node_bounds frame allows exactly
+ * 16 levels (76 bytes per level between var_4D0 and var_10); sub_436C56 uses
+ * the same shape. */
+#define OBC_BOUNDS_STACK 16
+
+static void atom_free(atm_atom_t *a) {
+    if (!a) return;
+    free(a->verts);
+    free(a->faces);
+    free(a);
+}
+
+static void free_atom_slot(atm_atom_t **slot) {
+    atom_free(*slot);
+    *slot = NULL;
+}
+
 static void atm_fixup_faces(atm_atom_t *atom) {
     /*
      * Original loop @ 0x453629..0x4538DC. For every face it:
@@ -354,6 +371,155 @@ static atm_atom_t *atm_load(const c8 *vpath, const c8 *game_path) {
 }
 
 /*
+ * atm_vertex_bounds — sub_436AB0 @ 0x436AB0.
+ *
+ * Component-wise AABB over an atom's own vertices, in the atom's local space
+ * (no transform, unlike get_node_bounds). Seeded from vertex 0 and refined
+ * over [1, vert_count).
+ *
+ * Note the output order is the opposite of get_node_bounds: here the register
+ * argument receives the maxima and the stack argument the minima.
+ */
+static void atm_vertex_bounds(const atm_atom_t *atom, i32 *out_max, i32 *out_min) {
+    const i32 *v = atom->verts;
+
+    i32 mn[3] = { v[ATM_VERT_X], v[ATM_VERT_Y], v[ATM_VERT_Z] };
+    i32 mx[3] = { mn[0], mn[1], mn[2] };
+
+    for (i32 i = 1; i < atom->vert_count; i++) {
+        const i32 *p = atom->verts + (size_t)i * ATM_VERT_STRIDE;
+        for (i32 k = 0; k < 3; k++) {
+            if (p[k] < mn[k]) mn[k] = p[k];
+            if (p[k] > mx[k]) mx[k] = p[k];
+        }
+    }
+
+    for (i32 k = 0; k < 3; k++) {
+        out_min[k] = mn[k];
+        out_max[k] = mx[k];
+    }
+}
+
+/*
+ * atm_make_box — the box builder inside sub_436C56 @ 0x436CFF..0x437176.
+ *
+ * Builds an 8-vertex / 6-quad proxy atom spanning [min, max]. The engine
+ * parks it in the node's *second* atom slot (node+0x24) and uses it for the
+ * cheap tests that do not need the real mesh.
+ */
+static atm_atom_t *atm_make_box(const i32 *mn, const i32 *mx) {
+    atm_atom_t *box = (atm_atom_t *)calloc(1, sizeof(*box));
+    if (!box) return NULL;
+
+    box->vert_max = box->vert_count = 8;   /* 0x436D5B / 0x436D71 */
+    box->face_max = box->face_count = 6;   /* 0x436F43 / 0x436F59 */
+    box->verts = (i32 *)calloc(8 * ATM_VERT_STRIDE, sizeof(i32)); /* 0x100 */
+    box->faces = (i32 *)calloc(6 * ATM_FACE_STRIDE, sizeof(i32)); /* 0x258 */
+    if (!box->verts || !box->faces) {
+        free(box->verts); free(box->faces); free(box);
+        return NULL;
+    }
+
+    /* Corner order the face table below indexes into (0x436DB2..0x436F37). */
+    static const u8 corner[8][3] = {
+        /* x, y, z picked from max(1) or min(0) */
+        { 1, 1, 1 },  /* v0 */
+        { 1, 0, 1 },  /* v1 */
+        { 0, 0, 1 },  /* v2 */
+        { 0, 1, 1 },  /* v3 */
+        { 1, 1, 0 },  /* v4 */
+        { 1, 0, 0 },  /* v5 */
+        { 0, 0, 0 },  /* v6 */
+        { 0, 1, 0 },  /* v7 */
+    };
+    for (i32 i = 0; i < 8; i++) {
+        i32 *v = box->verts + (size_t)i * ATM_VERT_STRIDE;
+        for (i32 k = 0; k < 3; k++)
+            v[k] = corner[i][k] ? mx[k] : mn[k];
+    }
+
+    /* Six quads, wound as the asm writes them (0x436FB6..0x437169). */
+    static const u8 quad[6][4] = {
+        { 0, 3, 2, 1 },   /* +Z */
+        { 4, 5, 6, 7 },   /* -Z */
+        { 1, 2, 6, 5 },   /* -Y */
+        { 0, 4, 7, 3 },   /* +Y */
+        { 0, 1, 5, 4 },   /* +X */
+        { 3, 7, 6, 2 },   /* -X */
+    };
+    for (i32 i = 0; i < 6; i++) {
+        i32 *f = box->faces + (size_t)i * ATM_FACE_STRIDE;
+        f[ATM_FACE_SIZE]  = 0x64;      /* 0x436FC8 */
+        f[ATM_FACE_VCNT]  = 4;         /* 0x437049 */
+        f[0x28 / 4]       = 0xFF;      /* 0x436FE1 — remapped colour index */
+        f[0x5C / 4]       = 0x2222;    /* 0x436FFB — packed RGB */
+        f[0x38 / 4]       = 0;         /* 0x437015 */
+        f[ATM_FACE_FLAGS] = 0;         /* 0x43702F */
+        for (i32 k = 0; k < 4; k++)
+            f[ATM_FACE_IDX + k] = quad[i][k];
+    }
+
+    memcpy(box->name, "box", 4);
+    return box;
+}
+
+/*
+ * obc_build_box_atoms — sub_436C56 @ 0x436C56.
+ *
+ * Walks the tree and gives every node that carries geometry a proxy box atom
+ * in slot 1, then runs the original's weapon-chain sanity checks. Uses the
+ * same park-the-sibling / descend-the-child stack shape as get_node_bounds.
+ */
+static void obc_build_box_atoms(obc_node_t *root) {
+    obc_node_t *stack[OBC_BOUNDS_STACK];
+    i32 depth = 0;
+    obc_node_t *node = root;
+
+    for (;;) {
+        if (depth != 0) {                    /* loc_436C81 */
+            depth--;
+            node = stack[depth];
+        }
+
+        for (;;) {                            /* loc_436C9E */
+            if (node->next && depth < OBC_BOUNDS_STACK)
+                stack[depth++] = node->next;
+
+            atm_atom_t *atom = node->atom[0];
+            if (atom && atom->vert_count && atom->verts) {
+                i32 mn[3], mx[3];
+                atm_vertex_bounds(atom, mx, mn);
+                atm_atom_t *box = atm_make_box(mn, mx);
+                if (box) {
+                    free_atom_slot(&node->atom[1]);
+                    node->atom[1] = box;       /* 0x436D24 */
+                }
+            }
+
+            node = node->child;                /* 0x437176 */
+            if (!node) break;
+        }
+
+        if (depth == 0) break;
+    }
+
+    /* 0x43719C — weapon chain must read arme(a) -> armem -> arme. The
+     * original only logs; keep that, it is a data-integrity check. */
+    if (strncmp(root->name, "arme", 4) != 0) return;
+    if (strcmp(root->name, "armea") != 0) {
+        print("obc: armea is not here\n");
+    } else if (!root->child) {
+        print("obc: armea has not a son\n");
+    } else if (strcmp(root->child->name, "armem") != 0) {
+        print("obc: armem is not here\n");
+    } else if (!root->child->child) {
+        print("obc: armem has not a son\n");
+    } else if (strcmp(root->child->child->name, "arme") != 0) {
+        print("obc: arme is not here\n");
+    }
+}
+
+/*
  * atm_path_from_name — sub_4531D6 @ 0x4531D6 (+ sub_4532C7 @ 0x4532C7).
  *
  * Atom names in the OBC name table have no extension. The original keeps at
@@ -382,13 +548,6 @@ static void obc_free_node(obc_node_t *n) {
     if (!n) return;
     free(n->clefs);
     free(n);
-}
-
-static void atom_free(atm_atom_t *a) {
-    if (!a) return;
-    free(a->verts);
-    free(a->faces);
-    free(a);
 }
 
 /*
@@ -534,13 +693,10 @@ static obc_node_t *obc_parse_body(const u8 *base, i32 size, i32 chunk_off,
     free(links);
     free(nodes);
 
-    /*
-     * The original finishes with sub_436C56 @ 0x436C56 (build the 8-vertex
-     * bounding-box proxy atom stored at node+0x24 for every node that has
-     * geometry, plus the "arme"/"armea"/"armem" weapon-chain sanity checks)
-     * and sub_491470 @ 0x491470. Neither is needed to draw the mesh; both are
-     * still to be ported.
-     */
+    /* 0x452E89 — proxy box atoms + weapon-chain checks. The original then
+     * calls sub_491470 @ 0x491470, still unported. */
+    obc_build_box_atoms(root);
+
     print("obc: '%s' — %d nodes, %d atom slots, root '%s'\n",
           dbg, node_count, name_count, root->name);
     return root;
@@ -685,13 +841,19 @@ obc_node_t *obc_load_ome(const c8 *ome_vpath, const c8 *game_path) {
     return root;
 }
 
+#define OBC_FREE_STACK 512
+
 void obc_free(obc_node_t *root) {
     if (!root) return;
 
-    /* The tree is a plain child/sibling structure; walk it iteratively so a
-     * deep skeleton cannot blow the host stack, and free each atom once. */
-    obc_node_t *stack[256];
-    atm_atom_t *seen[256];
+    /*
+     * The tree is a plain child/sibling structure; walk it iteratively so a
+     * deep skeleton cannot blow the host stack. Atoms from the name table are
+     * shared between nodes, so they have to be freed exactly once — when the
+     * seen table is full we leak rather than risk a double free.
+     */
+    obc_node_t *stack[OBC_FREE_STACK];
+    atm_atom_t *seen[OBC_FREE_STACK];
     i32 depth = 0, nseen = 0;
 
     stack[depth++] = root;
@@ -703,13 +865,12 @@ void obc_free(obc_node_t *root) {
             i32 dup = 0;
             for (i32 i = 0; i < nseen; i++) if (seen[i] == a) { dup = 1; break; }
             if (dup) continue;
-            if (nseen < (i32)(sizeof(seen) / sizeof(seen[0]))) seen[nseen++] = a;
+            if (nseen >= OBC_FREE_STACK) continue;   /* leak, do not double free */
+            seen[nseen++] = a;
             atom_free(a);
         }
-        if (n->child && depth < (i32)(sizeof(stack) / sizeof(stack[0])))
-            stack[depth++] = n->child;
-        if (n->next && depth < (i32)(sizeof(stack) / sizeof(stack[0])))
-            stack[depth++] = n->next;
+        if (n->child && depth < OBC_FREE_STACK) stack[depth++] = n->child;
+        if (n->next  && depth < OBC_FREE_STACK) stack[depth++] = n->next;
         obc_free_node(n);
     }
 }
@@ -717,10 +878,6 @@ void obc_free(obc_node_t *root) {
 /* =========================================================================
  * Bounds + control points
  * ====================================================================== */
-
-/* The original stack lives in get_node_bounds' frame: 76 bytes per level
- * between var_4D0 and var_10, i.e. 16 levels. */
-#define OBC_BOUNDS_STACK 16
 
 void obc_node_bounds(const obc_node_t *root, i32 *out_min, i32 *out_max) {
     /* 0x436669 — minima start at 0x7FFFFFFF, maxima at 0x80000001. */
@@ -803,6 +960,167 @@ void obc_node_bounds(const obc_node_t *root, i32 *out_min, i32 *out_max) {
         out_min[k] = mn[k] - root->pos[k];
         out_max[k] = mx[k] - root->pos[k];
     }
+}
+
+/* Node/bone name table @ 0x4B2BA0 — 34 entries, stride 7. */
+const c8 *const obc_node_type_names[OBC_NODE_TYPE_COUNT] = {
+    "tree",   "basdos", "hangau", "handro", "gendro",
+    "piedro", "gengau", "piegau", "mildos", "haudos",
+    "bascou", "epagau", "epadro", "coudro", "poidro",
+    "cougau", "poigau", "tete",   "talgau", "taldro",
+    "ddpgau", "ddpdro", "acces0", "acces1", "acces2",
+    "acces3", "acces4", "pacdro", "pacgau", "hacdro",
+    "hacgau", "arme",   "armea",  "armem"
+};
+
+i32 obc_node_type(const c8 *name) { /* get_node_type @ 0x41DE03 */
+    for (i32 i = 0; i < OBC_NODE_TYPE_COUNT; i++)
+        if (strcmp(obc_node_type_names[i], name) == 0) return i;
+    if (strcmp(name, "armeb") == 0) return OBC_NODE_TYPE_ARMEB;
+    return -1;
+}
+
+/*
+ * Per-bone control-point budget, from the 34-case switch at 0x4043BD.
+ *
+ * The switch runs on `type - 1` and dispatches through the byte table at
+ * 0x40442D; every entry not listed here maps to the default slot (0x11) and
+ * gets no control points at all — including "tree" (type 0, so type-1 wraps
+ * negative), "mildos" and "bascou", i.e. the torso and neck.
+ *
+ * `scale` is the fraction of (longest axis + shortest axis) each sphere's
+ * diameter covers.
+ */
+typedef struct { i32 count; f64 scale; } cp_spec_t;
+
+static cp_spec_t cp_spec_for_type(i32 type) {
+    switch (type - 1) {
+    case 0:  return (cp_spec_t){ 1, 0.7 };  /* basdos — lower spine   */
+    case 1:  return (cp_spec_t){ 1, 0.3 };  /* hangau — left hip      */
+    case 2:  return (cp_spec_t){ 1, 0.3 };  /* handro — right hip     */
+    case 3:  return (cp_spec_t){ 2, 0.4 };  /* gendro — right knee    */
+    case 4:  return (cp_spec_t){ 2, 0.5 };  /* piedro — right foot    */
+    case 5:  return (cp_spec_t){ 2, 0.4 };  /* gengau — left knee     */
+    case 6:  return (cp_spec_t){ 2, 0.5 };  /* piegau — left foot     */
+    case 8:  return (cp_spec_t){ 1, 0.6 };  /* haudos — upper torso   */
+    case 10: return (cp_spec_t){ 2, 0.4 };  /* epagau — left shoulder */
+    case 11: return (cp_spec_t){ 2, 0.4 };  /* epadro — right shoulder*/
+    case 12: return (cp_spec_t){ 2, 0.5 };  /* coudro — right elbow   */
+    case 13: return (cp_spec_t){ 1, 0.8 };  /* poidro — right wrist   */
+    case 14: return (cp_spec_t){ 1, 0.5 };  /* cougau — left elbow    */
+    case 15: return (cp_spec_t){ 1, 0.8 };  /* poigau — left wrist    */
+    case 16: return (cp_spec_t){ 1, 0.7 };  /* tete   — head          */
+    case 30: return (cp_spec_t){ 3, 0.3 };  /* arme   — weapon        */
+    case 33: return (cp_spec_t){ 4, 0.3 };  /* armem  — weapon mount  */
+    default: return (cp_spec_t){ 0, 0.0 };
+    }
+}
+
+static void obc_build_control_points(obc_node_t *root) { /* 0x4040B8 */
+    obc_node_t *stack[OBC_BOUNDS_STACK];
+    i32 depth = 0;
+    obc_node_t *node = root;
+
+    for (;;) {
+        if (depth != 0) {                     /* loc_4040D7 */
+            depth--;
+            node = stack[depth];
+        }
+
+        for (;;) {                             /* loc_4040F4 */
+            if (node->next && depth < OBC_BOUNDS_STACK)
+                stack[depth++] = node->next;
+
+            i32 cp_count = 0;
+            f64 scale = 0.0;
+            /*
+             * 0x40412A — a node that already carries control points is left
+             * alone. The original then falls into the "arme" test below with
+             * a *stale* type still in its stack slot; the port initialises it
+             * per node instead, which is the only sane reading.
+             */
+            i32 type = -1;
+            if (node->has_clefs == 0) {
+                type = obc_node_type(node->name);
+                const cp_spec_t spec = cp_spec_for_type(type);
+                cp_count = spec.count;
+                scale    = spec.scale;
+            }
+
+            /* 0x40445C — a weapon node delegates to the deepest node of its
+             * chain, unless that chain starts with "armeb". */
+            if (type == OBC_NODE_TYPE_ARME && node->child && node->child->atom[0] &&
+                obc_node_type(node->child->name) != OBC_NODE_TYPE_ARMEB) {
+                do {
+                    node = node->child;
+                } while (node->child);
+                cp_count = 1;
+                scale    = 1.0;
+            }
+
+            atm_atom_t *atom = node->atom[0];  /* 0x4044E6 */
+            if (cp_count > 0 && atom && atom->verts && atom->vert_count > 0) {
+                i32 mn[3], mx[3];
+                atm_vertex_bounds(atom, mx, mn);   /* inlined at 0x40451F */
+
+                i32 d[3];
+                for (i32 k = 0; k < 3; k++) d[k] = abs(mx[k] - mn[k]);
+
+                /* 0x40473E — longest axis (1=X, 2=Y, 3=Z), unsigned compares. */
+                i32 axis, len;
+                if ((u32)d[1] >= (u32)d[0]) { axis = 2; len = d[1]; }
+                else                        { axis = 1; len = d[0]; }
+                if ((u32)len < (u32)d[2])   { axis = 3; len = d[2]; }
+
+                const u32 step = (u32)len / (u32)cp_count;   /* 0x4047AB */
+
+                /* 0x4047B4 — despite the name IDA gave it, this is the
+                 * *shortest* extent, used to fatten the spheres. */
+                i32 girth = ((u32)d[1] <= (u32)d[0]) ? d[1] : d[0];
+                if ((u32)girth > (u32)d[2]) girth = d[2];
+
+                /* 0x404817 — radius = (longest + shortest) * scale / 2 */
+                const i32 radius =
+                    (i32)((f64)((u32)len + (u32)girth) * scale / 2.0);
+
+                /* 0x404842 — first centre: mid-span on the two minor axes,
+                 * half a step in from the far end on the primary one. */
+                i32 c[3];
+                for (i32 k = 0; k < 3; k++)
+                    c[k] = (axis == k + 1) ? mx[k] - (i32)(step >> 1)
+                                           : (mx[k] + mn[k]) / 2;
+
+                node->has_clefs = cp_count;        /* 0x404933 */
+
+                if (!node->clefs) {                /* 0x404939 */
+                    node->clefs = (obc_clefs_t *)calloc((size_t)cp_count,
+                                                        sizeof(obc_clefs_t));
+                    if (node->clefs) {
+                        for (i32 i = 0; i < cp_count; i++) {
+                            node->clefs[i].radius    = radius;
+                            node->clefs[i].centre[0] = c[0];
+                            node->clefs[i].centre[1] = c[1];
+                            node->clefs[i].centre[2] = c[2];
+                            /* 0x404A6F — walk back along the primary axis. */
+                            c[axis - 1] -= (i32)step;
+                        }
+                    }
+                }
+            }
+
+            node = node->child;                    /* 0x404AD8 */
+            if (!node) break;
+        }
+
+        if (depth == 0) break;                     /* 0x404AF4 */
+    }
+}
+
+void obc_process_hierarchy(obc_node_t *entity_root) { /* 0x404C26 */
+    if (!entity_root) return;
+    /* Skip the entity's own transform node when it has children. */
+    obc_build_control_points(entity_root->child ? entity_root->child
+                                                : entity_root);
 }
 
 void obc_create_control_point(obc_node_t *root) { /* 0x404D92 */
