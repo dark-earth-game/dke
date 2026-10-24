@@ -142,7 +142,7 @@ static const u8 *g_sort_pal_channel = NULL; /* dword_4BF594 @ 004BF594 — compa
 /* Misc */
 static i32 g_dword_4ECD3C        = 0;       /* dword_4ECD3C @ 004ECD3C  */
 static i32 g_is_using_hdd        = 0;       /* is_using_hdd (asm sym)   */
-static i32 g_special_mode_active = 0;       /* special_mode_active      */
+/* g_special_mode_active (special_mode_active) lives in actor_move.c */
 static i32 g_dword_505DD8        = 0;       /* dword_505DD8 @ 00505DD8  */
 static i32 g_dword_4B787C        = 0;       /* dword_4B787C @ 004B787C  */
 

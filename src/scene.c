@@ -159,7 +159,7 @@ static i32 g_cached_health = 0;       /* dword_4B6F5C @ 0x4B6F5C — cached desc
 static i32 g_cached_color_mode = 0;   /* dword_4B6F64 @ 0x4B6F64 — cached color_mode for 45CD9C */
 static i32 g_cached_special_mode = 0; /* dword_4B6F74 @ 0x4B6F74 */
 static i32 g_cached_score = 0;        /* dword_4B6F78 @ 0x4B6F78 */
-static i32 g_special_mode_active = 0; /* special_mode_active — combat/special mode flag */
+/* g_special_mode_active (special_mode_active) lives in actor_move.c */
 static i32 g_score_counter = 0;       /* score_counter — player score/energy counter */
 static i32 g_player_movement_enabled = 0; /* player_movement_enabled */
 static i32 g_color_mode = 0;          /* color_mode @ 0x4B4514 — 0=8bit 1=16bit */
@@ -2783,7 +2783,11 @@ i32 scene_render(system_t *sys) {
 
     /* Per-frame LIEU scripting (native hand-port; level 1 only for now),
      * mirroring the engine's per-frame driver (dkev sub_44968B):
-     *   op -1 tick every frame, then op 3 for the current zone (if any). */
+     *   op -1 tick every frame, then op 3 for the current zone (if any).
+     * The actors and the action piles run first, in sub_461468 order. */
+    g_player_movement_locked = lieu_player_blocked();
+    lieu_set_action_key(sys ? sys->actions[32] : 0);
+    actor_frame((u32)system_get_gametime());
     lieu_tick(sys ? sys->timer.tick : 0);
     {
         static i32 s_last_zone = -2;
@@ -3012,82 +3016,28 @@ i32 scene_render(system_t *sys) {
     }
 
     if (sys) {
-        u32 tick = sys->timer.tick;
-        i32 dt_ms = g_scene_prev_tick > 0 ? (i32)(tick - g_scene_prev_tick) : 16;
-        if (dt_ms < 0)     dt_ms = 0;
-        if (dt_ms > 100)   dt_ms = 100;   /* clamp on long pauses */
-        g_scene_prev_tick = tick;
+        g_scene_prev_tick = sys->timer.tick;
 
-        player_input_t pin = {0};
-        if (!lieu_player_blocked())
+        /* Player input -> locomotion request, read by sub_4193CC on the next
+         * actor tick: forward/back set +0xCEC, left/right set +0xCF4. The
+         * walk/turn clips and their root motion move the actor. Stand-in
+         * for the input handlers sub_451BF9 / sub_4342C7 (not yet ported). */
+        entity_t *pe = g_player_entity;
+        if (pe && !g_player_movement_locked && E32(pe, 0xCBC) == 0) {
+            player_input_t pin = {0};
             player_input_update(&pin, sys);
-
-        /* ~50k world units/s (LIEU zones are ~50-90k wide). */
-        i32 step = (50000 * dt_ms) / 1000;
-        i32 want_x = g_player_wx + (i32)(pin.velocity_x * step);
-        i32 want_z = g_player_wz + (i32)(pin.velocity_z * step);
-
-        /* Debug headless sweeps (fixed step, dt-independent). They go through
-         * the same collision path as real input so they exercise it. */
-        g_player_moving = 0;
-        if (getenv("DKE_WALK"))  { want_x -= 6000; g_player_moving = 1; }
-        if (getenv("DKE_WALKZ")) { want_z += 6000; g_player_moving = 1; }
-
-        /* Collide against the nav grid (sub_45619D's interaction_data_array).
-         * Each axis is committed on its own so a diagonal into a wall slides
-         * along it instead of stopping dead. The engine never does this — its
-         * actors are walked by the pathfinder (sub_469222 @ 0x469222), which
-         * only ever asks for waypoints that are already free — but dke drives
-         * the player directly, so the check belongs on the input path. */
-        i32 blocked = 0;
-        if (want_x != g_player_wx) {
-            if (nav_is_walkable(want_x, g_player_wz)) g_player_wx = want_x;
-            else                                      blocked |= 1;
+            i32 mode = 0;
+            if (pin.velocity_z < 0) mode = 1;
+            if (pin.velocity_z > 0) mode = -1;
+            E32(pe, 0xCEC) = mode;
+            E32(pe, 0xCF4) = (pin.velocity_x < 0) ? 1 : (pin.velocity_x > 0) ? -1 : 0;
+            g_player_moving = (mode != 0);
         }
-        if (want_z != g_player_wz) {
-            if (nav_is_walkable(g_player_wx, want_z)) g_player_wz = want_z;
-            else                                      blocked |= 2;
+        if (pe && EROOT(pe)) {
+            g_player_wx = EROOT(pe)->pos[0];
+            g_player_wz = EROOT(pe)->pos[2];
+            g_player_facing = (EROOT(pe)->rot[2] >> 4) & 0xFFF;
         }
-        if (blocked) {
-            static u32 last_blocked_log = 0;
-            if (tick - last_blocked_log > 500) {
-                last_blocked_log = tick;
-                print("scene: movement blocked (axes 0x%X) at (%d,%d) cell=%d\n",
-                      blocked, g_player_wx, g_player_wz,
-                      nav_cell(want_x, want_z));
-            }
-        }
-
-        /* Face the movement direction (cosine_table units). */
-        g_player_moving = g_player_moving ||
-                          (pin.velocity_x != 0.0f || pin.velocity_z != 0.0f);
-        if (pin.velocity_x != 0.0f || pin.velocity_z != 0.0f) {
-            double ang = atan2((double)pin.velocity_x, (double)pin.velocity_z);
-            i32 f = (i32)(ang * 4096.0 / (2.0 * 3.14159265358979));
-            g_player_facing = f & 0xFFF;
-        }
-
-        /* Loose clamp around the character start. */
-        i32 lim = 400000;
-        if (g_player_seeded) {
-            if (g_player_wx < g_proj_anchor_wx - lim) g_player_wx = g_proj_anchor_wx - lim;
-            if (g_player_wx > g_proj_anchor_wx + lim) g_player_wx = g_proj_anchor_wx + lim;
-            if (g_player_wz < g_proj_zone_z - lim)    g_player_wz = g_proj_zone_z - lim;
-            if (g_player_wz > g_proj_zone_z + lim)    g_player_wz = g_proj_zone_z + lim;
-        }
-    }
-
-    /* Feed the player world (X,Z) into the transform so lieu_detect_zone
-     * (next frame) tests it against the LIEU zone rects. */
-    if (g_player_entity) {
-        EROOT(g_player_entity)->pos[0] = g_player_wx;
-        EROOT(g_player_entity)->pos[2] = g_player_wz;
-        /* Heading too (gravit+0x5C = entity+0x1E0, 16-bit BAM). Without this
-         * player_get_facing() reads a slot nothing ever wrote, and every
-         * DirectionPerso / DirectionZone test compares against heading 0.
-         * g_player_facing is in cosine-table units (4096 per turn); BAM is
-         * 65536 per turn, hence the <<4. */
-        EROOT(g_player_entity)->rot[2] = (g_player_facing << 4) & 0xFFFF;
     }
 
     /* Auto camera switch: pick the camera whose region contains the player
@@ -3182,12 +3132,11 @@ i32 scene_render(system_t *sys) {
         /* Characters: the three actor slots, animated and drawn from their
          * own object trees (sub_461468 order: player, companion, secondary). */
         {
-            actor_update_timing((u32)state->current_game_time);
             entity_t *cast[3] = { g_player_entity, g_companion_entity,
                                   g_secondary_companion_entity };
             for (i32 ci = 0; ci < 3; ci++) {
                 if (!cast[ci]) continue;
-                actor_animate(cast[ci]);
+                if (getenv("DKE_HIDEACTOR") && atoi(getenv("DKE_HIDEACTOR")) == ci) continue;
                 scene_render_actor(cast[ci], lcx, lcy, lcz);
             }
         }

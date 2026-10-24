@@ -105,9 +105,31 @@ void actor_set_pose(entity_t *e, const i16 *pose);
  * the clip's blend time; `t` is the tick since the clip started. */
 void actor_blend_pose(entity_t *e, const i16 *pose, i32 t);
 
-/* Per-frame animation step for one actor: sample the current clip at the
- * current time and blend the skeleton toward it. */
-void actor_animate(entity_t *e);
+/* --- per-frame update (actor_move.c) ------------------------------- */
+
+/* sub_41CCB7 @ 0x41CCB7 — clip clock, messages, floor, pose, root motion. */
+void actor_update(entity_t *e);
+
+/* sub_4193CC @ 0x4193CC — apply the pending move and drive the locomotion
+ * clips from +0xCEC (mode) / +0xCF4 (turn) / +0xD04 (scripted state). */
+void actor_control(entity_t *e);
+
+/* sub_469222 @ 0x469222 — scripted walk state machine (+0xCBC). */
+void actor_walk_update(entity_t *e);
+
+/* sub_428714 @ 0x428714 — steer toward (x, z); 1 = arrived. */
+i32 actor_steer(entity_t *e, i32 x, i32 z);
+
+/* sub_461468 @ 0x46162B..0x461851, the actor part of the game tick: update
+ * the three actors in the original order, run the player's walk, drain the
+ * script action piles and run the player's controller. */
+void actor_frame(u32 now_ms);
+
+extern i32 g_cinematic_mode;          /* cinematic_mode        */
+extern i32 g_special_mode_active;     /* special_mode_active   */
+extern i32 g_player_movement_locked;  /* player_movement_enabled */
+extern i32 g_level_slow;              /* dword_4F5E20 ("slow") */
+extern i32 g_skip_next_animation;     /* dword_506BE0          */
 
 /* sub_461468 @ 0x4617B7: recompute the divisor from the frame rate and
  * rescale every actor's clocks (update_entity_animation_timings). */
@@ -121,5 +143,7 @@ void actor_node_positions(obc_node_t *root, const fmat_t *start);
 
 /* sub_457345 @ 0x457345 ("generate_effect") — floor height at (x, z). */
 i32 actor_floor_height(i32 x, i32 z, const entity_t *e);
+/* Same, also returning the floor zone hit (NULL = world controller). */
+i32 actor_floor_zone(i32 x, i32 z, const entity_t *e, void **zone);
 
 #endif /* DKE_ACTOR_H */

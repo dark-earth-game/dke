@@ -175,6 +175,16 @@ i32 lieu_poll_camera_change(i32 *mode);
 void lieu_enter_room(void);
 void lieu_zone_debug(void);
 
+/* Zones that follow an actor (POSPERSO zone/radius, dword_506CA0). */
+void lieu_zone_attach(i32 zone, void *entity, i32 size, i32 active);
+void lieu_zone_detach(void *entity);
+
+/* Action key (Space) state for sub_449F9F's zone gating. */
+void lieu_set_action_key(i32 down);
+
+/* 1 while the INIT burst is drained at level start (dword_4B52DC == -1). */
+i32 lieu_loading(void);
+
 /* Persona placements recorded by PosPerso (spawn_678). For a future dke
  * character-render pass. lieu_spawn_get returns the name or NULL. */
 i32 lieu_spawn_count(void);

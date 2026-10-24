@@ -211,6 +211,10 @@ static void handle_events(system_t *system, i32 type, i32 key) {
         case 0x7C:
             system->actions[39] = type;
             break;
+        // Space (keyCode 49) → actions[32] (VK_SPACE: action / talk key)
+        case 0x31:
+            system->actions[32] = type;
+            break;
         // F12 (keyCode 111) → actions[111] for screenshot
         case 0x6F:
             system->actions[111] = type;

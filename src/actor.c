@@ -31,6 +31,7 @@
 #include "actor.h"
 #include "game_init.h"
 #include "world.h"
+#include "lieu_cb.h"
 
 persona_desc_t g_persona_desc[PERSONA_COUNT];
 u8             g_hero_desc[HERO_COUNT][HERO_DESC_SIZE];
@@ -53,10 +54,6 @@ static i32       g_actor_count = 0;
 /* byte_4F60E0 — 0x1000-byte nav workspace per actor slot (entity+0xCD8). */
 static u8 g_nav_workspace[0x3000];
 
-/* dword_506C80 zone records: stride 0x24, +0x20 attached entity. Only the
- * attachment written by sub_463FB5 is kept here. */
-#define ZONE_RECORDS 0x29
-static struct { i32 radius_a, radius_b, odd; entity_t *entity; } g_zone_attach[ZONE_RECORDS];
 
 static u32 now_ms(void) { return state ? state->current_game_time : 0; }
 
@@ -79,7 +76,6 @@ void actor_tables_reset(void) {
     g_companion_entity = NULL;
     g_secondary_companion_entity = NULL;
     g_actor_count = 0;
-    memset(g_zone_attach, 0, sizeof(g_zone_attach));
 }
 
 entity_t *actor_find(i32 id) {                        /* sub_44411D */
@@ -290,8 +286,7 @@ void actor_free(entity_t *e) {                        /* sub_4658D4 */
         }
     for (i32 i = 0; i < PERSONA_COUNT; i++)
         if (g_persona_desc[i].entity == e) g_persona_desc[i].entity = NULL;
-    for (i32 i = 0; i < ZONE_RECORDS; i++)
-        if (g_zone_attach[i].entity == e) g_zone_attach[i].entity = NULL;
+    lieu_zone_detach(e);
     if (e->gravit.child) obc_free(e->gravit.child);
     if (EPTR(e, 0x88)) mat_free((mat_lib_t *)EPTR(e, 0x88));
     if (g_companion_entity == e) g_companion_entity = NULL;
@@ -322,6 +317,11 @@ static i32 zone_contains(i32 n, i32 x, i32 z, const i32 *v) {
 }
 
 i32 actor_floor_height(i32 x, i32 z, const entity_t *e) {
+    return actor_floor_zone(x, z, e, NULL);
+}
+
+i32 actor_floor_zone(i32 x, i32 z, const entity_t *e, void **zone) {
+    if (zone) *zone = g_world.world_controller;
     if (!g_world.world_controller) return 0;
     /* With an actor whose foot node is one of the four leg slots, zones
      * flagged 0x10 are skipped (stairs the feet should not snap onto). */
@@ -341,8 +341,10 @@ i32 actor_floor_height(i32 x, i32 z, const entity_t *e) {
         if (!(x0 < x && x < x1 && z0 < z && z < z1)) continue;
         if (skip_10 && (s->flags & 0x10)) continue;
         if (!(s->flags & 1)) continue;
-        if (zone_contains(*(const i32 *)(b + 0x1D8), x, z, (const i32 *)(b + 0x14)))
+        if (zone_contains(*(const i32 *)(b + 0x1D8), x, z, (const i32 *)(b + 0x14))) {
+            if (zone) *zone = (void *)s;
             return *(const i32 *)(b + 0x1EC);
+        }
     }
     return *(const i32 *)((const u8 *)g_world.world_controller + 0x1E0);
 }
@@ -548,6 +550,7 @@ i32 actor_anim_time(const entity_t *e) {
 
 i32 actor_anim_done(entity_t *e) {                            /* 0x418D7F */
     if (!e) return 1;
+    if (lieu_loading()) return 1;                             /* dword_4B52DC == -1 */
     can_rec_t *r = (can_rec_t *)EPTR(e, 0xD50);
     if (!r) return 1;
     if (E32(e, 0xC48))
@@ -628,42 +631,6 @@ void actor_blend_pose(entity_t *e, const i16 *pose, i32 t) {  /* 0x415021 */
             if (diff < 0x8000) n->rot[k] = (p * w + n->rot[k] * iw) / 1024;
         }
     }
-}
-
-/* Per-frame clip clock, the first half of sub_41CCB7 @ 0x41CDCC..0x41D186:
- * wrap the tick into the clip (or hold at the end for 0x200 clips) and
- * bake the root yaw each time a looping clip wraps. The message pass
- * (sub_41AED1: foot plants, sounds, hits) is not ported yet. */
-void actor_animate(entity_t *e) {
-    if (!e) return;
-    can_rec_t *r = (can_rec_t *)EPTR(e, 0xD50);
-    if (!r) return;
-    const u8 *d = EDESC(e);
-    if (d && d[0x96]) return;
-    i32 dur = CAN_DURATION(r);
-    if (dur <= 0) return;
-
-    i32 now = (i32)now_ms();
-    if (now - E32(e, 0xC28) < 0) { E32(e, 0xC28) = now; E32(e, 0xC34) = now; }
-    i32 t     = (i32)((f64)(now - E32(e, 0xC28)) * g_anim_divisor);
-    i32 t_c34 = (i32)((f64)(E32(e, 0xC34) - E32(e, 0xC28)) * g_anim_divisor);
-    if (CAN_FLAGS(r) & 0x200) {
-        if (t >= dur) t = dur - 1;
-    } else {
-        t = (t / dur - t_c34 / dur) * dur + t % dur;
-    }
-    if (t >= dur) {
-        if (CAN_FLAGS(r) & 2) E32(e, 0xC2C) = now;
-        if (!(CAN_FLAGS(r) & 0x20)) actor_bake_root_yaw(e);
-    }
-    E32(e, 0xC34) = now;
-    E32(e, 0xC40) = t % dur;
-    while (t >= dur) { t -= dur; E32(e, 0xD54) = 0; }
-
-    static i16 pose[103];
-    memset(pose, 0, sizeof(pose));
-    anim_sample(r, pose, t);
-    actor_blend_pose(e, pose, E32(e, 0xC34) - E32(e, 0xC2C));
 }
 
 /* =========================================================================
@@ -804,12 +771,9 @@ static void actor_place_ex(i32 id, entity_t *e, i32 x, i32 z, i32 facing,
     E32(e, 0xB0) = id < 0 ? -id : id;
     snprintf(ESTR(e, 0xC4), 14, "%s", anim ? anim : "");
     actor_place(e, x, z, facing, anim);
-    if (radius != -1 && zone != -1 && zone >= 0 && zone < ZONE_RECORDS) {
-        g_zone_attach[zone].entity = e;
+    if (radius != -1 && zone != -1) {
         i32 half = radius / 2;
-        g_zone_attach[zone].radius_a = half ? half * 600 : 150000;
-        g_zone_attach[zone].radius_b = g_zone_attach[zone].radius_a;
-        g_zone_attach[zone].odd = radius & 1;
+        lieu_zone_attach(zone, e, half ? half * 600 : 150000, radius & 1);
     }
 }
 
@@ -875,8 +839,7 @@ entity_t *actor_pos_perso(i32 id, i32 x, i32 z, i32 facing, i32 vie,
         }
         e = actor_find(id);
         if (!e) return NULL;
-        for (i32 i = 1; i < ZONE_RECORDS; i++)
-            if (g_zone_attach[i].entity == e) g_zone_attach[i].entity = NULL;
+        lieu_zone_detach(e);
         g_persona_desc[id].entity = NULL;
         g_persona_desc[id].raw[0x95] = 0;
         if (g_companion_entity == e) g_companion_entity = NULL;

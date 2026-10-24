@@ -39,6 +39,7 @@
 #include "player.h"
 #include "dialogue.h"
 #include "actor.h"
+#include "state.h"
 
 /* -------------------------------------------------------------------------
  * Per-level state buffer + owned vtable pointer.
@@ -61,15 +62,43 @@ typedef struct {
     i32 size_x;     /* full extent (half = /2) */
     i32 size_z;
     i32 active;     /* 1 = always tested; 0 = only when g_force_zones */
+    void *entity;   /* dword_506CA0: actor the zone follows (POSPERSO), or NULL */
 } zone_t;
 
 #define LIEU_ZONE_COUNT 41
 #define LIEU_ZONE_SCALE 600            /* AjouteZone tile->world (0x258)   */
 static zone_t g_zones[LIEU_ZONE_COUNT];
-static i32    g_force_zones = 1;       /* dword_4FFB80; 1 = test all zones */
+static i32    g_force_zones = 0;       /* dword_4FFB80: inactive zones answer the action key */
+static i32    g_action_key  = 0;       /* key 0x20 (Space) held this frame */
+static i32    g_action_pressed = 0;    /* dword_505C4C */
+
+/* sub_449F9F feeds the action key in; scene.c calls this every frame. */
+void lieu_set_action_key(i32 down) { g_action_key = down; }
+
+/* dword_4B52DC: -1 while the level script's INIT burst is being drained. */
+static i32 g_lieu_loading = 0;
+i32 lieu_loading(void) { return g_lieu_loading; }
 
 static void zones_clear(void) {
-    for (i32 i = 0; i < LIEU_ZONE_COUNT; i++) g_zones[i].center_x = -1;
+    for (i32 i = 0; i < LIEU_ZONE_COUNT; i++) {
+        g_zones[i].center_x = -1;
+        g_zones[i].entity   = NULL;
+    }
+}
+
+/* sub_463FB5 @ 0x464019: POSPERSO hangs a zone on the placed actor. The zone
+ * then moves with it (sub_449E03 reads the actor's position as the centre). */
+void lieu_zone_attach(i32 zone, void *entity, i32 size, i32 active) {
+    if (zone < 0 || zone >= LIEU_ZONE_COUNT) return;
+    g_zones[zone].entity = entity;
+    g_zones[zone].size_x = size;
+    g_zones[zone].size_z = size;
+    g_zones[zone].active = active;
+}
+
+void lieu_zone_detach(void *entity) {
+    for (i32 i = 1; i < LIEU_ZONE_COUNT; i++)
+        if (g_zones[i].entity == entity) g_zones[i].entity = NULL;
 }
 
 void lieu_zone_debug(void) {
@@ -169,7 +198,8 @@ static i32 player_facing_bam(void) {
  * Original engine queues these as actions, but we apply directly since
  * dke has no action queue processor.
  * ---------------------------------------------------------------------- */
-static i32 g_player_blocked = 0;
+static i32 g_player_blocked = 0;   /* player_movement_enabled @ 0x4FF080 */
+static i32 g_pile_actor[3];        /* dword_4B53F0: last ANIMATION actor per pile */
 i32 lieu_player_blocked(void) { return g_player_blocked; }
 
 /* -------------------------------------------------------------------------
@@ -414,8 +444,8 @@ static void cb_spawn_678(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
         else
             ent_spawn(zone);
     }
-    print("lieu_cb: PosPerso '%s' id=%d vie=%d tileXZ=(%d,%d) facing=%d groundY=%d\n",
-          name ? name : "(null)", zone, flag, anim, x, y, z);
+    print("lieu_cb: PosPerso '%s' id=%d vie=%d tileXZ=(%d,%d) facing=%d zone=%d radius=%d\n",
+          name ? name : "(null)", zone, flag, anim, x, y, kind, z);
 }
 
 /* Ground Y + facing for spawn i (see lieu_spawn_get for name/tile/view). */
@@ -653,18 +683,23 @@ static void cb_cb_98C(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3) {
  * Negative values (not used in L01) have immediate effects: bit 1=unlock
  * movement, bit 2=unlock camera, bit 4=reset combat state.
  * Since dke has no action queue, we apply the blocking directly. */
-static void cb_group(i32 a) {
+static void cb_group(i32 a) {                               /* sub_446227 */
+    lieu_action_t *n = lieu_action_push(LA_BLOQUE);
     if (a < 0) {
-        i32 flags = -a;
-        if (flags & 1) g_player_blocked = 0;
-        if (flags & 2) { /* camera unlock — no-op for now */ }
-        if (flags & 4) { /* combat reset — no-op for now */ }
-        print("lieu_cb: group unblock flags=0x%X\n", flags);
-    } else if (a == 3) {
-        g_player_blocked = 1;
-    } else if (a == 0) {
-        g_player_blocked = 0;
+        /* Negative: immediate. 1 = lock movement, 2 = lock camera
+         * (dword_4FF0A0), 4 = stop the player's locomotion. */
+        a = -a;
+        if (a & 1) g_player_blocked = 1;
+        if ((a & 4) && g_player_entity) {
+            E32(g_player_entity, 0xCEC) = 0; E32(g_player_entity, 0xCF0) = 1;
+            E32(g_player_entity, 0xCF4) = 0; E32(g_player_entity, 0xCF8) = 0;
+        }
+        return;
     }
+    n->num5C = a;
+    if (a == 0) { n->p60 = 0; n->p64 = 0; }
+    if (a & 1) n->p64 = a;
+    if (a & 2) n->p60 = a;
 }
 
 /* slot 21 sub_44637B "Fouille": remove entity and clear its zone slots.
@@ -729,7 +764,15 @@ static void cb_flush_958(i32 actor, i32 target) {
 }
 
 /* slot 28: cb_46C sets the state slot the handler passed. */
-static void cb_cb_46C(i32 *slot, i32 edx) { if (slot) *slot = edx; }
+static void cb_cb_46C(i32 *slot, i32 edx) {                 /* sub_4468E1 */
+    if (!slot) {
+        print("lieu_cb: Bad parameter ptr in MODIFYVAR function\n");
+        return;
+    }
+    lieu_action_t *n = lieu_action_push(LA_MODIFYVAR);
+    n->slot74 = slot;
+    n->num5C  = edx;
+}
 
 /* slot 29: query_940 — random integer in [0, n]. */
 static i32  cb_query_940(i32 n) {
@@ -1131,24 +1174,13 @@ static void objs_clear(void) {
     memset(g_anim_slot, 0, sizeof(g_anim_slot));
 }
 
-/* Move a placed persona to a world position (spawn registry holds tiles). */
-static void spawn_set_world(i32 id, i32 wx, i32 wz) {
-    for (i32 i = 0; i < g_spawn_count; i++) {
-        if (g_spawns[i].id != id) continue;
-        g_spawns[i].wx = wx / LIEU_ZONE_SCALE;
-        g_spawns[i].wz = wz / LIEU_ZONE_SCALE;
-        return;
-    }
-}
-
+/* Live world X/Z of persona `id` (sub_44411D -> entity +0x50 node). */
 static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz) {
-    for (i32 i = 0; i < g_spawn_count; i++) {
-        if (g_spawns[i].id != id) continue;
-        if (wx) *wx = g_spawns[i].wx * LIEU_ZONE_SCALE;
-        if (wz) *wz = g_spawns[i].wz * LIEU_ZONE_SCALE;
-        return 1;
-    }
-    return 0;
+    entity_t *e = actor_find(id);
+    if (!e || !EROOT(e)) return 0;
+    if (wx) *wx = EROOT(e)->pos[0];
+    if (wz) *wz = EROOT(e)->pos[2];
+    return 1;
 }
 
 /* -------------------------------------------------------------------------
@@ -1160,46 +1192,6 @@ static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz) {
  * entity animation player, so the clip is published here and the scene
  * renderer swaps the persona's CAN over to it.
  * ---------------------------------------------------------------------- */
-/* Walk speed for scripted joins: 3 tiles/second (1800 world units/s). */
-#define LIEU_WALK_UNITS_PER_SEC 1800
-
-/*
- * lieu_walk_update — stand-in for the engine's entity movement system.
- *
- * JOINDRE (case 8 of sub_44A58B @ 0x44B5E3) only writes a destination to
- * entity+0xCC0/0xCC4/0xCC8 and raises the walk flags entity+0xCBC / +0xC44,
- * then completes; the entity update walks the actor there over the following
- * frames while the action pile keeps draining. dke has no entity movement
- * system, so we advance the recorded placements here instead — same effect,
- * same non-blocking behaviour.
- */
-static void lieu_walk_update(u32 now_ms) {
-    for (i32 id = 0; id < ENT_MAX; id++) {
-        if (!g_ents[id].walking) continue;
-
-        i32 cx = 0, cz = 0;
-        if (!spawn_get_world(id, &cx, &cz)) { g_ents[id].walking = 0; continue; }
-
-        u32 last = g_ents[id].walk_ms;
-        g_ents[id].walk_ms = now_ms;
-        if (last == 0 || now_ms <= last) continue;
-
-        i32 dx = g_ents[id].dest_x - cx;
-        i32 dz = g_ents[id].dest_z - cz;
-        double dist = sqrt((double)dx * dx + (double)dz * dz);
-        double step = (double)LIEU_WALK_UNITS_PER_SEC * (now_ms - last) / 1000.0;
-
-        if (dist <= step || dist < 1.0) {
-            spawn_set_world(id, g_ents[id].dest_x, g_ents[id].dest_z);
-            g_ents[id].walking = 0;
-            print("lieu_act: actor %d arrived at (%d,%d)\n",
-                  id, g_ents[id].dest_x, g_ents[id].dest_z);
-            continue;
-        }
-        spawn_set_world(id, cx + (i32)(dx * step / dist),
-                            cz + (i32)(dz * step / dist));
-    }
-}
 
 /*
  * lieu_action_dispatch — port of the 40-case switch in sub_44A58B @ 0x44A58B.
@@ -1222,6 +1214,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
 
     case LA_ANIMATION: {                       /* case 0 @ 0x44A8E3 */
         static i32 busy[3];                    /* dword_4B5418[pile] */
+        if (g_skip_next_animation) { g_skip_next_animation = 0; return 1; }
         i32 pile = lieu_action_run_pile();
         if (pile < 0 || pile > 2) pile = 0;
         entity_t *e = actor_find(n->actor);
@@ -1237,6 +1230,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         if (n->num5C == 0xFFFF)                /* wait for the current clip */
             return actor_anim_done(e);
         if (n->actor == -2) return 1;          /* 2D anim player not ported */
+        g_pile_actor[pile] = n->actor;         /* dword_4B53F0[pile] */
         e = actor_find(n->actor);
         if (!e) return 0;
         if (E32(e, 0xCBC)) return 0;           /* still walking */
@@ -1294,82 +1288,60 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
     }
 
     case LA_JOINDRE: {                         /* case 8 @ 0x44B5E3 */
-        /*
-         * Resolve the destination, hand it to the actor, and COMPLETE. The
-         * original does not hold the node while the actor walks — the entity
-         * movement system consumes entity+0xCC0/0xCC4/0xCC8 on later frames,
-         * so the pile keeps draining behind the walk. lieu_walk_update()
-         * below plays the part of that movement system.
-         *
-         * node+0x10 discriminates the three call shapes:
-         *   > 0   target actor id — walk to that actor
-         *   < 0   zone reference, index -(v)-1 into the zone table
-         *         (engine dword_506C80, stride 0x24)
-         *   == 0  plain destination in node+0x14 / node+0x1C
-         * node+0x24 is a FACING angle, supplied by the script or computed
-         * from actor -> target by sub_4440A6 @ 0x4440A6.
-         */
-        i32 id = n->actor;
-        if (id < 0 || id >= ENT_MAX) return 1;
-
-        i32 ax = 0, az = 0;
-        i32 have_actor = spawn_get_world(id, &ax, &az);
-        if (!have_actor) {
-            /* No placement record: the player (driven by input here) and any
-             * actor the port has not spawned. asm 0x44B608 bails the same way
-             * when sub_44411D returns NULL. */
-            print("lieu_act: JOINDRE actor=%d has no placement — skipped\n", id);
-            return 1;
-        }
-
-        g_ents[id].joined = 0;                  /* asm 0x44B622: entity+0xCB4 = 0 */
-
-        i32 tx = 0, tz = 0;
-        i32 have_target = (n->p10 > 0) ? spawn_get_world(n->p10, &tx, &tz) : 0;
-
-        if (have_target) {
-            /* asm 0x44B63C: with an explicit destination the TARGET's
-             * position wins; without one the actor holds station and only
-             * the facing is computed. */
-            if (n->x || n->z || n->p24) { n->x = tx; n->z = tz; }
-            else                        { n->x = ax; n->z = az; }
-            n->p24 = bam_angle(tx - ax, tz - az);
+        /* Arms the actor's walk (entity +0xCC0/+0xCC4/+0xCC8, state +0xCBC = 1)
+         * and completes; sub_469222 walks it on later frames. A JOINDRE that
+         * repeats the running walk waits for it to end (heroes only). */
+        entity_t *e = actor_find(n->actor);
+        entity_t *t = actor_find(n->p10);
+        if (!e || !EROOT(e)) return 1;
+        obc_node_t *eg = EROOT(e);
+        E32(e, 0xCB4) = 0;
+        if (t && EROOT(t)) {
+            obc_node_t *tg = EROOT(t);
+            if (n->x == 0 && n->z == 0 && n->p24 == 0) { n->x = eg->pos[0]; n->z = eg->pos[2]; }
+            else                                      { n->x = tg->pos[0]; n->z = tg->pos[2]; }
+            n->p24 = bam_angle(tg->pos[0] - eg->pos[0], tg->pos[2] - eg->pos[2]);
         } else if (n->x == 0 && n->z == 0) {
             if (n->p10 < 0 && n->p24 == 0) {
-                /* Zone reference: face the zone centre, stay put. */
                 i32 zi = -n->p10 - 1;
-                if (zi >= 0 && zi < LIEU_ZONE_COUNT && g_zones[zi].center_x != -1)
-                    n->p24 = bam_angle(g_zones[zi].center_x - ax,
-                                       g_zones[zi].center_z - az);
+                if (zi >= 0 && zi < LIEU_ZONE_COUNT)
+                    n->p24 = bam_angle(g_zones[zi].center_x - eg->pos[0],
+                                       g_zones[zi].center_z - eg->pos[2]);
             }
-            n->x = ax;
-            n->z = az;
+            n->x = eg->pos[0];
+            n->z = eg->pos[2];
         }
-
-        /* asm 0x44B838: a non-player actor in combat refuses the join. */
-        if (g_ents[id].combat_ready && id != 0) {
-            print("lieu_act: JOINDRE executed during COMBAT by perso %d\n", id);
+        if ((E32(e, 0xCBC) != 0 || E32(e, 0xC44) != 0) &&
+            (n->x == E32(e, 0xCC0) || E32(e, 0xCC4) == n->z || n->p24 == E32(e, 0xCC8))) {
+            if (n->actor > 3) { E32(e, 0xC44) = 0; return 1; }
+            if (E32(e, 0xCBC) == 0 && E32(e, 0xC44) == 1) { E32(e, 0xC44) = 0; return 1; }
+            return 0;
+        }
+        if (E32(e, 0xD60) != 0 && e != g_player_entity) {
+            print("lieu_act: JOINDRE executed during COMBAT by perso %d\n", E32(e, 0xB0));
             return 1;
         }
-
-        g_ents[id].dest_x      = n->x;
-        g_ents[id].dest_z      = n->z;
-        g_ents[id].dest_facing = n->p24;
-        g_ents[id].walking     = 1;
-        g_ents[id].walk_ms     = now_ms;
+        E32(e, 0xCC0) = n->x;
+        E32(e, 0xCC4) = n->z;
+        E32(e, 0xCC8) = n->p24;
+        E32(e, 0xCBC) = 1;
+        E32(e, 0xC44) = 1;
         print("lieu_act: JOINDRE actor=%d (%d,%d) -> (%d,%d) facing=0x%X\n",
-              id, ax, az, n->x, n->z, n->p24);
+              n->actor, eg->pos[0], eg->pos[2], n->x, n->z, n->p24 & 0xFFFF);
         return 1;
     }
 
-    case LA_JOINDREPERM: {                     /* case 0x1B */
-        i32 id = n->actor;
-        if (id < 0 || id >= ENT_MAX) return 1;
-        /* Permanent join: the actor keeps following its target. Without a
-         * follow controller we record the link; the one-shot walk toward the
-         * target is left to the JOINDRE the scripts pair it with. */
-        g_ents[id].joined = 1;
-        print("lieu_act: JOINDREPERM actor=%d target=%d\n", id, n->p10);
+    case LA_JOINDREPERM: {                     /* case 0x1B @ 0x44C695 */
+        entity_t *e = actor_find(n->actor);
+        entity_t *t = actor_find(n->p10);
+        if (e && t) {
+            if (E32(e, 0xD60) != 0 && e != g_player_entity) {
+                print("lieu_act: JOINDREPERM executed during COMBAT by perso %d\n", E32(e, 0xB0));
+                return 1;
+            }
+            E32(e, 0xCB4) = 1;
+            E32(e, 0xCB8) = n->p10;
+        }
         return 1;
     }
 
@@ -1391,13 +1363,19 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         return held ? 0 : 1;
     }
 
-    case LA_STOPJOINDRE:                       /* case 0x16 */
-        if (n->actor >= 0 && n->actor < ENT_MAX) {
-            g_ents[n->actor].walking = 0;
-            g_ents[n->actor].joined  = 0;
+    case LA_STOPJOINDRE: {                     /* case 0x16 @ 0x44C435 */
+        entity_t *e = actor_find(n->actor);
+        if (e) {
+            if (E32(e, 0xCB4)) {
+                E32(e, 0xCB4) = 0; E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1; E32(e, 0xCF4) = 0;
+            }
+            if (E32(e, 0xCBC)) {
+                E32(e, 0xCDC) = 1; E32(e, 0xD14) = 0; E32(e, 0xCBC) = 0; E32(e, 0xC44) = 0;
+                E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1; E32(e, 0xCF4) = 0;
+            }
         }
-        print("lieu_act: STOPJOINDRE actor=%d\n", n->actor);
         return 1;
+    }
 
     case LA_VIRECOL:                           /* case 0x17 */
         if (n->p68 >= 0 && n->p68 < LIEU_FLAG_MAX) g_flags[n->p68] = n->p4C;
@@ -1432,6 +1410,26 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         print("lieu_act: FREEANIM slot=%d\n", n->id48);
         return 1;
 
+    case LA_BLOQUE:                            /* case 0x14 @ 0x44BC8D */
+        if ((n->num5C & 4) && g_player_entity) {
+            E32(g_player_entity, 0xCEC) = 0; E32(g_player_entity, 0xCF0) = 1;
+            E32(g_player_entity, 0xCF4) = 0; E32(g_player_entity, 0xCF8) = 0;
+        }
+        /* dword_4FF0A0 (camera lock) = p60 != 0 — camera follow not ported. */
+        g_player_blocked = (n->p64 != 0);
+        if (n->num5C == 0 && g_player_entity &&
+            (E32(g_player_entity, 0xD58) == -5 || E32(g_player_entity, 0xD58) == 0x3B))
+            E32(g_player_entity, 0xE4) = 1;
+        return 1;
+
+    case LA_MODIFYVAR: {                       /* case 0x1C @ 0x44C5F7 */
+        i32 pile = lieu_action_run_pile();
+        entity_t *e = actor_find(g_pile_actor[(pile >= 0 && pile < 3) ? pile : 0]);
+        if (e && n->prev_type != LA_JOINDRE && !actor_anim_done(e)) return 0;
+        if (n->slot74) *n->slot74 = n->num5C;
+        return 1;
+    }
+
     default:
         print("lieu_act: %s (type %d) not wired — completing\n",
               lieu_action_name(n->type), n->type);
@@ -1442,6 +1440,20 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
 /* -------------------------------------------------------------------------
  * Public driver — scene.c calls these.
  * ---------------------------------------------------------------------- */
+
+/* sub_448F4D @ 0x4494B2..0x449530: run the script's INIT, then drain every
+ * action it queued before the level starts (with dword_4B52DC = -1, which
+ * makes is_entity_in_animation report "done"), then fire trigger 41
+ * (sub_44A263, "room entered"). */
+static void lieu_run_init(void) {
+    g_lieu_loading = 1;
+    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0, 0);   /* op 1 */
+    u32 t0 = state ? state->current_game_time : 0;
+    for (i32 guard = 0; lieu_action_pending() && guard < 100000; guard++)
+        lieu_action_run(t0 + (u32)guard);
+    lieu01_fonction_editor(LIEU_OP_EVENT, g_lieu_state, 0x29, 0);  /* op 3 (41) */
+    g_lieu_loading = 0;
+}
 void lieu_enter(i32 level_id) {
     g_lieu_level = level_id;
     g_lieu_cb    = &g_lieu_cb_impl;
@@ -1480,7 +1492,7 @@ void lieu_enter(i32 level_id) {
     LIEU_ST(g_lieu_state, 0x0C)  = 1;
 
     print("lieu: LIEU01 native scripting — running INIT\n");
-    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0, 0);   /* op 1 */
+    lieu_run_init();
 }
 
 /*
@@ -1494,18 +1506,32 @@ void lieu_enter(i32 level_id) {
  *   2. load L01 zone rectangles (LCOD table),
  *   3. point-in-zone test -> zone id.
  */
-i32 lieu_detect_zone(void) {
+i32 lieu_detect_zone(void) {                              /* sub_449E03 */
     i32 px, pz;
     if (!player_get_pos(&px, NULL, &pz)) return -1;
-    for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {          /* first hit wins  */
-        if (g_zones[i].center_x == -1) continue;         /* empty slot      */
-        if (g_zones[i].active != 1 && g_force_zones != 1) continue;
-        i32 dx = g_zones[i].center_x - px;
-        i32 dz = g_zones[i].center_z - pz;
-        i32 hx = g_zones[i].size_x / 2, hz = g_zones[i].size_z / 2;
+    /* 0x44A179: the action key (unless in combat) makes every zone live. */
+    if (g_player_entity && E32(g_player_entity, 0xD60) == 0 && g_action_key) {
+        if (!g_player_blocked) { g_action_pressed = 1; g_force_zones = 1; }
+    } else {
+        g_action_pressed = 0;
+        g_force_zones = 0;
+    }
+    for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {           /* first hit wins  */
+        zone_t *zn = &g_zones[i];
+        if (zn->center_x == -1 && !zn->entity) continue;  /* empty slot      */
+        if (zn->active != 1 && g_force_zones != 1) continue;
+        i32 cx = zn->center_x, cz = zn->center_z;
+        if (zn->entity) {
+            entity_t *e = (entity_t *)zn->entity;
+            if (e == g_player_entity || !EROOT(e)) continue;
+            cx = EROOT(e)->pos[0];
+            cz = EROOT(e)->pos[2];
+        }
+        i32 dx = cx - px, dz = cz - pz;
+        i32 hx = zn->size_x / 2, hz = zn->size_z / 2;
         if ((dx < 0 ? -dx : dx) > hx) continue;
         if ((dz < 0 ? -dz : dz) > hz) continue;
-        return i;                                        /* == trigger idx  */
+        return i;                                         /* == trigger idx  */
     }
     return -1;
 }
@@ -1515,12 +1541,7 @@ void lieu_tick(u32 now_ms) {
     if (g_lieu_level == 1)
         lieu01_fonction_editor(LIEU_OP_TICK, g_lieu_state, 0, 0);   /* op -1 */
 
-    /* Then drain the action piles and fire expired object timers, as the
-     * engine does from sub_461468 @ 0x46180A -> sub_44CDB8 @ 0x44CDB8. */
-    lieu_action_run(now_ms);
-
-    /* Walk any actor JOINDRE handed a destination (engine: entity update). */
-    lieu_walk_update(now_ms);
+    (void)now_ms;   /* the piles are drained by actor_frame (sub_461468 order) */
 }
 
 void lieu_exit(void) {
@@ -1543,7 +1564,7 @@ void lieu_enter_room(void) {
     zones_clear();
     g_spawn_count = 0;
     print("lieu: intro done -> entering room (submode 0), re-running INIT\n");
-    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0, 0);
+    lieu_run_init();
     print("lieu: room INIT placed %d personas\n", g_spawn_count);
     lieu_zone_debug();
     /* Dialogue now fires from the trigger handlers on zone entry (op 3),
