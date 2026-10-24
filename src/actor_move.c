@@ -29,6 +29,7 @@
 #include "libsys/graphics/shading.h"
 #include "state.h"
 #include "actor.h"
+#include "lieu_cb.h"
 #include "nav_grid.h"
 #include "lieu_action.h"
 #include "world.h"
@@ -260,6 +261,13 @@ static i32 actor_collide(entity_t *e, i32 flags) {
                 if (g_world.collision_zones[i] == g_cand_obj[0]) { E32(e, 0xCB0) = i; break; }
         }
         coll_point(g_world.world_controller, px, pz);
+    }
+    if (getenv("DKE_COLLDBG") && e == g_player_entity && g_cand_n) {
+        i32 zi = -1;
+        for (i32 i = 0; i < g_world.num_collisions; i++)
+            if (g_world.collision_zones[i] == g_cand_obj[0]) zi = i;
+        print("coll: p=(%d,%d) d=(%d,%d) cands=%d obj=%s%d\n", px, pz, g_delta[0], g_delta[2],
+              g_cand_n, g_cand_obj[0] == g_world.world_controller ? "world" : "col", zi);
     }
     if (flags & 2) {
         coll_party(e, px, pz);
@@ -1327,4 +1335,13 @@ void actor_frame(u32 now) {
     player_tick();
     lieu_action_run(now);                         /* sub_44CDB8 */
     if (g_player_entity) actor_control(g_player_entity);
+}
+
+/* sub_43A63D @ 0x43A63D, the actor-related part of "new game": the hero
+ * starts outside combat stance (special_mode_active = 1). */
+void actor_new_game(void) {
+    lieu_new_game();
+    g_special_mode_active = 1;
+    g_cinematic_mode = 0;
+    g_player_movement_locked = 0;
 }

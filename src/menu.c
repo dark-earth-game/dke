@@ -4,6 +4,7 @@
 
 #include "menu.h"
 #include "state.h"
+#include "actor.h"
 #include "game_init.h"
 #include "scene.h"
 #include "libsys/common.h"
@@ -558,6 +559,7 @@ static void menu_dispatch(menu_t *menu) {
 
         case MENU_ACTION_NEW_GAME:
             print("menu: starting new game (level=%d)\n", state->first_room);
+            actor_new_game();
             if (scene_load_level(state->first_room) == 0) {
                 menu->state = MENU_STATE_LOADING;
                 /* TODO: transition to game loop */

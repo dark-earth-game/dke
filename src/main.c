@@ -20,6 +20,7 @@
 #include "libsys/graphics/palette.h"
 
 #include "state.h"
+#include "actor.h"
 #include "game_detection.h"
 #include "game_init.h"
 #include "menu.h"
@@ -280,6 +281,7 @@ i32 ls_main(system_t *system, c8 **argv) {
     i32 dbg_frame     = 0;
     if (dbg_autonew) {
         print("main: DKE_NEWGAME -> scene_load_level(%d)\n", state->first_room);
+        actor_new_game();
         if (scene_load_level(state->first_room) == 0)
             menu.state = MENU_STATE_LOADING;
         else

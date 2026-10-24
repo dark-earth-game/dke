@@ -125,6 +125,9 @@ i32 actor_steer(entity_t *e, i32 x, i32 z);
  * script action piles and run the player's controller. */
 void actor_frame(u32 now_ms);
 
+/* sub_43A63D: reset actor globals for a new game. */
+void actor_new_game(void);
+
 extern i32 g_cinematic_mode;          /* cinematic_mode        */
 extern i32 g_special_mode_active;     /* special_mode_active   */
 extern i32 g_player_movement_locked;  /* player_movement_enabled */

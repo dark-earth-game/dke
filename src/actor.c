@@ -827,6 +827,7 @@ entity_t *actor_pos_perso(i32 id, i32 x, i32 z, i32 facing, i32 vie,
             }
         }
         if (!e) return NULL;
+        lieu_set_persona_vie(id, vie);
         actor_place_ex(id, e, x, z, facing, anim, zone, radius);
         if (vie == 2 && radius != -1) {
             E32(e, 0x70) = 0;

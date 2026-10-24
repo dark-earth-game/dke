@@ -212,7 +212,7 @@ static i32     g_scene_grd_loaded = 0;
 
 /* Per-camera active region (INF zone polygon, world X/Z). The engine picks
  * the camera whose region contains the player (dkev sub_45A67C). */
-typedef struct { i32 nv; i32 vx[32], vz[32]; } cam_region_t;
+typedef struct { i32 cam; i32 nv; i32 vx[37], vz[37]; } cam_region_t;
 static cam_region_t g_cam_region[32];   /* SCENE_MAX_CAMERAS (defined below) */
 static i32          g_cam_region_count = 0;
 static bmap_t *g_scene_l_bmap  = NULL;   /* L */
@@ -234,6 +234,7 @@ static i32 g_scene_cam_sy = 240;  /* projected character screen Y */
  * Projection: v = (R * w) >> 14 + Tv;  sx = 320 + v.x*scale; sy = 240 - v.y*scale. */
 static i32   g_proj_valid     = 0;
 static i32   g_proj_cam       = -1;     /* camera the matrix was loaded for */
+static i32   g_proj_eye[3];             /* camera position = -param[9..11] */
 static i32   g_proj_R[9];               /* camera matrix ints param[0..8].
                                          * R(row,col) = param[row + col*3]
                                          * (dkev transform_vector 0x48F424). */
@@ -1859,6 +1860,7 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
         cam.t[0] = param[9]; cam.t[1] = param[10]; cam.t[2] = param[11];
         fmat_rotate_translation(&cam, &cam);
         g_proj_T[0] = cam.t[0]; g_proj_T[1] = cam.t[1]; g_proj_T[2] = cam.t[2];
+        g_proj_eye[0] = -param[9]; g_proj_eye[1] = -param[10]; g_proj_eye[2] = -param[11];
     }
     g_proj_gscale    = param[24];
     g_proj_cam       = cam_idx;
@@ -1900,19 +1902,23 @@ static void scene_load_camera_regions(i32 level_id) {
     if (fread(&n_cam, 4, 1, f) != 1 || n_cam <= 0) { ls_close(f); return; }
     if (n_cam > 32) n_cam = 32;
     long cams_base = ftell(f);
+    /* myCamerasLimit[i] (sub_46D305): 0x208-byte records, vertex triples
+     * at +0x14, camera index at +0x1D4, vertex count at +0x1D8. */
     for (i32 c = 0; c < n_cam; c++) {
-        fseek(f, cams_base + (long)c * 0x208 + 0x1D8, SEEK_SET);
-        i32 nv = 0;
-        if (fread(&nv, 4, 1, f) != 1 || nv <= 0 || nv > 32) { g_cam_region[c].nv = 0; continue; }
+        i32 rec[0x208 / 4];
         cam_region_t *r = &g_cam_region[c];
-        r->nv = 0;
+        r->nv = 0; r->cam = -1;
+        fseek(f, cams_base + (long)c * 0x208, SEEK_SET);
+        if (fread(rec, sizeof(rec), 1, f) != 1) continue;
+        i32 nv = rec[0x1D8 / 4];
+        if (nv < 0) nv = 0;
+        if (nv > 37) nv = 37;
+        r->cam = rec[0x1D4 / 4];
         for (i32 i = 0; i < nv; i++) {
-            i32 vx = 0, vy = 0, vz = 0;
-            if (fread(&vx, 4, 1, f) != 1 || fread(&vy, 4, 1, f) != 1 || fread(&vz, 4, 1, f) != 1) break;
-            if (vx > -3000000 && vx < 3000000 && vz > -3000000 && vz < 3000000) {
-                r->vx[r->nv] = vx; r->vz[r->nv] = vz; r->nv++;
-            }
+            r->vx[i] = rec[0x14 / 4 + i * 3];
+            r->vz[i] = rec[0x14 / 4 + i * 3 + 2];
         }
+        r->nv = nv;
     }
     g_cam_region_count = n_cam;
     ls_close(f);
@@ -1927,7 +1933,7 @@ static void scene_load_camera_regions(i32 level_id) {
                 if (r->vz[i] < minz) minz = r->vz[i];
                 if (r->vz[i] > maxz) maxz = r->vz[i];
             }
-            print("  cam[%d] nv=%d X[%d..%d] Z[%d..%d]\n", c, r->nv, minx, maxx, minz, maxz);
+            print("  zone[%d] cam=%d nv=%d X[%d..%d] Z[%d..%d]\n", c, r->cam, r->nv, minx, maxx, minz, maxz);
         }
     }
 }
@@ -1946,14 +1952,17 @@ static i32 scene_pt_in_region(i32 px, i32 pz, const cam_region_t *r) {
     return inside;
 }
 
-/* Camera whose region contains (wx,wz), or -1. Prefers the current camera
- * (hysteresis) so the player must fully leave a region before switching. */
+/* sub_45A67C @ 0x45A67C — camera for (wx, wz), or -1. A zone of the current
+ * camera that still holds the player wins; otherwise the first zone that
+ * holds the player gives its camera (+0x1D4). The original also returns -1
+ * while the player is within 42000 of the origin (not yet placed). */
 static i32 scene_camera_for_position(i32 wx, i32 wz, i32 current) {
-    if (current >= 0 && current < g_cam_region_count &&
-        scene_pt_in_region(wx, wz, &g_cam_region[current]))
-        return current;
     for (i32 c = 0; c < g_cam_region_count; c++)
-        if (scene_pt_in_region(wx, wz, &g_cam_region[c])) return c;
+        if (g_cam_region[c].cam == current && scene_pt_in_region(wx, wz, &g_cam_region[c]))
+            return current;
+    if ((f64)wx * wx + (f64)wz * wz < 1764000000.0) return -1;
+    for (i32 c = 0; c < g_cam_region_count; c++)
+        if (scene_pt_in_region(wx, wz, &g_cam_region[c])) return g_cam_region[c].cam;
     return -1;
 }
 
@@ -2766,11 +2775,33 @@ static void scene_draw_zone_overlay(void) {
     }
 }
 
+/* calculate_model_scale @ 0x4207FA — an actor's depth on the backdrop Z
+ * image scale: distance along the camera's view axis over (zbuffer * 600),
+ * quantised through the 41-step table at 0x4B2FB8 (0xFE near .. 0 far). */
+static i32 scene_actor_zval(i32 x, i32 y, i32 z) {
+    static const u8 zt[41] = {
+        0xFE,0xF9,0xF6,0xF2,0xEE,0xEB,0xE7,0xE3,0xE0,0xDC,0xD8,0xD4,0xD0,0xCC,
+        0xC8,0xC4,0xC0,0xBB,0xB7,0xB3,0xAE,0xA9,0xA4,0xA0,0x9A,0x95,0x90,0x8A,
+        0x85,0x7F,0x78,0x73,0x6D,0x66,0x5E,0x56,0x4E,0x44,0x3B,0x2F,0x20 };
+    /* View axis = camera-space -z row of the camera matrix; eye = -T. */
+    f64 fx = -g_proj_R[2] / 16384.0, fy = -g_proj_R[5] / 16384.0, fz = -g_proj_R[8] / 16384.0;
+    f64 d = ((f64)x - g_proj_eye[0]) * fx + ((f64)y - g_proj_eye[1]) * fy +
+            ((f64)z - g_proj_eye[2]) * fz;
+    f64 t = d / ((f64)scene_get_camera_zfar(g_scene_camera) * 600.0);
+    if (!(t < 1.0)) return 0;
+    if (t < 0.0) return 0xFE;
+    i32 i = (i32)(t * 41.0 - 0.75);
+    if (i < 0) i = 0;
+    if (i > 40) i = 40;
+    return zt[i];
+}
+
 /* Collect an actor's posed atoms into `items` (camera space). All actors go
  * into one batch so their faces are depth-sorted against each other. */
 static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i32 max_items) {
     if (!e || !EROOT(e) || !g_proj_valid) return n_items;
     const ome_matr_t *matr = actor_matr(E32(e, 0xB0));
+    i32 zv = scene_actor_zval(EROOT(e)->pos[0], EROOT(e)->pos[1], EROOT(e)->pos[2]);
 
     fmat_t stack_m[16];
     obc_node_t *stack_n[16];
@@ -2795,6 +2826,7 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
                 it->m = m;
                 for (i32 k = 0; k < 9; k++) it->m3[k] = cur.m[k];
                 for (i32 k = 0; k < 3; k++) it->t[k] = cur.t[k];
+                it->zval = getenv("DKE_NOZ") ? -1 : zv;
             }
             n = n->child;
         }
@@ -2810,6 +2842,16 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
  * Falls back to a "SCENE (no bmap)" text banner if the backdrop failed
  * to load, so the loop stays alive and the user can quit cleanly.
  */
+/* Headless autopilot: DKE_AUTOWALK=<ms> walks forward once that much game
+ * time has passed since the first frame. */
+static i32 scene_autowalk_on(void) {
+    static u32 t0 = 0;
+    if (!getenv("DKE_AUTOWALK")) return 0;
+    u32 t = (u32)system_get_gametime();
+    if (!t0) t0 = t;
+    return t - t0 >= (u32)atoi(getenv("DKE_AUTOWALK"));
+}
+
 i32 scene_render(system_t *sys) {
     if (!state) return 0;
 
@@ -2821,7 +2863,20 @@ i32 scene_render(system_t *sys) {
     if (g_proj_cam != g_scene_camera && g_scene_bg_level >= 0)
         scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
     g_player_movement_locked = lieu_player_blocked();
-    lieu_set_action_key(sys ? sys->actions[32] : 0);
+    {
+        i32 action = sys ? sys->actions[32] : 0;
+        if (getenv("DKE_AUTOACTION")) {          /* headless: hold Space N ms (default 300) every N+2000 ms */
+            static u32 next = 0;
+            u32 hold = (u32)atoi(getenv("DKE_AUTOACTION"));
+            if (hold < 50) hold = 300;
+            u32 t = (u32)system_get_gametime();
+            if (t >= next) next = t + hold + 2000;
+            if (next - t > 2000) action = 1;
+            if (scene_autowalk_on() && !getenv("DKE_WALKACTION")) action = 0;
+        }
+        lieu_set_action_key(action);
+        lieu_set_updown_key(sys ? (sys->actions[38] || sys->actions[40]) : 0);
+    }
     actor_frame((u32)system_get_gametime());
     lieu_tick(sys ? sys->timer.tick : 0);
     {
@@ -3058,6 +3113,16 @@ i32 scene_render(system_t *sys) {
          * walk/turn clips and their root motion move the actor. Stand-in
          * for the input handlers sub_451BF9 / sub_4342C7 (not yet ported). */
         entity_t *pe = g_player_entity;
+        /* The keys stop driving the player while a script holds him: drop
+         * the walk/turn they left in +0xCEC/+0xCF4 when the lock starts, or
+         * he keeps walking through the cut-scene. */
+        static i32 s_was_locked = 0;
+        if (pe && g_player_movement_locked && !s_was_locked) {
+            E32(pe, 0xCEC) = 0;
+            E32(pe, 0xCF4) = 0;
+            g_player_moving = 0;
+        }
+        s_was_locked = g_player_movement_locked;
         if (pe && !g_player_movement_locked && E32(pe, 0xCBC) == 0) {
             player_input_t pin = {0};
             player_input_update(&pin, sys);
@@ -3066,6 +3131,37 @@ i32 scene_render(system_t *sys) {
             if (pin.velocity_z > 0) mode = -1;
             E32(pe, 0xCEC) = mode;
             E32(pe, 0xCF4) = (pin.velocity_x < 0) ? 1 : (pin.velocity_x > 0) ? -1 : 0;
+            /* Headless autopilot: DKE_AUTOTURN=<hex BAM> turns the player to
+             * that heading (to line up a DirectionSpec talk test). */
+            if (scene_autowalk_on()) mode = E32(pe, 0xCEC) = 1;
+            if (getenv("DKE_AUTOTURN")) {
+                /* "<hex>[,<hex>]": the second heading applies once
+                 * DKE_AUTOWALK starts. */
+                c8 *rest = NULL;
+                i32 want = (i32)strtol(getenv("DKE_AUTOTURN"), &rest, 16) & 0xFFFF;
+                if (rest && *rest == ',' && scene_autowalk_on())
+                    want = (i32)strtol(rest + 1, NULL, 16) & 0xFFFF;
+                /* DKE_AUTOPATH="x,z;x,z;..." (world units): once walking,
+                 * head for each waypoint in turn (heading 0 = +Z). */
+                static i32 s_wp = 0;
+                const c8 *path = getenv("DKE_AUTOPATH");
+                if (path && scene_autowalk_on()) {
+                    const c8 *q = path;
+                    for (i32 k = 0; k < s_wp && q; k++) { q = strchr(q, ';'); if (q) q++; }
+                    if (q && *q) {
+                        c8 *r2 = NULL;
+                        f64 tx = strtod(q, &r2), tz = (r2 && *r2 == ',') ? strtod(r2 + 1, NULL) : 0;
+                        f64 dx = tx - EROOT(pe)->pos[0], dz = tz - EROOT(pe)->pos[2];
+                        if (dx * dx + dz * dz < 12000.0 * 12000.0) s_wp++;
+                        want = (i32)(-atan2(dx, dz) * 65536.0 / (2.0 * 3.14159265358979)) & 0xFFFF;
+                    } else {
+                        E32(pe, 0xCEC) = mode = 0;
+                    }
+                }
+                i32 d = (want - (EROOT(pe)->rot[2] & 0xFFFF)) & 0xFFFF;
+                if (d > 0x8000) d -= 0x10000;
+                if (abs(d) > 0x800) E32(pe, 0xCF4) = (d > 0) ? 1 : -1;
+            }
             g_player_moving = (mode != 0);
         }
         if (pe && EROOT(pe)) {
@@ -3176,7 +3272,7 @@ i32 scene_render(system_t *sys) {
                 if (getenv("DKE_HIDEACTOR") && atoi(getenv("DKE_HIDEACTOR")) == ci) continue;
                 n_items = scene_collect_actor(cast[ci], items, n_items, 192);
             }
-            model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, NULL,
+            model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, g_scene_z_bmap,
                                g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
                                lcx, lcy, lcz);

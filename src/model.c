@@ -137,11 +137,21 @@ static inline u32 apply_light(u32 col, u32 l) {
  * Write one pixel with depth + light. depth is the model pixel's projected
  * depth (0..255). Only draws when depth < scene depth (model in front).
  */
+/* Engine depth mode (render_entity_with_ui): the backdrop Z image stores
+ * 0xFE (near) .. 0 (far); an actor carries one value of the same scale and
+ * is visible where it is not behind the backdrop. -1 = off. */
+static i32 g_actor_z = -1;
+
 static void plot_pixel(u32 *fb, i32 fb_w, i32 fb_h,
                        i32 x, i32 y, i32 depth,
                        u32 colour,
                        const bmap_t *l_bmap, const bmap_t *z_bmap) {
     if ((u32)x >= (u32)fb_w || (u32)y >= (u32)fb_h) return;
+    if (g_actor_z >= 0) {
+        if (z_bmap && (u32)g_actor_z < sample_depth(z_bmap, x, y)) return;
+        fb[y * fb_w + x] = colour;
+        return;
+    }
     u32 scene_z = sample_depth(z_bmap, x, y);
     if ((u32)depth > scene_z) return;   /* behind scene → skip */
     u32 l = sample_light(l_bmap, x, y, fb_w, fb_h);
@@ -620,7 +630,7 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
       else { ln = 1.0/sqrt(ln); Lx*=ln; Ly*=ln; Lz*=ln; } }
 
     static mrw_vert_t P[MRB_MAX_VERTS];
-    static struct { const model_face_t *f; i32 base; i64 key; } F[MRB_MAX_FACES];
+    static struct { const model_face_t *f; i32 base; i64 key; i32 z; } F[MRB_MAX_FACES];
     i32 nv = 0, nf = 0;
 
     for (i32 it = 0; it < n_items; it++) {
@@ -647,6 +657,7 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
             const model_face_t *face = &m->faces[f];
             F[nf].f = face;
             F[nf].base = base;
+            F[nf].z = items[it].zval;
             F[nf].key = P[base + face->i0].cz + P[base + face->i1].cz + P[base + face->i2].cz;
         }
     }
@@ -661,9 +672,11 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
     for (i32 i = 0; i < nf; i++) {
         const model_face_t *face = F[i].f;
         i32 b = F[i].base;
+        g_actor_z = F[i].z;
         mrw_draw_face(face, &P[b + face->i0], &P[b + face->i1], &P[b + face->i2],
                       fb, fb_w, fb_h, l_bmap, z_bmap, pal, grd, Lx, Ly, Lz);
     }
+    g_actor_z = -1;
 }
 
 /* -------------------------------------------------------------------------

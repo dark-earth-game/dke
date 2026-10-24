@@ -147,6 +147,7 @@ typedef struct {
     const model_t *m;
     i32 m3[9];
     i32 t[3];
+    i32 zval;      /* depth vs the backdrop Z image (0xFE near .. 0 far); -1 = none */
 } model_draw_t;
 
 void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,

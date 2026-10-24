@@ -44,7 +44,7 @@
 /* -------------------------------------------------------------------------
  * Per-level state buffer + owned vtable pointer.
  * ---------------------------------------------------------------------- */
-static lieu_state_t g_lieu_state[0xFA0];   /* 4000 bytes, zeroed per level */
+static lieu_state_t g_lieu_state[0xFA0];   /* dword_505C40, 4000 bytes, game-wide */
 static i32          g_lieu_level = 0;      /* active level id (0 = none)   */
 static i32          g_lieu_room_entered = 0; /* post-intro re-init done     */
 
@@ -73,7 +73,9 @@ static i32    g_action_key  = 0;       /* key 0x20 (Space) held this frame */
 static i32    g_action_pressed = 0;    /* dword_505C4C */
 
 /* sub_449F9F feeds the action key in; scene.c calls this every frame. */
+static i32 g_updown_key = 0;           /* arrow up/down held (dword_505C44) */
 void lieu_set_action_key(i32 down) { g_action_key = down; }
+void lieu_set_updown_key(i32 down) { g_updown_key = down; }
 
 /* dword_4B52DC: -1 while the level script's INIT burst is being drained. */
 static i32 g_lieu_loading = 0;
@@ -94,6 +96,17 @@ void lieu_zone_attach(i32 zone, void *entity, i32 size, i32 active) {
     g_zones[zone].size_x = size;
     g_zones[zone].size_z = size;
     g_zones[zone].active = active;
+}
+
+/* A zone attached to an actor (dword_506CA0) sits on that actor: refresh
+ * its centre so the distance queries (query_990, layer_op 9) see it move. */
+static void zones_follow(void) {
+    for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {
+        entity_t *e = (entity_t *)g_zones[i].entity;
+        if (!e || !EROOT(e)) continue;
+        g_zones[i].center_x = EROOT(e)->pos[0];
+        g_zones[i].center_z = EROOT(e)->pos[2];
+    }
 }
 
 void lieu_zone_detach(void *entity) {
@@ -535,6 +548,7 @@ static void cb_cb_458(i32 a, i32 b) {                       /* sub_4454F2 */
         /* Immediate: mode b; mode 2 locks camera -a-1 (color_mode). */
         g_next_cam_mode = b;
         g_next_cam = (b == 2) ? -a - 1 : -2;
+        if (b == 2) LIEU_ST(g_lieu_state, 0xF90) = -a - 1;  /* dword_506BD0 */
         return;
     }
     lieu_action_t *n = lieu_action_push(LA_CHANGECAMERA);
@@ -549,15 +563,16 @@ i32 lieu_poll_camera_change(i32 *mode) {
     if (c >= 0) { if (mode) *mode = g_next_cam_mode; g_next_cam = -1; }
     return c;
 }
-/* CHANGEPIECE (opcode 10, dkev sub_4455EE): a = target level id, b = entry
- * point id. Queues a room change unless the target is the current level or
- * negative (which the engine treats as a same-room reposition). The main
- * scene loop drains this via lieu_poll_level_change and reloads the level. */
+/* CHANGEPIECE (slot 10, sub_4455EE @ 0x4455EE): queue a move to room `a`
+ * through entry `b` (node +0x08 / +0x5C). A negative room only sets the
+ * entry point (dword_4B52E0). Case 10 of the dispatcher performs it. */
 static i32 g_next_level = -1;
-static i32 g_next_entry = 0;
+static i32 g_next_entry = 0;      /* dword_4B52E0 */
 static void cb_cb_984(i32 a, i32 b) {
-    print("lieu_cb: CHANGEPIECE target=%d entry=%d (cur=%d)\n", a, b, g_lieu_level);
-    if (a >= 0 && a != g_lieu_level) { g_next_level = a; g_next_entry = b; }
+    if (a < 0) { g_next_entry = b; return; }
+    lieu_action_t *n = lieu_action_push(LA_CHANGEPIECE);
+    n->p58   = a;                 /* +0x08 in the original node */
+    n->num5C = b < 0 ? 0 : b;
 }
 
 /* Pending room change target (or -1). Clears on read; fills *entry. */
@@ -665,7 +680,24 @@ static i32 cb_query_944(i32 n) {
 
 /* slot 17 sub_445E99 "DirectionSpec" — target resolution not yet decoded,
  * so this stays permissive rather than guessing which thing it aims at. */
-static i32 cb_query_998(i32 a) { (void)a; return 1; }
+/* slot 17 sub_445E99 @ 0x445E99 "DirectionSpec" — is the player facing
+ * BAM angle `a` (within 0x2400)? The heading includes a clip's root yaw. */
+static i32 cb_query_998(i32 a) {
+    entity_t *p = g_player_entity;
+    if (!p || !EROOT(p)) return 0;
+    a &= 0xFFFF;
+    obc_node_t *g = EROOT(p);
+    can_rec_t *r = (can_rec_t *)EPTR(p, 0xD50);
+    i32 h;
+    if (r && (CAN_FLAGS(r) & 1) && g->child)
+        h = (g->rot[2] - (g->child->rot[0] - CAN_ROOT_YAW(r))) & 0xFFFF;
+    else
+        h = g->rot[2] & 0xFFFF;
+    i32 d = 0;
+    if (h <= a) { d = a - h; if (d > 0x8000) d -= 0x10000; }
+    if (h > a)  { d = a - h; if (d < -0x8000) d += 0x10000; }
+    return abs(d) < 0x2400;
+}
 /* query_990: distance between zone a and b, world units / 600. */
 static i32  cb_query_990(i32 a, i32 b) {
     if (a < 1 || a >= LIEU_ZONE_COUNT || b < 1 || b >= LIEU_ZONE_COUNT) return 0;
@@ -857,29 +889,27 @@ static i32 cb_layer_op(i32 op, i32 layer, i32 arg) {
     switch (op) {
     case 0:
     case 1: {
-        for (i32 i = 0; i < g_spawn_count; i++) {
-            if (g_spawns[i].id == layer) {
-                switch (arg) {
-                case 0:  return g_spawns[i].wx;
-                case 1:  return g_spawns[i].wz;
-                case 2:  return (u16)g_spawns[i].facing;
-                case 3:  return g_spawns[i].ground / 600;
-                default: return 0;
-                }
+        /* sub_446E19 case 0 (the DLL's DIVERS(1, id, field)): the persona
+         * descriptor, which actor_control refreshes every frame (+0x88 X,
+         * +0x8C Z, +0x90 heading); field 3 reads the actor's height. Ids < 4
+         * use the hero record (dword_4ECD50). */
+        const u8 *d = (layer >= 0 && layer < HERO_COUNT) ? g_hero_desc[0]
+                    : (layer >= 0 && layer < PERSONA_COUNT) ? g_persona_desc[layer].raw : NULL;
+        if (!d) return 0;
+        switch (arg) {
+        case 0:  return *(const i32 *)(d + 0x88) / 600;
+        case 1:  return *(const i32 *)(d + 0x8C) / 600;
+        case 2:  return *(const i32 *)(d + 0x90) & 0xFFFF;
+        case 3: {
+            entity_t *e = actor_find(layer);
+            if (!e || !EROOT(e)) {
+                print("lieu_cb: DIVERS(1,%d,3) with perso %d not loaded\n", layer, layer);
+                return 0;
             }
+            return EROOT(e)->pos[1] / 600;
         }
-        if (layer >= 0 && layer < 4) {
-            i32 px, pz;
-            if (player_get_pos(&px, NULL, &pz)) {
-                switch (arg) {
-                case 0:  return px / 600;
-                case 1:  return pz / 600;
-                case 2:  return 0;
-                default: return 0;
-                }
-            }
+        default: return 0;
         }
-        return 0;
     }
     case 2:
         return 0;
@@ -1274,10 +1304,30 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         return 0;
     }
 
+    case LA_CHANGEPIECE:                       /* case 10 @ 0x44BA2C */
+        if (dlg_is_active()) return 0;
+        g_next_entry = n->num5C;
+        if (n->p58 == g_lieu_level) return 1;
+        /* need_change_level_id; the next room starts on camera 0 in auto
+         * mode (color_mode = dword_506BD0 = 0, dword_4B7284 = -2). */
+        print("lieu_act: CHANGEPIECE target=%d entry=%d (cur=%d)\n", n->p58, n->num5C, g_lieu_level);
+        g_next_level = n->p58;
+        LIEU_ST(g_lieu_state, 0xF90) = 0;
+        g_next_cam_mode = 1;
+        g_next_cam = -2;
+        return 1;
+
     case LA_CHANGECAMERA:                      /* case 9 @ 0x44B949 */
         if (dlg_is_active()) return 0;
+        /* 0x44B96D: the locked camera (dword_506BD0 = script ST(0xF90))
+         * only changes in mode 2; mode 1 hands the camera to sub_45A67C. */
         g_next_cam_mode = n->num5C;
-        g_next_cam = (n->num5C == 2) ? n->p58 : -2;
+        if (n->num5C == 2) {
+            g_next_cam = n->p58;
+            LIEU_ST(g_lieu_state, 0xF90) = n->p58;
+        } else {
+            g_next_cam = -2;
+        }
         return 1;
 
     case LA_DIALOGUE:                          /* case 1 -> sub_46BC74 */
@@ -1493,10 +1543,22 @@ static void lieu_run_init(void) {
     lieu01_fonction_editor(LIEU_OP_EVENT, g_lieu_state, 0x29, 0);  /* op 3 (41) */
     g_lieu_loading = 0;
 }
+/* sub_43A63D @ 0x43A79B: a new game clears the script variables. */
+void lieu_new_game(void) {
+    memset(g_lieu_state, 0, sizeof(g_lieu_state));
+}
+
+/* sub_4640BC @ 0x464306: POSPERSO records a persona's life mode in
+ * dword_505DD0[id] (script ST(0x190 + id*4)); death sets it to 2. */
+void lieu_set_persona_vie(i32 id, i32 vie) {
+    if (id >= 4 && id < (i32)((sizeof(g_lieu_state) - 0x190) / 4))
+        LIEU_ST(g_lieu_state, 0x190 + id * 4) = vie;
+}
+
 void lieu_enter(i32 level_id) {
     g_lieu_level = level_id;
     g_lieu_cb    = &g_lieu_cb_impl;
-    memset(g_lieu_state, 0, sizeof(g_lieu_state));
+    /* dword_505C40 is game-wide: only a new game clears it (lieu_new_game). */
     zones_clear();   /* engine memsets dword_506C80 to -1 before INIT arms */
     ents_clear();    /* reset entity alive/HP/visibility state              */
     objs_clear();    /* object/flag/anim-slot registries                    */
@@ -1528,7 +1590,8 @@ void lieu_enter(i32 level_id) {
      * once the LIEU state buffer is mapped onto live dke gameplay state. */
     LIEU_ST(g_lieu_state, 0x194) = 4;
     LIEU_ST(g_lieu_state, 0x964) = 1;
-    LIEU_ST(g_lieu_state, 0x0C)  = 1;
+    /* +0x0C is dword_505C4C, the per-frame action-key flag sub_449F9F
+     * writes (see lieu_detect_zone); it is not a constant. */
 
     print("lieu: LIEU01 native scripting — running INIT\n");
     lieu_run_init();
@@ -1548,13 +1611,33 @@ void lieu_enter(i32 level_id) {
 i32 lieu_detect_zone(void) {                              /* sub_449E03 */
     i32 px, pz;
     if (!player_get_pos(&px, NULL, &pz)) return -1;
-    /* 0x44A179: the action key (unless in combat) makes every zone live. */
-    if (g_player_entity && E32(g_player_entity, 0xD60) == 0 && g_action_key) {
+    /* 0x44A179: process_input_event(0x20) is a key-down EDGE, so the
+     * action flag is 1 for one frame per press. A press while the player is
+     * locked keeps the previous value; no press clears it. */
+    static i32 s_key_prev = 0;
+    i32 edge = g_action_key && !s_key_prev;
+    s_key_prev = g_action_key;
+    if (g_player_entity && E32(g_player_entity, 0xD60) == 0 && edge) {
         if (!g_player_blocked) { g_action_pressed = 1; g_force_zones = 1; }
     } else {
         g_action_pressed = 0;
         g_force_zones = 0;
     }
+    /* The script reads these through its state buffer (dword_505C40). */
+    LIEU_ST(g_lieu_state, 0x0C) = g_action_pressed;   /* dword_505C4C */
+    LIEU_ST(g_lieu_state, 0x04) = g_updown_key;       /* dword_505C44 */
+    if (getenv("DKE_LIEUDBG")) {
+        static u32 last = 0;
+        u32 t = state ? state->current_game_time : 0;
+        if (t - last > 500) {
+            last = t;
+            print("lieudbg: t=%u key=%d blocked=%d st0C=%d st30=%d st708=%d st68=%d facing=%04X q998=%d pend=%d d64=%d d67=%d z6=(%d,%d) z4=(%d,%d)\n",
+                  t, g_action_key, g_player_blocked, LIEU_ST(g_lieu_state, 0x0C), LIEU_ST(g_lieu_state, 0x30),
+                  LIEU_ST(g_lieu_state, 0x708), LIEU_ST(g_lieu_state, 0x68), player_get_facing(),
+                  cb_query_998(0x8660), lieu_action_pending(), cb_query_990(6, 4), cb_query_990(6, 7), g_zones[6].center_x, g_zones[6].center_z, g_zones[4].center_x, g_zones[4].center_z);
+        }
+    }
+    zones_follow();
     for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {           /* first hit wins  */
         zone_t *zn = &g_zones[i];
         if (zn->center_x == -1 && !zn->entity) continue;  /* empty slot      */
@@ -1576,6 +1659,7 @@ i32 lieu_detect_zone(void) {                              /* sub_449E03 */
 }
 
 void lieu_tick(u32 now_ms) {
+    zones_follow();
     /* Per-frame: engine calls op -1 every frame (drain + tick_body). */
     if (g_lieu_level == 1)
         lieu01_fonction_editor(LIEU_OP_TICK, g_lieu_state, 0, 0);   /* op -1 */

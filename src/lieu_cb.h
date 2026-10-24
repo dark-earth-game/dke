@@ -169,6 +169,8 @@ i32 lieu_poll_level_change(i32 *entry);
 /* ChangeCamera (slot 9): pending camera the script requested (or -1). Clears
  * on read; *mode gets the mode (2 = forced/locked, else auto-follow). */
 i32 lieu_poll_camera_change(i32 *mode);
+void lieu_new_game(void);
+void lieu_set_persona_vie(i32 id, i32 vie);
 
 /* One-shot intro->room transition: re-runs INIT at submode 0 so trig00
  * places the room's arrival characters. Call after the intro movie plays. */
@@ -181,6 +183,7 @@ void lieu_zone_detach(void *entity);
 
 /* Action key (Space) state for sub_449F9F's zone gating. */
 void lieu_set_action_key(i32 down);
+void lieu_set_updown_key(i32 down);
 
 /* 1 while the INIT burst is drained at level start (dword_4B52DC == -1). */
 i32 lieu_loading(void);
