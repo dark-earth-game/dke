@@ -46,7 +46,6 @@
  * ---------------------------------------------------------------------- */
 static lieu_state_t g_lieu_state[0xFA0];   /* dword_505C40, 4000 bytes, game-wide */
 static i32          g_lieu_level = 0;      /* active level id (0 = none)   */
-static i32          g_lieu_room_entered = 0; /* post-intro re-init done     */
 
 const lieu_cb_t *g_lieu_cb = NULL;         /* storage (extern in header)   */
 
@@ -1565,7 +1564,6 @@ void lieu_enter(i32 level_id) {
     lieu_action_reset();  /* drop stale actions + object timers            */
     g_spawn_count = 0;
     g_op9c_counter = 0;
-    g_lieu_room_entered = 0;
     dlg_reset();
     /* Trace on via env LIEU_TRACE=1 (observe opcode dispatch at runtime). */
     g_lieu_trace = (getenv("LIEU_TRACE") != NULL);
@@ -1576,19 +1574,11 @@ void lieu_enter(i32 level_id) {
         return;
     }
 
-    /* Seed the state fields the original engine sets before/around INIT for
-     * a FRESH new-game entry. In dkev these come from game_init_46BEEB
-     * (submode) and the level-entry code (entry phase). Values for
-     * "new game -> level 1, first area":
-     *   0x194 submode    = 0   (first sub-area)
-     *   0x964 entry phase = 1  (trig00 fresh-entry setup path)
-     *   0x0C  level-active flag (guards on most triggers read this)
-     * TODO: drive these from the real dke game-init instead of hard-coding. */
-    /* submode 4 = intro path: INIT plays the opening cutscene (SC22/SC23)
-     * instead of the in-room spawn setup. TEMP bring-up value so new game
-     * shows the intro FMV; the real entry submode comes from engine state
-     * once the LIEU state buffer is mapped onto live dke gameplay state. */
-    LIEU_ST(g_lieu_state, 0x194) = 4;
+    /* ST(0x194) is game_death_state (dword_505DD4): the hero being played,
+     * 0..3 (DKE.CFG FirstPerso = 0 for a new game). INIT only plays SC22 for
+     * the value 4. ST(0x964) = 1 selects trig00's fresh-entry setup.
+     * TODO: take both from the engine's game state once hero swaps exist. */
+    LIEU_ST(g_lieu_state, 0x194) = actor_hero_id();
     LIEU_ST(g_lieu_state, 0x964) = 1;
     /* +0x0C is dword_505C4C, the per-frame action-key flag sub_449F9F
      * writes (see lieu_detect_zone); it is not a constant. */
@@ -1674,26 +1664,6 @@ void lieu_exit(void) {
     g_lieu_level = 0;
 }
 
-/*
- * lieu_enter_room — one-shot transition after the intro cutscene: switch to
- * the in-room submode (0) and re-run INIT so trig00 places the arrival
- * characters + registers zones. Mirrors the original intro->room flow.
- * Called by scene_render once the queued intro movie has played.
- */
-void lieu_enter_room(void) {
-    if (g_lieu_level != 1 || g_lieu_room_entered) return;
-    g_lieu_room_entered = 1;
-    LIEU_ST(g_lieu_state, 0x194) = 0;   /* in-room submode */
-    zones_clear();
-    g_spawn_count = 0;
-    print("lieu: intro done -> entering room (submode 0), re-running INIT\n");
-    lieu_run_init();
-    print("lieu: room INIT placed %d personas\n", g_spawn_count);
-    lieu_zone_debug();
-    /* Dialogue now fires from the trigger handlers on zone entry (op 3),
-     * not demo-queued. Facing gates are permissive (see query_944/954/998)
-     * since dke has no player-facing control yet. */
-}
 
 /* -------------------------------------------------------------------------
  * Runtime event feeders. The original engine drives these from zone

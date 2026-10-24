@@ -172,9 +172,7 @@ i32 lieu_poll_camera_change(i32 *mode);
 void lieu_new_game(void);
 void lieu_set_persona_vie(i32 id, i32 vie);
 
-/* One-shot intro->room transition: re-runs INIT at submode 0 so trig00
- * places the room's arrival characters. Call after the intro movie plays. */
-void lieu_enter_room(void);
+
 void lieu_zone_debug(void);
 
 /* Zones that follow an actor (POSPERSO zone/radius, dword_506CA0). */

@@ -302,7 +302,8 @@ static void handle_mouse_events(system_t *system, i32 type, i32 x, i32 y) {
                         bitsPerPixel:32] autorelease];
     NSImage *nsimage = [[[NSImage alloc] init] autorelease];
     [nsimage addRepresentation:rep];
-    [nsimage drawInRect:dirtyRect];
+    (void)dirtyRect;
+    [nsimage drawInRect:[self bounds]];   /* whole frame, even on partial redraws */
 }
 
 - (void)keyDown:(NSEvent *)event {

@@ -1325,7 +1325,8 @@ void set_entities_combat_mode(void) { /* set_entities_combat_mode @ 0x406AC3 */
  * Resets state, installs 40-slot handler vtable, loads LIEU DLL, calls
  * FonctionEditor(INIT). We have LIEU01 natively ported — call lieu_enter. */
 static void init_level_scripting(void) { /* sub_448F4D @ 0x448F4D */
-    lieu_enter(g_world_state);
+    /* lieu_enter runs later in scene_load_level, once the camera and its
+     * regions are loaded: INIT queues camera changes against them. */
 }
 
 /* ls_clear_bmap — clear a bmap's pixel buffer to zero.
@@ -2530,8 +2531,8 @@ i32 scene_load_level(i32 level_id) {
     /* Per-camera active regions (for auto camera switching by player pos). */
     scene_load_camera_regions(g_scene_bg_level);
 
-    /* LIEU scripting: native hand-port (src/lieu01.c for level 1). Runs
-     * INIT now; per-frame tick driven from scene_render; deinit in release. */
+    /* LIEU scripting (sub_448F4D's INIT; see init_level_scripting): native
+     * hand-port, per-frame tick from scene_render, deinit in release. */
     lieu_enter(level_id);
 
     /* Load P00.CAN for player character animation. */
@@ -2981,7 +2982,6 @@ i32 scene_render(system_t *sys) {
         if (mv) {
             if (getenv("DKE_NOMOVIE")) print("scene: DKE_NOMOVIE skip movie %s\n", mv);
             else                       ls_play_movie(mv);
-            lieu_enter_room();   /* intro done -> place room characters */
         }
     }
 
@@ -3150,7 +3150,7 @@ i32 scene_render(system_t *sys) {
             if (pin.velocity_z < 0) mode = 1;
             if (pin.velocity_z > 0) mode = -1;
             E32(pe, 0xCEC) = mode;
-            E32(pe, 0xCF4) = (pin.velocity_x < 0) ? 1 : (pin.velocity_x > 0) ? -1 : 0;
+            E32(pe, 0xCF4) = (pin.velocity_x < 0) ? -1 : (pin.velocity_x > 0) ? 1 : 0;   /* left = -1 */
             /* Headless autopilot: DKE_AUTOTURN=<hex BAM> turns the player to
              * that heading (to line up a DirectionSpec talk test). */
             if (scene_autowalk_on()) mode = E32(pe, 0xCEC) = 1;

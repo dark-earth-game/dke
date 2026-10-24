@@ -46,6 +46,8 @@ f64 g_anim_divisor = 0.48;          /* animation_timing_divisor, dbl_4B72A0 */
  * stores it when the player slot is created). */
 static i32 g_hero_id = 0;
 
+i32 actor_hero_id(void) { return g_hero_id; }
+
 /* dword_4EC6A0 / dword_4ECD3C — list of live actors, appended by
  * sub_46493B and shortened by sub_4658D4. */
 static entity_t *g_actor_list[0x62];

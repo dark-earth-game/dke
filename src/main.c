@@ -329,6 +329,24 @@ i32 ls_main(system_t *system, c8 **argv) {
             draw_text("DKE - main menu");
         }
 
+        /* Headless capture of any screen (menu included): DKE_MSHOT=<frame>
+         * writes DKE_SHOT_PATH (PPM). */
+        if (getenv("DKE_MSHOT") && dbg_frame == atoi(getenv("DKE_MSHOT")) &&
+            state->graphic.front_buffer) {
+            const c8 *out = getenv("DKE_SHOT_PATH");
+            FILE *f = fopen(out ? out : "/tmp/dke_shot.ppm", "wb");
+            if (f) {
+                i32 w = state->graphic.width, h = state->graphic.height;
+                fprintf(f, "P6\n%d %d\n255\n", w, h);
+                for (i32 i = 0; i < w * h; i++) {
+                    u32 p = state->graphic.front_buffer[i];
+                    u8 rgb[3] = { (u8)p, (u8)(p >> 8), (u8)(p >> 16) };
+                    fwrite(rgb, 1, 3, f);
+                }
+                fclose(f);
+            }
+        }
+
         ls_blit(system, state->graphic.front_buffer);
         ls_flip(system);
 
