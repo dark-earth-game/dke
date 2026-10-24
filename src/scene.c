@@ -2842,7 +2842,7 @@ i32 scene_render(system_t *sys) {
                 model_default_pitch = scene_load_inf_pitch(g_scene_bg_level, g_scene_camera);
             }
         }
-        if (wantcam >= 0) g_camera_forced = (cmode == 2);
+        if (wantcam >= 0 || wantcam == -2) g_camera_forced = (cmode == 2);
     }
 
     /* Advance dialogue (subtitle + spoken WAV) queued by the LIEU script.

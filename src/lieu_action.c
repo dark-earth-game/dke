@@ -104,6 +104,7 @@ void lieu_action_reset(void) {
  * immediately" value every primitive that does not set a hold time relies on.
  */
 i32 lieu_action_run_pile(void) { return g_run_pile; }
+i32 lieu_selected_pile(void)   { return g_sel_pile; }
 
 lieu_action_t *lieu_action_push(i32 type) {
     i32 p = g_sel_pile;

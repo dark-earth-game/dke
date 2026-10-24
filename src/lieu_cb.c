@@ -200,6 +200,7 @@ static i32 player_facing_bam(void) {
  * ---------------------------------------------------------------------- */
 static i32 g_player_blocked = 0;   /* player_movement_enabled @ 0x4FF080 */
 static i32 g_pile_actor[3];        /* dword_4B53F0: last ANIMATION actor per pile */
+static i32 g_dlg_pile = 0;         /* dword_4FF09C: pile that queued the line  */
 i32 lieu_player_blocked(void) { return g_player_blocked; }
 
 /* -------------------------------------------------------------------------
@@ -350,10 +351,10 @@ static void cb_named_object(const c8 *name) {
 }
 
 /* slot 1 sub_4449A5 "Dialogue": enqueue dialogue line. */
-static void cb_named_object_int(const c8 *name, i32 v) {
-    (void)v;
-    if (name && name[0] == 'L' && name[1] >= '0' && name[1] <= '9' && name[3] == 'D')
-        dlg_say(name);
+static void cb_named_object_int(const c8 *name, i32 v) {      /* sub_4449A5 */
+    lieu_action_t *n = lieu_action_push(LA_DIALOGUE);
+    if (name) snprintf(n->name, sizeof(n->name), "%s", name);
+    n->actor = v;
 }
 
 /*
@@ -527,11 +528,18 @@ static void cb_actor_934(i32 actor, i32 tile_x, i32 tile_z, i32 a3, i32 a4) {
  * (1 = auto-follow, 2 = forced/locked). The LIEU script drives the in-game
  * camera through this (e.g. cb_458(6,1) sets the opening bedroom view).
  * Queue it; the scene loop applies it via lieu_poll_camera_change. */
-static i32 g_next_cam = -1;
-static i32 g_next_cam_mode = 1;
-static void cb_cb_458(i32 a, i32 b) {
-    print("lieu_cb: ChangeCamera camera=%d mode=%d\n", a, b);
-    if (a >= 0) { g_next_cam = a; g_next_cam_mode = b; }
+static i32 g_next_cam = -1;      /* -1 none, -2 mode change only */
+static i32 g_next_cam_mode = 1;  /* byte_4B7280 */
+static void cb_cb_458(i32 a, i32 b) {                       /* sub_4454F2 */
+    if (a < 0) {
+        /* Immediate: mode b; mode 2 locks camera -a-1 (color_mode). */
+        g_next_cam_mode = b;
+        g_next_cam = (b == 2) ? -a - 1 : -2;
+        return;
+    }
+    lieu_action_t *n = lieu_action_push(LA_CHANGECAMERA);
+    n->p58  = a;
+    n->num5C = b;
 }
 
 /* Pending camera the script requested (or -1). Clears on read; *mode gets the
@@ -1226,7 +1234,16 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             print("lieu_act: Animation %s with cadavre %d\n", n->name, n->actor);
             return 1;
         }
-        /* 0x44A9C4: dword_4FF098 / dword_4FF09C dialogue wait — not wired. */
+        /* 0x44A9C4: an animation queued on the pile that is talking waits for
+         * the line; a hold-at-end clip that has finished releases the pile
+         * early (dword_4FF09C = -(pile + 1)). */
+        if (dlg_is_active() && g_dlg_pile == lieu_selected_pile()) {
+            if (e && EPTR(e, 0xD50) && (CAN_FLAGS((can_rec_t *)EPTR(e, 0xD50)) & 0x200) &&
+                actor_anim_done(e))
+                g_dlg_pile = -(g_dlg_pile + 1);
+            return 0;
+        }
+        if (g_dlg_pile < 0) g_dlg_pile = -g_dlg_pile - 1;
         if (n->num5C == 0xFFFF)                /* wait for the current clip */
             return actor_anim_done(e);
         if (n->actor == -2) return 1;          /* 2D anim player not ported */
@@ -1256,6 +1273,27 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         }
         return 0;
     }
+
+    case LA_CHANGECAMERA:                      /* case 9 @ 0x44B949 */
+        if (dlg_is_active()) return 0;
+        g_next_cam_mode = n->num5C;
+        g_next_cam = (n->num5C == 2) ? n->p58 : -2;
+        return 1;
+
+    case LA_DIALOGUE:                          /* case 1 -> sub_46BC74 */
+        if (dlg_is_active()) return 0;         /* dword_4FF098: slot busy */
+        {
+            entity_t *e = actor_find(n->actor);
+            if (e && EDESC(e) && EDESC(e)[0x96]) {
+                print("lieu_act: Le cadavre %d a dit %s !\n", n->actor, n->name);
+                return 1;
+            }
+        }
+        /* sub_46A358 text setup + sub_44E57B voice; dword_4B2AB4 speaker
+         * portrait (hero / companion / other) is not drawn. */
+        dlg_start(n->name, now_ms);
+        g_dlg_pile = lieu_selected_pile();      /* dword_4FF09C = dword_505C30 */
+        return 1;
 
     case LA_POSPERSO:                          /* case 5 @ 0x44AF10 */
         actor_pos_perso(n->actor, n->x, n->z, n->p20, n->p4C, n->name, n->p50, n->p2C);
@@ -1411,6 +1449,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         return 1;
 
     case LA_BLOQUE:                            /* case 0x14 @ 0x44BC8D */
+        if (dlg_is_active()) return 0;
         if ((n->num5C & 4) && g_player_entity) {
             E32(g_player_entity, 0xCEC) = 0; E32(g_player_entity, 0xCF0) = 1;
             E32(g_player_entity, 0xCF4) = 0; E32(g_player_entity, 0xCF8) = 0;
