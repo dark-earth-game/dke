@@ -233,6 +233,7 @@ static i32 g_scene_cam_sy = 240;  /* projected character screen Y */
  * world coord can be projected to screen — used for exact persona placement.
  * Projection: v = (R * w) >> 14 + Tv;  sx = 320 + v.x*scale; sy = 240 - v.y*scale. */
 static i32   g_proj_valid     = 0;
+static i32   g_proj_cam       = -1;     /* camera the matrix was loaded for */
 static i32   g_proj_R[9];               /* camera matrix ints param[0..8].
                                          * R(row,col) = param[row + col*3]
                                          * (dkev transform_vector 0x48F424). */
@@ -1788,32 +1789,31 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     /* Format: ts(4) + world_ctrl(0x208) + n_cam(4) + n_cam×0x208 + ... */
     fseek(f, 4 + 0x208, SEEK_CUR);
     i32 n_cam = 0;
-    if (fread(&n_cam, 4, 1, f) != 1 || cam_idx >= n_cam) { ls_close(f); return; }
+    if (fread(&n_cam, 4, 1, f) != 1 || n_cam < 0) { ls_close(f); return; }
 
     /* Start of the camera-struct array (independent of cam_idx). */
     long cams_base = ftell(f);
-    /* Seek to cam_idx zone struct (+0x1D8 for n_verts, +0x1DC for vertices) */
-    long cam_struct_off = cams_base + (long)cam_idx * 0x208;
-    fseek(f, cam_struct_off + 0x1D8, SEEK_SET);
-    i32 n_verts = 0;
-    if (fread(&n_verts, 4, 1, f) != 1 || n_verts <= 0 || n_verts > 64) {
-        ls_close(f); return;
-    }
-    /* Read zone polygon vertices (3 i32 each: x, y_ignored, z) */
-    i64 sum_x = 0, sum_z = 0; i32 valid = 0;
-    for (i32 i = 0; i < n_verts && i < 32; i++) {
-        i32 vx = 0, vy_ign = 0, vz = 0;
-        if (fread(&vx, 4, 1, f) != 1) break;
-        if (fread(&vy_ign, 4, 1, f) != 1) break;
-        if (fread(&vz, 4, 1, f) != 1) break;
-        /* Filter out garbage vertices (reasonable world range) */
-        if (vx > -3000000 && vx < 3000000 && vz > -3000000 && vz < 3000000) {
-            sum_x += vx; sum_z += vz; valid++;
+    /* Camera zone polygons and camera views are separate lists (L01: 5 zones,
+     * 7 views); the zone centroid is only a fallback anchor, so it is used
+     * when a zone with this index exists. */
+    i32 zone_x = 0, zone_z = 0;
+    if (cam_idx < n_cam) {
+        fseek(f, cams_base + (long)cam_idx * 0x208 + 0x1D8, SEEK_SET);
+        i32 n_verts = 0;
+        if (fread(&n_verts, 4, 1, f) == 1 && n_verts > 0 && n_verts <= 64) {
+            i64 sum_x = 0, sum_z = 0; i32 valid = 0;
+            for (i32 i = 0; i < n_verts && i < 32; i++) {
+                i32 vx = 0, vy_ign = 0, vz = 0;
+                if (fread(&vx, 4, 1, f) != 1) break;
+                if (fread(&vy_ign, 4, 1, f) != 1) break;
+                if (fread(&vz, 4, 1, f) != 1) break;
+                if (vx > -3000000 && vx < 3000000 && vz > -3000000 && vz < 3000000) {
+                    sum_x += vx; sum_z += vz; valid++;
+                }
+            }
+            if (valid) { zone_x = (i32)(sum_x / valid); zone_z = (i32)(sum_z / valid); }
         }
     }
-    if (valid == 0) { ls_close(f); return; }
-    i32 zone_x = (i32)(sum_x / valid);
-    i32 zone_z = (i32)(sum_z / valid);
 
     /* Skip to extra section (projection matrices). The extra section begins
      * after ALL n_cam camera structs — measured from cams_base, NOT from the
@@ -1861,6 +1861,7 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
         g_proj_T[0] = cam.t[0]; g_proj_T[1] = cam.t[1]; g_proj_T[2] = cam.t[2];
     }
     g_proj_gscale    = param[24];
+    g_proj_cam       = cam_idx;
     g_proj_zone_z    = (i32)zone_z;
     g_proj_anchor_wx = zone_x;
     /* Floor plane Y = 0 (PosPerso characters are placed at world Y 0); the
@@ -2719,10 +2720,56 @@ static const ome_matr_t *actor_matr(i32 num) {
     return g_actor_matr[slot].ok ? &g_actor_matr[slot].matr : NULL;
 }
 
-static void scene_render_actor(entity_t *e, float lx, float ly, float lz) {
-    if (!e || !EROOT(e) || !g_proj_valid) return;
-    static model_draw_t items[64];
-    i32 n_items = 0;
+/* Debug (DKE_ZONEDBG): outline the level's polygons on screen with the
+ * scene camera — floor zones ("sol", yellow) at their height, obstacles
+ * ("col", red) and the walkable boundary (green) at floor level — to check
+ * the camera against the pre-rendered backdrop. */
+static void scene_draw_line(i32 x0, i32 y0, i32 x1, i32 y1, u32 col) {
+    if (!state || !state->graphic.front_buffer) return;
+    u32 *fb = state->graphic.front_buffer;
+    i32 w = state->graphic.width, h = state->graphic.height;
+    i32 dx = abs(x1 - x0), dy = -abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    i32 err = dx + dy;
+    for (i32 n = 0; n < 4000; n++) {
+        if (x0 >= 0 && x0 < w && y0 >= 0 && y0 < h) fb[y0 * w + x0] = col;
+        if (x0 == x1 && y0 == y1) break;
+        i32 e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x0 += sx; }
+        if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+}
+
+static void scene_draw_sol(const sol_limit_t *s, i32 y, u32 col) {
+    if (!s) return;
+    const u8 *b = (const u8 *)s;
+    i32 n = *(const i32 *)(b + 0x1D8);
+    for (i32 i = 0; i < n && i < 16; i++) {
+        i32 j = (i + 1) % n;
+        i32 ax = *(const i32 *)(b + 0x14 + i * 12), az = *(const i32 *)(b + 0x14 + i * 12 + 8);
+        i32 bx = *(const i32 *)(b + 0x14 + j * 12), bz = *(const i32 *)(b + 0x14 + j * 12 + 8);
+        i32 x0, y0, x1, y1;
+        i32 v0 = scene_project_world(ax, y, az, &x0, &y0);
+        i32 v1 = scene_project_world(bx, y, bz, &x1, &y1);
+        if (v0 && v1) scene_draw_line(x0, y0, x1, y1, col);
+    }
+}
+
+static void scene_draw_zone_overlay(void) {
+    if (!getenv("DKE_ZONEDBG") || !g_proj_valid) return;
+    i32 floor = g_world.world_controller ? *(const i32 *)((const u8 *)g_world.world_controller + 0x1E0) : 0;
+    scene_draw_sol(g_world.world_controller, floor, 0xFF00FF00u);
+    for (i32 i = 0; i < g_world.num_collisions; i++)
+        scene_draw_sol(g_world.collision_zones[i], floor, 0xFF0000FFu);
+    for (i32 i = 0; i < g_world.num_stairs; i++) {
+        const sol_limit_t *z = g_world.stair_zones[i];
+        if (z) scene_draw_sol(z, *(const i32 *)((const u8 *)z + 0x1EC), 0xFF00FFFFu);
+    }
+}
+
+/* Collect an actor's posed atoms into `items` (camera space). All actors go
+ * into one batch so their faces are depth-sorted against each other. */
+static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i32 max_items) {
+    if (!e || !EROOT(e) || !g_proj_valid) return n_items;
     const ome_matr_t *matr = actor_matr(E32(e, 0xB0));
 
     fmat_t stack_m[16];
@@ -2742,7 +2789,7 @@ static void scene_render_actor(entity_t *e, float lx, float ly, float lz) {
             fmat_premul_rotation(&rot, &cur);
             cur.t[0] += pos.t[0]; cur.t[1] += pos.t[1]; cur.t[2] += pos.t[2];
             const model_t *m = n->atom[0] ? model_from_atm_atom(n->atom[0], matr) : NULL;
-            if (m && n_items < 64) {
+            if (m && n_items < max_items) {
                 model_draw_t *it = &items[n_items++];
                 it->m = m;
                 for (i32 k = 0; k < 9; k++) it->m3[k] = cur.m[k];
@@ -2753,23 +2800,7 @@ static void scene_render_actor(entity_t *e, float lx, float ly, float lz) {
         if (sp == 0) break;
         sp--; n = stack_n[sp]; cur = stack_m[sp];
     }
-    if (getenv("DKE_ACTORDBG")) {
-        static i32 shown[3];
-        i32 slot = (e == g_player_entity) ? 0 : (e == g_companion_entity) ? 1 : 2;
-        if (!shown[slot]) {
-            shown[slot] = 1;
-            const obc_node_t *g = EROOT(e);
-            i32 sx0, sy0, sx1, sy1;
-            scene_project_world(g->pos[0], g->pos[1], g->pos[2], &sx0, &sy0);
-            scene_project_world(g->pos[0], g->pos[1] + 10000, g->pos[2], &sx1, &sy1);
-            print("actor: draw p%02d items=%d origin->(%d,%d)  Y+10000->(%d,%d)\n",
-                  E32(e, 0xB0), n_items, sx0, sy0, sx1, sy1);
-        }
-    }
-    model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, NULL,
-                       g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
-                       (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
-                       lx, ly, lz);
+    return n_items;
 }
 
 /*
@@ -2785,6 +2816,9 @@ i32 scene_render(system_t *sys) {
      * mirroring the engine's per-frame driver (dkev sub_44968B):
      *   op -1 tick every frame, then op 3 for the current zone (if any).
      * The actors and the action piles run first, in sub_461468 order. */
+    /* The projection must always be the displayed camera's. */
+    if (g_proj_cam != g_scene_camera && g_scene_bg_level >= 0)
+        scene_load_camera_anchor(g_scene_bg_level, g_scene_camera);
     g_player_movement_locked = lieu_player_blocked();
     lieu_set_action_key(sys ? sys->actions[32] : 0);
     actor_frame((u32)system_get_gametime());
@@ -3134,11 +3168,18 @@ i32 scene_render(system_t *sys) {
         {
             entity_t *cast[3] = { g_player_entity, g_companion_entity,
                                   g_secondary_companion_entity };
+            static model_draw_t items[192];
+            i32 n_items = 0;
             for (i32 ci = 0; ci < 3; ci++) {
                 if (!cast[ci]) continue;
                 if (getenv("DKE_HIDEACTOR") && atoi(getenv("DKE_HIDEACTOR")) == ci) continue;
-                scene_render_actor(cast[ci], lcx, lcy, lcz);
+                n_items = scene_collect_actor(cast[ci], items, n_items, 192);
             }
+            model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, NULL,
+                               g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
+                               (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
+                               lcx, lcy, lcz);
+            scene_draw_zone_overlay();
         }
         if (getenv("DKE_PERFDBG")) {
             static i32 pc = 0; static double acc = 0;

@@ -31,6 +31,7 @@
 #include "actor.h"
 #include "nav_grid.h"
 #include "lieu_action.h"
+#include "world.h"
 
 /* Engine globals the controller reads. Values are the ones the port runs
  * with until the systems that set them are ported. */
@@ -115,16 +116,237 @@ static i32 lowest_node_y(entity_t *e) {
 }
 
 /* =========================================================================
- * Collision — sub_459E80 / sub_4558A0
+ * Collision — sub_459E80 @ 0x459E80 and its probes
  *
- * TODO: the probes (sub_4593F7, sub_4599A2, sub_455B65) are not ported, so
- * moves are never deflected and corridors are always clear. sub_459E80
- * itself always returns 0 in the original; only its rewrite of BF8/C00 is
- * missing.
+ * Polygons are the 0x208-byte "sol_limit" records: the level's "col%02d"
+ * obstacles (dword_4F5FB0, flag bit 0 = solid) and the walkable boundary
+ * (world_controller; being OUTSIDE it is the hit). The eight object
+ * collision slots (entity_data_array @ 0x4DAC10) are not ported.
  * ========================================================================= */
 
-static i32 actor_collide(entity_t *e, i32 flags) { (void)e; (void)flags; return 0; }
-static i32 corridor_blocked(const i32 *from, const i32 *to) { (void)from; (void)to; return 0; }
+#define SOL_I32(s, off) (*(const i32 *)((const u8 *)(s) + (off)))
+#define SOL_V(s, i, k)  SOL_I32(s, 0x14 + (i) * 12 + (k) * 4)
+#define SOL_DIR(s, i, k) SOL_I32(s, 0xD4 + (i) * 12 + (k) * 4)
+#define SOL_LEN(s, i)   SOL_I32(s, 0x194 + (i) * 4)
+#define SOL_N(s)        SOL_I32(s, 0x1D8)
+
+#define COLL_MAX_CAND 64
+static i32  g_coll_gather = 1;                 /* dword_4F915C */
+static i32  g_cand_n = 0;                      /* dword_4F9318 */
+static i32  g_cand[COLL_MAX_CAND][2];          /* dword_4F5E30 / dword_4F5E38 */
+static const void *g_cand_obj[COLL_MAX_CAND];  /* dword_4F5DA0 */
+static i32 *g_delta = NULL;                    /* dword_4F9460 -> e+0xBF8 */
+
+static void cand_push(i32 x, i32 z, const void *obj) {
+    if (g_cand_n >= COLL_MAX_CAND) return;
+    g_cand[g_cand_n][0] = x;
+    g_cand[g_cand_n][1] = z;
+    g_cand_obj[g_cand_n] = obj;
+    g_cand_n++;
+}
+
+static i32 sol_inside(const void *s, i32 x, i32 z) {        /* sub_458F60 */
+    i32 n = SOL_N(s), cnt = 0;
+    for (i32 i = 0; i < n; i++) {
+        i32 j = (i == n - 1) ? 0 : i + 1;
+        i32 x1 = SOL_V(s, i, 0), z1 = SOL_V(s, i, 2);
+        i32 x2 = SOL_V(s, j, 0), z2 = SOL_V(s, j, 2);
+        if (!((z1 < z && z <= z2) || (z2 < z && z <= z1))) continue;
+        if (x1 < x && x2 < x) continue;
+        if (x1 >= x && x <= x2) { cnt++; continue; }
+        i32 xi = x1 + (i32)((f64)(x2 - x1) * (f64)(z - z1) / (f64)(z2 - z1));
+        if (x <= xi) cnt++;
+    }
+    return cnt & 1;
+}
+
+/* sub_4593F7 @ 0x4593F7 — point probe against one polygon; in gather mode
+ * slide candidates (the move delta projected on the edge) are recorded. */
+static i32 coll_point(const void *s, i32 x, i32 z) {
+    if (!s) return 0;
+    i32 n = SOL_N(s);
+    if (SOL_I32(s, 0x1DC) - 0x4B00 > x || SOL_I32(s, 0x1E8) + 0x4B00 < x ||
+        SOL_I32(s, 0x1E4) - 0x4B00 > z || SOL_I32(s, 0x1F0) + 0x4B00 < z)
+        return 0;
+    i32 is_world = (s == (const void *)g_world.world_controller);
+    i32 in = sol_inside(s, x, z);
+    if ((!is_world && in) || (is_world && !in)) {
+        if (g_coll_gather == 0) return 1;
+        cand_push(0, 0, s);
+        return 0;
+    }
+    for (i32 i = 0; i < n; i++) {
+        i32 j = (n - 1 == i) ? 0 : i + 1;
+        i32 lox, hix, loz, hiz;
+        if (SOL_V(s, i, 0) > SOL_V(s, j, 0)) { lox = SOL_V(s, j, 0) - 0x4B00; hix = SOL_V(s, i, 0) + 0x4B00; }
+        else                                 { hix = SOL_V(s, j, 0) + 0x4B00; lox = SOL_V(s, i, 0) - 0x4B00; }
+        if (SOL_V(s, j, 2) < SOL_V(s, i, 2)) { loz = SOL_V(s, j, 2) - 0x4B00; hiz = SOL_V(s, i, 2) + 0x4B00; }
+        else                                 { hiz = SOL_V(s, j, 2) + 0x4B00; loz = SOL_V(s, i, 2) - 0x4B00; }
+        if (lox > x || hix < x || loz > z || hiz < z) continue;
+        f64 dx = (f64)(x - SOL_V(s, i, 0)), dz = (f64)(z - SOL_V(s, i, 2));
+        f64 ux = (f64)SOL_DIR(s, i, 0), uz = (f64)SOL_DIR(s, i, 2);
+        f64 cross = uz * dx - ux * dz;
+        if (!(fabs(cross) < 16588800.0)) continue;
+        f64 t = (uz * dz + ux * dx) / 1024.0;
+        if (t < 0.0) {
+            if (!(dz * dz + dx * dx < 262440000.0)) continue;
+        } else if ((f64)SOL_LEN(s, i) < t) {
+            f64 ex = (f64)(x - SOL_V(s, j, 0)), ez = (f64)(z - SOL_V(s, j, 2));
+            if (!(ez * ez + ex * ex < 262440000.0)) continue;
+        }
+        if (g_coll_gather == 0) return 1;
+        f64 px = g_delta ? (f64)g_delta[0] : 0, pz = g_delta ? (f64)g_delta[2] : 0;
+        f64 k = (uz * pz + ux * px) / 1048576.0;
+        cand_push((i32)(ux * k), (i32)(uz * k), s);
+    }
+    return 0;
+}
+
+/* sub_4599A2 @ 0x4599A2 — circle probe (r = 32400) against the other party
+ * members' predicted positions; candidates are the circle's tangent. */
+static i32 coll_party(entity_t *e, i32 x, i32 z) {
+    entity_t *list[2];
+    i32 n = 0;
+#define ALIVE(o) ((o) && EDESC(o) && !EDESC(o)[0x96])
+    if (e == g_player_entity) {
+        if (ALIVE(g_companion_entity)) list[n++] = g_companion_entity;
+        if (ALIVE(g_secondary_companion_entity)) list[n++] = g_secondary_companion_entity;
+    }
+    if (e == g_companion_entity) {
+        if (g_player_entity) list[n++] = g_player_entity;
+        if (ALIVE(g_secondary_companion_entity) && n < 2) list[n++] = g_secondary_companion_entity;
+    }
+    if (e == g_secondary_companion_entity) {
+        if (g_player_entity) list[n++] = g_player_entity;
+        if (ALIVE(g_companion_entity) && n < 2) list[n++] = g_companion_entity;
+    }
+#undef ALIVE
+    for (i32 i = 0; i < n; i++) {
+        entity_t *o = list[i];
+        if (!ROOT(o)) continue;
+        i32 ox = ROOT(o)->pos[0] + E32(o, 0xBF8), oz = ROOT(o)->pos[2] + E32(o, 0xC00);
+        if (abs(x - ox) > 0x7E90 && abs(z - oz) > 0x7E90) continue;
+        f64 d2 = (f64)(x - ox) * (f64)(x - ox) + (f64)(z - oz) * (f64)(z - oz);
+        if (d2 > 1049760000.0) continue;
+        if (g_coll_gather == 0) return 1;
+        f64 inv = d2 > 0 ? 1024.0 / sqrt(d2) : 0;
+        i32 tx = (i32)(-((f64)(oz - z) * inv));
+        i32 tz = (i32)((f64)(ox - x) * inv);
+        i32 dot = g_delta ? tz * g_delta[2] + tx * g_delta[0] : 0;
+        if ((f64)dot > 0.0) cand_push(tx, tz, NULL);
+        else                cand_push(-tx, -tz, NULL);
+    }
+    return 0;
+}
+
+/* sub_459E80 @ 0x459E80 — resolve the pending move delta (e+0xBF8/+0xC00):
+ * gather slide candidates, and if anything was hit replace the delta with
+ * the last candidate that is free. Always returns 0. */
+static i32 actor_collide(entity_t *e, i32 flags) {
+    if (!e || !ROOT(e)) return 0;
+    g_coll_gather = 1;
+    g_cand_n = 0;
+    g_delta = &E32(e, 0xBF8);
+    i32 px = ROOT(e)->pos[0] + g_delta[0];
+    i32 pz = ROOT(e)->pos[2] + g_delta[2];
+    if (flags & 1) {
+        for (i32 i = 0; i < g_world.num_collisions; i++) {
+            const sol_limit_t *s = g_world.collision_zones[i];
+            if (s && (s->flags & 1)) coll_point(s, px, pz);
+        }
+        E32(e, 0xCB0) = 0;
+        if (g_cand_n && g_cand_obj[0] && g_world.num_collisions) {
+            for (i32 i = 0; i < g_world.num_collisions; i++)
+                if (g_world.collision_zones[i] == g_cand_obj[0]) { E32(e, 0xCB0) = i; break; }
+        }
+        coll_point(g_world.world_controller, px, pz);
+    }
+    if (flags & 2) {
+        coll_party(e, px, pz);
+        if (g_cand_n) {
+            g_coll_gather = 0;
+            g_delta[0] = 0;
+            g_delta[2] = 0;
+            for (i32 k = 0; k < g_cand_n; k++) {
+                i32 cx = g_cand[k][0], cz = g_cand[k][1];
+                i32 qx = ROOT(e)->pos[0] + cx, qz = ROOT(e)->pos[2] + cz;
+                i32 hit = 0;
+                for (i32 i = 0; i < g_world.num_collisions && !hit; i++) {
+                    const sol_limit_t *s = g_world.collision_zones[i];
+                    if (s && (s->flags & 1)) hit = coll_point(s, qx, qz);
+                }
+                if (!hit) hit = coll_point(g_world.world_controller, qx, qz);
+                if (!hit) hit = coll_party(e, qx, qz);
+                if (!hit) { g_delta[0] = cx; g_delta[2] = cz; }
+            }
+        }
+    }
+    return 0;
+}
+
+/* sub_4590C7 — XZ segment intersection, inclusive. */
+static i32 seg_cross(const i32 *P1, const i32 *P2, i32 q1x, i32 q1z, i32 q2x, i32 q2z) {
+    i32 pminx = P1[0] < P2[0] ? P1[0] : P2[0], pmaxx = P1[0] < P2[0] ? P2[0] : P1[0];
+    i32 pminz = P1[2] < P2[2] ? P1[2] : P2[2], pmaxz = P1[2] < P2[2] ? P2[2] : P1[2];
+    i32 qminx = q2x > q1x ? q1x : q2x, qmaxx = q2x > q1x ? q2x : q1x;
+    i32 qminz = q2z > q1z ? q1z : q2z, qmaxz = q2z > q1z ? q2z : q1z;
+    if (pmaxx < qminx || pminx > qmaxx || pminz > qmaxz || qminz > pmaxz) return 0;
+    f64 ax = q2x - q1x, az = q2z - q1z;
+    f64 d1 = az * (f64)(P1[0] - q1x) - (f64)(P1[2] - q1z) * ax;
+    f64 d2 = az * (f64)(P2[0] - q1x) - (f64)(P2[2] - q1z) * ax;
+    if (!((d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0))) return 0;
+    f64 bx = P1[0] - P2[0], bz = P1[2] - P2[2];
+    f64 e1 = (f64)(q1z - P2[2]) * bx - bz * (f64)(q1x - P2[0]);
+    f64 e2 = (f64)(q2z - P2[2]) * bx - bz * (f64)(q2x - P2[0]);
+    return (e1 <= 0 && e2 >= 0) || (e1 >= 0 && e2 <= 0);
+}
+
+/* sub_455B65 — corridor (rails A->B and C->D) against one polygon. */
+static i32 coll_corridor(const void *s, const i32 *from, const i32 *to,
+                         const i32 *A, const i32 *B, const i32 *C, const i32 *D) {
+    g_coll_gather = 0;
+    if (coll_point(s, from[0], from[2])) return 1;
+    if (coll_point(s, to[0], to[2])) return 1;
+    i32 v0x = SOL_V(s, 0, 0), v0z = SOL_V(s, 0, 2);
+    f64 gz = (f64)(B[2] - A[2]), gx = -(f64)(B[0] - A[0]);
+    f64 s1 = (f64)(v0z - A[2]) * gx + (f64)(v0x - A[0]) * gz;
+    f64 s2 = (f64)(v0z - C[2]) * gx + (f64)(v0x - C[0]) * gz;
+    if ((s1 > 0.0 && s2 < 0.0) || (s1 < 0.0 && s2 > 0.0)) {
+        f64 hz = (f64)(C[2] - A[2]), hx = -(f64)(C[0] - A[0]);
+        f64 t1 = (f64)(v0z - A[2]) * hx + (f64)(v0x - A[0]) * hz;
+        f64 t2 = (f64)(v0z - B[2]) * hx + (f64)(v0x - B[0]) * hz;
+        if ((t1 > 0.0 && t2 < 0.0) || (t1 < 0.0 && t2 > 0.0)) return 1;
+    }
+    i32 n = SOL_N(s);
+    for (i32 i = 0; i < n; i++) {
+        i32 j = (n - 1 == i) ? 0 : i + 1;
+        if (seg_cross(A, B, SOL_V(s, i, 0), SOL_V(s, i, 2), SOL_V(s, j, 0), SOL_V(s, j, 2))) return 1;
+        if (seg_cross(C, D, SOL_V(s, i, 0), SOL_V(s, i, 2), SOL_V(s, j, 0), SOL_V(s, j, 2))) return 1;
+    }
+    return 0;
+}
+
+/* sub_4558A0 @ 0x4558A0 — is the 2 x 19200 wide corridor from -> to
+ * blocked by a solid polygon? (The walkable boundary is not tested.) */
+static i32 corridor_blocked(const i32 *from, const i32 *to) {
+    i32 dx = to[0] - from[0], dz = to[2] - from[2];
+    i32 px = -dz, pz = dx;
+    f64 L = sqrt((f64)pz * pz + (f64)px * px);
+    if (L == 0.0) return 0;
+    f64 k = 19200.0 / L;
+    px = (i32)(px * k); pz = (i32)(pz * k);
+    i32 A[3] = { from[0] + px, 0, from[2] + pz }, B[3] = { to[0] + px, 0, to[2] + pz };
+    i32 C[3] = { from[0] - px, 0, from[2] - pz }, D[3] = { to[0] - px, 0, to[2] - pz };
+    g_cand_n = 0;
+    for (i32 i = 0; i < g_world.num_collisions; i++) {
+        const sol_limit_t *s = g_world.collision_zones[i];
+        if (!s || !(s->flags & 1)) continue;
+        if (coll_point(s, from[0], from[2])) return 1;
+        if (coll_point(s, to[0], to[2])) return 1;
+        if (coll_corridor(s, from, to, A, B, C, D)) return 1;
+    }
+    return 0;
+}
 
 /* sub_418810 @ 0x418810 — move the root to (x, z) through collision. */
 static void actor_move_to(entity_t *e, i32 x, i32 z) {
@@ -799,6 +1021,15 @@ i32 actor_steer(entity_t *e, i32 x, i32 z) {
             return 1;
         }
         i32 dd = -wrapdiff(tgt_h, cur);
+        if (getenv("DKE_STEERDBG")) {
+            static u32 last = 0;
+            if ((u32)now_ms() - last > 200) {
+                last = (u32)now_ms();
+                print("steer: p%02d cbc=%d cur=%04X tgt=%04X dd=%d hdg=%04X child=%d cf4=%d anim=%s\n",
+                      E32(e, 0xB0), E32(e, 0xCBC), cur, tgt_h, dd, g->rot[2] & 0xFFFF,
+                      g->child ? g->child->rot[0] : 0, E32(e, 0xCF4), ESTR(e, 0xC4));
+            }
+        }
         if (E32(e, 0xCBC) == 3) return 1;
         if (E32(e, 0xCB4) != 0) {
             if (E32(e, 0xCBC) != 0) {
@@ -1074,8 +1305,8 @@ static void actor_trace(u32 now) {
             }
             print("actor: pose p%02d%s\n", E32(e, 0xB0), buf);
         }
-        print("actor: t=%u p%02d pos=(%d,%d,%d) hdg=%04X anim=%s t=%d/%d cec=%d cbc=%d foot=%s\n",
-              now, E32(e, 0xB0), ROOT(e)->pos[0], ROOT(e)->pos[1], ROOT(e)->pos[2],
+        print("actor: t=%u p%02d pos=(%d,%d,%d) floor=%d ec=%d hdg=%04X anim=%s t=%d/%d cec=%d cbc=%d foot=%s\n",
+              now, E32(e, 0xB0), ROOT(e)->pos[0], ROOT(e)->pos[1], ROOT(e)->pos[2], E32(e, 0x8C), E32(e, 0xEC),
               ROOT(e)->rot[2] & 0xFFFF, ESTR(e, 0xC4), actor_anim_time(e),
               ANIM(e) ? CAN_DURATION(ANIM(e)) : 0, E32(e, 0xCEC), E32(e, 0xCBC),
               EPTR(e, 0xF0) ? ((obc_node_t *)EPTR(e, 0xF0))->name : "-");

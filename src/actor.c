@@ -427,14 +427,15 @@ void actor_bake_root_yaw(entity_t *e) {                       /* 0x41A9ED */
     if (CAN_ROOT_YAW(r)) {
         i32 cur = skel->rot[0] & 0xFFFF;
         skel->rot[0] = CAN_ROOT_YAW(r);
-        g->rot[2] += cur - CAN_ROOT_YAW(r);
+        g->rot[2] -= cur - CAN_ROOT_YAW(r);
         g->rot[2] &= 0xFFFF;
         skel->rot[0] &= 0xFFFF;
     } else {
-        g->rot[2] += skel->rot[0];
+        g->rot[2] -= skel->rot[0];
         skel->rot[0] = 0;
     }
 }
+
 
 /* sub_465B47 — time stamp of the foot-contact message for `foot`. */
 static i32 anim_foot_phase(entity_t *e, const can_rec_t *r, void *foot) {
