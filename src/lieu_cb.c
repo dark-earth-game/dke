@@ -35,6 +35,7 @@
 #include "libsys/common.h"
 #include "lieu_cb.h"
 #include "anim2d.h"
+#include "object.h"
 #include "lieu_action.h"
 #include "lieu01.h"
 #include "player.h"
@@ -1245,11 +1246,6 @@ static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz) {
 i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
     if (!n) return 1;
 
-    /* Generic hold: a node with a positive duration stays at the head until
-     * it elapses (asm 0x44ACB2: now - entity[0xC28] > node[0x40]). */
-    i32 held = (n->duration >= 0 &&
-                (i32)(now_ms - n->start_ms) <= n->duration);
-
     switch (n->type) {
 
     case LA_ANIMATION: {                       /* case 0 @ 0x44A8E3 */
@@ -1372,8 +1368,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             o->p20 = n->p20; o->p24 = n->p24; o->p28 = n->p28;
             o->owner = n->actor;
         }
-        print("lieu_act: ETATOBJET '%s' owner=%d w=(%d,%d,%d) p=(%d,%d,%d)\n",
-              n->name, n->actor, n->x, n->y, n->z, n->p20, n->p24, n->p28);
+        object_etat(n->name, n->x, n->y, n->z, n->p20, n->p24, n->p28, n->actor, n->p54);
         return 1;
     }
 
@@ -1447,10 +1442,9 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             n->aux_state = 1;
             lieu_obj_t *o = obj_find(n->name, 1);
             if (o) { o->p20 = n->p20; o->p24 = n->p24; o->p28 = n->p28; }
-            print("lieu_act: ANIMOBJET '%s' p=(%d,%d,%d) hold=%d\n",
-                  n->name, n->p20, n->p24, n->p28, n->duration);
         }
-        return held ? 0 : 1;
+        /* sub_412B94 runs it; the action completes once it has finished. */
+        return object_anim(n->name, n->p20, n->p24, n->p28, n->duration, now_ms);
     }
 
     case LA_STOPJOINDRE: {                     /* case 0x16 @ 0x44C435 */

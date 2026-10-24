@@ -78,7 +78,10 @@ typedef struct {
     u8   r, g, b;       /* mean colour of the material's texels (fallback) */
     c8   name[16];
     i32  x, y, w, h;    /* rect in the texture atlas */
+    i32  bitmap;        /* +0x44: index into the library's bitmaps */
 } ome_mat_t;
+
+#define OME_MATR_MAX_BITMAPS 4
 
 typedef struct {
     ome_mat_t mats[OME_MATR_MAX_MATS];
@@ -87,7 +90,17 @@ typedef struct {
     i32       tex_w, tex_h;                  /* 0 = no embedded texture   */
     u8        tex_pal[768];
     u8       *tex_pix;                       /* tex_w * tex_h, heap-owned */
+    /* Per bitmap entry: the embedded image, or the shared objects atlas
+     * (dword_4FB1DC, OBJETS>OBJETS.CIF) for a bitmap named "objets.gif".
+     * Pages are 256 wide. */
+    i32       nbitmaps;
+    const u8 *bm_pix[OME_MATR_MAX_BITMAPS];
+    i32       bm_h[OME_MATR_MAX_BITMAPS];
 } ome_matr_t;
+
+/* Install the shared objects atlas (256 wide, 8bpp) used by "objets.gif"
+ * bitmaps. Must outlive every library that references it. */
+void ome_set_objets_atlas(const u8 *pix, i32 h);
 
 /* Material for a face's slot id, or NULL. */
 static inline const ome_mat_t *ome_matr_slot(const ome_matr_t *m, i32 slot) {

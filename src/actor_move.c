@@ -31,6 +31,7 @@
 #include "actor.h"
 #include "lieu_cb.h"
 #include "anim2d.h"
+#include "object.h"
 #include "nav_grid.h"
 #include "lieu_action.h"
 #include "world.h"
@@ -122,8 +123,8 @@ static i32 lowest_node_y(entity_t *e) {
  *
  * Polygons are the 0x208-byte "sol_limit" records: the level's "col%02d"
  * obstacles (dword_4F5FB0, flag bit 0 = solid) and the walkable boundary
- * (world_controller; being OUTSIDE it is the hit). The eight object
- * collision slots (entity_data_array @ 0x4DAC10) are not ported.
+ * (world_controller; being OUTSIDE it is the hit), plus the eight object
+ * slots' polygons (object.c).
  * ========================================================================= */
 
 #define SOL_I32(s, off) (*(const i32 *)((const u8 *)(s) + (off)))
@@ -262,6 +263,7 @@ static i32 actor_collide(entity_t *e, i32 flags) {
                 if (g_world.collision_zones[i] == g_cand_obj[0]) { E32(e, 0xCB0) = i; break; }
         }
         coll_point(g_world.world_controller, px, pz);
+        for (i32 i = 0; i < OBJ_SLOTS; i++) coll_point(object_poly(i), px, pz);   /* 0x45A0xx */
     }
     if (getenv("DKE_COLLDBG") && e == g_player_entity && g_cand_n) {
         i32 zi = -1;
@@ -285,6 +287,7 @@ static i32 actor_collide(entity_t *e, i32 flags) {
                     if (s && (s->flags & 1)) hit = coll_point(s, qx, qz);
                 }
                 if (!hit) hit = coll_point(g_world.world_controller, qx, qz);
+                for (i32 i = 0; i < OBJ_SLOTS && !hit; i++) hit = coll_point(object_poly(i), qx, qz);
                 if (!hit) hit = coll_party(e, qx, qz);
                 if (!hit) { g_delta[0] = cx; g_delta[2] = cz; }
             }
@@ -1340,6 +1343,7 @@ void actor_frame(u32 now) {
     actor_update_timing(now);
     player_tick();
     lieu_action_run(now);                         /* sub_44CDB8 */
+    object_tick(now);                             /* sub_412B94 */
     if (g_player_entity) actor_control(g_player_entity);
 }
 

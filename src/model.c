@@ -142,6 +142,16 @@ static inline u32 apply_light(u32 col, u32 l) {
  * is visible where it is not behind the backdrop. -1 = off. */
 static i32 g_actor_z = -1;
 
+/* Object bake (sub_4762BF): pixels the object covers also write its depth
+ * into a Z image, so actors drawn later are hidden behind it. */
+static bmap_t *g_zstamp = NULL;
+static i32     g_zstamp_val = 0;
+
+void model_set_zstamp(bmap_t *zb, i32 value) {
+    g_zstamp = (value >= 0) ? zb : NULL;
+    g_zstamp_val = value;
+}
+
 static void plot_pixel(u32 *fb, i32 fb_w, i32 fb_h,
                        i32 x, i32 y, i32 depth,
                        u32 colour,
@@ -150,6 +160,8 @@ static void plot_pixel(u32 *fb, i32 fb_w, i32 fb_h,
     if (g_actor_z >= 0) {
         if (z_bmap && (u32)g_actor_z < sample_depth(z_bmap, x, y)) return;
         fb[y * fb_w + x] = colour;
+        if (g_zstamp && g_zstamp->pixels && x < g_zstamp->width && y < g_zstamp->height)
+            g_zstamp->pixels[y * g_zstamp->width + x] = (u8)g_zstamp_val;
         return;
     }
     u32 scene_z = sample_depth(z_bmap, x, y);
@@ -742,7 +754,7 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
             P[nv].shade = -1;
             /* 0x421710: d = n.L (Q14 x Q14); a normal facing the light gets
              * full strength, one facing away half; row = (I >> 16) & 0xFF. */
-            if (items[it].light_s > 0 && m->normals) {
+            if (items[it].light_s >= 0 && m->normals) {
                 i64 nx = m->normals[i].x, ny = m->normals[i].y, nz = m->normals[i].z;
                 i64 ncx = (nx*M[0] + ny*M[3] + nz*M[6]) >> 14;
                 i64 ncy = (nx*M[1] + ny*M[4] + nz*M[7]) >> 14;
@@ -781,7 +793,7 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
             if (!va->vis && !vb->vis && !vc->vis) continue;
             i64 cross_z = (i64)(vb->sx - va->sx) * (i64)(vc->sy - va->sy)
                         - (i64)(vb->sy - va->sy) * (i64)(vc->sx - va->sx);
-            if (cross_z >= 0) continue;
+            if (cross_z >= 0 && !face->two_sided) continue;
             fill_tri_shaded(face, va, vb, vc, fb, fb_w, fb_h, z_bmap, pal, grd);
             continue;
         }
@@ -958,6 +970,7 @@ const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr) {
         if (vc != 3 && vc != 4) continue;
         const ome_mat_t *mt = ome_matr_slot(matr, slot);
         model_face_t fc = {0};
+        fc.two_sided = (f[14] & 0x20) == 0;            /* 0x4215A9 */
         if (slot < 0 || !mt) {
             /* No material: gouraud on the colour ramp of the palette index
              * at +0x28 (sub_497CD9); +0x5C holds the same colour as RGB. */
@@ -966,13 +979,14 @@ const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr) {
             fc.ramp = 1;
         } else {
             fc.colour = 0xFF000000u | ((u32)mt->b << 16) | ((u32)mt->g << 8) | (u32)mt->r;
-            if ((f[ATM_FACE_FLAGS] & 0x0C) == 0x0C && matr->tex_pix) {
+            const u8 *page = matr->bm_pix[mt->bitmap];
+            if ((f[ATM_FACE_FLAGS] & 0x0C) == 0x0C && page) {
                 /* 0x423014: u += x, v += y (or 256 - h when the rect reaches
                  * the bottom; the texel base then moves down y + h - 256). */
                 i32 vb    = (mt->y + mt->h >= 256) ? 256 - mt->h : mt->y;
                 i32 shift = (mt->y + mt->h > 256) ? mt->y + mt->h - 256 : 0;
-                fc.tex = matr->tex_pix;
-                fc.tex_rows = matr->tex_h;
+                fc.tex = page;
+                fc.tex_rows = matr->bm_h[mt->bitmap];
                 const i32 *uv = f + ATM_FACE_UV;
                 i32 tu[4], tv[4];
                 for (i32 k = 0; k < 4; k++) {

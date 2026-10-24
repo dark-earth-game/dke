@@ -96,6 +96,11 @@ static i32 read_i32_le(const u8 *p) {
     return (i32)((u32)p[0] | ((u32)p[1] << 8) | ((u32)p[2] << 16) | ((u32)p[3] << 24));
 }
 
+static const u8 *g_objets_atlas = NULL;    /* dword_4FB1DC */
+static i32       g_objets_atlas_h = 0;
+
+void ome_set_objets_atlas(const u8 *pix, i32 h) { g_objets_atlas = pix; g_objets_atlas_h = h; }
+
 i32 ome_load_matr(const u8 *file, i32 size, ome_matr_t *out) {     /* sub_44F92D */
     if (!file || !out || size < 16) return 0;
     memset(out, 0, sizeof(*out));
@@ -108,7 +113,20 @@ i32 ome_load_matr(const u8 *file, i32 size, ome_matr_t *out) {     /* sub_44F92D
     }
     const u8 *lib = file + m + 0x20;
     i32 nslots = read_i32_le(lib + 0x148), nbitmaps = read_i32_le(lib + 0x14C);
-    if (nslots < 0 || nslots > OME_MATR_MAX_MATS || nbitmaps < 0 || nbitmaps > 16) return 0;
+    if (nslots < 0 || nslots > OME_MATR_MAX_MATS || nbitmaps < 0 || nbitmaps > OME_MATR_MAX_BITMAPS) return 0;
+    out->nbitmaps = nbitmaps;
+    i32 shared[OME_MATR_MAX_BITMAPS] = {0}, any_embedded = 0;
+    for (i32 b = 0; b < nbitmaps; b++) {
+        /* sub_44FFB9: a bitmap whose name ends in "objets.gif" uses the
+         * shared atlas and decodes nothing. */
+        c8 nm[257];
+        memcpy(nm, file + m + 0x180 + b * 0x114, 256);
+        nm[256] = 0;
+        for (c8 *q = nm; *q; q++) if (*q >= 'A' && *q <= 'Z') *q += 32;
+        size_t L = strlen(nm);
+        shared[b] = (L >= 10 && strcmp(nm + L - 10, "objets.gif") == 0);
+        if (!shared[b]) any_embedded = 1;
+    }
     i32 recs = m + 0x180 + nbitmaps * 0x114;
     i32 img  = recs + nslots * 0x48;
     if (img > size) return 0;
@@ -122,12 +140,15 @@ i32 ome_load_matr(const u8 *file, i32 size, ome_matr_t *out) {     /* sub_44F92D
         mt->name[15] = 0;
         mt->x = read_i32_le(r + 0x30); mt->y = read_i32_le(r + 0x34);
         mt->w = read_i32_le(r + 0x38); mt->h = read_i32_le(r + 0x3C);
+        mt->bitmap = read_i32_le(r + 0x44);
+        if (mt->bitmap < 0) mt->bitmap = 0;
+        if (nbitmaps > 0 && mt->bitmap >= nbitmaps) mt->bitmap = nbitmaps - 1;
         out->slot_map[sl] = (i8)out->mat_count++;
     }
 
     /* sub_44F58E: the embedded 8bpp image. Its length is not stored; the
      * LZW stream ends with code 257 before the next chunk. */
-    if (nbitmaps > 0 && img + 0x310 < size) {
+    if (any_embedded && img + 0x310 < size) {
         i32 w = read_i32_le(file + img + 8), h = read_i32_le(file + img + 0xC);
         if (w > 0 && w <= 1024 && h > 0 && h <= 1024) {
             out->tex_pix = (u8 *)calloc((size_t)w * (size_t)h, 1);
@@ -140,13 +161,22 @@ i32 ome_load_matr(const u8 *file, i32 size, ome_matr_t *out) {     /* sub_44F92D
         }
     }
 
-    /* Mean colour per material, for untextured fallbacks. */
+    /* The engine decodes the same embedded image for every non-shared
+     * bitmap (its data pointer does not advance). */
+    for (i32 b = 0; b < nbitmaps; b++) {
+        if (shared[b]) { out->bm_pix[b] = g_objets_atlas; out->bm_h[b] = g_objets_atlas_h; }
+        else if (out->tex_w == 256) { out->bm_pix[b] = out->tex_pix; out->bm_h[b] = out->tex_h; }
+    }
+
+    /* Mean colour per material (embedded palette), for untextured fallbacks. */
     for (i32 k = 0; k < out->mat_count; k++) {
         ome_mat_t *mt = &out->mats[k];
         u32 sr = 0, sg = 0, sb = 0, n = 0;
-        for (i32 y = mt->y; out->tex_pix && y < mt->y + mt->h && y < out->tex_h; y++)
-            for (i32 x = mt->x; x < mt->x + mt->w && x < out->tex_w; x++) {
-                const u8 *c = out->tex_pal + 3 * out->tex_pix[y * out->tex_w + x];
+        const u8 *bp = out->bm_pix[mt->bitmap];
+        i32 bh = out->bm_h[mt->bitmap];
+        for (i32 y = mt->y; bp && bp == out->tex_pix && y < mt->y + mt->h && y < bh; y++)
+            for (i32 x = mt->x; x < mt->x + mt->w && x < 256; x++) {
+                const u8 *c = out->tex_pal + 3 * bp[y * 256 + x];
                 sr += c[0]; sg += c[1]; sb += c[2]; n++;
             }
         if (n) { mt->r = (u8)(sr / n); mt->g = (u8)(sg / n); mt->b = (u8)(sb / n); }

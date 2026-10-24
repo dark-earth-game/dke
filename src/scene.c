@@ -62,6 +62,7 @@
 #include "world.h"
 #include "nav_grid.h"
 #include "anim2d.h"
+#include "object.h"
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
@@ -2527,6 +2528,7 @@ i32 scene_load_level(i32 level_id) {
     /* Per-camera active regions (for auto camera switching by player pos). */
     scene_load_camera_regions(g_scene_bg_level);
 
+    object_reset();                                /* objects load lazily per room */
     /* LIEU scripting (sub_448F4D's INIT; see init_level_scripting): native
      * hand-port, per-frame tick from scene_render, deinit in release. */
     lieu_enter(level_id);
@@ -2758,19 +2760,19 @@ static i32 scene_actor_zval(i32 x, i32 y, i32 z) {
     return zt[i];
 }
 
-/* Collect an actor's posed atoms into `items` (camera space). All actors go
- * into one batch so their faces are depth-sorted against each other. */
-static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i32 max_items) {
-    if (!e || !EROOT(e) || !g_proj_valid) return n_items;
-    const ome_matr_t *matr = actor_matr(E32(e, 0xB0));
-    i32 zv = scene_actor_zval(EROOT(e)->pos[0], EROOT(e)->pos[1], EROOT(e)->pos[2]);
+/* Collect an object tree's atoms (actors and objects share this): one depth
+ * value `zv` for the whole tree, lit from the camera side with the light
+ * map read under (root x, ground_y, root z). */
+static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, i32 ground_y,
+                              model_draw_t *items, i32 n_items, i32 max_items) {
+    if (!root || !g_proj_valid) return n_items;
 
     /* sub_4358D3: the light comes from the camera side, horizontally toward
      * the actor and 45 degrees down (Q14 length). initialize_effect_position:
      * strength S = light-map byte under the actor's ground point * 0.75. */
     i32 light[3] = {0, 0, 0}, light_s = 0;
     {
-        f64 dx = (f64)EROOT(e)->pos[0] - g_proj_eye[0], dz = (f64)EROOT(e)->pos[2] - g_proj_eye[2];
+        f64 dx = (f64)root->pos[0] - g_proj_eye[0], dz = (f64)root->pos[2] - g_proj_eye[2];
         f64 dl = sqrt(dx * dx + dz * dz);
         i32 lw[3] = { dl > 0 ? (i32)(dx / dl * 11585.0) : 0, -11585,
                       dl > 0 ? (i32)(dz / dl * 11585.0) : 0 };
@@ -2778,7 +2780,7 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
         light[1] = (i32)(((i64)lw[0] * g_proj_R[1] + (i64)lw[1] * g_proj_R[4] + (i64)lw[2] * g_proj_R[7]) >> 14);
         light[2] = (i32)(((i64)lw[0] * g_proj_R[2] + (i64)lw[1] * g_proj_R[5] + (i64)lw[2] * g_proj_R[8]) >> 14);
         i32 sx = 0, sy = 0;
-        scene_project_world(EROOT(e)->pos[0], E32(e, 0x8C), EROOT(e)->pos[2], &sx, &sy);
+        scene_project_world(root->pos[0], ground_y, root->pos[2], &sx, &sy);
         if (sx < 0) sx = 0;
         if (sx > 639) sx = 639;
         if (sy < 0) sy = 0;
@@ -2791,8 +2793,8 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
             light_s = 96;
         }
         if (getenv("DKE_LIGHTDBG"))
-            print("light: p%02d S=%d L=(%d,%d,%d) at screen (%d,%d)\n",
-                  E32(e, 0xB0), light_s, light[0], light[1], light[2], sx, sy);
+            print("light: %s S=%d L=(%d,%d,%d) at screen (%d,%d)\n",
+                  root->name, light_s, light[0], light[1], light[2], sx, sy);
     }
 
     fmat_t stack_m[16];
@@ -2801,12 +2803,12 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
     fmat_t cur;
     for (i32 k = 0; k < 9; k++) cur.m[k] = g_proj_R[k];
     for (i32 k = 0; k < 3; k++) cur.t[k] = g_proj_T[k];
-    obc_node_t *n = EROOT(e);
+    obc_node_t *n = root;
     for (;;) {
         while (n) {
-            if (n->next && sp < 16) { stack_n[sp] = n->next; stack_m[sp] = cur; sp++; }
+            if (n->next && n != root && sp < 16) { stack_n[sp] = n->next; stack_m[sp] = cur; sp++; }
             fmat_t rot, pos;
-            i32 rest = getenv("DKE_RESTPOSE") && n != EROOT(e);
+            i32 rest = getenv("DKE_RESTPOSE") && n != root;
             fmat_rotation(&rot, rest ? 0 : n->rot[0], rest ? 0 : n->rot[1], rest ? 0 : n->rot[2]);
             fmat_position(&pos, n->pos[0], n->pos[1], n->pos[2]);
             fmat_rotate_translation(&cur, &pos);
@@ -2820,7 +2822,7 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
                 for (i32 k = 0; k < 3; k++) it->t[k] = cur.t[k];
                 it->zval = getenv("DKE_NOZ") ? -1 : zv;
                 it->light[0] = light[0]; it->light[1] = light[1]; it->light[2] = light[2];
-                it->light_s = getenv("DKE_NOTEX") ? 0 : light_s;
+                it->light_s = getenv("DKE_NOTEX") ? -1 : light_s;
             }
             n = n->child;
         }
@@ -2828,6 +2830,13 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
         sp--; n = stack_n[sp]; cur = stack_m[sp];
     }
     return n_items;
+}
+
+static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i32 max_items) {
+    if (!e || !EROOT(e)) return n_items;
+    i32 zv = scene_actor_zval(EROOT(e)->pos[0], EROOT(e)->pos[1], EROOT(e)->pos[2]);
+    return scene_collect_tree(EROOT(e), actor_matr(E32(e, 0xB0)), zv, E32(e, 0x8C),
+                              items, n_items, max_items);
 }
 
 /*
@@ -3230,6 +3239,58 @@ i32 scene_render(system_t *sys) {
         }
         /* Characters: the three actor slots, animated and drawn from their
          * own object trees (sub_461468 order: player, companion, secondary). */
+        /* Objects (sub_47674F): props and placed items are baked over the
+         * backdrop, each with one depth value, and stamp that depth into a
+         * per-frame copy of the Z image that the actors then test against.
+         * The object a running AnimObjet turns is drawn live, untested and
+         * unstamped (update_game_hud sorts it before the actors). */
+        static bmap_t zdyn;
+        static u8    *zdyn_px = NULL;
+        static i32    zdyn_cap = 0;
+        const bmap_t *zact = g_scene_z_bmap;
+        if (g_scene_z_bmap && g_scene_z_bmap->pixels) {
+            i32 zn = (i32)g_scene_z_bmap->width * g_scene_z_bmap->height;
+            if (zn > zdyn_cap) { free(zdyn_px); zdyn_px = (u8 *)malloc((size_t)zn); zdyn_cap = zdyn_px ? zn : 0; }
+            if (zdyn_px) {
+                memcpy(zdyn_px, g_scene_z_bmap->pixels, (size_t)zn);
+                zdyn = *g_scene_z_bmap;
+                zdyn.pixels = zdyn.first_pixel = zdyn_px;
+                zact = &zdyn;
+            }
+        }
+        {
+            const u8 *opal = g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL;
+            const u8 *ogrd = (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL;
+            for (i32 oi = 0; oi < OBJ_SLOTS && !getenv("DKE_NOOBJ"); oi++) {
+                game_object_t *o = object_slot(oi);
+                if (!o || !o->root || (o->flags & OBJ_F_FREE)) continue;
+                i32 live = object_animating(o);
+                for (i32 v = 0; v < (o->is_prop ? 1 : OBJ_VARIANTS); v++) {
+                    if (!o->is_prop) {
+                        if (!o->var_on[v]) continue;
+                        /* sub_4731F6: the instance's own position / angles. */
+                        for (i32 k = 0; k < 3; k++) {
+                            o->root->pos[k] = o->var_pos[v][k];
+                            o->root->rot[k] = o->var_rot[v][k];
+                        }
+                    }
+                    static model_draw_t oitems[64];
+                    i32 zv = scene_actor_zval(o->root->pos[0], o->root->pos[1], o->root->pos[2]) - 1;
+                    if (zv < 1) zv = 1;
+                    i32 ground = actor_floor_height(o->root->pos[0], o->root->pos[2], NULL);   /* +0x8C */
+                    i32 n_o = scene_collect_tree(o->root, &o->matr, live ? -1 : zv, ground,
+                                                 oitems, 0, 64);
+                    /* Z mode: a7 <= 2 -> a7, else a7 - 4; -1 never occludes,
+                     * 1 always in front, otherwise the object's depth. */
+                    i32 zmode = o->mode <= 2 ? o->mode : o->mode - 4;
+                    i32 stamp = live ? -1 : zmode == -1 ? -1 : zmode == 1 ? 0xFF : zv;
+                    model_set_zstamp((bmap_t *)zact, zact == &zdyn ? stamp : -1);
+                    model_render_batch(oitems, n_o, g_proj_gscale, g_scene_l_bmap, zact,
+                                       opal, ogrd, lcx, lcy, lcz);
+                    model_set_zstamp(NULL, -1);
+                }
+            }
+        }
         {
             entity_t *cast[3] = { g_player_entity, g_companion_entity,
                                   g_secondary_companion_entity };
@@ -3240,7 +3301,7 @@ i32 scene_render(system_t *sys) {
                 if (getenv("DKE_HIDEACTOR") && atoi(getenv("DKE_HIDEACTOR")) == ci) continue;
                 n_items = scene_collect_actor(cast[ci], items, n_items, 192);
             }
-            model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, g_scene_z_bmap,
+            model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, zact,
                                g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
                                lcx, lcy, lcz);
@@ -3347,10 +3408,17 @@ i32 scene_render(system_t *sys) {
      * inspected without a display. */
     if (getenv("DKE_SHOT") && state && state->graphic.front_buffer) {
         static i32 s_frame = 0;
-        i32 want = atoi(getenv("DKE_SHOT"));
-        if (s_frame++ == want) {
+        /* DKE_SHOT=<frame> one shot; DKE_SHOT=<first>+<step> one every step
+         * frames from first, written as <path>.<frame>. */
+        const c8 *spec = getenv("DKE_SHOT");
+        i32 want = atoi(spec), step = strchr(spec, '+') ? atoi(strchr(spec, '+') + 1) : 0;
+        i32 fr = s_frame++;
+        if (fr == want || (step > 0 && fr > want && (fr - want) % step == 0)) {
             const c8 *out = getenv("DKE_SHOT_PATH");
-            FILE *f = fopen(out ? out : "/tmp/dke_shot.ppm", "wb");
+            c8 path[512];
+            if (step > 0) snprintf(path, sizeof(path), "%s.%05d", out ? out : "/tmp/dke_shot.ppm", fr);
+            else          snprintf(path, sizeof(path), "%s", out ? out : "/tmp/dke_shot.ppm");
+            FILE *f = fopen(path, "wb");
             if (f) {
                 u32 *fb = state->graphic.front_buffer;
                 i32 w = state->graphic.width, h = state->graphic.height;
