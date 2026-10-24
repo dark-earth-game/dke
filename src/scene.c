@@ -2474,15 +2474,8 @@ i32 scene_load_level(i32 level_id) {
             /* Parse material colours from the MATR chunk. */
             ome_matr_t matr = {0};
             ome_matr_t *matr_ptr = NULL;
-            for (i32 ci = 0; ci < ome.chunk_count; ci++) {
-                if (ome.chunks[ci].kind != OME_CHUNK_MATR) continue;
-                const u8 *mbody = ome.raw + ome.chunks[ci].offset + 0x60;
-                i32 mbody_len   = ome.chunks[ci].length - 0x60;
-                if (ome_parse_matr(mbody, mbody_len, &matr)) {
-                    matr_ptr = &matr;
-                }
-                break; /* only one MATR per file */
-            }
+            if (ome_load_matr(ome.raw, ome.raw_size, &matr))
+                matr_ptr = &matr;
 
             for (i32 ci = 0; ci < ome.chunk_count; ci++) {
                 if (ome.chunks[ci].kind != OME_CHUNK_ATOMF) continue;
@@ -2514,6 +2507,7 @@ i32 scene_load_level(i32 level_id) {
 
             print("scene: P00 loaded %d geometry atoms (%d materials)\n",
                   g_scene_ome_atom_count, matr.mat_count);
+            ome_matr_free(&matr);
             model_ome_free(&ome);
         }
     }
@@ -2704,7 +2698,7 @@ static void scene_update_bone_positions(const can_frame_t *kf) {
 static struct { i32 num; ome_matr_t matr; i32 ok; } g_actor_matr[ACTOR_MATR_CACHE];
 static i32 g_actor_matr_n = 0;
 
-/* MATR colour table of PERSOS>Pnn.OME (palette base index per material). */
+/* Material library + texture atlas of PERSOS>Pnn.OME (kept for the game). */
 static const ome_matr_t *actor_matr(i32 num) {
     for (i32 i = 0; i < g_actor_matr_n; i++)
         if (g_actor_matr[i].num == num) return g_actor_matr[i].ok ? &g_actor_matr[i].matr : NULL;
@@ -2717,13 +2711,7 @@ static const ome_matr_t *actor_matr(i32 num) {
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     ome_file_t ome = {0};
     if (ls_resolve_path(base, vpath, host, (i32)sizeof(host)) && model_ome_open(host, &ome)) {
-        for (i32 ci = 0; ci < ome.chunk_count; ci++) {
-            if (ome.chunks[ci].kind != OME_CHUNK_MATR) continue;
-            g_actor_matr[slot].ok = ome_parse_matr(ome.raw + ome.chunks[ci].offset + 0x60,
-                                                   ome.chunks[ci].length - 0x60,
-                                                   &g_actor_matr[slot].matr);
-            break;
-        }
+        g_actor_matr[slot].ok = ome_load_matr(ome.raw, ome.raw_size, &g_actor_matr[slot].matr);
         model_ome_free(&ome);
     }
     return g_actor_matr[slot].ok ? &g_actor_matr[slot].matr : NULL;
@@ -2803,6 +2791,36 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
     const ome_matr_t *matr = actor_matr(E32(e, 0xB0));
     i32 zv = scene_actor_zval(EROOT(e)->pos[0], EROOT(e)->pos[1], EROOT(e)->pos[2]);
 
+    /* sub_4358D3: the light comes from the camera side, horizontally toward
+     * the actor and 45 degrees down (Q14 length). initialize_effect_position:
+     * strength S = light-map byte under the actor's ground point * 0.75. */
+    i32 light[3] = {0, 0, 0}, light_s = 0;
+    {
+        f64 dx = (f64)EROOT(e)->pos[0] - g_proj_eye[0], dz = (f64)EROOT(e)->pos[2] - g_proj_eye[2];
+        f64 dl = sqrt(dx * dx + dz * dz);
+        i32 lw[3] = { dl > 0 ? (i32)(dx / dl * 11585.0) : 0, -11585,
+                      dl > 0 ? (i32)(dz / dl * 11585.0) : 0 };
+        light[0] = (i32)(((i64)lw[0] * g_proj_R[0] + (i64)lw[1] * g_proj_R[3] + (i64)lw[2] * g_proj_R[6]) >> 14);
+        light[1] = (i32)(((i64)lw[0] * g_proj_R[1] + (i64)lw[1] * g_proj_R[4] + (i64)lw[2] * g_proj_R[7]) >> 14);
+        light[2] = (i32)(((i64)lw[0] * g_proj_R[2] + (i64)lw[1] * g_proj_R[5] + (i64)lw[2] * g_proj_R[8]) >> 14);
+        i32 sx = 0, sy = 0;
+        scene_project_world(EROOT(e)->pos[0], E32(e, 0x8C), EROOT(e)->pos[2], &sx, &sy);
+        if (sx < 0) sx = 0;
+        if (sx > 639) sx = 639;
+        if (sy < 0) sy = 0;
+        if (sy > 479) sy = 479;
+        const bmap_t *lm = g_scene_l_bmap;
+        if (lm && lm->pixels && lm->width > 0 && lm->height > 0) {
+            i32 lx = sx * (i32)lm->width / 640, ly = sy * lm->height / 480;
+            light_s = (i32)(lm->pixels[ly * (i32)lm->width + lx] * 0.75);
+        } else {
+            light_s = 96;
+        }
+        if (getenv("DKE_LIGHTDBG"))
+            print("light: p%02d S=%d L=(%d,%d,%d) at screen (%d,%d)\n",
+                  E32(e, 0xB0), light_s, light[0], light[1], light[2], sx, sy);
+    }
+
     fmat_t stack_m[16];
     obc_node_t *stack_n[16];
     i32 sp = 0;
@@ -2827,6 +2845,8 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
                 for (i32 k = 0; k < 9; k++) it->m3[k] = cur.m[k];
                 for (i32 k = 0; k < 3; k++) it->t[k] = cur.t[k];
                 it->zval = getenv("DKE_NOZ") ? -1 : zv;
+                it->light[0] = light[0]; it->light[1] = light[1]; it->light[2] = light[2];
+                it->light_s = getenv("DKE_NOTEX") ? 0 : light_s;
             }
             n = n->child;
         }
@@ -3309,10 +3329,8 @@ i32 scene_render(system_t *sys) {
         draw_text_at(font_handle, 6, 6, hud, 0xFFFFFFFFu);
     }
 
-    /* LIEU personas placed for this room (e.g. P00ARR01 + P12ARR01, the two
-     * characters that open level 1). Until real character models render,
-     * draw each as a name label so the LIEU-driven cast is visible. */
-    {
+    /* Debug (DKE_ZONEDBG): label the personas the LIEU script placed. */
+    if (getenv("DKE_ZONEDBG")) {
         i32 np = lieu_spawn_count();
         for (i32 i = 0; i < np; i++) {
             i32 wxt = 0, wzt = 0, pv = 0;

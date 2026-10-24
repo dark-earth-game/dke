@@ -32,6 +32,13 @@ typedef struct {
     /* Material base palette index (MATR field[0]); indexes the GRD shade
      * ramp for palette-correct character coloring. 0 = none. */
     u8  mat_base;
+    /* Textured faces (ATM flags & 0xC == 0xC): 256-wide 8bpp page of game
+     * palette indices, and each corner's texel (u, row). NULL = untextured. */
+    const u8 *tex;
+    i32       tex_rows;
+    u8        ramp;      /* untextured: ramp base = nearest palette colour */
+    u8        tu[3];
+    u16       tv[3];
 } model_face_t;
 
 typedef struct {
@@ -39,6 +46,7 @@ typedef struct {
     i32                 vertex_count;
     const model_face_t *faces;
     i32                 face_count;
+    const model_vec3_t *normals;   /* per-vertex Q14 normals, or NULL */
 } model_t;
 
 /*
@@ -148,6 +156,10 @@ typedef struct {
     i32 m3[9];
     i32 t[3];
     i32 zval;      /* depth vs the backdrop Z image (0xFE near .. 0 far); -1 = none */
+    /* Engine lighting (sub_4358D3 / 0x421710): camera-space Q14 light
+     * direction and strength S (light-map byte * 0.75). S = 0 = legacy. */
+    i32 light[3];
+    i32 light_s;
 } model_draw_t;
 
 void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,

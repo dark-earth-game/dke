@@ -372,6 +372,10 @@ b8 cif_load(cif_image_t *out, const c8 *path) {
  * cif_free
  * ====================================================================== */
 
+i32 cif_decompress_lzw(const u8 *src, i32 src_len, i32 width, i32 height, u8 *out) {
+    return decompress_lzw(src, src_len, width, height, out);
+}
+
 void cif_free(cif_image_t *img) {
     if (!img) return;
     if (img->pixels)  { memory_free(img->pixels);  img->pixels  = NULL; }

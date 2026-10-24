@@ -404,7 +404,7 @@ void model_render(const model_t *m, system_t *sys,
 #define MRW_MAX_FACES 2048
 #define MRW_SHADE_MID 32   /* GRD shade band (0..63) used until per-face lighting */
 
-typedef struct { i32 sx, sy; i64 cx, cy, cz; i32 vis; } mrw_vert_t;
+typedef struct { i32 sx, sy; i64 cx, cy, cz; i32 vis; i32 shade; } mrw_vert_t;
 
 /* Shade and fill one projected face (back-face cull, key-light shade, GRD
  * ramp lookup). Shared by model_render_world and model_render_batch. */
@@ -478,6 +478,93 @@ static void mrw_draw_face(const model_face_t *face, const mrw_vert_t *a,
                       b->sx, b->sy, 128,
                       c->sx, c->sy, 128,
                       col, l_bmap, z_bmap);
+}
+
+/* process_color_palette @ 0x40C2A0: an untextured face's ramp base is
+ * color_lookup[R>>4 << 8 | G>>3 << 3 | B>>5] of its RGB (+0x5C), i.e. the
+ * nearest colour of the current palette. Cached per palette. */
+static i32 palette_nearest(const u8 *pal, u32 colour) {
+    static const u8 *s_pal = NULL;
+    static i16 s_lut[4096];
+    if (pal != s_pal) {
+        s_pal = pal;
+        for (i32 k = 0; k < 4096; k++) s_lut[k] = -1;
+    }
+    i32 r = colour & 0xFF, g = (colour >> 8) & 0xFF, b = (colour >> 16) & 0xFF;
+    i32 key = ((r >> 4) << 8) | ((g >> 3) << 3) | (b >> 5);
+    if (s_lut[key] < 0) {
+        i32 qr = (r & 0xF0) + 8, qg = (g & 0xF8) + 4, qb = (b & 0xE0) + 16;
+        i32 best = 1, bd = 0x7FFFFFFF;
+        for (i32 i = 1; i < 255; i++) {
+            i32 dr = pal[3 * i] - qr, dg = pal[3 * i + 1] - qg, db = pal[3 * i + 2] - qb;
+            i32 dd = dr * dr + dg * dg + db * db;
+            if (dd < bd) { bd = dd; best = i; }
+        }
+        s_lut[key] = (i16)best;
+    }
+    return s_lut[key];
+}
+
+/* Textured / ramp gouraud triangle: sub_495BFA (texel) and sub_497CD9
+ * (colour ramp) in the 8-bit table. u, v and the shade row are interpolated
+ * affinely across the screen triangle (no perspective, no z); each pixel is
+ * palette[grd[colour * 64 + shade]], colour being the texel or the face's
+ * ramp base. */
+static void fill_tri_shaded(const model_face_t *face, const mrw_vert_t *A,
+                            const mrw_vert_t *B, const mrw_vert_t *C,
+                            u32 *fb, i32 fb_w, i32 fb_h, const bmap_t *z_bmap,
+                            const u8 *pal, const u8 *grd) {
+    const mrw_vert_t *V[3] = { A, B, C };
+    f64 u[3], v[3], I[3];
+    for (i32 k = 0; k < 3; k++) {
+        u[k] = face->tex ? face->tu[k] : 0;
+        v[k] = face->tex ? face->tv[k] : 0;
+        I[k] = V[k]->shade;
+    }
+    f64 x0 = A->sx, y0 = A->sy, x1 = B->sx, y1 = B->sy, x2 = C->sx, y2 = C->sy;
+    f64 area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0);
+    if (area == 0) return;
+    i32 minx = A->sx, maxx = A->sx, miny = A->sy, maxy = A->sy;
+    for (i32 k = 1; k < 3; k++) {
+        if (V[k]->sx < minx) minx = V[k]->sx;
+        if (V[k]->sx > maxx) maxx = V[k]->sx;
+        if (V[k]->sy < miny) miny = V[k]->sy;
+        if (V[k]->sy > maxy) maxy = V[k]->sy;
+    }
+    if (minx < 0) minx = 0;
+    if (miny < 0) miny = 0;
+    if (maxx >= fb_w) maxx = fb_w - 1;
+    if (maxy >= fb_h) maxy = fb_h - 1;
+    f64 inv = 1.0 / area;
+    i32 rows = face->tex_rows > 0 ? face->tex_rows : 256;
+    i32 base = face->ramp ? palette_nearest(pal, face->colour) : face->mat_base;
+    for (i32 y = miny; y <= maxy; y++) {
+        f64 py = y + 0.5;
+        for (i32 x = minx; x <= maxx; x++) {
+            f64 px = x + 0.5;
+            f64 w0 = ((x1 - px) * (y2 - py) - (x2 - px) * (y1 - py)) * inv;
+            f64 w1 = ((x2 - px) * (y0 - py) - (x0 - px) * (y2 - py)) * inv;
+            f64 w2 = 1.0 - w0 - w1;
+            if (w0 < -1e-9 || w1 < -1e-9 || w2 < -1e-9) continue;
+            i32 sh = (i32)(w0 * I[0] + w1 * I[1] + w2 * I[2]);
+            if (sh < 0) sh = 0;
+            if (sh > 63) sh = 63;
+            i32 colour;
+            if (face->tex) {
+                i32 tu = (i32)(w0 * u[0] + w1 * u[1] + w2 * u[2]) & 0xFF;
+                i32 tv = (i32)(w0 * v[0] + w1 * v[1] + w2 * v[2]);
+                if (tv >= rows) tv = rows - 1;
+                if (tv < 0) tv = 0;
+                colour = face->tex[tv * 256 + tu];
+            } else {
+                colour = base;
+            }
+            i32 idx = grd[(colour * 64 + sh) & 0x3FFF];
+            u32 rgb = 0xFF000000u | ((u32)pal[3 * idx + 2] << 16)
+                                  | ((u32)pal[3 * idx + 1] << 8) | (u32)pal[3 * idx];
+            plot_pixel(fb, fb_w, fb_h, x, y, 0, rgb, NULL, z_bmap);
+        }
+    }
 }
 
 void model_render_world(const model_t *m,
@@ -652,6 +739,21 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
             P[nv].sy = 240 - (i32)(cy * sc + (cy < 0 ? -0.5 : 0.5));
             P[nv].cx = cx; P[nv].cy = cy; P[nv].cz = cz;
             P[nv].vis = vis;
+            P[nv].shade = -1;
+            /* 0x421710: d = n.L (Q14 x Q14); a normal facing the light gets
+             * full strength, one facing away half; row = (I >> 16) & 0xFF. */
+            if (items[it].light_s > 0 && m->normals) {
+                i64 nx = m->normals[i].x, ny = m->normals[i].y, nz = m->normals[i].z;
+                i64 ncx = (nx*M[0] + ny*M[3] + nz*M[6]) >> 14;
+                i64 ncy = (nx*M[1] + ny*M[4] + nz*M[7]) >> 14;
+                i64 ncz = (nx*M[2] + ny*M[5] + nz*M[8]) >> 14;
+                const i32 *L = items[it].light;
+                i64 d = ncx * L[0] + ncy * L[1] + ncz * L[2];
+                i64 S = items[it].light_s;
+                i64 I = d > 0 ? ((d >> 6) * S) >> 9 : (((-d) >> 6) * S) >> 8;
+                i32 row = (i32)((I >> 16) & 0xFF);
+                P[nv].shade = row > 63 ? 63 : row;
+            }
         }
         for (i32 f = 0; f < m->face_count && nf < MRB_MAX_FACES; f++, nf++) {
             const model_face_t *face = &m->faces[f];
@@ -673,7 +775,17 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
         const model_face_t *face = F[i].f;
         i32 b = F[i].base;
         g_actor_z = F[i].z;
-        mrw_draw_face(face, &P[b + face->i0], &P[b + face->i1], &P[b + face->i2],
+        const mrw_vert_t *va = &P[b + face->i0], *vb = &P[b + face->i1], *vc = &P[b + face->i2];
+        if (pal && grd && (face->tex || face->ramp || face->mat_base) &&
+            va->shade >= 0 && vb->shade >= 0 && vc->shade >= 0) {
+            if (!va->vis && !vb->vis && !vc->vis) continue;
+            i64 cross_z = (i64)(vb->sx - va->sx) * (i64)(vc->sy - va->sy)
+                        - (i64)(vb->sy - va->sy) * (i64)(vc->sx - va->sx);
+            if (cross_z >= 0) continue;
+            fill_tri_shaded(face, va, vb, vc, fb, fb_w, fb_h, z_bmap, pal, grd);
+            continue;
+        }
+        mrw_draw_face(face, va, vb, vc,
                       fb, fb_w, fb_h, l_bmap, z_bmap, pal, grd, Lx, Ly, Lz);
     }
     g_actor_z = -1;
@@ -719,9 +831,9 @@ model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
 
     model_vec3_t *verts = (model_vec3_t *)malloc(
         (size_t)atom->vert_count * sizeof(model_vec3_t));
-    model_face_t *faces = (model_face_t *)malloc(
-        (size_t)max_tris * sizeof(model_face_t));
-    model_t      *m     = (model_t      *)malloc(sizeof(model_t));
+    model_face_t *faces = (model_face_t *)calloc(
+        (size_t)max_tris, sizeof(model_face_t));
+    model_t      *m     = (model_t      *)calloc(1, sizeof(model_t));
 
     if (!verts || !faces || !m) {
         free(verts); free(faces); free(m);
@@ -764,10 +876,9 @@ model_t *model_from_ome_atom(const ome_atom_t *atom, const ome_matr_t *matr) {
          * were being painted with MAT_COLOURS[0], a bright debug colour, and
          * showed up as white shards stuck to the characters. */
         if (f->mat_id < 0) continue;
-        if (matr && f->mat_id < matr->mat_count) {
-            const ome_mat_t *m = &matr->mats[f->mat_id];
-            colour = 0xFF000000u | ((u32)m->b << 16) | ((u32)m->g << 8) | (u32)m->r;
-            mat_base = m->r;   /* MATR field[0] = base palette index */
+        const ome_mat_t *mt = ome_matr_slot(matr, f->mat_id);
+        if (mt) {
+            colour = 0xFF000000u | ((u32)mt->b << 16) | ((u32)mt->g << 8) | (u32)mt->r;
         } else {
             /* No MATR (debug meshes): fall back to the placeholder palette. */
             colour = MAT_COLOURS[f->mat_id & 0x0F];
@@ -801,6 +912,7 @@ void model_free(model_t *m) {
     if (!m) return;
     free((void *)m->vertices);
     free((void *)m->faces);
+    free((void *)m->normals);
     free(m);
 }
 
@@ -808,6 +920,14 @@ void model_free(model_t *m) {
  * model_from_atm_atom — render mesh for an atm_atom_t (object-tree atom).
  * ------------------------------------------------------------------------- */
 static void model_free_void(void *m) { model_free((model_t *)m); }
+
+/* Texel coordinate for one Q16.16 UV component, after sub_422E31's bias by
+ * the material rect: c += base << 16; an integer part of 256 becomes 255. */
+static i32 atm_texel(i32 c, i32 base) {
+    c += base << 16;
+    if (((u32)c & 0xFFFF0000u) == 0x01000000u) c -= 0x10000;
+    return c >> 16;
+}
 
 const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr) {
     if (!atom) return NULL;
@@ -821,46 +941,73 @@ const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr) {
         max_tris += (atom->faces[i * ATM_FACE_STRIDE + ATM_FACE_VCNT] == 4) ? 2 : 1;
 
     model_vec3_t *verts = (model_vec3_t *)malloc((size_t)atom->vert_count * sizeof(*verts));
-    model_face_t *faces = (model_face_t *)malloc((size_t)max_tris * sizeof(*faces));
-    model_t      *m     = (model_t *)malloc(sizeof(*m));
-    if (!verts || !faces || !m) { free(verts); free(faces); free(m); return NULL; }
+    model_vec3_t *norms = (model_vec3_t *)malloc((size_t)atom->vert_count * sizeof(*norms));
+    model_face_t *faces = (model_face_t *)calloc((size_t)max_tris, sizeof(*faces));
+    model_t      *m     = (model_t *)calloc(1, sizeof(*m));
+    if (!verts || !norms || !faces || !m) { free(verts); free(norms); free(faces); free(m); return NULL; }
 
     for (i32 i = 0; i < atom->vert_count; i++) {
         const i32 *v = atom->verts + (size_t)i * ATM_VERT_STRIDE;
-        verts[i].x = v[ATM_VERT_X];
-        verts[i].y = v[ATM_VERT_Y];
-        verts[i].z = v[ATM_VERT_Z];
+        verts[i].x = v[ATM_VERT_X];  verts[i].y = v[ATM_VERT_Y];  verts[i].z = v[ATM_VERT_Z];
+        norms[i].x = v[ATM_VERT_NX]; norms[i].y = v[ATM_VERT_NY]; norms[i].z = v[ATM_VERT_NZ];
     }
     i32 tri = 0;
     for (i32 i = 0; i < atom->face_count; i++) {
         const i32 *f = atom->faces + (size_t)i * ATM_FACE_STRIDE;
-        i32 mat = f[ATM_FACE_MAT], vc = f[ATM_FACE_VCNT];
+        i32 slot = f[ATM_FACE_MAT], vc = f[ATM_FACE_VCNT];
         if (vc != 3 && vc != 4) continue;
-        u32 colour; u8 base = 0;
-        if (mat < 0) {
-            /* No material: the face carries its own palette index at +0x28
-             * (flags 7 instead of 15) and an RGB at +0x5C. */
+        const ome_mat_t *mt = ome_matr_slot(matr, slot);
+        model_face_t fc = {0};
+        if (slot < 0 || !mt) {
+            /* No material: gouraud on the colour ramp of the palette index
+             * at +0x28 (sub_497CD9); +0x5C holds the same colour as RGB. */
             u32 rgb = (u32)f[23];
-            colour = 0xFF000000u | ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF);
-        } else if (matr && mat < matr->mat_count) {
-            const ome_mat_t *mm = &matr->mats[mat];
-            colour = 0xFF000000u | ((u32)mm->b << 16) | ((u32)mm->g << 8) | (u32)mm->r;
-            base = mm->r;
+            fc.colour = 0xFF000000u | ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF);
+            fc.ramp = 1;
         } else {
-            colour = MAT_COLOURS[mat & 0x0F];
+            fc.colour = 0xFF000000u | ((u32)mt->b << 16) | ((u32)mt->g << 8) | (u32)mt->r;
+            if ((f[ATM_FACE_FLAGS] & 0x0C) == 0x0C && matr->tex_pix) {
+                /* 0x423014: u += x, v += y (or 256 - h when the rect reaches
+                 * the bottom; the texel base then moves down y + h - 256). */
+                i32 vb    = (mt->y + mt->h >= 256) ? 256 - mt->h : mt->y;
+                i32 shift = (mt->y + mt->h > 256) ? mt->y + mt->h - 256 : 0;
+                fc.tex = matr->tex_pix;
+                fc.tex_rows = matr->tex_h;
+                const i32 *uv = f + ATM_FACE_UV;
+                i32 tu[4], tv[4];
+                for (i32 k = 0; k < 4; k++) {
+                    tu[k] = atm_texel(uv[k * 2], mt->x) & 0xFF;
+                    tv[k] = (atm_texel(uv[k * 2 + 1], vb) & 0xFF) + shift;
+                }
+                fc.tu[0] = (u8)tu[0]; fc.tu[1] = (u8)tu[1]; fc.tu[2] = (u8)tu[2];
+                fc.tv[0] = (u16)tv[0]; fc.tv[1] = (u16)tv[1]; fc.tv[2] = (u16)tv[2];
+                if (vc == 4) {
+                    /* sub_490620 draws (v0,v1,v2) + (v0,v3,v2); kept as
+                     * (v0,v2,v3) here so both halves share one winding. */
+                    model_face_t q = fc;
+                    q.tu[1] = (u8)tu[2]; q.tv[1] = (u16)tv[2];
+                    q.tu[2] = (u8)tu[3]; q.tv[2] = (u16)tv[3];
+                    const i32 *ix = f + ATM_FACE_IDX;
+                    fc.i0 = (u8)ix[0]; fc.i1 = (u8)ix[1]; fc.i2 = (u8)ix[2];
+                    q.i0  = (u8)ix[0]; q.i1  = (u8)ix[2]; q.i2  = (u8)ix[3];
+                    faces[tri++] = fc;
+                    faces[tri++] = q;
+                    continue;
+                }
+            }
         }
         const i32 *ix = f + ATM_FACE_IDX;
-        faces[tri].colour = colour; faces[tri].mat_base = base;
-        faces[tri].i0 = (u8)ix[0]; faces[tri].i1 = (u8)ix[1]; faces[tri].i2 = (u8)ix[2];
-        tri++;
+        fc.i0 = (u8)ix[0]; fc.i1 = (u8)ix[1]; fc.i2 = (u8)ix[2];
+        faces[tri++] = fc;
         if (vc == 4) {
-            faces[tri].colour = colour; faces[tri].mat_base = base;
-            faces[tri].i0 = (u8)ix[0]; faces[tri].i1 = (u8)ix[2]; faces[tri].i2 = (u8)ix[3];
-            tri++;
+            model_face_t q = fc;
+            q.i0 = (u8)ix[0]; q.i1 = (u8)ix[2]; q.i2 = (u8)ix[3];
+            faces[tri++] = q;
         }
     }
     m->vertices = verts; m->vertex_count = atom->vert_count;
     m->faces = faces;    m->face_count = tri;
+    m->normals = norms;
     atom->render = m;
     return m;
 }

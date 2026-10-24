@@ -56,47 +56,53 @@ typedef struct {
 } ome_file_t;
 
 /* -------------------------------------------------------------------------
- * MATR material colour table
+ * MATR material library + embedded texture (sub_44F454 / sub_44F92D)
  *
- * Empirical layout (verified on P00.OME):
- *   MATR body header: "3Ditor v1.1 material library.\0" at body+0x0D0.
- *   Material count (i32 LE) at body+0x230 (may be garbage — scan instead).
- *   Records start at body+0x240; each record is 72 bytes (0x48):
- *     [0..3]   i32  diffuse R (low byte = u8 value, upper 3 bytes = 0)
- *     [4..7]   i32  diffuse G
- *     [8..11]  i32  diffuse B
- *     [12..19] 8 bytes unknown / padding
- *     [20..31] char name[12] (null-terminated material name, Latin-1)
- *     [32..47] secondary colour fields (mirrors of R/G, often)
- *     [48..59] 12 bytes unknown
- *     [60..63] heap ptr (ignored)
- *     [64..67] heap ptr (ignored)
- *     [68..71] heap ptr (ignored)
- *
- * Record is considered valid when:
- *   R ≤ 255, G ≤ 255, B ≤ 255, AND (R|G|B) != 0 OR name[0] is printable.
- * Scan stops at the first all-zero record (up to OME_MATR_MAX_MATS).
+ * MATR chunk = file + u32[file+8] when the file starts with "CTX3", else 0:
+ *   +0x000  signature "3DITOR v1.3 MATR----------------"
+ *   +0x020  library header (0x160): name[16], ..., +0x144 nmaterials,
+ *           +0x148 nslots (64), +0x14C nbitmaps (1)
+ *   +0x180  nbitmaps x 0x114 bitmap entries (source TGA path[256], ...)
+ *   then    nslots x 0x48 material records: +0x20 name[16],
+ *           +0x30 x, +0x34 y, +0x38 w, +0x3C h (atlas rect), +0x40 flags
+ *           (0x100 = unused slot), +0x44 bitmap index
+ *   then    the texture (sub_44F58E): +0 version, +8 width, +0xC height,
+ *           +0x10 palette (256 x RGB), +0x310 CIF LZW pixels (8bpp)
+ * Used slots are compacted in order (sub_44F6E8); faces store the SLOT id,
+ * mapped through slot_map (the engine's lib[0x10 + 0xFF - slot] table).
  * ------------------------------------------------------------------------- */
 
-#define OME_MATR_MAX_MATS 24
+#define OME_MATR_MAX_MATS  64
 
 typedef struct {
-    u8   r, g, b;       /* diffuse colour (raw from record) */
-    c8   name[12];      /* null-terminated material name */
+    u8   r, g, b;       /* mean colour of the material's texels (fallback) */
+    c8   name[16];
+    i32  x, y, w, h;    /* rect in the texture atlas */
 } ome_mat_t;
 
 typedef struct {
     ome_mat_t mats[OME_MATR_MAX_MATS];
     i32       mat_count;
+    i8        slot_map[OME_MATR_MAX_MATS];   /* face slot -> mats[] or -1 */
+    i32       tex_w, tex_h;                  /* 0 = no embedded texture   */
+    u8        tex_pal[768];
+    u8       *tex_pix;                       /* tex_w * tex_h, heap-owned */
 } ome_matr_t;
 
+/* Material for a face's slot id, or NULL. */
+static inline const ome_mat_t *ome_matr_slot(const ome_matr_t *m, i32 slot) {
+    if (!m || slot < 0 || slot >= OME_MATR_MAX_MATS || m->slot_map[slot] < 0) return NULL;
+    return &m->mats[(i32)m->slot_map[slot]];
+}
+
 /*
- * ome_parse_matr — decode the MATR chunk body into a colour table.
- * raw = pointer to sig_offset + 0x60 in the raw file buffer.
- * raw_len = bytes from raw to end of chunk (span - 0x60).
- * Returns 1 on success (at least one material parsed), 0 on failure.
+ * ome_load_matr — decode the material library and texture of a whole .OME
+ * file image. Returns 1 when at least one material was read.
  */
-i32 ome_parse_matr(const u8 *raw, i32 raw_len, ome_matr_t *out);
+i32 ome_load_matr(const u8 *file, i32 file_size, ome_matr_t *out);
+
+/* Release the texture owned by an ome_matr_t. */
+void ome_matr_free(ome_matr_t *m);
 
 /*
  * model_ome_open — load an .OME file from a real host path and populate

@@ -72,6 +72,13 @@ b8   cif_load(cif_image_t *out, const c8 *path);
 void cif_free(cif_image_t *img);
 
 /*
+ * cif_decompress_lzw — decode a raw CIF LZW stream (decompress_lzw_428E60:
+ * 9..12-bit LSB-first codes, 256 clear, 257 end) into width*height bytes.
+ * Returns the number of pixels written, or -1 on allocation failure.
+ */
+i32 cif_decompress_lzw(const u8 *src, i32 src_len, i32 width, i32 height, u8 *out);
+
+/*
  * cif_to_xrgb — expand indexed image to 32-bit XRGB (0xFF000000|R<<16|G<<8|B).
  *
  * img: decoded 8-bit indexed image (cif_load must have succeeded).
