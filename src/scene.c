@@ -322,11 +322,6 @@ static u32        g_scene_can_last    = 0;
 
 /* ANI sprite loaded for animation 1 of the current level/camera.
  * Cycled in scene_render to show a character walking. */
-static ani_t   g_scene_ani;
-static i32     g_scene_ani_loaded   = 0;
-static i32     g_scene_ani_frame    = 0;
-static u32     g_scene_ani_last_tick = 0;
-#define ANI_FRAME_MS 100  /* ~10 fps sprite cycle */
 
 #define ATOM_SCALE 2  /* OME_VERT_SCALE factor applied in model_from_ome_atom */
 
@@ -555,6 +550,7 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     g_scene_z_bmap   = zb;
     g_scene_bg_level = level_id;
     g_scene_camera   = camera;
+    anim2d_load_camera(level_id, camera);          /* sub_4130FB */
 
     /* Character shade ramp: DATAS>L<lvl>>PAL>FL<lvl>C<cam>L0.GRD (256*64 =
      * 16384 bytes). Maps (base palette index, light level) -> shaded palette
@@ -2548,29 +2544,6 @@ i32 scene_load_level(i32 level_id) {
         }
     }
 
-    /* Load ANI sprite for entity animation 1 at current level/camera 0.
-     * Path: DATAS>L{level:02d}>ANIM2D>N{level:02d}C{cam}A1.ANI */
-    {
-        c8 vpath[64];
-        c8 host[512];
-        ani_free(&g_scene_ani);
-        g_scene_ani_loaded = 0;
-        g_scene_ani_frame  = 0;
-        const c8 *base = (state && state->game_path) ? state->game_path : ".";
-        snprintf(vpath, sizeof(vpath),
-                 "DATAS>L%02d>ANIM2D>N%02dC%dA1.ANI",
-                 level_id, level_id, g_scene_camera);
-        if (ls_resolve_path(base, vpath, host, (i32)sizeof(host))) {
-            if (ani_load(host, &g_scene_ani)) {
-                g_scene_ani_loaded = 1;
-            }
-        }
-        if (!g_scene_ani_loaded) {
-            print("scene: no ANI sprite for level %d cam %d\n",
-                  level_id, g_scene_camera);
-        }
-    }
-
     print("scene: scene_load_level(%d) — complete\n", level_id);
     return 0;
 }
@@ -3028,35 +3001,10 @@ i32 scene_render(system_t *sys) {
                                  ox, oy);
     }
 
-    /* Step 1b — ANI sprite overlay.
-     * Blit the current animation frame at its screen position.
-     * Each pixel is a palette index; use the backdrop's palette (same level). */
-    if (g_scene_ani_loaded && g_scene_ani.n_frames > 0 &&
-        g_scene_bg_bmap && g_scene_bg_bmap->palette) {
-        u32 tick = sys ? sys->timer.tick : 0;
-        if (tick - g_scene_ani_last_tick >= ANI_FRAME_MS) {
-            g_scene_ani_frame = (g_scene_ani_frame + 1) % g_scene_ani.n_frames;
-            g_scene_ani_last_tick = tick;
-        }
-        const ani_frame_t *fr = &g_scene_ani.frames[g_scene_ani_frame];
-        if (fr->pixels) {
-            /* Build a temporary bmap_t pointing at the decompressed pixels. */
-            i32 w = (i32)(fr->x2 - fr->x1 + 1);
-            i32 h = (i32)(fr->y2 - fr->y1 + 1);
-            bmap_t tmp = {0};
-            tmp.width      = (i16)w;
-            tmp.height     = h;
-            tmp.stride     = w;
-            tmp.bit_depth  = 8;
-            tmp.pixels     = fr->pixels;
-            tmp.first_pixel = fr->pixels;
-            tmp.owns_buffer = 0;
-            /* Blit at (x1,y1) with palette index 0 transparent. */
-            blit_bmap_masked_to_framebuffer(fb, fb_w, fb_h,
-                                            &tmp, g_scene_bg_bmap->palette,
-                                            (i32)fr->x1, (i32)fr->y1, 0);
-        }
-    }
+    /* Step 1b — backdrop animations (sub_413857), behind every actor. */
+    if (g_scene_bg_bmap && g_scene_bg_bmap->palette)
+        anim2d_draw(fb, fb_w, fb_h, g_scene_bg_bmap->palette,
+                    state ? state->current_game_time : 0);
 
     /* Step 2 — player-controlled placeholder cube.
      *
@@ -3433,8 +3381,7 @@ void scene_release(void) {
         g_scene_ome_atoms[k] = NULL;
     }
     g_scene_ome_atom_count = 0;
-    ani_free(&g_scene_ani);
-    g_scene_ani_loaded = 0;
+    anim2d_release();
     g_scene_bg_level   = -1;
     g_scene_objc_loaded = 0;
     memset(&g_scene_objc, 0, sizeof(g_scene_objc));

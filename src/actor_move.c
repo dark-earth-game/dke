@@ -30,6 +30,7 @@
 #include "state.h"
 #include "actor.h"
 #include "lieu_cb.h"
+#include "anim2d.h"
 #include "nav_grid.h"
 #include "lieu_action.h"
 #include "world.h"
@@ -503,8 +504,13 @@ static void anim_messages(entity_t *e, i32 tick) {
             sample_at_message(e, mt);
         }
         /* 0x11 / 0x15 strikes, 0x16 / 0x1E / 0x21 / 0x22 / 0x23 object
-         * exchanges, 0x19 parry sparks, 0x1A level overlay, 0x24 counter:
+         * exchanges, 0x19 parry sparks, 0x24 counter:
          * combat and inventory, not ported. */
+        if (type == 0x1A) {                                  /* 0x41C781 */
+            c8 an[16];
+            snprintf(an, sizeof(an), "L%02dA%02d", (state ? state->current_level_id : 1), p);
+            anim2d_load_slot(30, (state ? state->current_level_id : 1), an, 1);   /* play once */
+        }
         if (type == 0x1F) g_skip_next_animation = 1;
         if (type == 0x20) E32(e, 0xCE8) = 1;
         if (getenv("DKE_MSGDBG")) print("actor: msg p%02d '%s' type=%d param=0x%X tick=%d\n",

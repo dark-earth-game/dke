@@ -34,6 +34,7 @@
 
 #include "libsys/common.h"
 #include "lieu_cb.h"
+#include "anim2d.h"
 #include "lieu_action.h"
 #include "lieu01.h"
 #include "player.h"
@@ -327,9 +328,11 @@ static void cb_named_object(const c8 *name) {
     memset(n->name, 0, 16);
 
     if (buf[0] == '2') {
-        /* 2D animation: sub_41333A loads "<anim2d dir><name>.ANI" into the
-         * anim2d player (anim_state_531BE0 + 0x115F8); the node only waits
-         * for it. The 2D player is not ported. */
+        /* 2D animation: registered in the named list and loaded into slot
+         * 30 (sub_41333A); the node waits on that slot (actor -2). */
+        c8 up[32];
+        snprintf(up, sizeof(up), "%s", name);
+        anim2d_register_named(g_lieu_level, up);
         n->actor = -2;
         return;
     }
@@ -1479,12 +1482,12 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
 
     case LA_PLAYANIM:                          /* case 0x23 */
         if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 2;
-        print("lieu_act: PLAYANIM slot=%d mode=%d\n", n->id48, n->flag70);
+        anim2d_start(n->id48 + 10, n->flag70);           /* frame 0, loop = +0x70 */
         return 1;
 
     case LA_PAUSEANIM:                         /* case 0x24 */
         if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 3;
-        print("lieu_act: PAUSEANIM slot=%d\n", n->id48);
+        anim2d_set_frame(n->id48 + 10, n->p6C, n->flag70);   /* 0 hold, -1 off */
         return 1;
 
     case LA_LOADANIM:                          /* case 0x26 */

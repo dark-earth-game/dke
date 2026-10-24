@@ -1,75 +1,74 @@
 #pragma once
 
 /*
- * anim2d.h — 2D pre-rendered character animation loader (Slice F pass 4).
+ * anim2d.h — pre-rendered backdrop animations ("anim2D": torches, flames,
+ * swinging lanterns), DATAS>Lnn>ANIM2D>*.ANI.
  *
- * Dark Earth characters are NOT rendered in real-time 3D. The OME/CAN data
- * was used offline to generate pre-rendered sprite frames stored as ANI files.
+ * ANI file (loader sub_41333A @ 0x41333A):
+ *   frames back to back from offset 0, each:
+ *     i16 x1, y1, x2, y2     screen rect on the 640x480 backdrop; x2/y2 are
+ *                            exclusive: w = x2 - x1, h = y2 - y1
+ *     u32 usize, u32 csize   usize = (w+1)*(h+1) as authored; the engine
+ *                            keeps h rows of w bytes and ignores the rest
+ *     csize bytes            raw when usize == csize, else LZSS (sub_4780B4)
+ *   pixels index the backdrop palette; every frame is a full patch of its
+ *   rect. Footer (last 12 bytes, extended when byte[-2] == 1):
+ *     [-1] frame count (<= 60)    [-6] fps (0 = frame count)
+ *     [-10..-7] i32 sort key (0 = -5000000, behind every actor)
+ *     [-11] overlay: 1 = colour 0 transparent, 0 = opaque
+ *     [-12] mode: 0 loop, 1 play once, 2 frozen
  *
- * ANI file naming: N{level:02d}C{cam}A{anim}.ANI
- *   in DATAS>L{level:02d}>ANIM2D>
- * Example: N11C0A1.ANI = level 11, camera 0, animation 1.
- *
- * ANI frame record (sequential, from file start):
- *   i16 LE  x1  (left,   inclusive)
- *   i16 LE  y1  (top,    inclusive)
- *   i16 LE  x2  (right,  inclusive)  width  = x2-x1+1
- *   i16 LE  y2  (bottom, inclusive)  height = y2-y1+1
- *   i32 LE  uncomp_size  (= width * height uncompressed pixels)
- *   i32 LE  comp_size    (bytes stored in file for this frame)
- *   [comp_size bytes]    pixel data (LZSS-compressed if comp_size != uncomp_size)
- *
- * ANI file footer (last 12 bytes):
- *   [sz-12]  u8  direction flag
- *   [sz-11]  u8  loop flag
- *   [sz-10]  i32 LE  timing value
- *   [sz- 6]  u8  visible_frames count
- *   [sz- 2]  u8  format_type (1 = extended footer present)
- *   [sz- 1]  u8  n_frames
- *
- * Compression: classic LZSS, 4096-byte ring buffer, init'd to 0x20 spaces,
- *   initial fill pos = 0xFEE.  4-byte uncompressed-count header precedes
- *   the bitstream.  Literal flag = bit set; back-reference = bit clear,
- *   2-byte code: 12-bit offset + 4-bit (run_len - 2), run = 3..18.
- *
- * Source asm: sub_41333A (ANI loader), sub_4780B4 (LZSS decompressor),
- *   sub_4130FB (animation table builder).
+ * Runtime (anim_state_531BE0): 31 slots. A camera load (sub_4130FB) fills
+ * slots 0.. with "%c%02dC%1dA%1d.ANI" (prefix 'L', level, camera, i+1) up to
+ * the first missing file; slots 10.. hold script-named anims, slot 30 the
+ * one-shot ones (named '2...' objects, animation event 0x1A).
  */
 
 #include "libsys/common.h"
 
-#define ANI_MAX_FRAMES    32
-#define ANI_MAX_PIXELS    (640 * 480)   /* worst-case sprite buffer */
+#define ANI_MAX_FRAMES  60
+#define ANIM2D_SLOTS    31
 
-/* Per-frame sprite descriptor. */
 typedef struct {
-    i16 x1, y1, x2, y2;    /* screen bounding box (inclusive) */
-    i32 uncomp_size;         /* uncompressed pixel byte count */
-    i32 comp_size;           /* bytes in file (compressed or raw) */
-    u8 *pixels;              /* heap-allocated uncompressed pixels; NULL until loaded */
+    i16 x, y, w, h;          /* screen rect */
+    u8 *pixels;              /* w * h palette indices, heap-owned */
 } ani_frame_t;
 
 typedef struct {
     ani_frame_t frames[ANI_MAX_FRAMES];
     i32         n_frames;
-    i32         visible_frames;
-    u8          direction;
-    u8          loop_flag;
-    i32         timing;
+    i32         fps;         /* +0x930 */
+    i32         mode;        /* +0x934: 0 loop, 1 once, 2 frozen */
+    i32         overlay;     /* +0x92C */
+    i32         depth;       /* +0x938 -> entity +0x98 */
 } ani_t;
 
-/*
- * ani_load — load and decompress an ANI file from the given host path.
- * out->frames[i].pixels are heap-allocated; call ani_free to release.
- * Returns 1 on success, 0 on failure.
- */
+/* ani_load — decode an ANI file. Returns 1 on success; free with ani_free. */
 i32  ani_load(const c8 *host_path, ani_t *out);
 void ani_free(ani_t *ani);
 
-/*
- * lzss_decompress — decompress LZSS-compressed data (sub_4780B4 port).
- * src: compressed bytes (first 4 bytes = uncompressed count, little-endian).
- * dst: output buffer (must be at least uncomp_size bytes).
- * Returns number of bytes written, or 0 on error.
- */
+/* lzss_decompress — sub_4780B4 (first 4 bytes = output count). Returns the
+ * number of bytes written. */
 i32 lzss_decompress(const u8 *src, i32 src_size, u8 *dst, i32 dst_size);
+
+/* sub_4130FB @ 0x4130FB: reload the camera's animations. */
+void anim2d_load_camera(i32 level, i32 camera);
+
+/* Load one ANI by file name (without extension) into `slot`, enabled with
+ * the given mode (script-named anims, animation events). */
+i32  anim2d_load_slot(i32 slot, i32 level, const c8 *name, i32 mode);
+
+/* sub_44453E: a script animation named '2...' joins the named list
+ * (byte_505AA0, max 20; slot 10 + index after the next camera load) and is
+ * shown at once in slot 30, frozen on frame 0. Returns the list index. */
+i32  anim2d_register_named(i32 level, const c8 *name);
+
+/* Script control (sub_44A58B cases 35 / 36). */
+void anim2d_start(i32 slot, i32 loop);
+void anim2d_set_frame(i32 slot, i32 frame, i32 hold);
+
+/* sub_413857 @ 0x413857: advance (by the clip's fps against now_ms) and
+ * blit every enabled slot onto the 32-bit framebuffer. */
+void anim2d_draw(u32 *fb, i32 fb_w, i32 fb_h, const u8 *pal, u32 now_ms);
+
+void anim2d_release(void);

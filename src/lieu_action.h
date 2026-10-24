@@ -106,6 +106,7 @@ typedef struct {
     i32 p58;         /* +0x58  CHANGECAMERA camera                       */
     i32 num5C;       /* +0x5C  numeric suffix parsed from the name       */
     i32 p68;         /* +0x68                                            */
+    i32 p6C;         /* +0x6C  PAUSEANIM frame                           */
     i32 flag70;      /* +0x70  ANIMATION: 1 = sound-prefixed name        */
     i32 *slot74;     /* +0x74  MODIFYVAR: script state slot to write     */
     i32 p60, p64;    /* +0x60 / +0x64  BLOQUE camera / movement lock     */
