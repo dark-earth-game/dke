@@ -7,6 +7,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "libsys/common.h"
 #include "libsys/graphics/graphic.h"
@@ -436,6 +437,15 @@ static void mrw_draw_face(const model_face_t *face, const mrw_vert_t *a,
          * the engine's baked lighting; else palette[base] with a brightness
          * modulate; else the raw material RGB. */
         u32 col = face->colour;
+        if (!face->mat_base) {
+            /* Direct-RGB face: light it with the same shade band. */
+            double fct = 0.45 + 0.55 * (shade / 63.0) * 2.0;
+            if (fct > 1.6) fct = 1.6;
+            u32 r = (u32)(( col        & 0xFF) * fct); if (r > 255) r = 255;
+            u32 g = (u32)(((col >> 8)  & 0xFF) * fct); if (g > 255) g = 255;
+            u32 b = (u32)(((col >> 16) & 0xFF) * fct); if (b > 255) b = 255;
+            col = 0xFF000000u | (b << 16) | (g << 8) | r;
+        }
         if (pal && face->mat_base) {
             i32 idx = face->mat_base & 0xFF;
             if (grd) {
@@ -812,9 +822,14 @@ const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr) {
     for (i32 i = 0; i < atom->face_count; i++) {
         const i32 *f = atom->faces + (size_t)i * ATM_FACE_STRIDE;
         i32 mat = f[ATM_FACE_MAT], vc = f[ATM_FACE_VCNT];
-        if (mat < 0 || (vc != 3 && vc != 4)) continue;
+        if (vc != 3 && vc != 4) continue;
         u32 colour; u8 base = 0;
-        if (matr && mat < matr->mat_count) {
+        if (mat < 0) {
+            /* No material: the face carries its own palette index at +0x28
+             * (flags 7 instead of 15) and an RGB at +0x5C. */
+            u32 rgb = (u32)f[23];
+            colour = 0xFF000000u | ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF);
+        } else if (matr && mat < matr->mat_count) {
             const ome_mat_t *mm = &matr->mats[mat];
             colour = 0xFF000000u | ((u32)mm->b << 16) | ((u32)mm->g << 8) | (u32)mm->r;
             base = mm->r;

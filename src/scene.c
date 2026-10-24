@@ -2783,7 +2783,8 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
         while (n) {
             if (n->next && sp < 16) { stack_n[sp] = n->next; stack_m[sp] = cur; sp++; }
             fmat_t rot, pos;
-            fmat_rotation(&rot, n->rot[0], n->rot[1], n->rot[2]);
+            i32 rest = getenv("DKE_RESTPOSE") && n != EROOT(e);
+            fmat_rotation(&rot, rest ? 0 : n->rot[0], rest ? 0 : n->rot[1], rest ? 0 : n->rot[2]);
             fmat_position(&pos, n->pos[0], n->pos[1], n->pos[2]);
             fmat_rotate_translation(&cur, &pos);
             fmat_premul_rotation(&rot, &cur);
