@@ -2,116 +2,88 @@
 #define DKE_ENTITY_H
 
 /*
- * entity.h -- Dark Earth entity struct layout (0xEA0 = 3744 bytes).
+ * entity.h -- Dark Earth actor ("perso") record, 0xEA0 bytes in the original.
  *
- * Recovered from IDA disassembly of dkev.exe: sub_46493B (player alloc),
- * sub_4640BC (entity placement), sub_463FB5 / sub_463C2E (field writes),
- * sub_41F6BA (bone registration), sub_42DDED (bone-anim mapping),
- * sub_448F4D (combat init), sub_426D2C (trigger scan).
+ * Allocated by sub_46493B @ 0x46493B for every character: the player, the two
+ * companion slots (companion_entity @ 0x4EDAF0, secondary_companion_entity
+ * @ 0x4EDAF4) and the hero swap path. The original is a flat 32-bit blob
+ * that mixes scalars, host pointers and an embedded hierarchy node. Kept as
+ * one blob on a 64-bit host, every pointer store shreds its neighbour, which
+ * is where most of the port's early entity crashes came from.
  *
- * The struct is a flat 3744-byte blob in the original. We overlay named
- * fields at confirmed offsets; gaps are left as padding arrays. Use
- * ENT_FIELD(ent, off) for offsets not yet in the struct.
+ * Layout used here, all indexed by the ORIGINAL byte offset so the C reads
+ * like the asm:
+ *
+ *   raw     — the 0xEA0 scalar bytes. i32/i16/u8/f64 fields live at their
+ *             original offsets (E32/E16/E8/EF64).
+ *   ptr     — one host pointer slot per original dword (EPTR). A field the
+ *             original stores a pointer in is read and written here instead
+ *             of in raw, so pointers never alias scalars.
+ *   gravit  — the 0xB4-byte hierarchy node embedded at +0x184 ("gravit").
+ *             sub_46493B re-points entity+0x50 at it and hangs the loaded
+ *             skeleton under it, so gravit.pos is the actor's world position
+ *             and gravit.rot[2] its heading. Nodes are C structs (obc.h), so
+ *             raw[0x184..0x237] is unused.
+ *
+ * Known fields (offsets are the original's):
+ *   +0x050 ptr  root node = &gravit after creation
+ *   +0x088 ptr  material library (setup_creature)
+ *   +0x08C i32  ground height under the actor (generate_effect)
+ *   +0x0AC ptr  persona descriptor (persona_desc_t raw bytes)
+ *   +0x0B0 i32  abs(persona id)
+ *   +0x0C4 c8[] name of the animation currently playing
+ *   +0x0D2 c8[] weapon object name
+ *   +0x0F0 ptr  foot node (sub_46399F) used to stand the actor on the floor
+ *   +0x0FC ptr[34] bone slot table (sub_41F6BA), indexed like CAN channels
+ *   +0x178 ptr  weapon attach node
+ *   +0x240 f64[34][9] per-bone blend matrices (play_entity_animation)
+ *   +0xBD0 u8[34] per-bone "has blend matrix" flags
+ *   +0xBF4 f32  blend weight
+ *   +0xC28 i32  animation start time;  +0xC2C / +0xC34 companion clocks
+ *   +0xC40 i32  current keyframe;      +0xC48 i32 duration override
+ *   +0xCD8 ptr  0x1000-byte nav workspace (sub_45720D flood fill)
+ *   +0xD04 i32  animation state;       +0xD08 previous state
+ *   +0xD4C i32  blend duration (anim+0x108 >> 16 when flag 0x1000)
+ *   +0xD50 ptr  animation record (can_anim_t) currently playing
+ *   +0xD58 i32  state id of the last prepared animation
+ *   +0xD64 ptr  held weapon object, +0xD68 ptr second weapon slot
  */
 
 #include "libsys/common.h"
+#include "obc.h"
 
 #define ENTITY_SIZE       0xEA0   /* 3744 bytes */
 #define ENTITY_BONE_SLOTS 34
 
-/* Gravit transform sub-struct — embedded at entity+0x184, accessed via
- * the pointer at entity+0x50. World position + facing angle live here. */
-typedef struct {
-    u8  _pad0[0x3C];           /* 0x000..0x03B */
-    i32 world_x;               /* 0x03C — world position X */
-    i32 world_y;               /* 0x040 — world position Y (vertical) */
-    i32 world_z;               /* 0x044 — world position Z */
-    u8  _pad1[0x0C];           /* 0x048..0x053 */
-    i32 viewport_x;            /* 0x054 — viewport X (init from entity+0x30) */
-    i32 viewport_y;            /* 0x058 — viewport Y (init from entity+0x38) */
-    i32 facing;                /* 0x05C — facing angle (16-bit BAM) */
-} gravit_t;
-
-/* Entity attributes sub-struct — pointed to by entity+0xAC. */
-typedef struct {
-    u8  _pad0[0x84];
-    i32 energy;                /* 0x084 */
-    u8  _pad1[0x11];           /* 0x088..0x095 */
-    u8  active;                /* 0x096 */
-    u8  incapacitated;         /* 0x097 */
-    u8  _pad2;                 /* 0x098 */
-    u8  combat_type;           /* 0x099 — set to 0x1B for combat mode 2 */
-    u8  _pad3[0x60];           /* 0x09A..0x0FB */
-    i32 stamina;               /* 0x0FC */
-} entity_attribs_t;
-
-typedef struct {
-    /* 0x000..0x00F — current rect (mirrors of max rect) */
-    i32 rect_cur[4];           /* left, top, right, bottom */
-
-    /* 0x010..0x01F — max rect */
-    i32 rect_max[4];           /* left, top, right, bottom */
-
-    u8  _pad0[0x10];           /* 0x020..0x02F */
-
-    /* 0x030 */
-    i32 viewport_offset_x;     /* init: 0xFFFF4000 (-0xC000) */
-    u8  _pad1[0x04];           /* 0x034..0x037 */
-    i32 viewport_offset_y;     /* 0x038 — init: 0xFFFFC000 (-0x4000) */
-    u8  _pad2[0x14];           /* 0x03C..0x04F */
-
-    /* 0x050 — pointer to gravit transform block (→ entity+0x184) */
-    gravit_t *gravit;          /* NOTE: 32-bit in original; padded on 64-bit */
-
-    u8  _pad3_ptr[0x064 - 0x050 - (i32)sizeof(void*)]; /* pad to 0x064 */
-
-    /* 0x064 */
-    i32 render_scale;          /* init: 0x50 (player), 0x80 (scene_load) */
-    u8  _pad4[0x08];           /* 0x068..0x06F */
-
-    /* 0x070 */
-    i32 render_mode;           /* 1=normal, 2=combat */
-    i32 render_flag;           /* 1 */
-
-    /* 0x078..0x084 — screen clip rect */
-    i32 clip_left;             /* 0x078 — 0 */
-    i32 clip_top;              /* 0x07C — 0 */
-    i32 clip_right;            /* 0x080 — 639 */
-    i32 clip_bottom;           /* 0x084 — 479 */
-
-    u8  _pad5[0x04];           /* 0x088..0x08B */
-    i32 effect_id;             /* 0x08C */
-
-    /* 0x090 */
-    i32 type_flag;             /* 2 */
-    i32 type_flag2;            /* 0x094 — 2 */
-    u8  _pad6[0x14];           /* 0x098..0x0AB */
-
-    /* 0x0AC — EntityAttributes pointer */
-    entity_attribs_t *attribs;
-
-    /* 0x0B0 (on 32-bit; offset shifts on 64-bit due to pointer above) */
-    i32 entity_type_id;        /* abs(spawn_id) from sub_463FB5 */
-    u8  _pad7[0x10];           /* padding to 0x0C4 */
-
-    /* 0x0C4 — entity name string (e.g. "g01arr01") */
-    c8  name[32];              /* padded, null-terminated */
-
-    u8  _pad8[0xFC - 0x0E4];   /* gap to bone table */
-
-    /* 0x0FC — bone slot table: 34 pointers to scene hierarchy nodes */
-    void *bones[ENTITY_BONE_SLOTS];
-
+typedef struct entity_s {
+    union {
+        u8  b[ENTITY_SIZE];
+        i16 h[ENTITY_SIZE / 2];
+        i32 d[ENTITY_SIZE / 4];
+        f64 f[ENTITY_SIZE / 8];
+    } raw;
+    void      *ptr[ENTITY_SIZE / 4];
+    obc_node_t gravit;
 } entity_t;
 
-/*
- * The full struct can't be laid out portably because the original is a
- * flat 32-bit blob with embedded pointers. For high-offset fields that
- * scene.c / lieu_cb.c access, use the raw-offset helper below on the
- * g_player_entity opaque pointer — same as the existing ent_set_u32.
- */
+/* Field accessors, original byte offsets. */
+#define E32(e, off)  ((e)->raw.d[(off) >> 2])
+#define E16(e, off)  (*(i16 *)&(e)->raw.b[(off)])
+#define E8(e, off)   ((e)->raw.b[(off)])
+#define EF32(e, off) (*(f32 *)&(e)->raw.b[(off)])
+#define EF64(e, off) (*(f64 *)&(e)->raw.b[(off)])
+#define EPTR(e, off) ((e)->ptr[(off) >> 2])
+#define ESTR(e, off) ((c8 *)&(e)->raw.b[(off)])
 
-/* Read/write a u32 at a raw byte offset into an entity blob. */
+/* Bone slot i (entity+0xFC + i*4). */
+#define EBONE(e, i)  ((obc_node_t *)(e)->ptr[(0xFC >> 2) + (i)])
+
+/* Root node (entity+0x50) and persona descriptor bytes (entity+0xAC). */
+#define EROOT(e)     ((obc_node_t *)EPTR(e, 0x50))
+#define EDESC(e)     ((u8 *)EPTR(e, 0xAC))
+
+/* Legacy scalar helpers. raw is the first member, so a void* entity still
+ * addresses the scalar bytes directly. Never use these for pointer fields. */
 static inline u32 ent_get(const void *ent, i32 off) {
     return *(const u32 *)((const u8 *)ent + off);
 }
@@ -122,14 +94,12 @@ static inline i32 ent_get_i32(const void *ent, i32 off) {
     return *(const i32 *)((const u8 *)ent + off);
 }
 
-/* Named offset constants for fields beyond the struct overlay.
- * Use with ent_get / ent_put until the struct is fully ported. */
+/* Named offsets for scalar fields. */
 #define ENT_OFF_STATE_FLAG     0xC04  /* -1 initial */
 #define ENT_OFF_COMBAT_READY   0xC44  /* 1 when in combat */
 #define ENT_OFF_HEALTH         0xC64  /* 0x10000 initial */
 #define ENT_OFF_ENERGY         0xC68  /* 0x4000 initial */
 #define ENT_OFF_SPECIAL_STATE  0xC78  /* 1=combat mode */
-#define ENT_OFF_DLG_BUF        0xCD8  /* dialogue buffer pointer */
 #define ENT_OFF_ANIM_P1        0xCEC
 #define ENT_OFF_ANIM_P2        0xCF0
 #define ENT_OFF_ANIM_P3        0xCF4
@@ -137,51 +107,8 @@ static inline i32 ent_get_i32(const void *ent, i32 off) {
 #define ENT_OFF_ANIM_STATE     0xD04  /* current anim state */
 #define ENT_OFF_PREV_ANIM      0xD08  /* previous anim state */
 #define ENT_OFF_LAST_TIME      0xD34  /* last game time */
-#define ENT_OFF_MODEL_DATA     0xD50  /* model data pointer */
 #define ENT_OFF_TYPE_STORED    0xD7C  /* entity type id (stored) */
 #define ENT_OFF_SQUAD_FLAG     0xD80  /* 0=player, 1=NPC */
 #define ENT_OFF_UNK_E94        0xE94  /* 0xFFFF */
-
-/* Gravit absolute offsets (entity+0x184 base + gravit field) */
-#define ENT_OFF_WORLD_X   0x1C0  /* gravit+0x3C */
-#define ENT_OFF_WORLD_Y   0x1C4  /* gravit+0x40 */
-#define ENT_OFF_WORLD_Z   0x1C8  /* gravit+0x44 */
-#define ENT_OFF_FACING    0x1E0  /* gravit+0x5C */
-
-/* Bone name table (34 entries, stride 7, from IDA sub_41F6BA at 0x4B2BA0) */
-#define BONE_TREE      0   /* root */
-#define BONE_BASDOS    1   /* lower spine */
-#define BONE_HANGAU    2   /* left hip */
-#define BONE_HANDRO    3   /* right hip */
-#define BONE_GENDRO    4   /* right knee */
-#define BONE_PIEDRO    5   /* right foot */
-#define BONE_GENGAU    6   /* left knee */
-#define BONE_PIEGAU    7   /* left foot */
-#define BONE_MILDOS    8   /* mid torso */
-#define BONE_HAUDOS    9   /* upper torso */
-#define BONE_BASCOU   10   /* lower neck */
-#define BONE_EPAGAU   11   /* left shoulder */
-#define BONE_EPADRO   12   /* right shoulder */
-#define BONE_COUDRO   13   /* right elbow */
-#define BONE_POIDRO   14   /* right wrist */
-#define BONE_COUGAU   15   /* left elbow */
-#define BONE_POIGAU   16   /* left wrist */
-#define BONE_TETE     17   /* head */
-#define BONE_TALGAU   18   /* left heel */
-#define BONE_TALDRO   19   /* right heel */
-#define BONE_DDPGAU   20
-#define BONE_DDPDRO   21
-#define BONE_ACCES0   22   /* accessory slot 0 */
-#define BONE_ACCES1   23
-#define BONE_ACCES2   24
-#define BONE_ACCES3   25
-#define BONE_ACCES4   26
-#define BONE_PACDRO   27   /* pack/bag right */
-#define BONE_PACGAU   28   /* pack/bag left */
-#define BONE_HACDRO   29
-#define BONE_HACGAU   30
-#define BONE_ARME     31   /* weapon */
-#define BONE_ARMEA    32   /* weapon attachment A */
-#define BONE_ARMEM    33   /* weapon attachment M */
 
 #endif /* DKE_ENTITY_H */

@@ -80,3 +80,58 @@ i32 can_load_first(const c8 *host_path, can_anim_t *out);
  * if no hash match. Returns 1 on success, 0 on failure.
  */
 i32 can_load_named(const c8 *host_path, const c8 *clip_name, can_anim_t *out);
+
+/* -------------------------------------------------------------------------
+ * Engine animation records — get_animation_id @ 0x41E26B.
+ *
+ * The engine keeps a 200-slot cache of 0x110-byte records (dword_511744)
+ * whose layout is the CAN block header verbatim. The keyframe and message
+ * pointer arrays inside that header (+0x0C / +0x5C) are 32-bit heap pointers
+ * in the original; here they live in frame[] / mes[] and the header copies
+ * are left untouched.
+ *
+ * Header fields (original offsets):
+ *   +0x00 c8[8] name        +0x09 i8 n_mes        +0x0A i8 n_frames
+ *   +0xAC i16[20] keyframe time stamps (animation ticks, [0] = 0)
+ *   +0xD4 u8[19] ease-in per segment    +0xE7 u8[19] ease-out per segment
+ *   +0xFA i16 flags:
+ *          0x0001 root yaw carried by the clip (process_entity_state_change)
+ *          0x0020 remember the start position (+0xE88 / +0xE90)
+ *          0x0080 "master" hold (+0xC6C)
+ *          0x0100 blend time in +0x108 low word
+ *          0x0200 animation is over when the last keyframe is reached
+ *          0x0800 matrix (slerp) blend instead of per-angle lerp
+ *          0x1000 blend duration = +0x108 >> 16
+ *   +0xFC i32 root yaw          +0x108 i32 blend times
+ * Keyframe: i16 header, then 34 x (rx, ry, rz) BAM, one triple per bone slot.
+ * Message:  12 bytes; +1 type char, +8 parameter.
+ * ---------------------------------------------------------------------- */
+#define CAN_REC_HDR    0x110
+#define CAN_REC_SLOTS  200
+#define CAN_MES_BYTES  12
+
+typedef struct {
+    u8   hdr[CAN_REC_HDR];
+    i16 *frame[CAN_MAX_FRAMES];
+    u8  *mes[CAN_MAX_FRAMES];
+} can_rec_t;
+
+#define CAN_NMES(r)        ((i32)(i8)(r)->hdr[0x09])
+#define CAN_NFRAMES(r)     ((i32)(i8)(r)->hdr[0x0A])
+#define CAN_TIME(r, i)     (*(i16 *)&(r)->hdr[0xAC + 2 * (i)])
+#define CAN_EASE_IN(r, i)  ((r)->hdr[0xD4 + (i)])
+#define CAN_EASE_OUT(r, i) ((r)->hdr[0xE7 + (i)])
+#define CAN_FLAGS(r)       (*(i16 *)&(r)->hdr[0xFA])
+#define CAN_ROOT_YAW(r)    (*(i32 *)&(r)->hdr[0xFC])
+#define CAN_BLEND(r)       (*(i32 *)&(r)->hdr[0x108])
+/* Duration = time stamp of the last keyframe (asm reads +0xAA + n*2). */
+#define CAN_DURATION(r)    (CAN_NFRAMES(r) > 0 ? (i32)CAN_TIME(r, CAN_NFRAMES(r) - 1) : 0)
+
+/* get_animation_id @ 0x41E26B — fetch (loading on demand) the record for a
+ * clip name such as "p12arr03" or "g01arr01". Never NULL once the CAN files
+ * are present: unknown names fall back to g01arr01 like the original. The
+ * returned record can be recycled by later calls, as in the engine. */
+can_rec_t *can_get_anim(const c8 *name);
+
+/* Drop every cached record (level change / shutdown). */
+void can_cache_reset(void);

@@ -57,6 +57,7 @@
 #include "libsys/graphics/shading.h"
 #include "state.h"
 #include "scene.h"
+#include "actor.h"
 #include "game_init.h"
 #include "world.h"
 #include "nav_grid.h"
@@ -235,7 +236,7 @@ static i32   g_proj_valid     = 0;
 static i32   g_proj_R[9];               /* camera matrix ints param[0..8].
                                          * R(row,col) = param[row + col*3]
                                          * (dkev transform_vector 0x48F424). */
-static i32   g_proj_T[3];               /* raw translation param[9..11],
+static i32   g_proj_T[3];               /* transpose(R) * param[9..11],
                                          * added directly after >>14.        */
 static i32   g_proj_gscale    = 21695;  /* param[24] = round(10240/tan(fov/2)) */
 static i32   g_proj_ground_wy = 0;      /* character ground-plane world Y */
@@ -339,165 +340,6 @@ static i32      g_scene_ome_atom_count = 0;
  * and world translations computed from the bone parent chain. */
 static ome_objc_t g_scene_objc;
 static i32        g_scene_objc_loaded = 0;
-
-/* -------------------------------------------------------------------------
- * Persona mesh cache — loads PERSOS>P<nn>.OME on demand so LIEU-placed
- * personas render with their own model (P00, P12, ...). Static pose (no
- * per-persona CAN animation yet). Keyed by persona number.
- * ---------------------------------------------------------------------- */
-#define PERSONA_CACHE_MAX 12
-typedef struct {
-    i32        num;                            /* persona number, -1 = empty */
-    model_t   *atoms[SCENE_OME_MAX_ATOMS];
-    i32        count;
-    ome_objc_t objc;                           /* skeleton for FK            */
-    i32        objc_loaded;
-    can_anim_t can;                            /* current clip               */
-    i32        can_loaded;
-    i32        frame;
-    u32        can_last;
-    i32        clip_serial;                    /* last LIEU clip applied     */
-    i32        foot_off;                       /* lowest bone, model units   */
-} persona_mesh_t;
-static persona_mesh_t g_persona_cache[PERSONA_CACHE_MAX];
-static i32            g_persona_cache_n = 0;
-
-/* Parse a persona number from a name like "P12ARR01" -> 12; -1 if none. */
-static i32 persona_num_from_name(const c8 *name) {
-    if (!name || name[0] != 'P' || name[1] < '0' || name[1] > '9') return -1;
-    i32 n = 0, i = 1;
-    while (name[i] >= '0' && name[i] <= '9' && i <= 3) { n = n*10 + (name[i]-'0'); i++; }
-    return n;
-}
-
-/* Load (or fetch cached) PERSOS>P<num>.OME geometry atoms. Returns cache
- * index or -1 on failure. */
-static i32 persona_mesh_load(i32 num) {
-    for (i32 i = 0; i < g_persona_cache_n; i++)
-        if (g_persona_cache[i].num == num) return i;
-    if (num < 0 || g_persona_cache_n >= PERSONA_CACHE_MAX) return -1;
-
-    c8 vpath[32], host[512];
-    snprintf(vpath, sizeof(vpath), "PERSOS>P%02d.OME", num);
-    const c8 *base = (state && state->game_path) ? state->game_path : ".";
-    if (!ls_resolve_path(base, vpath, host, (i32)sizeof(host))) return -1;
-
-    ome_file_t ome = {0};
-    if (!model_ome_open(host, &ome)) return -1;
-
-    persona_mesh_t *pm = &g_persona_cache[g_persona_cache_n];
-    pm->num = num; pm->count = 0;
-
-    ome_matr_t matr = {0}, *matr_ptr = NULL;
-    for (i32 ci = 0; ci < ome.chunk_count; ci++) {
-        if (ome.chunks[ci].kind != OME_CHUNK_MATR) continue;
-        if (ome_parse_matr(ome.raw + ome.chunks[ci].offset + 0x60,
-                           ome.chunks[ci].length - 0x60, &matr))
-            matr_ptr = &matr;
-        break;
-    }
-    /* Index atoms by ATOMF ordinal so atom slot i == OBJC bone slot i. A
-     * failed/empty ATOMF leaves a NULL gap rather than shifting later atoms
-     * onto the wrong bone (which would break the skeletal pose). */
-    for (i32 i = 0; i < SCENE_OME_MAX_ATOMS; i++) pm->atoms[i] = NULL;
-    i32 aidx = 0;
-    for (i32 ci = 0; ci < ome.chunk_count; ci++) {
-        if (ome.chunks[ci].kind != OME_CHUNK_ATOMF) continue;
-        if (aidx >= SCENE_OME_MAX_ATOMS) break;
-        ome_atom_t atom = {0};
-        model_t *m = NULL;
-        if (ome_decode_atomf(ome.raw + ome.chunks[ci].offset + 0x60,
-                             ome.chunks[ci].length - 0x60, &atom) &&
-            atom.vert_count > 0 && atom.face_count > 0) {
-            m = model_from_ome_atom(&atom, matr_ptr);
-        } else {
-            print("scene: P%02d ATOMF slot %d decode empty/failed\n", num, aidx);
-        }
-        pm->atoms[aidx++] = m;   /* keep the slot even if NULL */
-        ome_atom_free(&atom);
-    }
-    pm->count = aidx;
-    /* OBJC skeleton (parse before freeing the OME raw buffer). */
-    pm->objc_loaded = 0;
-    for (i32 ci = 0; ci < ome.chunk_count; ci++) {
-        if (ome.chunks[ci].kind == OME_CHUNK_OBJC) {
-            pm->objc_loaded = ome_parse_objc(ome.raw, ome.raw_size,
-                                             ome.chunks[ci].offset, &pm->objc);
-            break;
-        }
-    }
-    model_ome_free(&ome);
-    if (pm->count == 0) return -1;
-
-    /* Load the persona's own CAN, selecting the ARR01 arrival clip by hash;
-     * fall back to P01.CAN (g01arr01) for personas without a CAN. */
-    pm->can_loaded = 0; pm->frame = 0; pm->can_last = 0;
-    c8 clip[16], cvp[32], chost[512];
-    snprintf(clip, sizeof(clip), "p%02darr01", num);
-    snprintf(cvp,  sizeof(cvp),  "ANM>P%02d.CAN", num);
-    if (ls_resolve_path(base, cvp, chost, (i32)sizeof(chost)) &&
-        can_load_named(chost, clip, &pm->can)) {
-        pm->can_loaded = 1;
-    } else if (ls_resolve_path(base, "ANM>P01.CAN", chost, (i32)sizeof(chost))) {
-        pm->can_loaded = can_load_named(chost, "g01arr01", &pm->can);
-    }
-
-    pm->clip_serial = 0;
-    /* Ground offset. A persona's skeleton is laid out along bone X — head at
-     * the positive end, feet at the negative end (P00: X[-121123..34416]) —
-     * and the render transform maps that axis to world height. The root sits
-     * at the hips, so dropping the model by its lowest bone puts the feet on
-     * the ground. This replaces the hand-tuned -120000 that only ever suited
-     * P00 (P12's feet are at -109645, so it sank ~11k units into the floor). */
-    pm->foot_off = -120000;
-    if (pm->objc_loaded && pm->objc.n_atomslots > 0) {
-        i32 lo = 0x7FFFFFFF;
-        for (i32 b = 0; b < pm->objc.n_atomslots; b++)
-            if (pm->objc.world_tx[b] < lo) lo = pm->objc.world_tx[b];
-        if (lo != 0x7FFFFFFF) pm->foot_off = lo;
-        print("scene: P%02d ground offset %d (lowest bone)\n", num, pm->foot_off);
-    }
-    print("scene: loaded persona P%02d.OME (%d atoms, objc=%d, can=%d)\n",
-          num, pm->count, pm->objc_loaded, pm->can_loaded);
-    return g_persona_cache_n++;
-}
-
-/*
- * persona_apply_script_clip — swap a persona onto the CAN clip the LIEU
- * script asked for.
- *
- * ANIMATION actions carry the clip id ("p12arr03"), which is what the engine
- * feeds play_entity_animation. We reload the persona's CAN when the requested
- * clip changes, falling back to whatever was loaded if the clip is missing
- * from the file.
- */
-static void persona_apply_script_clip(persona_mesh_t *pm) {
-    if (!pm || pm->num < 0) return;
-
-    i32 serial = 0;
-    const c8 *clip = lieu_persona_clip(pm->num, &serial);
-    if (!clip || serial == pm->clip_serial) return;
-    pm->clip_serial = serial;
-
-    const c8 *base = (state && state->game_path) ? state->game_path : ".";
-    c8 cvp[32], chost[512];
-    snprintf(cvp, sizeof(cvp), "ANM>P%02d.CAN", pm->num);
-    if (!ls_resolve_path(base, cvp, chost, (i32)sizeof(chost))) return;
-
-    can_anim_t next = {0};
-    if (!can_load_named(chost, clip, &next)) {
-        print("scene: P%02d clip '%s' not in %s — keeping current\n",
-              pm->num, clip, cvp);
-        return;
-    }
-    pm->can        = next;
-    pm->can_loaded = 1;
-    pm->frame      = 0;
-    pm->can_last   = 0;
-    print("scene: P%02d -> script clip '%s' (%d frames)\n",
-          pm->num, clip, next.n_frames);
-}
-
 
 /* -------------------------------------------------------------------------
  * Per-level config from L<lvl>.DAT (plain-text INI-style, French keys).
@@ -985,9 +827,8 @@ static void bone_link_slots(void *entity, i32 src_slot, i32 dst_slot) {
     /* sub_4373EF @ 0x4373EF */
     if (!entity) return;
     u8 *ent = (u8 *)entity;
-    obc_node_t **bones = (obc_node_t **)(ent + 0xFC);
-    obc_node_t *src = bones[src_slot];
-    obc_node_t *dst = bones[dst_slot];
+    obc_node_t *src = EBONE((entity_t *)ent, src_slot);
+    obc_node_t *dst = EBONE((entity_t *)ent, dst_slot);
     if (!src || !dst) return;
     src->child  = dst;   /* src->+0x7C = first child */
     dst->parent = src;   /* dst->+0x78 = parent      */
@@ -1015,7 +856,7 @@ static void weapon_resolve_conflicts(void *entity, void *weapon_obj) {
         u8 *other = (u8 *)others[i];
 
         for (i32 slot = 0; slot < 2; slot++) {
-            void *held = *(void **)(other + 0xD64 + slot * 4);
+            void *held = EPTR((entity_t *)other, 0xD64 + slot * 4);
             if (held != weapon_obj) continue;
 
             /* Conflict: other entity holds same weapon */
@@ -1023,13 +864,13 @@ static void weapon_resolve_conflicts(void *entity, void *weapon_obj) {
                   others[i], slot);
 
             /* Clear weapon reference */
-            *(void **)(other + 0xD64 + slot * 4) = NULL;
+            EPTR((entity_t *)other, 0xD64 + slot * 4) = NULL;
 
             if (slot == 0) {
                 /* Primary weapon: clear bone attach + weapon name + type */
-                *(void **)(other + 0x178) = NULL;
+                EPTR((entity_t *)other, 0x178) = NULL;
                 *(u8 *)(other + 0xD2) = 0;
-                u8 *other_desc = *(u8 **)(other + 0xAC);
+                u8 *other_desc = EDESC((entity_t *)other);
                 if (other_desc) other_desc[0x97] = 0;
             } else {
                 /* Secondary weapon: clear secondary fields */
@@ -1135,9 +976,9 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
              * creature->+0x7C->+0x7C (two levels deep) @ 0x473782 */
             obc_node_t *child = creature->child;
             if (child) {
-                *(void **)(ent + 0x178) = child->child;
+                EPTR((entity_t *)ent, 0x178) = child->child;
             } else {
-                *(void **)(ent + 0x178) = creature;
+                EPTR((entity_t *)ent, 0x178) = creature;
             }
 
             /* Walk hierarchy: reset frame counters on non-"armeb" nodes @ 0x4737BE */
@@ -1151,11 +992,11 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
         }
     } else {
         /* Reattach: just set entity+0x178 = weapon->+0x50 @ 0x473854 */
-        *(void **)(ent + 0x178) = *(void **)(wobj + 0x50);
+        EPTR((entity_t *)ent, 0x178) = *(void **)(wobj + 0x50);
     }
 
     /* Clear attachment offsets if link exists @ 0x47380F */
-    void *attach = *(void **)(ent + 0x178);
+    void *attach = EPTR((entity_t *)ent, 0x178);
     if (attach) {
         u8 *a = (u8 *)attach;
         *(i32 *)(a + 0x54) = 0;
@@ -1182,7 +1023,7 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
     weapon_resolve_conflicts(entity, weapon_obj);
 
     /* Store weapon reference at entity+0xD64 @ 0x473934 */
-    *(void **)(ent + 0xD64) = weapon_obj;
+    EPTR((entity_t *)ent, 0xD64) = weapon_obj;
 
     /* sub_4373EF @ 0x4373EF — link weapon bone to entity skeleton.
      * Path 1 (full_init || entity==player): bone_link_slots(entity, 0x1B, 0x1F)
@@ -1190,7 +1031,7 @@ void scene_weapon_entity_attach(void *entity, void *weapon_obj, i32 full_init) {
     if (full_init || entity == g_player_entity) {
         bone_link_slots(entity, 0x1B, 0x1F);  /* @ 0x473952 */
     } else {
-        u8 *desc = *(u8 **)((u8 *)entity + 0xAC);
+        u8 *desc = EDESC((entity_t *)entity);
         i32 slot = desc ? (i32)(u32)desc[0x99] : 0x1B;
         bone_link_slots(entity, slot, 0x1F);   /* @ 0x473966 */
     }
@@ -1206,14 +1047,14 @@ static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
     if (!g_player_entity) goto fail;
 
     u8 *pe = (u8 *)g_player_entity;
-    u8 *desc = *(u8 **)(pe + 0xAC);
+    u8 *desc = EDESC((entity_t *)pe);
     if (!desc) goto fail;
 
     /* sub_426BB5(zone_obj, 1) — activate trigger entries matching this object */
     activate_trigger_entries(zone_obj, 1); /* sub_426BB5 @ 0x426BB5 */
 
     /* Check player not already holding this object */
-    if (*(i32 *)(pe + 0xD64) == (i32)(intptr_t)zone_obj) goto fail; /* already equipped */
+    if (EPTR((entity_t *)pe, 0xD64) == zone_obj) goto fail; /* already equipped */
 
     /* Parse zone object name at [zone_obj+0xA8] as "%c%c%02d" */
     c8 *obj_name = (c8 *)((u8 *)zone_obj + 0xA8);
@@ -1236,7 +1077,7 @@ static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
     strcpy((c8 *)(pe + 0xD2), obj_name);
 
     /* Store zone object pointer at entity+0xD64 */
-    *(i32 *)(pe + 0xD64) = (i32)(intptr_t)zone_obj;
+    EPTR((entity_t *)pe, 0xD64) = zone_obj;
 
     /* sub_472A48 @ 0x472A48 — check if this is a weapon object */
     i32 has_weapon = is_weapon_object(zone_obj);
@@ -1261,7 +1102,7 @@ static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
 fail:
     if (g_player_entity) {
         u8 *pe = (u8 *)g_player_entity;
-        u8 *desc = *(u8 **)(pe + 0xAC);
+        u8 *desc = EDESC((entity_t *)pe);
         if (desc) desc[0x97] = 0;
         *(u8 *)(pe + 0xD2) = 0;
     }
@@ -1328,7 +1169,7 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
             i32 phase = ent_get_i32(g_player_entity, 0xB0);
             if (phase >= 4) {
                 /* action_ptr = [entity+0xAC], zone_id = [action_ptr+0x97] */
-                u8 *action_ptr = *(u8 **)((u8 *)g_player_entity + 0xAC);
+                u8 *action_ptr = EDESC((entity_t *)g_player_entity);
                 if (action_ptr) {
                     u8 cur_zone = action_ptr[0x97];
                     if (cur_zone != 0) {
@@ -1346,7 +1187,7 @@ static i32 check_zone_triggers(void) { /* sub_426D2C @ 0x426D2C */
         if (process_zone_transition(zone_obj)) {          /* sub_47398A @ 0x47398A */
             /* Dispatch trigger event to scripting */
             if (g_player_entity) {
-                u8 *action_ptr = *(u8 **)((u8 *)g_player_entity + 0xAC);
+                u8 *action_ptr = EDESC((entity_t *)g_player_entity);
                 u8 zone_id = action_ptr ? action_ptr[0x97] : 0;
                 dispatch_zone_trigger(zone_id, g_player_entity);  /* sub_462BCC @ 0x462BCC */
             }
@@ -1370,7 +1211,7 @@ static u8 g_palette_state = 0;
 
 static void process_color_palette(void *entity) { /* process_color_palette @ 0x40C2A0 */
     if (!entity) return;
-    obc_node_t *root = *(obc_node_t **)((u8 *)entity + 0x50);
+    obc_node_t *root = EROOT((entity_t *)entity);
     if (!root) return;
 
     g_palette_state = 0xFC;
@@ -1626,7 +1467,7 @@ static void hud_draw_health_bar(i32 mode) {
     /* Dirty check: skip redraw if nothing changed and mode==0 */
     i32 cur_health = 0;
     if (g_player_entity) {
-        u8 *desc = *(u8 **)((u8 *)g_player_entity + 0xAC);
+        u8 *desc = EDESC((entity_t *)g_player_entity);
         if (desc) cur_health = *(i32 *)(desc + 0x84);
     }
 
@@ -1858,7 +1699,7 @@ static void apply_model_transform(void *entity, void *transform) {
      * spans 0x50..0x57, so the asm's "set state, then load root" order would
      * shred the pointer's high half and hand a wild address to
      * initialize_effect_position. */
-    void *scene_root = *(void **)(ent + 0x50);
+    void *scene_root = EPTR((entity_t *)ent, 0x50);
     /* The original brackets this with entity+0x54 = 2 (transforming) then 1
      * (ready). Both writes are DROPPED here: +0x50 holds a 64-bit host
      * pointer spanning 0x50..0x57, so storing an i32 at +0x54 overwrites its
@@ -2009,7 +1850,16 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
      * scene_project_world (perspective 1/z). */
     if (param[24] == 0) return;
     for (i32 i = 0; i < 9; i++) g_proj_R[i] = param[i];
-    g_proj_T[0] = param[9]; g_proj_T[1] = param[10]; g_proj_T[2] = param[11];
+    /* The engine never adds T as stored: every render starts from a copy of
+     * the camera with multiply_matrices(cam, cam) (sub_420D80 @ 0x420E33),
+     * i.e. t = transpose(R) * T. Cache that camera-space translation. */
+    {
+        fmat_t cam;
+        for (i32 i = 0; i < 9; i++) cam.m[i] = param[i];
+        cam.t[0] = param[9]; cam.t[1] = param[10]; cam.t[2] = param[11];
+        fmat_rotate_translation(&cam, &cam);
+        g_proj_T[0] = cam.t[0]; g_proj_T[1] = cam.t[1]; g_proj_T[2] = cam.t[2];
+    }
     g_proj_gscale    = param[24];
     g_proj_zone_z    = (i32)zone_z;
     g_proj_anchor_wx = zone_x;
@@ -2459,13 +2309,13 @@ i32 scene_load_level(i32 level_id) {
     /* asm: guard on entity != NULL && entity+0xAC != NULL && descriptor[0x96] != 0 */
     if (g_companion_entity) {
         u8 *ce = (u8 *)g_companion_entity;
-        void *desc = *(void **)(ce + 0xAC);
+        void *desc = EDESC((entity_t *)ce);
         if (desc && *((u8 *)desc + 0x96) != 0)
             render_entity_with_ui(g_companion_entity, 0);           /* render_entity_with_ui @ 0x4024AF */
     }
     if (g_secondary_companion_entity) {
         u8 *se = (u8 *)g_secondary_companion_entity;
-        void *desc = *(void **)(se + 0xAC);
+        void *desc = EDESC((entity_t *)se);
         if (desc && *((u8 *)desc + 0x96) != 0)
             render_entity_with_ui(g_secondary_companion_entity, 0); /* render_entity_with_ui @ 0x4024AF */
     }
@@ -2833,6 +2683,95 @@ static void scene_update_bone_positions(const can_frame_t *kf) {
     objc_update_bone_positions(&g_scene_objc, kf);
 }
 
+/* -------------------------------------------------------------------------
+ * Actor rendering: walk the actor's own object tree from the gravit node,
+ * composing each node's rotation/translation onto the camera matrix the way
+ * sub_463A24 @ 0x463A24 / get_node_bounds @ 0x436651 do, and draw every
+ * node's atom with that camera-space transform. Faces of the whole actor are
+ * painter-sorted together.
+ * ---------------------------------------------------------------------- */
+#define ACTOR_MATR_CACHE 16
+static struct { i32 num; ome_matr_t matr; i32 ok; } g_actor_matr[ACTOR_MATR_CACHE];
+static i32 g_actor_matr_n = 0;
+
+/* MATR colour table of PERSOS>Pnn.OME (palette base index per material). */
+static const ome_matr_t *actor_matr(i32 num) {
+    for (i32 i = 0; i < g_actor_matr_n; i++)
+        if (g_actor_matr[i].num == num) return g_actor_matr[i].ok ? &g_actor_matr[i].matr : NULL;
+    if (g_actor_matr_n >= ACTOR_MATR_CACHE) return NULL;
+    i32 slot = g_actor_matr_n++;
+    g_actor_matr[slot].num = num;
+    g_actor_matr[slot].ok  = 0;
+    c8 vpath[32], host[512];
+    snprintf(vpath, sizeof(vpath), "PERSOS>P%02d.OME", num);
+    const c8 *base = (state && state->game_path) ? state->game_path : ".";
+    ome_file_t ome = {0};
+    if (ls_resolve_path(base, vpath, host, (i32)sizeof(host)) && model_ome_open(host, &ome)) {
+        for (i32 ci = 0; ci < ome.chunk_count; ci++) {
+            if (ome.chunks[ci].kind != OME_CHUNK_MATR) continue;
+            g_actor_matr[slot].ok = ome_parse_matr(ome.raw + ome.chunks[ci].offset + 0x60,
+                                                   ome.chunks[ci].length - 0x60,
+                                                   &g_actor_matr[slot].matr);
+            break;
+        }
+        model_ome_free(&ome);
+    }
+    return g_actor_matr[slot].ok ? &g_actor_matr[slot].matr : NULL;
+}
+
+static void scene_render_actor(entity_t *e, float lx, float ly, float lz) {
+    if (!e || !EROOT(e) || !g_proj_valid) return;
+    static model_draw_t items[64];
+    i32 n_items = 0;
+    const ome_matr_t *matr = actor_matr(E32(e, 0xB0));
+
+    fmat_t stack_m[16];
+    obc_node_t *stack_n[16];
+    i32 sp = 0;
+    fmat_t cur;
+    for (i32 k = 0; k < 9; k++) cur.m[k] = g_proj_R[k];
+    for (i32 k = 0; k < 3; k++) cur.t[k] = g_proj_T[k];
+    obc_node_t *n = EROOT(e);
+    for (;;) {
+        while (n) {
+            if (n->next && sp < 16) { stack_n[sp] = n->next; stack_m[sp] = cur; sp++; }
+            fmat_t rot, pos;
+            fmat_rotation(&rot, n->rot[0], n->rot[1], n->rot[2]);
+            fmat_position(&pos, n->pos[0], n->pos[1], n->pos[2]);
+            fmat_rotate_translation(&cur, &pos);
+            fmat_premul_rotation(&rot, &cur);
+            cur.t[0] += pos.t[0]; cur.t[1] += pos.t[1]; cur.t[2] += pos.t[2];
+            const model_t *m = n->atom[0] ? model_from_atm_atom(n->atom[0], matr) : NULL;
+            if (m && n_items < 64) {
+                model_draw_t *it = &items[n_items++];
+                it->m = m;
+                for (i32 k = 0; k < 9; k++) it->m3[k] = cur.m[k];
+                for (i32 k = 0; k < 3; k++) it->t[k] = cur.t[k];
+            }
+            n = n->child;
+        }
+        if (sp == 0) break;
+        sp--; n = stack_n[sp]; cur = stack_m[sp];
+    }
+    if (getenv("DKE_ACTORDBG")) {
+        static i32 shown[3];
+        i32 slot = (e == g_player_entity) ? 0 : (e == g_companion_entity) ? 1 : 2;
+        if (!shown[slot]) {
+            shown[slot] = 1;
+            const obc_node_t *g = EROOT(e);
+            i32 sx0, sy0, sx1, sy1;
+            scene_project_world(g->pos[0], g->pos[1], g->pos[2], &sx0, &sy0);
+            scene_project_world(g->pos[0], g->pos[1] + 10000, g->pos[2], &sx1, &sy1);
+            print("actor: draw p%02d items=%d origin->(%d,%d)  Y+10000->(%d,%d)\n",
+                  E32(e, 0xB0), n_items, sx0, sy0, sx1, sy1);
+        }
+    }
+    model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, NULL,
+                       g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
+                       (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
+                       lx, ly, lz);
+}
+
 /*
  * scene_render — blit the current camera's backdrop and poll input.
  * Called from the main loop while state == MENU_STATE_LOADING.
@@ -3048,7 +2987,7 @@ i32 scene_render(system_t *sys) {
         for (i32 pi = 0; getenv("DKE_SCRIPTSEED") && pi < lieu_spawn_count(); pi++) {
             i32 stx = 0, stz = 0, sview = 0;
             const c8 *snm = lieu_spawn_get(pi, &stx, &stz, &sview);
-            if (!snm || persona_num_from_name(snm) != 0) continue;
+            if (!snm || strncasecmp(snm, "P00", 3) != 0) continue;
             g_player_wx = stx * 600;
             g_player_wz = stz * 600;
             g_player_facing = (lieu_spawn_facing(pi) >> 4) & 0xFFF;
@@ -3141,15 +3080,14 @@ i32 scene_render(system_t *sys) {
     /* Feed the player world (X,Z) into the transform so lieu_detect_zone
      * (next frame) tests it against the LIEU zone rects. */
     if (g_player_entity) {
-        *(i32 *)((u8 *)g_player_entity + 0x1C0) = g_player_wx;
-        *(i32 *)((u8 *)g_player_entity + 0x1C8) = g_player_wz;
+        EROOT(g_player_entity)->pos[0] = g_player_wx;
+        EROOT(g_player_entity)->pos[2] = g_player_wz;
         /* Heading too (gravit+0x5C = entity+0x1E0, 16-bit BAM). Without this
          * player_get_facing() reads a slot nothing ever wrote, and every
          * DirectionPerso / DirectionZone test compares against heading 0.
          * g_player_facing is in cosine-table units (4096 per turn); BAM is
          * 65536 per turn, hence the <<4. */
-        *(i32 *)((u8 *)g_player_entity + ENT_OFF_FACING) =
-            (g_player_facing << 4) & 0xFFFF;
+        EROOT(g_player_entity)->rot[2] = (g_player_facing << 4) & 0xFFFF;
     }
 
     /* Auto camera switch: pick the camera whose region contains the player
@@ -3241,145 +3179,16 @@ i32 scene_render(system_t *sys) {
             lcy = (float)((i64)lwx*g_proj_R[1] + (i64)lwy*g_proj_R[4] + (i64)lwz*g_proj_R[7]);
             lcz = (float)((i64)lwx*g_proj_R[2] + (i64)lwy*g_proj_R[5] + (i64)lwz*g_proj_R[8]);
         }
-        for (i32 pi = 0; pi < lieu_spawn_count(); pi++) {
-            if (getenv("DKE_ONLYP") && pi != atoi(getenv("DKE_ONLYP"))) continue;
-            i32 wxt = 0, wzt = 0, pview = 0;
-            const c8 *nm = lieu_spawn_get(pi, &wxt, &wzt, &pview);
-            if (!nm) continue;
-            /* Arkhan is both a scripted placement and the player avatar.
-             * While a BLOQUE bracket is open the script owns him, so his
-             * PosPerso placement is what renders; once control returns to the
-             * player the avatar below takes over and this placement is
-             * skipped, otherwise he is drawn twice. */
-            if (!lieu_player_blocked() && persona_num_from_name(nm) == 0)
-                continue;
-            /* Project the persona's world position (tile x600, its own
-             * PosPerso ground Y) to screen. */
-            i32 pground = lieu_spawn_ground(pi);
-            i32 psx, psy;
-            i32 pvis = scene_project_world(wxt * 600, pground, wzt * 600, &psx, &psy);
-            if (getenv("DKE_PROJDBG")) {
-                static i32 s_seen[16] = {0};
-                if (pi < 16 && !s_seen[pi]) {
-                    s_seen[pi] = 1;
-                    print("proj: %s world=(%d,%d,%d) -> screen=(%d,%d) vis=%d [fb %dx%d]\n",
-                          nm, wxt * 600, pground, wzt * 600, psx, psy, pvis,
-                          state ? state->graphic.width : 0,
-                          state ? state->graphic.height : 0);
-                }
-            }
-            /* Load this persona's own mesh + skeleton + ARR01 clip. */
-            i32 ci = persona_mesh_load(persona_num_from_name(nm));
-            if (ci < 0) {
-                /* fallback: player mesh, static pose */
-                for (i32 ai = 0; ai < g_scene_ome_atom_count; ai++)
-                    model_render(g_scene_ome_atoms[ai], sys, psx, psy, focal, tick,
-                                 render_depth, cube_world_size, z_far,
-                                 g_scene_l_bmap, g_scene_z_bmap, 0, 0, 0, 0, 0, 0);
-                continue;
-            }
-            persona_mesh_t *pm = &g_persona_cache[ci];
-            persona_apply_script_clip(pm);   /* LIEU ANIMATION action */
-            /* Advance the persona's animation frame. */
-            if (pm->can_loaded && pm->can.n_frames > 0 &&
-                tick - pm->can_last >= CAN_FRAME_MS) {
-                pm->frame = (pm->frame + 1) % pm->can.n_frames;
-                pm->can_last = tick;
-            }
-            const can_frame_t *kf = pm->can_loaded ? &pm->can.frames[pm->frame] : NULL;
-            if (pm->objc_loaded) objc_update_bone_positions(&pm->objc, kf);
-            /* Per-atom rotation table from the keyframe (via OBJC slot map). */
-            i32 prx[SCENE_OME_MAX_ATOMS] = {0}, pry[SCENE_OME_MAX_ATOMS] = {0};
-            if (kf && pm->objc_loaded) {
-                for (i32 jj = 0; jj < pm->objc.n_bones; jj++) {
-                    i32 ri = pm->objc.can_to_render[jj];
-                    i32 ch = pm->objc.can_slot[jj];
-                    if (ri < 0 || ri >= pm->count) continue;
-                    if (ch < 0 || ch >= CAN_MAX_ATOMSLOTS) continue;
-                    prx[ri] = (i32)((u32)kf->atoms[ch].rx >> 4) & 0xFFF;
-                    pry[ri] = (i32)((u32)kf->atoms[ch].ry >> 4) & 0xFFF;
-                }
-            }
-            /* Rasterize each atom through the real in-game camera (world
-             * pipeline). Bone world_tx/ty/tz already reflect the animated
-             * pose (objc_update_bone_positions from the CAN keyframe). */
-            /* Empirical calibration for L01 cam0: MSHIFT=1 (OME<<1>>1 = OME
-             * units) sizes the figures to the backdrop; PosPerso ground is 0
-             * but the floor sits ~120000 world units below the camera plane,
-             * so drop the figures onto the beds. TODO: derive the floor Y from
-             * the room terrain instead of this per-camera constant. */
-            i32 mshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 0;
-            i32 mflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
-            /* The drop is a WORLD-space offset applied to the character's
-             * position, not a model-space one, so it takes the bone value as
-             * it stands — scaling it by mshift the way the vertices are
-             * scaled pushes the figure straight through the floor. */
-            i32 myoff  = getenv("DKE_MYOFF")  ? atoi(getenv("DKE_MYOFF"))
-                                             : pm->foot_off;
-            i32 pfac   = lieu_spawn_facing(pi) & 0xFFF;
-            i32 objy   = pground + myoff;
-            (void)psx; (void)psy; (void)prx; (void)pry;
-            for (i32 ai = 0; ai < pm->count; ai++) {
-                if (!pm->atoms[ai]) continue;
-                i32 have = pm->objc_loaded && ai < pm->objc.n_atomslots;
-                i32 tx = have ? pm->objc.world_tx[ai] : 0;
-                i32 ty = have ? pm->objc.world_ty[ai] : 0;
-                i32 tz = have ? pm->objc.world_tz[ai] : 0;
-                const i32 *brot = have ? pm->objc.world_rot[ai] : NULL;
-                model_render_world(pm->atoms[ai],
-                                   g_proj_R, g_proj_T, g_proj_gscale,
-                                   wxt * 600, objy, wzt * 600, pfac,
-                                   mshift, mflip, tx, ty, tz, brot,
-                                   g_scene_l_bmap, NULL,
-                                   g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
-                                   (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
-                                   lcx, lcy, lcz);
-            }
-        }
-        /* Player avatar: render the controlled character (P00 = Arkhan) at the
-         * player world position once the player has walked away from the
-         * scripted start, so the static opening cutscene shows only the
-         * scripted personas but the room becomes playable with a visible,
-         * movement-facing avatar. */
+        /* Characters: the three actor slots, animated and drawn from their
+         * own object trees (sub_461468 order: player, companion, secondary). */
         {
-            /* Under player control whenever the script is not holding a
-             * BLOQUE bracket open (group(3)/group(0), sub_446227 @ 0x446227).
-             * This replaces the old "has walked >3000 units" heuristic, which
-             * left the avatar invisible until the player happened to move. */
-            i32 controlled = !lieu_player_blocked();
-            if ((controlled || getenv("DKE_PLAYER")) && g_proj_valid) {
-                i32 pmshift = getenv("DKE_MSHIFT") ? atoi(getenv("DKE_MSHIFT")) : 0;
-                i32 pmflip  = getenv("DKE_MFLIPY") ? atoi(getenv("DKE_MFLIPY")) : 1;
-                i32 ci = persona_mesh_load(0);   /* P00 = Arkhan */
-                if (ci >= 0) {
-                    persona_mesh_t *pm = &g_persona_cache[ci];
-                    i32 pfloor = getenv("DKE_MYOFF") ? atoi(getenv("DKE_MYOFF"))
-                                                     : pm->foot_off;
-                    persona_apply_script_clip(pm);   /* LIEU ANIMATION action */
-                    if (pm->can_loaded && pm->can.n_frames > 0 &&
-                        tick - pm->can_last >= CAN_FRAME_MS) {
-                        pm->frame = (pm->frame + 1) % pm->can.n_frames;
-                        pm->can_last = tick;
-                    }
-                    const can_frame_t *kf = pm->can_loaded ? &pm->can.frames[pm->frame] : NULL;
-                    if (pm->objc_loaded) objc_update_bone_positions(&pm->objc, kf);
-                    for (i32 ai = 0; ai < pm->count; ai++) {
-                        if (!pm->atoms[ai]) continue;
-                        i32 have = pm->objc_loaded && ai < pm->objc.n_atomslots;
-                        i32 tx = have ? pm->objc.world_tx[ai] : 0;
-                        i32 ty = have ? pm->objc.world_ty[ai] : 0;
-                        i32 tz = have ? pm->objc.world_tz[ai] : 0;
-                        const i32 *brot = have ? pm->objc.world_rot[ai] : NULL;
-                        model_render_world(pm->atoms[ai],
-                                           g_proj_R, g_proj_T, g_proj_gscale,
-                                           g_player_wx, pfloor, g_player_wz, g_player_facing,
-                                           pmshift, pmflip, tx, ty, tz, brot,
-                                           g_scene_l_bmap, NULL,
-                                           g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
-                                           (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
-                                           lcx, lcy, lcz);
-                    }
-                }
+            actor_update_timing((u32)state->current_game_time);
+            entity_t *cast[3] = { g_player_entity, g_companion_entity,
+                                  g_secondary_companion_entity };
+            for (i32 ci = 0; ci < 3; ci++) {
+                if (!cast[ci]) continue;
+                actor_animate(cast[ci]);
+                scene_render_actor(cast[ci], lcx, lcy, lcz);
             }
         }
         if (getenv("DKE_PERFDBG")) {

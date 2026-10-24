@@ -395,6 +395,71 @@ void model_render(const model_t *m, system_t *sys,
 
 typedef struct { i32 sx, sy; i64 cx, cy, cz; i32 vis; } mrw_vert_t;
 
+/* Shade and fill one projected face (back-face cull, key-light shade, GRD
+ * ramp lookup). Shared by model_render_world and model_render_batch. */
+static void mrw_draw_face(const model_face_t *face, const mrw_vert_t *a,
+                          const mrw_vert_t *b, const mrw_vert_t *c,
+                          u32 *fb, i32 fb_w, i32 fb_h,
+                          const bmap_t *l_bmap, const bmap_t *z_bmap,
+                          const u8 *pal, const u8 *grd,
+                          double Lx, double Ly, double Lz) {
+        if (!a->vis && !b->vis && !c->vis) return;    /* all behind near plane */
+
+        /* Backface cull via screen winding (Y flipped -> front faces have
+         * negative signed area, matching model_render). */
+        i64 cross_z = (i64)(b->sx - a->sx) * (i64)(c->sy - a->sy)
+                    - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
+        if (cross_z >= 0) return;
+
+        /* Shade level 0..63 from the camera-space face normal dotted with a
+         * fixed key light (engine does normal.L). 32 = neutral (base color). */
+        i32 shade = MRW_SHADE_MID;
+        {
+            double ux = (double)(b->cx - a->cx), uy = (double)(b->cy - a->cy), uz = (double)(b->cz - a->cz);
+            double vx = (double)(c->cx - a->cx), vy = (double)(c->cy - a->cy), vz = (double)(c->cz - a->cz);
+            double nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
+            double nl = nx*nx + ny*ny + nz*nz;
+            if (nl > 1.0) {
+                nl = 1.0 / sqrt(nl);
+                double dot = (nx*Lx + ny*Ly + nz*Lz) * nl;        /* scene key light */
+                /* Map dot (-1..1) into the ramp's lit-but-not-blown range.
+                 * The GRD ramp darkens below ~16 and blows to pink/white past
+                 * ~34 (indices 189/125/130), so keep shade in ~10..33. */
+                shade = 22 + (i32)(dot * 11);
+                if (shade < 10) shade = 10;
+                if (shade > 33) shade = 33;
+            }
+        }
+
+        /* Face color: material base index (MATR field[0]). With the GRD shade
+         * ramp (grd[base*64 + shade] = shaded palette index) this reproduces
+         * the engine's baked lighting; else palette[base] with a brightness
+         * modulate; else the raw material RGB. */
+        u32 col = face->colour;
+        if (pal && face->mat_base) {
+            i32 idx = face->mat_base & 0xFF;
+            if (grd) {
+                idx = grd[(idx * 64 + shade) & 0x3FFF];
+                col = 0xFF000000u | ((u32)pal[3*idx+2] << 16)
+                                  | ((u32)pal[3*idx+1] << 8)
+                                  |  (u32)pal[3*idx+0];
+            } else {
+                double f = 0.45 + 0.55 * (shade / 63.0) * 2.0;
+                if (f > 1.6) f = 1.6;
+                u32 r  = (u32)(pal[3*idx+0] * f); if (r  > 255) r  = 255;
+                u32 g  = (u32)(pal[3*idx+1] * f); if (g  > 255) g  = 255;
+                u32 bl = (u32)(pal[3*idx+2] * f); if (bl > 255) bl = 255;
+                col = 0xFF000000u | (bl << 16) | (g << 8) | r;
+            }
+        }
+
+        fill_triangle(fb, fb_w, fb_h,
+                      a->sx, a->sy, 128,
+                      b->sx, b->sy, 128,
+                      c->sx, c->sy, 128,
+                      col, l_bmap, z_bmap);
+}
+
 void model_render_world(const model_t *m,
                         const i32 *cam_r, const i32 *cam_t, i32 gscale,
                         i32 obj_wx, i32 obj_wy, i32 obj_wz, i32 facing,
@@ -518,64 +583,76 @@ void model_render_world(const model_t *m,
 
     for (i32 oi = 0; oi < nf; oi++) {
         const model_face_t *face = &m->faces[order[oi]];
-        const mrw_vert_t *a = &P[face->i0];
-        const mrw_vert_t *b = &P[face->i1];
-        const mrw_vert_t *c = &P[face->i2];
-        if (!a->vis && !b->vis && !c->vis) continue;    /* all behind near plane */
+        mrw_draw_face(face, &P[face->i0], &P[face->i1], &P[face->i2],
+                      fb, fb_w, fb_h, l_bmap, z_bmap, pal, grd, Lx, Ly, Lz);
+    }
+}
 
-        /* Backface cull via screen winding (Y flipped -> front faces have
-         * negative signed area, matching model_render). */
-        i64 cross_z = (i64)(b->sx - a->sx) * (i64)(c->sy - a->sy)
-                    - (i64)(b->sy - a->sy) * (i64)(c->sx - a->sx);
-        if (cross_z >= 0) continue;
+/* -------------------------------------------------------------------------
+ * model_render_batch — draw several meshes, each with its own camera-space
+ * transform, as ONE painter-sorted face list so overlapping limbs of a
+ * character order correctly against each other.
+ * ------------------------------------------------------------------------- */
+#define MRB_MAX_VERTS 8192
+#define MRB_MAX_FACES 8192
 
-        /* Shade level 0..63 from the camera-space face normal dotted with a
-         * fixed key light (engine does normal.L). 32 = neutral (base color). */
-        i32 shade = MRW_SHADE_MID;
-        {
-            double ux = (double)(b->cx - a->cx), uy = (double)(b->cy - a->cy), uz = (double)(b->cz - a->cz);
-            double vx = (double)(c->cx - a->cx), vy = (double)(c->cy - a->cy), vz = (double)(c->cz - a->cz);
-            double nx = uy*vz - uz*vy, ny = uz*vx - ux*vz, nz = ux*vy - uy*vx;
-            double nl = nx*nx + ny*ny + nz*nz;
-            if (nl > 1.0) {
-                nl = 1.0 / sqrt(nl);
-                double dot = (nx*Lx + ny*Ly + nz*Lz) * nl;        /* scene key light */
-                /* Map dot (-1..1) into the ramp's lit-but-not-blown range.
-                 * The GRD ramp darkens below ~16 and blows to pink/white past
-                 * ~34 (indices 189/125/130), so keep shade in ~10..33. */
-                shade = 22 + (i32)(dot * 11);
-                if (shade < 10) shade = 10;
-                if (shade > 33) shade = 33;
-            }
+void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
+                        const bmap_t *l_bmap, const bmap_t *z_bmap,
+                        const u8 *pal, const u8 *grd,
+                        float lx, float ly, float lz) {
+    if (!items || n_items <= 0 || !state || !state->graphic.front_buffer) return;
+    u32 *fb   = state->graphic.front_buffer;
+    i32  fb_w = state->graphic.width;
+    i32  fb_h = state->graphic.height;
+    double Lx = lx, Ly = ly, Lz = lz;
+    { double ln = Lx*Lx + Ly*Ly + Lz*Lz;
+      if (ln < 1e-6) { Lx = 0.30; Ly = 0.55; Lz = -0.78; }
+      else { ln = 1.0/sqrt(ln); Lx*=ln; Ly*=ln; Lz*=ln; } }
+
+    static mrw_vert_t P[MRB_MAX_VERTS];
+    static struct { const model_face_t *f; i32 base; i64 key; } F[MRB_MAX_FACES];
+    i32 nv = 0, nf = 0;
+
+    for (i32 it = 0; it < n_items; it++) {
+        const model_t *m = items[it].m;
+        const i32 *M = items[it].m3, *T = items[it].t;
+        if (!m || nv + m->vertex_count > MRB_MAX_VERTS) continue;
+        i32 base = nv;
+        for (i32 i = 0; i < m->vertex_count; i++, nv++) {
+            /* v' = transpose(M) * v + T  (transform_vector @ 0x48F424) */
+            i64 vx = m->vertices[i].x, vy = m->vertices[i].y, vz = m->vertices[i].z;
+            i64 cx = ((vx*M[0] + vy*M[3] + vz*M[6]) >> 14) + T[0];
+            i64 cy = ((vx*M[1] + vy*M[4] + vz*M[7]) >> 14) + T[1];
+            i64 cz = ((vx*M[2] + vy*M[5] + vz*M[8]) >> 14) + T[2];
+            i32 vis = (cz < -32768) ? 1 : 0;
+            i64 czc = (cz < -32768) ? cz : -32768;
+            i32 d = (i32)((-czc) >> 9); if (d < 1) d = 1;
+            double sc = ((double)gscale / 16384.0) / (double)d;
+            P[nv].sx = 320 + (i32)(cx * sc + (cx < 0 ? -0.5 : 0.5));
+            P[nv].sy = 240 - (i32)(cy * sc + (cy < 0 ? -0.5 : 0.5));
+            P[nv].cx = cx; P[nv].cy = cy; P[nv].cz = cz;
+            P[nv].vis = vis;
         }
-
-        /* Face color: material base index (MATR field[0]). With the GRD shade
-         * ramp (grd[base*64 + shade] = shaded palette index) this reproduces
-         * the engine's baked lighting; else palette[base] with a brightness
-         * modulate; else the raw material RGB. */
-        u32 col = face->colour;
-        if (pal && face->mat_base) {
-            i32 idx = face->mat_base & 0xFF;
-            if (grd) {
-                idx = grd[(idx * 64 + shade) & 0x3FFF];
-                col = 0xFF000000u | ((u32)pal[3*idx+2] << 16)
-                                  | ((u32)pal[3*idx+1] << 8)
-                                  |  (u32)pal[3*idx+0];
-            } else {
-                double f = 0.45 + 0.55 * (shade / 63.0) * 2.0;
-                if (f > 1.6) f = 1.6;
-                u32 r  = (u32)(pal[3*idx+0] * f); if (r  > 255) r  = 255;
-                u32 g  = (u32)(pal[3*idx+1] * f); if (g  > 255) g  = 255;
-                u32 bl = (u32)(pal[3*idx+2] * f); if (bl > 255) bl = 255;
-                col = 0xFF000000u | (bl << 16) | (g << 8) | r;
-            }
+        for (i32 f = 0; f < m->face_count && nf < MRB_MAX_FACES; f++, nf++) {
+            const model_face_t *face = &m->faces[f];
+            F[nf].f = face;
+            F[nf].base = base;
+            F[nf].key = P[base + face->i0].cz + P[base + face->i1].cz + P[base + face->i2].cz;
         }
+    }
 
-        fill_triangle(fb, fb_w, fb_h,
-                      a->sx, a->sy, 128,
-                      b->sx, b->sy, 128,
-                      c->sx, c->sy, 128,
-                      col, l_bmap, z_bmap);
+    /* Far first (most negative camera z). */
+    for (i32 i = 1; i < nf; i++) {
+        __typeof__(F[0]) t = F[i];
+        i32 j = i - 1;
+        while (j >= 0 && F[j].key > t.key) { F[j + 1] = F[j]; j--; }
+        F[j + 1] = t;
+    }
+    for (i32 i = 0; i < nf; i++) {
+        const model_face_t *face = F[i].f;
+        i32 b = F[i].base;
+        mrw_draw_face(face, &P[b + face->i0], &P[b + face->i1], &P[b + face->i2],
+                      fb, fb_w, fb_h, l_bmap, z_bmap, pal, grd, Lx, Ly, Lz);
     }
 }
 
@@ -702,4 +779,60 @@ void model_free(model_t *m) {
     free((void *)m->vertices);
     free((void *)m->faces);
     free(m);
+}
+
+/* -------------------------------------------------------------------------
+ * model_from_atm_atom — render mesh for an atm_atom_t (object-tree atom).
+ * ------------------------------------------------------------------------- */
+static void model_free_void(void *m) { model_free((model_t *)m); }
+
+const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr) {
+    if (!atom) return NULL;
+    if (atom->render) return (const model_t *)atom->render;
+    if (atom->vert_count <= 0 || atom->face_count <= 0 || atom->vert_count > 255)
+        return NULL;
+    atm_render_free = model_free_void;
+
+    i32 max_tris = 0;
+    for (i32 i = 0; i < atom->face_count; i++)
+        max_tris += (atom->faces[i * ATM_FACE_STRIDE + ATM_FACE_VCNT] == 4) ? 2 : 1;
+
+    model_vec3_t *verts = (model_vec3_t *)malloc((size_t)atom->vert_count * sizeof(*verts));
+    model_face_t *faces = (model_face_t *)malloc((size_t)max_tris * sizeof(*faces));
+    model_t      *m     = (model_t *)malloc(sizeof(*m));
+    if (!verts || !faces || !m) { free(verts); free(faces); free(m); return NULL; }
+
+    for (i32 i = 0; i < atom->vert_count; i++) {
+        const i32 *v = atom->verts + (size_t)i * ATM_VERT_STRIDE;
+        verts[i].x = v[ATM_VERT_X];
+        verts[i].y = v[ATM_VERT_Y];
+        verts[i].z = v[ATM_VERT_Z];
+    }
+    i32 tri = 0;
+    for (i32 i = 0; i < atom->face_count; i++) {
+        const i32 *f = atom->faces + (size_t)i * ATM_FACE_STRIDE;
+        i32 mat = f[ATM_FACE_MAT], vc = f[ATM_FACE_VCNT];
+        if (mat < 0 || (vc != 3 && vc != 4)) continue;
+        u32 colour; u8 base = 0;
+        if (matr && mat < matr->mat_count) {
+            const ome_mat_t *mm = &matr->mats[mat];
+            colour = 0xFF000000u | ((u32)mm->b << 16) | ((u32)mm->g << 8) | (u32)mm->r;
+            base = mm->r;
+        } else {
+            colour = MAT_COLOURS[mat & 0x0F];
+        }
+        const i32 *ix = f + ATM_FACE_IDX;
+        faces[tri].colour = colour; faces[tri].mat_base = base;
+        faces[tri].i0 = (u8)ix[0]; faces[tri].i1 = (u8)ix[1]; faces[tri].i2 = (u8)ix[2];
+        tri++;
+        if (vc == 4) {
+            faces[tri].colour = colour; faces[tri].mat_base = base;
+            faces[tri].i0 = (u8)ix[0]; faces[tri].i1 = (u8)ix[2]; faces[tri].i2 = (u8)ix[3];
+            tri++;
+        }
+    }
+    m->vertices = verts; m->vertex_count = atom->vert_count;
+    m->faces = faces;    m->face_count = tri;
+    atom->render = m;
+    return m;
 }

@@ -94,7 +94,11 @@ typedef struct {
     i32  face_max;       /* +0x28 */
     i32 *verts;          /* +0x38 — vert_max * ATM_VERT_STRIDE dwords */
     i32 *faces;          /* +0x3C — face_max * ATM_FACE_STRIDE dwords */
+    void *render;        /* port: cached render mesh, see model_from_atm_atom */
 } atm_atom_t;
+
+/* Release hook for atm_atom_t.render, installed by the renderer. */
+extern void (*atm_render_free)(void *render);
 
 /* -------------------------------------------------------------------------
  * Hierarchy node (.OBC record, 0xB4 bytes on disk)

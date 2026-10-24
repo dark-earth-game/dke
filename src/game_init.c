@@ -68,6 +68,7 @@
 #include "libsys/graphics/font.h"
 #include "state.h"
 #include "game_init.h"
+#include "actor.h"
 #include "player.h"
 #include "entity.h"
 #include "material.h"
@@ -109,17 +110,6 @@ static void *g_dword_4B70E8      = NULL;   /* dword_4B70E8 @ 004B70E8  */
 static void *g_objets_gif         = NULL;   /* dword_4FB1DC @ 004FB1DC  */
 static void *g_flam_mat           = NULL;   /* dword_4FB1E0 @ 004FB1E0  */
 
-/* Entity slot table: 0x220 (544) bytes per entry, 98 entries.
- * entry+0x00 = entity pointer, +0x88/+0x8C/+0x90 = default x/y/z,
- * +0x95 = active flag. Mirrors dword_4DF5D0..4DF654 */
-#define ENTITY_SLOT_SIZE  0x220
-#define ENTITY_SLOT_COUNT 98
-static u8 g_entity_slot_table[ENTITY_SLOT_COUNT * ENTITY_SLOT_SIZE];
-
-/* Weapon slot table: 4 entries of varying stride. Mirrors dword_4ECD50..4ECD54 */
-#define WEAPON_SLOT_ENTRIES 4
-#define WEAPON_SLOT_SIZE    0x88
-static u8 g_weapon_slot_table[WEAPON_SLOT_ENTRIES * WEAPON_SLOT_SIZE];
 
 /* Texture config table — 1000 entries (sub_48F2C0 @ 0x48F2C0) */
 #define TEXTURE_CONFIG_ENTRIES 0x3E8
@@ -1355,28 +1345,8 @@ b8 game_init(state_t *state) {
     /* Stride formula from asm: i*(1+i*4*2)*8 = i * (1+8i) * 8            */
     /* Simplified: stride = ((i + i*4) + i)*2 << 3 = i*11*8 = i*88         */
     /* ------------------------------------------------------------------  */
-    print("game_init: init weapon-slot tables\n");
-
-    memset(g_weapon_slot_table, 0xFF, sizeof(g_weapon_slot_table));
-    for (i32 i = 0; i < WEAPON_SLOT_ENTRIES; i++) {
-        u8 *entry = g_weapon_slot_table + i * WEAPON_SLOT_SIZE;
-        *(i32 *)(entry + 0x00) = 0;
-        *(i32 *)(entry + 0x84) = 0x3FF;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Phase 16 — entity-slot table init (0x62=98 entries × 31 slots)     */
-    /* Same structure as weapon-slot but 98 entries, diff stride calc.      */
-    /* stride = (i*0x11) << 5  (from asm: shl eax,4; add ecx; shl,5)      */
-    /* ------------------------------------------------------------------  */
-    print("game_init: init entity-slot tables\n");
-
-    memset(g_entity_slot_table, 0xFF, sizeof(g_entity_slot_table));
-    for (i32 i = 0; i < ENTITY_SLOT_COUNT; i++) {
-        u8 *entry = g_entity_slot_table + i * ENTITY_SLOT_SIZE;
-        *(i32 *)(entry + 0x00) = 0;
-        *(i32 *)(entry + 0x95) = 0;
-    }
+    print("game_init: init persona descriptor tables\n");
+    actor_tables_reset();   /* 0x46C10C..0x46C219, see actor.c */
 
     /* ------------------------------------------------------------------ */
     /* Phase 17 — misc global zero-inits (memset calls)                    */
@@ -1604,15 +1574,8 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     print("game_init: entity/context cross-wiring\n");
     /* pointer writes @ 46C484-46C4B1 */
-    /* player_entity+B0h = dword_4B70E8 @ 0x46C484 — NOT replayed.
-     * +0xAC and +0xB0 are adjacent 32-bit pointer slots in the original; on
-     * LP64 the host pointer parked at +0xAC (the persona descriptor, written
-     * by player_entity_init) spans 0xAC..0xB3, so an 8-byte store at +0xB0
-     * shreds its high half and every later [entity+0xAC] deref crashes.
-     * Nothing in the port reads entity+0xB0 back as a pointer — the same
-     * value is already reachable through g_game_state (set above) — so the
-     * write is dropped rather than given a fake home. Both slots need real
-     * addresses once the entity blob gets a proper 64-bit-safe layout. */
+    /* player_entity+B0h = dword_4B70E8 @ 0x46C4C7 — the hero's persona id. */
+    if (g_player_entity) E32(g_player_entity, 0xB0) = 0;
     /* game_context = entity_buffer_base @ 46C48E */
     g_game_context = g_entity_buffer_base;
     /* game_context+18h = palette_data @ 46C498 */
@@ -1899,7 +1862,3 @@ void *game_init_get_index_buffer(void) {
     return g_index_buffer;
 }
 
-/* Accessor for g_weapon_slot_table (dword_4ECD50 @ 0x4ECD50). */
-void *game_init_get_weapon_slot_table(void) {
-    return g_weapon_slot_table;
-}

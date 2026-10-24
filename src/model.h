@@ -140,3 +140,22 @@ void model_render_world(const model_t *m,
                         const bmap_t *l_bmap, const bmap_t *z_bmap,
                         const u8 *pal, const u8 *grd,
                         float lx, float ly, float lz);
+
+/* One mesh of a batch: vertices go through v' = transpose(m3) * v + t
+ * (Q14 rotation, camera space) before the perspective divide. */
+typedef struct {
+    const model_t *m;
+    i32 m3[9];
+    i32 t[3];
+} model_draw_t;
+
+void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
+                        const bmap_t *l_bmap, const bmap_t *z_bmap,
+                        const u8 *pal, const u8 *grd,
+                        float lx, float ly, float lz);
+
+#include "obc.h"
+/* Build (once) and return the render mesh of an object-tree atom. Vertices
+ * keep raw world units; faces take their colour from `matr` like
+ * model_from_ome_atom. Cached on atom->render. */
+const model_t *model_from_atm_atom(atm_atom_t *atom, const ome_matr_t *matr);

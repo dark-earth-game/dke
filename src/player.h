@@ -11,14 +11,15 @@
 
 #include "libsys/common.h"
 #include "libsys/system.h"
+#include "actor.h"
 
 /* -------------------------------------------------------------------------
  * Player entity global — allocated by player_entity_init.
  * Exposed here so scene.c and game_init.c can read the pointer.
  * ---------------------------------------------------------------------- */
-extern void *g_player_entity;   /* player_entity (asm sym) */
-extern void *g_companion_entity;
-extern void *g_secondary_companion_entity;
+/* g_player_entity / g_companion_entity / g_secondary_companion_entity are
+ * declared in actor.h. */
+void entity_register_bones(void *entity, obc_node_t *scene_root);
 
 /* Live player transform accessors (read the embedded transform block).
  * player_get_pos returns 1 on success, 0 if no player entity. Position is

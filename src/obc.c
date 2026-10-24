@@ -205,8 +205,11 @@ static i32 rec_i32(const u8 *payload, i32 disk_off) {
  * the same shape. */
 #define OBC_BOUNDS_STACK 16
 
+void (*atm_render_free)(void *render) = NULL;
+
 static void atom_free(atm_atom_t *a) {
     if (!a) return;
+    if (a->render && atm_render_free) atm_render_free(a->render);
     free(a->verts);
     free(a->faces);
     free(a);
@@ -236,10 +239,10 @@ static void atm_fixup_faces(atm_atom_t *atom) {
     for (i32 f = 0; f < atom->face_count; f++) {
         i32 *face = atom->faces + (size_t)f * ATM_FACE_STRIDE;
 
-        if (face[ATM_FACE_MAT] == -1)
-            face[ATM_FACE_MAT] = 0;        /* 0x45367F */
-
-        if (face[ATM_FACE_MAT] == 0 &&
+        /* The original replaces the id with a material pointer, NULL for
+         * -1. The port keeps ids, so -1 stays as the "no material" marker
+         * (the rasteriser skips those faces, as it skips NULL materials). */
+        if (face[ATM_FACE_MAT] == -1 &&
             (face[ATM_FACE_FLAGS] & 0x0C) == 0x0C)
             face[ATM_FACE_FLAGS] &= ~0x08; /* 0x4536A9 */
     }

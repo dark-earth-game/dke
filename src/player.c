@@ -29,14 +29,9 @@
 #include "player.h"
 #include "scene.h"
 #include "game_init.h"
+#include "actor.h"
 
-/* -------------------------------------------------------------------------
- * g_player_entity — global player entity opaque blob.
- * Allocated in player_entity_init; referenced by scene.c, game_init.c.
- * ---------------------------------------------------------------------- */
-void *g_player_entity = NULL;   /* player_entity (asm sym) */
-void *g_companion_entity = NULL;
-void *g_secondary_companion_entity = NULL;
+/* The actor globals and their creation live in actor.c (sub_46493B). */
 
 /* dword_505D68 — active weapon class index (0='A', 1='B' player, 2='C', 3='D') */
 static i32 g_weapon_class_index = 0;  /* sub_471B80 @ 0x471B80 */
@@ -44,301 +39,47 @@ static i32 g_weapon_class_index = 0;  /* sub_471B80 @ 0x471B80 */
 /* dword_505DDC — raw weapon type byte from persona descriptor +0x97 */
 static u8 g_active_weapon_type = 0;   /* 0x505DDC */
 
-/* byte_4F60E0 @ 0x4F60E0 — per-entity NAVIGATION workspace, not a dialogue
- * buffer as this was previously labelled. sub_45720D @ 0x45720D copies the
- * 64x64 nav grid into it (free -> 0xFF, blocked -> 0) and flood fills from
- * the entity's own cell via sub_477FD4, giving that entity a reachability
- * map; sub_456E6A @ 0x456E6A reads byte_4F60E0 back as a 64x64 grid when
- * drawing the debug overlay. Hence 0x1000 bytes each: player (+0x0000),
- * companion (+0x1000), secondary companion (+0x2000). Stored at entity+0xCD8.
- * Nothing in the port fills it yet — see docs/functions/nav_collision.md. */
-static u8 g_nav_workspace[0x3000] = {0};
+/* byte_4F60E0 @ 0x4F60E0 — per-actor 0x1000-byte NAVIGATION workspace, read
+ * by sub_45720D's flood fill. The player owns the first 0x1000 bytes. */
+static u8 g_nav_workspace[0x1000] = {0};
 
-/* -------------------------------------------------------------------------
- * Entity struct allocation size from asm:
- *   mov ecx, 0EA0h
- *   call allocate_memory
- * 0xEA0 = 3744 bytes.
- *
- * Field offsets identified from asm writes after memset:
- *   +0x090  (0x90)  = 2       (dword — entity type flag)
- *   +0x094  (0x94)  = 2       (dword — secondary type flag)
- *   +0x078  (0x78)  = 0       (dword — screen-clip left)
- *   +0x07C  (0x7C)  = 0       (dword — screen-clip top)
- *   +0x080  (0x80)  = 0x27F   (dword — screen-clip right  = 639)
- *   +0x084  (0x84)  = 0x1DF   (dword — screen-clip bottom = 479)
- *   +0x010  (0x10)  = 0       (dword — position_x)
- *   +0x000  (0x00)  = [+0x10] (dword — mirror of position_x)
- *   +0x014  (0x14)  = 0       (dword — position_y)
- *   +0x004  (0x04)  = [+0x14] (dword — mirror of position_y)
- *   +0x018  (0x18)  = 0x27F   (dword — bound_right  = 639)
- *   +0x008  (0x08)  = [+0x18] (dword — mirror of bound_right)
- *   +0x01C  (0x1C)  = 0x1DF   (dword — bound_bottom = 479)
- *   +0x00C  (0x0C)  = [+0x1C] (dword — mirror of bound_bottom)
- *   +0x064  (0x64)  = 0x50    (dword — 80)
- *   +0x070  (0x70)  = 1       (dword)
- *   +0x074  (0x74)  = 1       (dword)
- *   +0xE94  (0xE94) = 0xFFFF  (dword — 65535)
- *   +0x030  (0x30)  = 0xFFFF4000 (dword)
- *   +0x038  (0x38)  = 0xFFFFC000 (dword)
- *   +0xD64  (0xD64) = 0       (dword)
- *   +0xD68  (0xD68) = 0       (dword)
- *   +0xC04  (0xC04) = 0xFFFFFFFF (dword)
- *   +0xC64  (0xC64) = 0x10000 (dword)
- *   +0xC68  (0xC68) = 0x4000  (dword)
- *   +0xD34  (0xD34) = current_game_time (dword)
- *   +0xD80  (0xD80) = 0 or 1  (dword — NPC squad flag; 0 for player)
- *
- * Nested sub-call stubs (>100 asm lines each):
- *   sub_462BCC  — creature descriptor / persona file load
- *   setup_creature — creature mesh/animation init
- *   process_scene_hierarchy_with_memory — control-point hierarchy
- *   create_single_control_point — root control point
- *   sub_4699D9  — anim state init
- *   sub_41F6BA  — entity registration
- *   sub_42DDED  — squad/companion wiring
- * ---------------------------------------------------------------------- */
-
-/* ent_set_u32 — legacy helper, wraps ent_put from entity.h */
-static void ent_set_u32(void *ent, i32 off, u32 val) {
-    ent_put(ent, off, val);
-}
-
-/* Scene hierarchy nodes are obc_node_t (0xB4 bytes in the original): name at
- * +0x04, parent +0x78, first child +0x7C, previous sibling +0x80, next
- * sibling +0x84. See obc.h — the port names those fields rather than poking
- * raw offsets, because the 32-bit blob layout aliases on a 64-bit host. */
-
-/* Bone slot i is the node whose name is obc_node_type_names[i] — the engine's
- * node "type" and its bone slot are the same number (get_node_type @ 0x41DE03
- * and sub_41F6BA @ 0x41F6BA share the table at 0x4B2BA0). Table lives in
- * obc.c so the control-point pass and this one cannot drift apart. */
-
-/* -------------------------------------------------------------------------
- * sub_4699D9 — Scene Hierarchy Back-Pointer Init (47 instructions)
- *
- * Depth-first traversal of scene/skeleton tree using internal stack (256).
- * For each node sets:
- *   [child+0x78]   = parent node
- *   [sibling+0x80] = previous sibling
- * Tree links: [node+0x7C] = first child, [node+0x84] = next sibling.
- * ---------------------------------------------------------------------- */
-void entity_wire_hierarchy(obc_node_t *root_node) {
-    obc_node_t *stack[256];
-    int sp = 0;
-
-    if (!root_node) return;
-
-    stack[sp++] = root_node;
-
-    while (sp > 0) {
-        obc_node_t *node = stack[--sp];
-        obc_node_t *child = node->child;
-        obc_node_t *prev = NULL;
-
-        while (child) {
-            child->parent = node;
-            child->prev   = prev;
-
-            if (sp < 256)
-                stack[sp++] = child;
-
-            prev = child;
-            child = child->next;
-        }
-    }
-}
-
-/* -------------------------------------------------------------------------
- * sub_41F6BA — Skeleton Bone Registration (68 instructions)
- *
- * Walks scene hierarchy tree depth-first. For each node, compares node
- * name at [node+4] against 34 bone names. On match, stores node pointer
- * at entity+0xFC bone slot table.
- * ---------------------------------------------------------------------- */
+/* sub_41F6BA — re-register bone slots after the tree changed (weapon attach). */
 void entity_register_bones(void *entity, obc_node_t *scene_root) {
+    entity_t *e = (entity_t *)entity;
     obc_node_t *stack[256];
-    int sp = 0;
-
-    if (!entity || !scene_root) return;
-
+    i32 sp = 0;
+    if (!e || !scene_root) return;
     stack[sp++] = scene_root;
-
     while (sp > 0) {
         obc_node_t *node = stack[--sp];
-
         const i32 slot = obc_node_type(node->name);
-        if (slot >= 0 && slot < ENTITY_BONE_SLOTS) {
-            void **bones = (void **)((u8 *)entity + 0xFC);
-            bones[slot] = node;
-        }
-
-        obc_node_t *child = node->child;
-        while (child) {
-            if (sp < 256)
-                stack[sp++] = child;
-            child = child->next;
-        }
+        if (slot >= 0 && slot < ENTITY_BONE_SLOTS)
+            e->ptr[(0xFC >> 2) + slot] = node;
+        for (obc_node_t *child = node->child; child; child = child->next)
+            if (sp < 256) stack[sp++] = child;
     }
 }
 
-/* -------------------------------------------------------------------------
- * 0046493B
- * player_entity_init — allocate + zero-init + default-field-set the player
- * entity struct.  Mirrors sub_46493B for the player (ECX < 0x62 path).
- * ---------------------------------------------------------------------- */
-/* -------------------------------------------------------------------------
- * player_get_pos / player_get_facing — live player transform accessors.
- *
- * In dkev the live transform is the embedded "gravit" block at entity+0x184
- * (engine reaches it via [entity+0x50] after a re-point). Position X/Y/Z sit
- * at +0x3C/+0x40/+0x44 of that block = entity+0x1C0/+0x1C4/+0x1C8; facing
- * (16-bit BAM) at +0x5C = entity+0x1E0. We read the embedded offsets
- * directly rather than through the [0x50] pointer, since storing a 64-bit
- * pointer in the 32-bit blob field would truncate on this build.
- *
- * NOTE: nothing writes velocity into the transform yet (movement not
- * ported), so position stays (0,0,0) — the accessors are correct, the data
- * is just static until movement integration lands.
- * ---------------------------------------------------------------------- */
+/* Live player transform: the gravit node (entity+0x50) holds the world
+ * position and the heading (rot[2], 16-bit BAM). */
 i32 player_get_pos(i32 *x, i32 *y, i32 *z) {
-    if (!g_player_entity) return 0;
-    if (x) *x = ent_get_i32(g_player_entity, ENT_OFF_WORLD_X);
-    if (y) *y = ent_get_i32(g_player_entity, ENT_OFF_WORLD_Y);
-    if (z) *z = ent_get_i32(g_player_entity, ENT_OFF_WORLD_Z);
+    if (!g_player_entity || !EROOT(g_player_entity)) return 0;
+    const obc_node_t *g = EROOT(g_player_entity);
+    if (x) *x = g->pos[0];
+    if (y) *y = g->pos[1];
+    if (z) *z = g->pos[2];
     return 1;
 }
 
 u16 player_get_facing(void) {
-    if (!g_player_entity) return 0;
-    return (u16)(ent_get(g_player_entity, ENT_OFF_FACING) & 0xFFFF);
+    if (!g_player_entity || !EROOT(g_player_entity)) return 0;
+    return (u16)(EROOT(g_player_entity)->rot[2] & 0xFFFF);
 }
 
+/* game_init @ 0x46C49B: player_entity = sub_46493B(dword_4B70E8). */
 void player_entity_init(void) {
-    print("player: player_entity_init start\n");
-
-    /* asm: mov ecx, 0EA0h; call allocate_memory → eax = ptr               */
-    i32 entity_size = 0x0EA0; /* 3744 bytes */
-    void *ent = calloc(1, (size_t)entity_size);
-    if (!ent) {
-        print("player: player_entity_init: calloc failed (size=%d)\n", entity_size);
-        return;
-    }
-    print("player: player_entity_init: allocated %d bytes\n", entity_size);
-
-    /* asm: push 0EA0h; push 0; push eax; call _memset — already zeroed by calloc */
-
-    /* Default field writes from asm (player path, ECX < 0x62): ---------- */
-
-    /* +0x090 = 2, +0x094 = 2 (entity type / secondary type flags) */
-    ent_set_u32(ent, 0x090, 2);
-    ent_set_u32(ent, 0x094, 2);
-
-    /* Screen-clip rect: left=0, top=0, right=639 (0x27F), bottom=479 (0x1DF) */
-    ent_set_u32(ent, 0x078, 0);
-    ent_set_u32(ent, 0x07C, 0);
-    ent_set_u32(ent, 0x080, 0x27F);
-    ent_set_u32(ent, 0x084, 0x1DF);
-
-    /* Position mirrors (asm: [+0] = [+0x10] = 0, [+4] = [+0x14] = 0) */
-    ent_set_u32(ent, 0x010, 0);
-    ent_set_u32(ent, 0x000, 0);
-    ent_set_u32(ent, 0x014, 0);
-    ent_set_u32(ent, 0x004, 0);
-
-    /* Bound mirrors (asm: [+8]=[+0x18]=0x27F, [+0xC]=[+0x1C]=0x1DF) */
-    ent_set_u32(ent, 0x018, 0x27F);
-    ent_set_u32(ent, 0x008, 0x27F);
-    ent_set_u32(ent, 0x01C, 0x1DF);
-    ent_set_u32(ent, 0x00C, 0x1DF);
-
-    /* Misc defaults */
-    ent_set_u32(ent, 0x064, 0x50);       /* render_scale = 80 */
-    ent_set_u32(ent, 0x070, 1);           /* render_mode = normal */
-    ent_set_u32(ent, 0x074, 1);           /* render_flag */
-    ent_set_u32(ent, 0x030, 0xFFFF4000U); /* viewport_offset_x */
-    ent_set_u32(ent, 0x038, 0xFFFFC000U); /* viewport_offset_y */
-    ent_set_u32(ent, 0xD64, 0);       /* special_state */
-    ent_set_u32(ent, 0xD68, 0);       /* sound_handle */
-    ent_set_u32(ent, 0xD7C, 0);       /* perso_id = 0 (player) */
-    ent_set_u32(ent, 0xD80, 0);       /* ai_enabled = 0 for player */
-    ent_put(ent, ENT_OFF_STATE_FLAG, 0xFFFFFFFFU);
-    ent_put(ent, ENT_OFF_HEALTH,     0x10000);
-    ent_put(ent, ENT_OFF_ENERGY,     0x4000);
-    ent_put(ent, ENT_OFF_COMBAT_READY, 1);
-
-    /* Gravity sub-struct init at +0x184 (0xB4 bytes) */
-    memset((u8 *)ent + 0x184, 0, 0xB4);
-    memcpy((u8 *)ent + 0x188, "gravit", 7);
-
-    if (state) {
-        ent_put(ent, ENT_OFF_LAST_TIME, state->current_game_time);
-    }
-
-    ent_put(ent, ENT_OFF_SQUAD_FLAG, 0);
-    ent_put(ent, ENT_OFF_UNK_E94,   0xFFFF);
-
-    /* Player weapon-slot table link at +0xACh: player always uses the
-     * main weapon slot (dword_4ECD50 @ 0x4ECD50). */
-    *(void **)((u8 *)ent + 0xAC) = game_init_get_weapon_slot_table();
-
-    /* Nested sub-calls — all >100 asm lines, stubbed per spec: ---------- */
-
-    /* TODO: sub_462BCC — creature descriptor / persona file load
-     *   asm: lea ecx,[var_108]; mov edx,abs(ecx_param); call sub_462BCC */
-    print("player: TODO sub_462BCC (creature descriptor load)\n");
-
-    /* setup_creature @ 0x44F2A0 — mesh + animation init
-     *   asm: lea edx,[var_80]; mov ecx,offset aPersos_12; call setup_creature */
-    {
-        void *mat_result = NULL;
-        void *obc_result = NULL;
-        setup_creature("PERSOS>", "P00", &mat_result, &obc_result, 0);
-        if (mat_result) *(void **)((u8 *)ent + 0x88) = mat_result;
-        if (obc_result) *(void **)((u8 *)ent + 0x50) = obc_result;
-    }
-
-    obc_node_t *scene_root = *(obc_node_t **)((u8 *)ent + 0x50);
-
-    /* process_scene_hierarchy_with_memory @ 0x404C26 — per-limb collision
-     * spheres.
-     *   asm: mov edx,[var_114]; mov ecx,[var_84]; call process_scene_hierarchy_with_memory */
-    if (scene_root) {
-        obc_process_hierarchy(scene_root);
-    } else {
-        print("player: process_scene_hierarchy skipped (no scene root)\n");
-    }
-
-    /* create_single_control_point @ 0x404D92 — root bounding sphere.
-     *   asm: mov edx,[var_114]; mov ecx,[var_84]; call create_single_control_point */
-    if (scene_root) {
-        obc_create_control_point(scene_root);
-    } else {
-        print("player: create_single_control_point skipped (no scene root)\n");
-    }
-
-    /* sub_4699D9 — scene hierarchy back-pointer init
-     *   asm: mov eax,[var_84]; mov ecx,[eax+50h]; call sub_4699D9 */
-    if (scene_root) {
-        entity_wire_hierarchy(scene_root);
-        print("player: sub_4699D9 (hierarchy wired)\n");
-    } else {
-        print("player: sub_4699D9 skipped (no scene root at ent+0x50)\n");
-    }
-
-    /* sub_41F6BA — skeleton bone registration
-     *   asm: mov ecx,[var_84]; call sub_41F6BA */
-    if (scene_root) {
-        entity_register_bones(ent, scene_root);
-        print("player: sub_41F6BA (bones registered)\n");
-    } else {
-        print("player: sub_41F6BA skipped (no scene root at ent+0x50)\n");
-    }
-
-    /* Store as global player entity */
-    g_player_entity = ent;
-    print("player: player_entity_init: g_player_entity = %p\n", g_player_entity);
-    print("player: player_entity_init done\n");
+    g_player_entity = actor_create(0);
+    print("player: player_entity = %p\n", (void *)g_player_entity);
 }
 
 /* sub_4648DC @ 0x4648DC — entity class identifier (0x5F bytes).
@@ -357,12 +98,11 @@ static c8 entity_get_class_char(void *entity) { /* sub_4648DC @ 0x4648DC */
 static void post_weapon_global_setup(void) { /* sub_471B80 @ 0x471B80 */
     g_weapon_class_index = 0;
     if (!g_player_entity) return;
-    u8 *pe = (u8 *)g_player_entity;
-    u8 *desc = *(u8 **)(pe + 0xAC);
+    u8 *desc = EDESC(g_player_entity);
     if (!desc) return;
     u8 weapon_type = desc[0x97];
     if (weapon_type != 0) {
-        i8 class_char = *(i8 *)(pe + 0xD6);
+        i8 class_char = (i8)E8(g_player_entity, 0xD6);
         i32 index = class_char - 'A';
         if (index == -0x41) index = 0; /* NUL terminator case */
         g_weapon_class_index = index;
@@ -400,7 +140,7 @@ void player_entity_init_secondary(void) {
     /* Phase 1: +0xCD8 — per-entity nav workspace pointer (0x1000 bytes).
      * asm: cmp [var_98], player_entity; jnz ...; mov [ecx+0CD8h], offset byte_4F60E0
      * The player takes slot 0; companions take +0x1000 / +0x2000. */
-    *(void **)((u8 *)g_player_entity + 0xCD8) = &g_nav_workspace[0];
+    EPTR(g_player_entity, 0xCD8) = &g_nav_workspace[0];
 
     /* Phase 2: read weapon type from persona descriptor at [entity+0xACh]+0x97
      * (asm 0x464F94: mov eax,[ecx+0ACh]; movzx eax,byte ptr [eax+97h]).
@@ -408,7 +148,7 @@ void player_entity_init_secondary(void) {
      * host pointer there via *(void **), so the 32-bit ent_get accessor
      * truncates it and the deref segfaults. Same access form as
      * post_weapon_global_setup (sub_471B80). */
-    u8 *desc = *(u8 **)((u8 *)g_player_entity + 0xAC);
+    u8 *desc = EDESC(g_player_entity);
     u8 weapon_type = desc ? desc[0x97] : 0;
     print("player: weapon_type = %d (from persona descriptor)\n", weapon_type);
 
@@ -430,10 +170,8 @@ void player_entity_init_secondary(void) {
             scene_weapon_entity_attach(g_player_entity, weapon_obj, 1);
 
             /* sub_41F6BA @ 0x41F6BA — re-register bone table */
-            obc_node_t *scene_root =
-                *(obc_node_t **)((u8 *)g_player_entity + 0x50);
-            if (scene_root)
-                entity_register_bones(g_player_entity, scene_root);
+            if (EROOT(g_player_entity))
+                entity_register_bones(g_player_entity, EROOT(g_player_entity));
         } else {
             print("player: weapon '%s' not found in degradable pool\n", weapon_name);
         }

@@ -95,10 +95,13 @@ typedef struct {
     i32 p20;         /* +0x20                                            */
     i32 p24;         /* +0x24                                            */
     i32 p28;         /* +0x28                                            */
+    i32 p2C;         /* +0x2C  POSPERSO zone radius                      */
     c8  name[32];    /* +0x30  16-byte name buffer in the original       */
     i32 duration;    /* +0x40  hold time in ms; -1 = complete at once    */
     i32 id48;        /* +0x48  EVENEMENT event id                        */
-    i32 p4C;         /* +0x4C                                            */
+    i32 p44;         /* +0x44  ANIMATION: name came from the persona table */
+    i32 p4C;         /* +0x4C  POSPERSO vie                              */
+    i32 p50;         /* +0x50  POSPERSO zone                             */
     i32 p54;         /* +0x54                                            */
     i32 num5C;       /* +0x5C  numeric suffix parsed from the name       */
     i32 p68;         /* +0x68                                            */
@@ -163,5 +166,8 @@ i32  lieu_timer_count(void);
  * it at the head for another frame.
  */
 i32 lieu_action_dispatch(lieu_action_t *node, u32 now_ms);
+
+/* Pile whose head is being run (dword_507248 @ 0x507248). */
+i32 lieu_action_run_pile(void);
 
 #endif /* DKE_LIEU_ACTION_H */

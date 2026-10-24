@@ -38,6 +38,7 @@
 #include "lieu01.h"
 #include "player.h"
 #include "dialogue.h"
+#include "actor.h"
 
 /* -------------------------------------------------------------------------
  * Per-level state buffer + owned vtable pointer.
@@ -268,44 +269,54 @@ static i32 g_op9c_counter = 0;
  * A "_NN" suffix is split off the name and stored as a number at node+0x5C.
  */
 static void cb_named_object(const c8 *name) {
-    if (!name || !name[0]) {
-        /* asm 0x444595: "Scripteur, tu es un bougre d'ane" — empty name. */
-        print("lieu_cb: ANIMATION with empty name — ignored\n");
+    if (!name) {
+        print("lieu_cb: Scripteur, tu es un bougre d'ane : mets un nom d'animation\n");
         return;
     }
+    lieu_action_t *n = lieu_action_push(LA_ANIMATION);
 
     c8 buf[32];
-    i32 k = 0;
-    while (name[k] && k < (i32)sizeof(buf) - 1) {
-        c8 ch = name[k];
-        if (ch >= 'A' && ch <= 'Z') ch += 32;            /* _strlwr */
-        buf[k] = ch;
-        k++;
-    }
-    buf[k] = '\0';
+    snprintf(buf, sizeof(buf), "%s", name);
+    for (c8 *q = buf; *q; q++) if (*q >= 'A' && *q <= 'Z') *q += 32;   /* _strlwr */
+    /* sub_443720 @ 0x443720 (sound/anim preload for the name) not ported. */
+    n->flag70   = 0;
+    n->duration = -1;
+    memset(n->name, 0, 16);
 
-    lieu_action_t *n = lieu_action_push(LA_ANIMATION);
-    n->actor = 0;                                        /* sub_44411D(0) = player */
-
-    const c8 *body = buf;
     if (buf[0] == '2') {
-        n->actor = -2;                                   /* 2D sprite, no entity */
-    } else if (buf[0] == 's') {
-        body = buf + 1;                                  /* drop the 's' prefix */
+        /* 2D animation: sub_41333A loads "<anim2d dir><name>.ANI" into the
+         * anim2d player (anim_state_531BE0 + 0x115F8); the node only waits
+         * for it. The 2D player is not ported. */
+        n->actor = -2;
+        return;
+    }
+    if (buf[0] == 's') {                                   /* 444729 */
+        memmove(buf, buf + 1, strlen(buf));
         n->flag70 = 1;
     }
+    c8 *u = strchr(buf, '_');                              /* 444778 */
+    if (u) { *u = '\0'; n->num5C = atoi(u + 1); }
+    else   n->num5C = 0;
 
-    /* "_NN" suffix -> node+0x5C, name truncated at the underscore. */
-    i32 j = 0;
-    while (body[j] && body[j] != '_') j++;
-    n->num5C = (body[j] == '_') ? atoi(body + j + 1) : 0;
-
-    i32 len = (j < (i32)sizeof(n->name) - 1) ? j : (i32)sizeof(n->name) - 1;
-    memcpy(n->name, body, (size_t)len);
-    n->name[len] = '\0';
-
-    /* "ar..." animations hold for 500 ms; everything else runs to handover. */
-    n->duration = (n->name[0] == 'a' && n->name[1] == 'r') ? 500 : -1;
+    if (buf[0] == 'a') {                                   /* 4447D4 */
+        n->duration = (buf[1] == 'r') ? 0x1F4 : -1;
+        entity_t *e = actor_find(0);
+        if (e) {
+            if (E32(e, 0xD60))                         actor_prepare_anim(e, 5, n->name);
+            else if (e != g_player_entity)             actor_prepare_anim(e, -5, n->name);
+            else                                       actor_prepare_anim(e, 0x3B, n->name);
+        }
+        n->actor = 0;
+        n->p44   = 1;
+    }
+    if (buf[0] == 'p' || buf[0] == 'g') {                  /* 4448BF */
+        c8 num[3] = { buf[1], buf[2], 0 };
+        if (num[0] == '0') { num[0] = num[1]; num[1] = 0; }
+        i32 id = atoi(num);
+        if (id > 0 && id < 4) id = 0;                      /* heroes -> player */
+        snprintf(n->name, sizeof(n->name), "%s", buf);
+        n->actor = id;
+    }
 }
 
 /* slot 1 sub_4449A5 "Dialogue": enqueue dialogue line. */
@@ -377,6 +388,24 @@ static void cb_spawn_678(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
         s->name[k] = '\0';
         s->wx = anim; s->wz = x; s->view = flag; s->id = zone;
         s->ground = z; s->facing = y;
+    }
+    /* sub_44502D @ 0x44502D queues the placement; case 5 of sub_44A58B runs
+     * sub_4640BC with these fields. */
+    {
+        lieu_action_t *n = lieu_action_push(LA_POSPERSO);
+        if (name) {
+            snprintf(n->name, sizeof(n->name), "%s", name);
+            for (c8 *q = n->name; *q; q++) if (*q >= 'A' && *q <= 'Z') *q += 32;
+        }
+        n->actor = zone;                    /* persona id   (+0x0C)        */
+        n->x     = anim * LIEU_ZONE_SCALE;  /* tile X * 600 (+0x14)        */
+        n->z     = x * LIEU_ZONE_SCALE;     /* tile Z * 600 (+0x1C)        */
+        n->p20   = y;                       /* facing       (+0x20)        */
+        if (flag < 0 || flag > 4)
+            print("lieu_cb: Bad parameter vie in POSPERSO function\n");
+        n->p4C   = flag;                    /* vie          (+0x4C)        */
+        n->p50   = kind;                    /* zone         (+0x50)        */
+        n->p2C   = z;                       /* zone radius  (+0x2C)        */
     }
     /* Mark entity as alive/spawned. vie==2 means dead/cadaver placement. */
     if (zone >= 0 && zone < ENT_MAX) {
@@ -1131,37 +1160,6 @@ static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz) {
  * entity animation player, so the clip is published here and the scene
  * renderer swaps the persona's CAN over to it.
  * ---------------------------------------------------------------------- */
-#define LIEU_CLIP_PERSONAS 100
-typedef struct {
-    c8  clip[16];
-    i32 serial;      /* bumped on every change so the renderer can notice */
-} lieu_clip_t;
-static lieu_clip_t g_clips[LIEU_CLIP_PERSONAS];
-
-/* "p12arr03" -> 12; -1 when the name does not start with p/g + 2 digits. */
-static i32 clip_persona_num(const c8 *name) {
-    if (!name) return -1;
-    c8 c = name[0];
-    if (c != 'p' && c != 'g' && c != 'P' && c != 'G') return -1;
-    if (name[1] < '0' || name[1] > '9') return -1;
-    if (name[2] < '0' || name[2] > '9') return -1;
-    return (name[1] - '0') * 10 + (name[2] - '0');
-}
-
-static void lieu_clip_set(i32 persona, const c8 *clip) {
-    if (persona < 0 || persona >= LIEU_CLIP_PERSONAS || !clip) return;
-    if (strcmp(g_clips[persona].clip, clip) == 0) return;
-    snprintf(g_clips[persona].clip, sizeof(g_clips[persona].clip), "%s", clip);
-    g_clips[persona].serial++;
-}
-
-const c8 *lieu_persona_clip(i32 persona, i32 *serial) {
-    if (persona < 0 || persona >= LIEU_CLIP_PERSONAS) return NULL;
-    if (!g_clips[persona].clip[0]) return NULL;
-    if (serial) *serial = g_clips[persona].serial;
-    return g_clips[persona].clip;
-}
-
 /* Walk speed for scripted joins: 3 tiles/second (1800 world units/s). */
 #define LIEU_WALK_UNITS_PER_SEC 1800
 
@@ -1222,25 +1220,52 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
 
     switch (n->type) {
 
-    case LA_ANIMATION: {                       /* case 0 @ 0x44ABB7 */
-        if (n->aux_state == 0) {
-            n->aux_state = 1;
-            /* asm: get_animation_id(node+0x30) -> play_entity_animation, then
-             * entity+0xC48 = node+0x5C. The name IS the CAN clip id and
-             * encodes its persona ("p12arr03" -> P12), so publish it for the
-             * renderer to pick up; sub_44411D(0) only supplies the fallback
-             * entity for clips that name no persona. */
-            i32 pn = clip_persona_num(n->name);
-            if (pn >= 0) {
-                lieu_clip_set(pn, n->name);
-            } else if (n->actor >= 0 && n->actor < ENT_MAX) {
-                g_ents[n->actor].anim_state = n->num5C ? n->num5C : 1;
-            }
-            print("lieu_act: ANIMATION '%s' persona=%d num=%d sound=%d hold=%d\n",
-                  n->name, pn, n->num5C, n->flag70, n->duration);
+    case LA_ANIMATION: {                       /* case 0 @ 0x44A8E3 */
+        static i32 busy[3];                    /* dword_4B5418[pile] */
+        i32 pile = lieu_action_run_pile();
+        if (pile < 0 || pile > 2) pile = 0;
+        entity_t *e = actor_find(n->actor);
+        if (n->actor != -2 && !e) {
+            print("lieu_act: Animation %s with perso %d not loaded\n", n->name, n->actor);
+            return 1;
         }
-        return held ? 0 : 1;
+        if (n->actor != -2 && EDESC(e) && EDESC(e)[0x96]) {
+            print("lieu_act: Animation %s with cadavre %d\n", n->name, n->actor);
+            return 1;
+        }
+        /* 0x44A9C4: dword_4FF098 / dword_4FF09C dialogue wait — not wired. */
+        if (n->num5C == 0xFFFF)                /* wait for the current clip */
+            return actor_anim_done(e);
+        if (n->actor == -2) return 1;          /* 2D anim player not ported */
+        e = actor_find(n->actor);
+        if (!e) return 0;
+        if (E32(e, 0xCBC)) return 0;           /* still walking */
+
+        i32 start = 0;
+        if (n->flag70) start = 2;
+        else if ((actor_anim_done(e) || n->prev_type == LA_JOINDRE) && !busy[pile]) start = 1;
+        if (start) {
+            E32(e, 0xD58) = actor_anim_state(e, n->name);
+            actor_bake_root_yaw(e);
+            actor_play_anim(e, can_get_anim(n->name), 0);
+            E32(e, 0xC48) = n->num5C;
+            E32(e, 0xCF8) = E32(e, 0xCF4) = E32(e, 0xCF0) = E32(e, 0xCEC) = 0;
+            print("lieu_act: ANIMATION '%s' actor=%d hold=%d\n", n->name, n->actor, n->duration);
+            if (start == 2 || n->duration == -1) return 1;
+            busy[pile] = 1;
+            return 0;
+        }
+        if (n->duration != -1 && busy[pile] == 1 &&
+            (i32)now_ms - E32(e, 0xC28) > n->duration) {
+            busy[pile] = 0;
+            return 1;
+        }
+        return 0;
     }
+
+    case LA_POSPERSO:                          /* case 5 @ 0x44AF10 */
+        actor_pos_perso(n->actor, n->x, n->z, n->p20, n->p4C, n->name, n->p50, n->p2C);
+        return 1;
 
     case LA_EVENEMENT:                         /* case 2 @ 0x44AD41 */
         /* duration -1 cancels the pending timer, otherwise arm one that
