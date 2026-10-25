@@ -34,6 +34,8 @@
 
 #include "libsys/common.h"
 #include "lieu_cb.h"
+#include "can.h"
+#include "game_init.h"
 #include "anim2d.h"
 #include "object.h"
 #include "lieu_action.h"
@@ -866,146 +868,589 @@ static void cb_attach_99C(i32 holder, const c8 *name, i32 a, i32 b) {
     n->num5C = b;
 }
 
-/* -------------------------------------------------------------------------
- * slot 34 sub_446E19 "layer_op": the engine's general-purpose operation
- * dispatcher (48-case switch). All cases called from L01 are implemented.
- *
- * Case map (op value → behaviour):
- *   0  Entity position query (same as 1 but via different struct path)
- *   1  Entity position: sub-arg 0=X/600, 1=Z/600, 2=facing(u16), 3=Y/600
- *   2  Combat ability check
- *   4  Sound/WAV file load (layer=idx|channel<<16, arg=flags)
- *   6  Entity HP/energy: arg<0 → read, arg>=0 → write
- *   9  Entity in zone test
- *  10  Timer interval set
- *  12  Entity visibility toggle
- *  18  Entity combat ready / alive check
- *  20  Counter read
- *  23  Entity movement stop
- *  24  Music control
- *  29  Entity alive/loaded check
- *  35  Reset/clear state
- *  37  Visual scale effect
- *  38  Visual parameter set
- * ---------------------------------------------------------------------- */
-static i32 cb_layer_op(i32 op, i32 layer, i32 arg) {
+static u32 lo_now(void) { return state ? state->current_game_time : 0; }  /* current_game_time */
+
+/* ls_random(n): 0..n, & 0xFFFF at every call site. Same formula as
+ * cb_query_940 (slot 29). */
+static i32 lo_random(i32 n) {
+    return (i32)(((u32)n * ((u32)rand() & 0x7FFFu)) / 32767u) & 0xFFFF;
+}
+
+/* Persona descriptor as sub_446E19 case op 1 picks it (0x446E8E..0x446EBF):
+ * a < 4 -> dword_4ECD50 (hero record 0, NOT indexed by a), else
+ * dword_4DF5D0 + a*0x220. No upper bound check in the original. */
+static const u8 *lo_desc_by_id(i32 a) {
+    if (a < 4) return g_hero_desc[0];
+    if (a < PERSONA_COUNT) return g_persona_desc[a].raw;
+    return NULL;                                  /* original reads out of bounds */
+}
+
+/* sub_449E03 @ 0x449E03 — first zone (1..40) containing (x, z), else -1.
+ * Same loop as the tail of lieu_detect_zone(); factor it out of there. */
+static i32 lo_zone_at(i32 x, i32 z) {
+    for (i32 i = 1; i < LIEU_ZONE_COUNT; i++) {
+        zone_t *zn = &g_zones[i];
+        if (zn->center_x == -1 && !zn->entity) continue;          /* 0x449E2B */
+        if (zn->active != 1 && g_force_zones != 1) continue;      /* 0x449E53 */
+        i32 cx = zn->center_x, cz = zn->center_z;
+        if (zn->entity) {                                         /* 0x449E74 */
+            entity_t *e = (entity_t *)zn->entity;
+            if (e == g_player_entity) continue;
+            cx = EROOT(e)->pos[0];
+            cz = EROOT(e)->pos[2];
+        }
+        if (abs(cx - x) > zn->size_x / 2) continue;
+        if (abs(cz - z) > zn->size_z / 2) continue;
+        return i;
+    }
+    return -1;
+}
+
+/* unk_4FF0B0[10], stride 0x110: ambient "event" WAVs (op 4). The per-frame
+ * player of these (the reader of +0x100 / +0x104) is elsewhere in the engine. */
+typedef struct {
+    c8   path[0x100];   /* +0x000 unk_4FF0B0  */
+    i32  next_time;     /* +0x100 dword_4FF1B0: game time of next play */
+    i32  param;         /* +0x104 dword_4FF1B4: b = period<<16 | jitter */
+    void *handle;       /* +0x108 dword_4FF1B8: ls_load_sound result */
+} lo_evsound_t;
+static lo_evsound_t g_evsound[10];
+
+/* word_509B40: 8 i16 per row, row = a (op 26). Row count unknown — sized
+ * generously; check the binary's extent before relying on it. */
+#define LO_TAB509B40_ROWS 0x80
+static i16 g_tab_509B40[LO_TAB509B40_ROWS * 8];
+
+static i32 g_dword_505D70 = 0;   /* op 18: hit-reaction delay by weapon   */
+static i32 g_dword_505C50 = 0;   /* op 23: copy of player +0xD60          */
+static i32 g_dword_4B2B98 = 0;   /* op 15                                 */
+static c8  g_byte_4B71F0  = 0;   /* op 14                                 */
+static c8  g_byte_507260[0x10];  /* op 40: "s" + clip name                */
+
+/* ------------------------------------------------------------------------ */
+
+static i32 cb_layer_op(i32 op, i32 a, i32 b) {
+    entity_t *e;
+
+    /* TODO sub_45D560 replay record (dword_4F4CC0 = {0x22, op, a, b}). */
+
     switch (op) {
-    case 0:
+
+    /* op 1 @ 0x446E8E — persona position/heading from the descriptor.
+     * b: 0 = desc+0x88 / 600 (X tile), 1 = desc+0x8C / 600 (Z tile),
+     *    2 = desc+0x90 & 0xFFFF (heading), 3 = actor root pos[1] (+0x40) / 600. */
     case 1: {
-        /* sub_446E19 case 0 (the DLL's DIVERS(1, id, field)): the persona
-         * descriptor, which actor_control refreshes every frame (+0x88 X,
-         * +0x8C Z, +0x90 heading); field 3 reads the actor's height. Ids < 4
-         * use the hero record (dword_4ECD50). */
-        const u8 *d = (layer >= 0 && layer < HERO_COUNT) ? g_hero_desc[0]
-                    : (layer >= 0 && layer < PERSONA_COUNT) ? g_persona_desc[layer].raw : NULL;
-        if (!d) return 0;
-        switch (arg) {
-        case 0:  return *(const i32 *)(d + 0x88) / 600;
-        case 1:  return *(const i32 *)(d + 0x8C) / 600;
-        case 2:  return *(const i32 *)(d + 0x90) & 0xFFFF;
-        case 3: {
-            entity_t *e = actor_find(layer);
-            if (!e || !EROOT(e)) {
-                print("lieu_cb: DIVERS(1,%d,3) with perso %d not loaded\n", layer, layer);
+        const u8 *d = lo_desc_by_id(a);
+        if (b == 0) return d ? *(const i32 *)(d + 0x88) / 600 : 0;
+        if (b == 1) return d ? *(const i32 *)(d + 0x8C) / 600 : 0;
+        if (b == 2) return d ? *(const i32 *)(d + 0x90) & 0xFFFF : 0;
+        if (b == 3) {
+            e = actor_find(a);                                     /* sub_44411D */
+            if (!e) {
+                print("DIVERS(1,%d,3) with perso %d not loaded\n", a, a);
                 return 0;
             }
-            return EROOT(e)->pos[1] / 600;
-        }
-        default: return 0;
-        }
-    }
-    case 2:
-        return 0;
-    case 4: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: layer_op(4) sound idx=%d arg=0x%X\n", layer, arg); }
-        return 0;
-    }
-    case 6: {
-        /* HP/energy read (arg < 0) or write (arg >= 0).
-         * layer = entity ID. arg=-1 → return current HP. */
-        if (layer >= 0 && layer < ENT_MAX) {
-            if (arg < 0) return g_ents[layer].hp;
-            g_ents[layer].hp = arg;
-            if (arg <= 0) ent_kill(layer);
+            return EROOT(e)->pos[1] / 600;                          /* 0x446F62 */
         }
         return 0;
     }
-    case 9: {
-        if (arg < 1 || arg >= LIEU_ZONE_COUNT) return 0;
-        if (g_zones[arg].center_x == -1) return 0;
-        i32 ex = 0, ez = 0;
-        for (i32 i = 0; i < g_spawn_count; i++) {
-            if (g_spawns[i].id == layer) {
-                ex = g_spawns[i].wx * 600;
-                ez = g_spawns[i].wz * 600;
-                goto got_pos;
-            }
-        }
-        if (layer >= 0 && layer < 4) {
-            player_get_pos(&ex, NULL, &ez);
-        } else {
+
+    /* op 2 @ 0x446F7D — can the player's creature do combat move `a`?
+     * flags = combat_ability_table[player.desc[0x97] * 0x14] (creature flags).
+     * a==7: flags&0x90, a==8: flags&0x0C, a==9: flags&0xF0,
+     * a<=6: flags & (1 << (a+1)).
+     * If able: b==2 -> 1; else look at the held object (player+0xD64):
+     *   none -> log "DIVERS 2 without object", 0;
+     *   name[0]=='Q' (obj+0xA8) -> (b==1); otherwise -> (b==0). */
+    case 2: {
+        e = g_player_entity;
+        if (!e) return 0;
+        const creature_entry_t *c = game_init_get_creature(EDESC(e)[0x97]);
+        u32 fl = c ? c->flags : 0;
+        i32 ok = 0;
+        if (a == 7 && (fl & 0x90)) ok = 1;
+        else if (a == 8 && (fl & 0x0C)) ok = 1;
+        else if (a == 9 && (fl & 0xF0)) ok = 1;
+        else if (a <= 6 && (fl & (1u << (a + 1)))) ok = 1;
+        if (!ok) return 0;
+        if (b == 2) return 1;
+        const u8 *obj = (const u8 *)EPTR(e, 0xD64);
+        if (!obj) {
+            print("DIVERS 2 without object\n");
             return 0;
         }
-    got_pos: ;
-        i32 dx = g_zones[arg].center_x - ex;
-        i32 dz = g_zones[arg].center_z - ez;
-        i32 hx = g_zones[arg].size_x / 2, hz = g_zones[arg].size_z / 2;
-        if ((dx < 0 ? -dx : dx) > hx) return 0;
-        if ((dz < 0 ? -dz : dz) > hz) return 0;
+        if (obj[0xA8] == 'Q') return b == 1;
+        return b == 0;
+    }
+
+    /* op 3 @ 0x4470A1 — non-hero actor +0xCD4 = b (run flag; actor_move.c
+     * uses CD4 to pick walk mode 3). */
+    case 3:
+        if (a >= 4 && (e = actor_find(a)) != NULL)
+            E32(e, 0xCD4) = b;
+        return 0;
+
+    /* op 4 @ 0x4470D7 — arm/stop an ambient event sound.
+     * a = slot<<16 | wav, file "%sDATAS>SOUND>L%02dEV%01d.WAV"(world_state, a&0xFFFF).
+     * b = period_ms<<16 | jitter. Only slot (a>>16) in 0..9 is touched:
+     *   free (handle==0 && next_time==0): path, param=b,
+     *     next_time = now + (b>>16) - random(b&0xFFFF), handle = ls_load_sound(path, 8)
+     *     (bracketed by set_display_mode(0xC)/restore_display_mode(1,0xC));
+     *   busy && b==0: ls_stop_sound(handle, 0) (slot fields are left as is). */
+    case 4: {
+        /* if (!samples_enabled) return 0;  TODO: no audio in dke */
+        i32 slot = a >> 16;
+        if (slot < 0 || slot >= 10) return 0;
+        lo_evsound_t *s = &g_evsound[slot];
+        if (!s->handle && !s->next_time) {
+            snprintf(s->path, sizeof s->path, "DATAS>SOUND>L%02dEV%01d.WAV",
+                     g_lieu_level /* world_state */, a & 0xFFFF);
+            s->param     = b;
+            s->next_time = (i32)lo_now() + (b >> 16) - lo_random(b & 0xFFFF);
+            s->handle    = NULL; /* TODO ls_load_sound(path, 8) */
+        } else if (b == 0 && s->handle) {
+            /* TODO ls_stop_sound(s->handle, 0) */
+        }
+        return 0;
+    }
+
+    /* op 5 @ 0x44729A — item charge (resource) read/write, in percent.
+     * a==0: object = get_entity_character(player+0xD2) (held item).
+     * a!=0: temp object byte_4DB3C0; name = companion+0xD8 if
+     *   sscanf(companion+0xDA,"%02d") == a, else secondary+0xD8 if
+     *   **b** == secondary's number (original compares b, not a — bug kept),
+     *   else log "DIVERS 5 : no persos have object %d" and name "OB%02d"(a);
+     *   then obj+0xC4 &= ~0x20.
+     * idx = get_character_action_index(obj) (1..0x23), v = obj[0xAC]-'A'
+     *   (instance letter; 0 if the byte is 0).
+     * b == -1: return max ? resource_table[idx*10+v*2]*100 / max : 0,
+     *   max = word_4DC020[idx*10+v*2];
+     * else resource_table[...] = max * b / 100. */
+    case 5:
+        /* TODO inventory/resource tables (resource_table @ 0x4DBBE0,
+         * word_4DC020) are static in game_init.c; needs an accessor and
+         * get_entity_character / get_character_action_index. */
+        return 0;
+
+    /* op 6 @ 0x44750A — persona HP (desc+0x84). b<0 -> read; else write and
+     * refresh the HUD: player -> update_player_interface(game_context, 1),
+     * other -> sub_45C700(e) (enemy HP bar). */
+    case 6:
+        e = actor_find(a);
+        if (!e) {
+            print("DIVERS 6 : Perso %d not loaded !\n", a);
+            return 0;
+        }
+        if (b < 0) return *(i32 *)(EDESC(e) + 0x84);
+        *(i32 *)(EDESC(e) + 0x84) = b;
+        /* TODO e == g_player_entity ? update_player_interface(ctx,1)
+         *                            : sub_45C700(e) HP bar */
+        return 0;
+
+    /* op 7 @ 0x4475A2 — inventory.
+     * a==2: sub_4274C2 clear the inventory (drop held weapon via sub_473DBC,
+     *   dword_4B3440 = 0, wipe the 0x86 slots byte_4B3448 stride 0x1C);
+     * a==0: sub_4276B6 restore/merge the saved copy byte_50A160 (returns 0);
+     * else: return sub_427593() — save the inventory to byte_50A160 and
+     *   strip items (confiscation). */
+    case 7:
+        /* TODO inventory subsystem */
+        return 0;
+
+    /* op 8 @ 0x4475DF — |angle| between actor a's facing and the direction to
+     * actor b, BAM 0..0x8000. -1 if either is missing.
+     * heading = root->rot[2] (+0x5C); if the current clip (e+0xD50) has
+     * CAN_FLAGS & 1: heading -= root->child->rot[0] (+0x7C->+0x54) - CAN_ROOT_YAW.
+     * dir = (-(i32)(atan2(dx, dz) * 65536 / 2pi)) & 0xFFFF, dx/dz = b - a. */
+    case 8: {
+        e = actor_find(a);
+        entity_t *t = actor_find(b);
+        if (!e || !t) return -1;
+        obc_node_t *r = EROOT(e), *rt = EROOT(t);
+        f64 dx = (f64)(rt->pos[0] - r->pos[0]);
+        f64 dz = (f64)(rt->pos[2] - r->pos[2]);
+        can_rec_t *rec = (can_rec_t *)EPTR(e, 0xD50);
+        i32 hd;
+        if (rec && (CAN_FLAGS(rec) & 1))
+            hd = (r->rot[2] - (r->child->rot[0] - CAN_ROOT_YAW(rec))) & 0xFFFF;
+        else
+            hd = r->rot[2] & 0xFFFF;
+        i32 dir = (-(i32)(atan2(dx, dz) * 65536.0 / 6.283185307179586)) & 0xFFFF;
+        i32 d = 0;
+        if (dir >= hd) { d = dir - hd; if (d > 0x8000) d -= 0x10000; }
+        if (dir <  hd) { d = dir - hd; if (d < -0x8000) d = 0x8000 - (-0x8000 - d); }
+        return abs(d);
+    }
+
+    /* op 9 @ 0x4477B6 — is actor a inside zone b?
+     * a not loaded -> 0. b == -1 -> return sub_449E03(player X, player Z)
+     * (zone id under the player, or -1). Else the zone centre is the attached
+     * entity's root pos (dword_506CA0 != -1; that entity == a -> 0) or the
+     * stored x/z; inside = |cx-x| <= size_x/2 && |cz-z| <= size_z/2.
+     * No empty/active test here (unlike sub_449E03). */
+    case 9: {
+        e = actor_find(a);
+        if (!e) return 0;
+        if (b == -1)
+            return lo_zone_at(EROOT(g_player_entity)->pos[0], EROOT(g_player_entity)->pos[2]);
+        if (b < 0 || b >= LIEU_ZONE_COUNT) return 0;          /* original: no bound */
+        zone_t *zn = &g_zones[b];
+        i32 cx, cz;
+        if (zn->entity) {                                     /* != -1 in the original */
+            if ((entity_t *)zn->entity == e) return 0;
+            cx = EROOT((entity_t *)zn->entity)->pos[0];
+            cz = EROOT((entity_t *)zn->entity)->pos[2];
+        } else {
+            cx = zn->center_x;
+            cz = zn->center_z;
+        }
+        if (abs(cx - EROOT(e)->pos[0]) > zn->size_x / 2) return 0;
+        if (abs(cz - EROOT(e)->pos[2]) > zn->size_z / 2) return 0;
         return 1;
     }
-    case 10: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: layer_op(10) timer layer=%d arg=%d\n", layer, arg); }
+
+    /* op 10 @ 0x447923 — screen transition: copy the 640x480 frame into a
+     * temp bmap (ls_init_bmap_ex over ui_special_meter_buffer), run the
+     * transition effect sub_42E0E0(a ms, plays "trans"), ls_delay(b ms),
+     * then put the frame back (16-bit: draw_image; 8-bit:
+     * render_loading_transition(bmap, 1000)). Display mode 0xD. */
+    case 10:
+        /* TODO transition effect (sub_42E0E0) + blocking delay */
         return 0;
-    }
+
+    /* op 11 @ 0x4479D5 — player idle time. a==0: return 0 if the player
+     * moves/turns/plays a scripted state (CEC|CF4|D04 != 0), else
+     * now - player+0xC30. a!=0: player+0xC30 = now. */
+    case 11:
+        e = g_player_entity;
+        if (a == 0) {
+            if (E32(e, 0xCEC) || E32(e, 0xCF4) || E32(e, 0xD04)) return 0;
+            return (i32)lo_now() - (i32)E32(e, 0xC30);
+        }
+        E32(e, 0xC30) = lo_now();
+        return 0;
+
+    /* op 12 @ 0x447A56 — actor a looks at the player: +0xC4C = (b != 0).
+     * sub_41CCB7 then calls sub_450DE8(e, player) (head tracking). */
     case 12:
-        /* Entity visibility: layer = entity ID, arg = 0 (hide) / 1 (show). */
-        if (layer >= 0 && layer < ENT_MAX)
-            g_ents[layer].visible = arg;
+        e = actor_find(a);
+        if (!e) return 0;
+        E32(e, 0xC4C) = b ? 1 : 0;
         return 0;
+
+    /* op 13 @ 0x447AA3 — sub_418CC2(actor a): preload every clip named in the
+     * descriptor (desc+0x11F, 8-byte names, 0x3F entries for heroes / 0x20
+     * otherwise, 'x' = none) via get_animation_id. No NULL check before the
+     * call; sub_418CC2 returns on NULL. */
+    case 13:
+        /* TODO preload: for each name call can_get_anim(name) */
+        return 0;
+
+    /* op 14 @ 0x447ABE — byte_4B71F0 = 'N'. */
+    case 14:
+        g_byte_4B71F0 = 'N';
+        return 0;
+
+    /* op 15 @ 0x447ACA — a in {0,1}: dword_4B2B98 = a. */
+    case 15:
+        if (a == 0 || a == 1) g_dword_4B2B98 = a;
+        return 0;
+
+    /* op 16 @ 0x447AF4 — screen/HUD control:
+     * 0 clear graphics_context; 1 dword_4B69BC=1 + clear;
+     * 2 redraw HUD (update_visual_effects, update_game_hud,
+     *   update_player_interface(ctx,1), blit game_context->graphics);
+     * 3 dword_4B69BC=0 + same as 2; 4 sub_42E0E0(500);
+     * 5 dword_4B69BC=1 + sub_42E0E0(500);
+     * 6 sub_46F7B5 (full redraw incl. companions) + HUD + blit. */
+    case 16:
+        /* TODO renderer/HUD hooks */
+        return 0;
+
+    /* op 17 @ 0x447C8F — play full-screen anim "%sBIGANIMS>ANIM%02d.CJR"(a)
+     * if select_language_version finds it: dword_4FB1D8 = dword_4FB1AC = a,
+     * sub_454810("%sBIGANIMS>ANIM%02d", 3, 0). */
+    case 17:
+        /* TODO CJR player */
+        return 0;
+
+    /* op 18 @ 0x447D09 — was actor a hit (+0xC74, set by
+     * calculate_attack_trajectory)?
+     * b != 0 (and actor): clear C74, return 0.
+     * C74 set: dword_505D70 = atoi(player+0xD4) (player weapon number),
+     *   remapped 23->250, 27->800, 32->300, 35->400, 55->250; return 1.
+     * else 0. */
     case 18:
-        /* Entity combat ready / alive. Returns 1 if the entity is alive and
-         * in combat-capable state. Used in tick_body to gate imp appearance
-         * (layer_op(0x12, 0x57, 0) checks if imp W is alive). */
-        if (layer >= 0 && layer < ENT_MAX)
-            return g_ents[layer].alive;
+        e = actor_find(a);
+        if (e && b) { E32(e, 0xC74) = 0; return 0; }
+        if (e && E32(e, 0xC74)) {
+            i32 w = atoi(ESTR(g_player_entity, 0xD4));
+            switch (w) {
+            case 23: w = 250; break;
+            case 27: w = 800; break;
+            case 32: w = 300; break;
+            case 35: w = 400; break;
+            case 55: w = 250; break;
+            default: break;
+            }
+            g_dword_505D70 = w;
+            return 1;
+        }
         return 0;
+
+    /* op 19 @ 0x447E4E — return sub_4272B0(): run "hotel.dll" (inn menu),
+     * frees sound slots 0/1, returns dword_4B33F4. */
+    case 19:
+        /* TODO hotel menu */
+        return 0;
+
+    /* op 20 @ 0x447E58 — score_counter (HUD bar, 0..0x3FF). a<0 -> read,
+     * else write + update_player_interface(ctx, 1). */
     case 20:
-        /* Counter read. Returns the deferred counter value. */
-        return g_op9c_counter;
-    case 23: {
-        /* Entity movement stop. Clears walk/join state. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: layer_op(23) stop entity=%d\n", layer); }
+        /* TODO score_counter lives in scene.c (g_score_counter, static) —
+         * export scene_score_get/set. */
+        if (a < 0) return 0 /* scene_score_get() */;
+        /* scene_score_set(a); update_player_interface(ctx, 1); */
+        return 0;
+
+    /* op 21 @ 0x447E94 — cinematic_mode = a; debug_flags = b. */
+    case 21:
+        g_cinematic_mode = a;
+        /* TODO debug_flags = b; */
+        return 0;
+
+    /* op 22 @ 0x447EAC — menu_gametime_5072C8 = now; sub_42E0E0(500);
+     * sub_43E038(0,0) (native screen); update_display_state. Mode 0xE. */
+    case 22:
+        /* TODO */
+        return 0;
+
+    /* op 23 @ 0x447EF2 — player combat stance: player+0xD60 = a,
+     * dword_505C50 = a; if CEC != 3: CEC=0, CF0=1, CF8=0, CF4=0;
+     * then D04=0, D00=0; update_player_interface(ctx, 1). */
+    case 23:
+        e = g_player_entity;
+        E32(e, 0xD60) = a;
+        g_dword_505C50 = a;
+        if (E32(e, 0xCEC) != 3) {
+            E32(e, 0xCEC) = 0;
+            E32(e, 0xCF0) = 1;
+            E32(e, 0xCF8) = 0;
+            E32(e, 0xCF4) = 0;
+        }
+        E32(e, 0xD04) = 0;
+        E32(e, 0xD00) = 0;
+        /* TODO update_player_interface(ctx, 1) */
+        return 0;
+
+    /* op 24 @ 0x447F9D — music. !music_enabled -> 0.
+     * file "%sDATAS>MOD>L%02dMUS%02d.MOD"(world_state, a); cmd = b & 0xFF:
+     * 0 load+play (skip if same file as byte_4F9320; else stop/free old,
+     *   sub_48D940 load -> dword_4B729C);
+     * 1 (if loaded && !sub_48E070 && volume): start sub_48DA10(mod,0x40,0),
+     *   set volume dword_4B60B4;
+     * 2 free (sub_48DCA0), then falls into 3;
+     * 3 volume = ((b>>8) * dword_4B60B4) / 64;
+     * 4 fade out sub_48DE30(1000). */
+    case 24:
+        /* TODO music (MOD player) */
+        return 0;
+
+    /* op 25 @ 0x44828D — give/take item: target_entity = byte_4DB3C0, name
+     * "OB%02d"(a), +0xC4 &= ~0x20. b<=0 -> sub_426A24(obj) (remove);
+     * else sub_427816() (re-equip held) + sub_42639A(obj, b, 1) (add b). */
+    case 25:
+        /* TODO inventory */
+        return 0;
+
+    /* op 26 @ 0x4482F6 — row a of word_509B40 (8 i16).
+     * |b| > 99 -> log "DIVERS(26,%d,%d) : multiple is not impl..." (continues).
+     * b>0: if row has b or b+100 -> return 0; else store b in first 0 cell.
+     * b<=0: clear every cell equal to -b or 100-b. */
+    case 26: {
+        if (b > 99 || b < -99)
+            print("DIVERS(26,%d,%d) : multiple is not implemented\n", a, b);
+        if (a < 0 || a >= LO_TAB509B40_ROWS) return 0;
+        i16 *row = &g_tab_509B40[a * 8];
+        if (b > 0) {
+            for (i32 i = 0; i < 8; i++)
+                if (row[i] == b || row[i] == b + 100) return 0;
+            for (i32 i = 0; i < 8; i++)
+                if (row[i] == 0) { row[i] = (i16)b; break; }
+        } else {
+            for (i32 i = 0; i < 8; i++)
+                if (row[i] == -b || row[i] == 100 - b) row[i] = 0;
+        }
         return 0;
     }
-    case 24: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: layer_op(24) music idx=%d cmd=%d\n", layer, arg); }
+
+    /* op 27 @ 0x44844D — clear graphics_context, game_context,
+     * render_buffer1; game_exit_code = 3 (end of game). */
+    case 27:
+        /* TODO game_exit_code = 3 */
         return 0;
-    }
+
+    /* op 28 @ 0x44847D — positional sound at bone (b ? b : 0x11) of actor a:
+     * play_sound_at_position(node+0x90, +0x94, +0x98 (world pos from
+     * actor_node_positions), root->rot[2] + 0x4000). */
+    case 28:
+        /* TODO positional audio */
+        return 0;
+
+    /* op 29 @ 0x448516 — is persona a in one of the 3 actor slots
+     * (companion, secondary, player; +0xB0 == a)? */
     case 29:
-        /* Entity alive/loaded check. Returns 1 if the entity is present
-         * (spawned and not dead). Critical for imp appearance logic and
-         * party member checks in tick_body. */
-        if (layer >= 0 && layer < ENT_MAX)
-            return g_ents[layer].alive;
+        if (g_companion_entity && (i32)E32(g_companion_entity, 0xB0) == a) return 1;
+        if (g_secondary_companion_entity && (i32)E32(g_secondary_companion_entity, 0xB0) == a) return 1;
+        if (g_player_entity && (i32)E32(g_player_entity, 0xB0) == a) return 1;
         return 0;
+
+    /* op 30 @ 0x4485AC — persona 0x19's actor: play sound "A198"
+     * (play_entity_sound(0, get_sound_id("A198")), byte_4FB1F0 swapped to
+     * byte_4FC010 around it); +0xB4 = now, +0xB8 = a*600, +0xBC = b*600. */
+    case 30:
+        e = actor_find(0x19);
+        if (e) {
+            /* TODO sound "A198" */
+            E32(e, 0xB4) = lo_now();
+            E32(e, 0xB8) = a * 600;
+            E32(e, 0xBC) = b * 600;
+        }
+        return 0;
+
+    /* op 31 @ 0x448656 — tile distance player -> game_structures[a]
+     * (0x543CD0, stride 0xF0; +0x3C x, +0x44 z): (i32)sqrt((dx^2+dz^2)/360000).
+     * Slot empty (+0 == 0) -> 100000000. */
+    case 31:
+        /* TODO g_game_structures is static in scene.c */
+        return 100000000;
+
+    /* op 32 @ 0x44870C — player+0xCB0 (index of the collision zone under
+     * the player, actor_move.c). */
+    case 32:
+        return (i32)E32(g_player_entity, 0xCB0);
+
+    /* op 33 @ 0x448721 — credits screen "DATAS>MENUS>CREDITS>CRED_%02d.GIF"(a):
+     * wait keys released (Esc/Space/Enter), show, wait press, wait release,
+     * restore palette/screen. Blocking. */
+    case 33:
+        /* TODO */
+        return 0;
+
+    /* op 34 @ 0x448906 — player looks at persona a: actor a must be loaded
+     * (else 0); player+0xC4C = b ? a+1 : 0 (sub_41CCB7 tracks C4C-1). */
+    case 34:
+        if (!actor_find(a)) return 0;
+        E32(g_player_entity, 0xC4C) = b ? a + 1 : 0;
+        return 0;
+
+    /* op 35 @ 0x44895B — stop effects: if renderer_instance (sound slot 0):
+     * ls_stop_sound, sub_44E46A(0) free it; for player/companion/secondary
+     * with +0xD90 != 0: D90 = 0, sub_42D81F(e, 1) (end timed effect).
+     * Then if dword_4FF098 != 0: dword_4FF098 = 1. */
     case 35:
+        /* TODO the whole case sits under `if (renderer_instance)` — with no
+         * audio in dke that is never true, so the D90 resets do not run
+         * either. Keep that gate when audio lands. */
         return 0;
-    case 37: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: layer_op(37) visual scale layer=%d\n", layer); }
+
+    /* op 36 @ 0x448A45 — actor a loaded and not in combat (+0xD60 == 0):
+     * b != 0 -> dword_505C54 = 0 (return 0);
+     * else if dword_505C54 == 2: return player+0xD04 == 60 &&
+     *   sub_4295E0(player) && sub_429695(player, e). Otherwise 0. */
+    case 36:
+        /* TODO dword_505C54 is g_dword_505C54 (scene.c, static); sub_4295E0 /
+         * sub_429695 (combat proximity tests) not ported. */
+        return 0;
+
+    /* op 37 @ 0x448AE9 — sub_433610(player, a/100.0): character_scale_factor
+     * *= s; for bones 1..0x21 except 0x1F, 0x20: sub_433490(e, i, s, 0). */
+    case 37:
+        /* TODO body scale (see op 38) */
+        return 0;
+
+    /* op 38 @ 0x448B17 — sub_433490(player, bone, a/100.0, mode):
+     * |b| & 0x10000 set: bone = |b| & 0xFFFF, mode = 2 + (b <= 0);
+     * else bone = |b|, mode = (b <= 0).
+     * sub_433490 @ 0x433490: node = e+0xFC[bone]; unless mode&2 scale
+     * node->pos; scale node+0x14 and every vertex of atom[0]/atom[1]
+     * (+0x18 radius, +0x38 verts stride 0x20, +0x1C count) by s;
+     * mode&1: also scale node->child->pos. */
+    case 38:
+        /* TODO mesh scaling on EBONE(g_player_entity, bone) */
+        return 0;
+
+    /* op 39 @ 0x448BC2 — persona 0x28's actor timer:
+     * a==0 -> return +0xD70; else b ? (D70 = b, D74 = now) : (D70 = 0). */
+    case 39:
+        e = actor_find(0x28);
+        if (!e) return 0;
+        if (a == 0) return (i32)E32(e, 0xD70);
+        if (b) { E32(e, 0xD70) = b; E32(e, 0xD74) = lo_now(); }
+        else     E32(e, 0xD70) = 0;
+        return 0;
+
+    /* op 40 @ 0x448C34 — clip name for state b of actor a: byte_507260 =
+     * "s" + prepare_entity_animation(e, b) if non-empty; returns the
+     * POINTER byte_507260. Not loaded -> log, 0. */
+    case 40: {
+        e = actor_find(a);
+        if (!e) {
+            print("DIVERS(40,%d,%d) with perso %d not loaded\n", a, b, a);
+            return 0;
+        }
+        c8 clip[16] = {0};
+        actor_prepare_anim(e, b, clip);
+        if (clip[0]) snprintf(g_byte_507260, sizeof g_byte_507260, "s%s", clip);
+        /* TODO returns a char* through i32 — needs a typed callback on 64-bit. */
         return 0;
     }
-    case 38: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: layer_op(38) visual param layer=%d arg=0x%X\n", layer, arg); }
+
+    /* op 41 @ 0x448CC4 — update_player_interface(game_context, 1). */
+    case 41:
+        /* TODO HUD refresh hook */
         return 0;
-    }
-    default:
+
+    /* op 42 @ 0x448CD9 — sub_42BE0E() (one full world tick/render). */
+    case 42:
+        /* TODO */
+        return 0;
+
+    /* op 43 @ 0x448CE3 — special_mode_active ^= 1, dword_505DD8 = it;
+     * player: CEC==1 -> CF0=0; CEC==0 -> CF0=1; update_player_interface. */
+    case 43:
+        g_special_mode_active ^= 1;
+        /* dword_505DD8 = g_special_mode_active; */
+        e = g_player_entity;
+        if (E32(e, 0xCEC) == 1) E32(e, 0xCF0) = 0;
+        if (E32(e, 0xCEC) == 0) E32(e, 0xCF0) = 1;
+        return 0;
+
+    /* op 44 @ 0x448D4B — sub_4654CE("OB%02d"(a), 1): player picks up item. */
+    case 44:
+        /* TODO inventory */
+        return 0;
+
+    /* op 45 @ 0x448D78 — ls_wait_key() (blocking). */
+    case 45:
+        return 0;
+
+    /* op 46 @ 0x448D82 — return process_input_command(0x20) (Space edge). */
+    case 46:
+        return 0; /* TODO input edge; lieu_cb has g_action_key */
+
+    /* op 47 @ 0x448D96 — is tile (a, b) inside a solid floor obstacle?
+     * dword_4F915C = 0; for each poly in the NULL-terminated list
+     * dword_4F5FB0 with (*poly & 1): sub_4593F7(poly, a*600, b*600) -> 1. */
+    case 47:
+        /* TODO expose the actor_move.c obstacle list + sub_4593F7 probe */
+        return 0;
+
+    /* op 48 @ 0x448E40 — ls_random(a) & 0xFFFF. */
+    case 48:
+        return lo_random(a);
+
+    default:                                   /* def_448E78: op 0, > 48 */
         return 0;
     }
 }
