@@ -41,7 +41,7 @@ static void tick_body(void) {
     /* 0x88FE — debug subtitle */
     {
         c8 buf[64];
-        snprintf(buf, sizeof(buf), "testos printos:%d", ST(ST_DEBUG_PRINT));
+        snprintf(buf, sizeof(buf), "testos printos:%d", ST(ST_GAME_TIME));
         CB->print_msg(buf, 0, 0xF0);
     }
     /* 0x8934 */

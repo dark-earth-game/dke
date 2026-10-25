@@ -169,7 +169,7 @@ void l25_trig00(void) {
     if (ST(ST_LEVEL) != 23 && ST(ST_LEVEL) != 26) {
         CB->pos_perso(ST(ST_HERO), 6571, -3650, 0xD37F, 1, "ar", 1, 0);
     }
-    ST(0x9C) = ST(ST_DEBUG_PRINT) - ST(0xA0);
+    ST(0x9C) = ST(ST_GAME_TIME) - ST(0xA0);
     /* 0x7A27 */
     if (ST(ST_HERO) == P_ARKHAN1) {
         /* 0x7A39 */

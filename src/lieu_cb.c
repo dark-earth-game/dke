@@ -2350,6 +2350,7 @@ i32 lieu_detect_zone(void) {                              /* sub_449E03 */
     /* The script reads these through its state buffer (dword_505C40). */
     LIEU_ST(g_lieu_state, 0x0C) = g_action_pressed;   /* dword_505C4C */
     LIEU_ST(g_lieu_state, 0x04) = g_updown_key;       /* dword_505C44 */
+    LIEU_ST(g_lieu_state, ST_GAME_TIME) = (i32)lo_now();  /* 0x44A22D: dword_5065A0 */
     if (getenv("DKE_LIEUDBG")) {
         static u32 last = 0;
         u32 t = state ? state->current_game_time : 0;

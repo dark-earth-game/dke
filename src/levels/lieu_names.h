@@ -301,7 +301,7 @@ enum {
 #define ST_SPECIAL_MODE   0x198   /* dword_505DD8: Tab walk-set toggle */
 #define ST_PLAYER_WEAPON  0x19C   /* dword_505DDC: player desc[0x97] */
 #define ST_LOCKED_CAMERA  0xF90   /* dword_506BD0 */
-#define ST_DEBUG_PRINT    0x960   /* "testos printos" debug overlay switch */
+#define ST_GAME_TIME      0x960   /* dword_5065A0: game time in ms, set every frame (sub_449F9F) */
 /* The designers' start point of each level: trigger 0 seeds the story state
  * for start n (1..) and clears it. A new game sets level 1's to 1. */
 #define ST_START_POINT(level)  (0x960 + (level) * 4)

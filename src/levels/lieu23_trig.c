@@ -227,7 +227,7 @@ void l23_trig00(void) {
         ST(0xE7C) = 3;
         CB->ajoute_zone(7, 6721, -3716, 100, 100, 1);
         CB->pos_perso(P_PHEDORIA, 5000, 3000, 0xC350, 1, "P26ARR03", 5, 0);
-        ST(0x9C) = (ST(ST_DEBUG_PRINT) - ST(0xA0));
+        ST(0x9C) = (ST(ST_GAME_TIME) - ST(0xA0));
         /* 32252 */
         if (ST(0x9C) <= 5000) {
             CB->pos_perso(P_RYLSADHAR20, 6100, -3000, 0x9664, 1, "P20ARR01", 4, 0);

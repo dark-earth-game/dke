@@ -171,10 +171,10 @@ static void tick_body(void) {
             if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 20) && ST(ST_SCRIPT_BUSY) == 0) {
                 /* 0x8FD9 */
                 if (ST(0xB8) == 0) {
-                    ST(0xBC) = ST(ST_DEBUG_PRINT);
+                    ST(0xBC) = ST(ST_GAME_TIME);
                     ST(0xB8) = 1;
                 }
-                ST(0x848) = (ST(ST_DEBUG_PRINT) - ST(0xBC));
+                ST(0x848) = (ST(ST_GAME_TIME) - ST(0xBC));
             }
             /* 0x9042 */
             if ((!CB->divers(DV_IN_ZONE, ST(ST_HERO), 20) || ST(ST_SCRIPT_BUSY) == 1) && ST(0xB8) == 1) {
@@ -194,7 +194,7 @@ static void tick_body(void) {
                     ST(V_DLG_RANDOM) = CB->random(2);
                     lieu_action_register("L20D07A", P_GUARDIAN1, "SP41ARR02", "SP41ARR02");
                     lieu_action_register("L20D07B", P_GUARDIAN1, "SP41ARR02", "SP41ARR02");
-                    ST(0xBC) = ST(ST_DEBUG_PRINT);
+                    ST(0xBC) = ST(ST_GAME_TIME);
                     CB->evenement(1, 5000);
                     CB->joindre(-ST(ST_HERO), 5536, -4406, 0x7D7A, -1);
                     CB->animation("Sar_50");
@@ -404,13 +404,13 @@ static void tick_body(void) {
             /* 0x9CF6 */
             if (ST(0xB58) == 2) {
                 /* 0x9D18 */
-                if ((ST(0x114) + 4000) < ST(ST_DEBUG_PRINT) && ST(ST_LOCKED_CAMERA) == 0 && ST(0xFC) == 0 && CB->distance(1, 11) > 750) {
+                if ((ST(0x114) + 4000) < ST(ST_GAME_TIME) && ST(ST_LOCKED_CAMERA) == 0 && ST(0xFC) == 0 && CB->distance(1, 11) > 750) {
                     ST(0xFC) = 1;
                     CB->bloque(BLOQUE_ALL);
                     CB->change_camera(6, CAM_LOCKED);
                 }
                 /* 0x9D9A */
-                if (CB->distance(4, 17) < 50 && (ST(0x114) + 4000) < ST(ST_DEBUG_PRINT)) {
+                if (CB->distance(4, 17) < 50 && (ST(0x114) + 4000) < ST(ST_GAME_TIME)) {
                     ST(0xB58) = 3;
                     CB->select_pile(2, 1);
                     CB->change_camera(2, CAM_LOCKED);
@@ -442,7 +442,7 @@ static void tick_body(void) {
                 /* 0x9F63 */
                 if (CB->distance(3, 17) < 75) {
                     ST(0xB58) = 4;
-                    ST(0xA8) = ST(ST_DEBUG_PRINT);
+                    ST(0xA8) = ST(ST_GAME_TIME);
                     CB->select_pile(2, 1);
                     CB->stop_joindre(-P_LORY);
                     CB->joindre(-P_LORY, 5747, -4560, -1, -1);
@@ -452,7 +452,7 @@ static void tick_body(void) {
             /* 0x9FDC */
             if (ST(0xB58) == 4 && CB->distance(3, 18) < 20) {
                 ST(0xB58) = 5;
-                ST(0xA8) = ST(ST_DEBUG_PRINT);
+                ST(0xA8) = ST(ST_GAME_TIME);
                 CB->select_pile(2, 1);
                 CB->bloque(BLOQUE_NONE);
                 /* 0xA04E */
@@ -485,7 +485,7 @@ static void tick_body(void) {
                 CB->animation("SP26ARR01_20");
                 CB->change_camera(99, CAM_AUTO);
                 CB->pos_perso(P_PHEDORIA, -1, -1, -1, 4, "", -1, 0);
-                ST(0xA8) = ST(ST_DEBUG_PRINT);
+                ST(0xA8) = ST(ST_GAME_TIME);
                 CB->retire_zone(17);
                 CB->retire_zone(18);
                 CB->select_pile(0, 1);

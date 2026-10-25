@@ -412,7 +412,7 @@ static void tick_body(void) {
             CB->stop_joindre(P_BOGDARAN);
             CB->bloque(BLOQUE_ALL);
             ST(V_EVENT_2) = 0;
-            ST(0x80) = (ST(ST_DEBUG_PRINT) % 3) + 1;
+            ST(0x80) = (ST(ST_GAME_TIME) % 3) + 1;
             switch (ST(0x80)) {   /* [ebp-4] copy, tests 1/2/3 */
             case 1: lieu_action_register("L05D14", P_BOGDARAN, "SP08DIA60", "SP08ARR03_20"); break;
             case 2: lieu_action_register("L05D15", P_BOGDARAN, "SP08DIA59", "SP08ARR03_20"); break;
@@ -435,7 +435,7 @@ static void tick_body(void) {
             ST(V_EVENT_2) = 0;
             CB->bloque(BLOQUE_ALL);
             CB->divers(DV_LOOK_AT_PLAYER, P_BOGDARAN, 1);
-            ST(0x80) = (ST(ST_DEBUG_PRINT) % 3) + 1;
+            ST(0x80) = (ST(ST_GAME_TIME) % 3) + 1;
             switch (ST(0x80)) {   /* [ebp-8] copy, tests 1/2/3 */
             case 1: CB->dialogue("L05D14", P_BOGDARAN); break;
             case 2: CB->dialogue("L05D15", P_BOGDARAN); break;

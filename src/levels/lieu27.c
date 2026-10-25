@@ -185,7 +185,7 @@ void l27_trig00(void) {
     if (ST(0xB58) == 4 || ST(0xB58) == 5) {
         /* 0x7D60 */
         if (ST(0xA8) != -1) {
-            ST(0xA4) = (ST(ST_DEBUG_PRINT) - ST(0xA8));
+            ST(0xA4) = (ST(ST_GAME_TIME) - ST(0xA8));
         } else {
             ST(0xA4) = -1;
         }

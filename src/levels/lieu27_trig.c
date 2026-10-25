@@ -1111,6 +1111,6 @@ static void trig41(void) {
         CB->combat(P_KONKALITE4, 4);
         CB->evenement(0x21, 2000);
         ST(0x88) = 1;
-        ST(0x84) = ST(ST_DEBUG_PRINT);
+        ST(0x84) = ST(ST_GAME_TIME);
     }
 }

@@ -456,7 +456,7 @@ static void tick_body(void) {
     if (ST(0xE7C) == 0 && CB->distance(26, 20) <= 80) {
         ST(0xE7C) = 1;
         CB->pos_perso(P_LORY, 4647, -3520, 0x7530, 4, "", 0x1A, 0);
-        ST(0xA8) = ST(ST_DEBUG_PRINT);
+        ST(0xA8) = ST(ST_GAME_TIME);
         CB->retire_zone(20);
         CB->retire_zone(26);
     }
@@ -464,7 +464,7 @@ static void tick_body(void) {
     if (ST(0xE78) == 1 && CB->distance(27, 21) <= 80 && ST(0xF8) == 0) {
         ST(0xF8) = 1;
         CB->pos_perso(P_RYLSADHAR20, 5320, -2640, 0xAFC8, 4, "", 0x1B, 0);
-        ST(0xA0) = ST(ST_DEBUG_PRINT);
+        ST(0xA0) = ST(ST_GAME_TIME);
         CB->retire_zone(21);
         CB->retire_zone(27);
     }

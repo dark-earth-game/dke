@@ -362,7 +362,7 @@ static void tick_body(void) {
             CB->stop_joindre(P_LORY);
             CB->pos_perso(P_LORY, -1, -1, -1, 4, "", -1, 0);
             ST(0x64) = 2;
-            ST(0xA8) = ST(ST_DEBUG_PRINT);
+            ST(0xA8) = ST(ST_GAME_TIME);
             CB->retire_zone(11);
             CB->select_pile(0, 1);
         }

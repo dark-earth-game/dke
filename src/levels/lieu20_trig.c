@@ -235,7 +235,7 @@ void l20_trig00(void) {
         }
         /* 0x7E0B */
         if (ST(0xE7C) == 1) {
-            ST(0xA4) = (ST(ST_DEBUG_PRINT) - ST(0xA8));
+            ST(0xA4) = (ST(ST_GAME_TIME) - ST(0xA8));
             CB->vire_col(0x17, 0);
             ST(0xE7C) = 2;
             ST(0xE78) = 7;
@@ -258,7 +258,7 @@ void l20_trig00(void) {
     if (ST(0xAF8) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(0xB58) == 1) {
         /* 0x7F7C */
         if (ST(0xA8) != -666) {
-            ST(0xA4) = (ST(ST_DEBUG_PRINT) - ST(0xA8));
+            ST(0xA4) = (ST(ST_GAME_TIME) - ST(0xA8));
         } else {
             ST(0xA4) = 666;
         }
@@ -351,7 +351,7 @@ void l20_trig00(void) {
     ST(0xF0) = 0;
     ST(0xFC) = 0;
     ST(0x100) = 0;
-    ST(0x114) = ST(ST_DEBUG_PRINT);
+    ST(0x114) = ST(ST_GAME_TIME);
     ST(V_WEAPON_WARNED) = 0;
     ST(0x4C) = 0;
     /* 0x84EF */
@@ -412,7 +412,7 @@ static void trig02(void) {
                     lieu_action_register("L20D16C", P_GUARDIAN1, "SP41DIA53", "SP41ARR02_100");
                     CB->joindre_perm(P_GUARDIAN1, ST(ST_HERO));
                     CB->animation("Sar_50");
-                    CB->modify_var(&ST(0xBC), ST(ST_DEBUG_PRINT));
+                    CB->modify_var(&ST(0xBC), ST(ST_GAME_TIME));
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -431,7 +431,7 @@ static void trig02(void) {
                     lieu_action_register("L20D18E", P_GUARDIAN1, "SP41DIA56", "SP41ARR02");
                     CB->joindre_perm(P_GUARDIAN1, ST(ST_HERO));
                     CB->animation("Sar_50");
-                    CB->modify_var(&ST(0xBC), ST(ST_DEBUG_PRINT));
+                    CB->modify_var(&ST(0xBC), ST(ST_GAME_TIME));
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -451,7 +451,7 @@ static void trig02(void) {
                     }
                     CB->joindre_perm(P_GUARDIAN1, ST(ST_HERO));
                     CB->animation("Sar_50");
-                    CB->modify_var(&ST(0xBC), ST(ST_DEBUG_PRINT));
+                    CB->modify_var(&ST(0xBC), ST(ST_GAME_TIME));
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -469,7 +469,7 @@ static void trig02(void) {
                     lieu_action_register("L20D23B", P_GUARDIAN1, "SP41DIA56", "SP41ARR02");
                     CB->joindre_perm(-P_GUARDIAN1, ST(ST_HERO));
                     CB->animation("Sar_50");
-                    CB->modify_var(&ST(0xBC), ST(ST_DEBUG_PRINT));
+                    CB->modify_var(&ST(0xBC), ST(ST_GAME_TIME));
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -491,7 +491,7 @@ static void trig02(void) {
                     lieu_action_register("L20D26E", P_GUARDIAN1, "SP41DIA56", "SP41ARR02_100");
                     CB->joindre_perm(-P_GUARDIAN1, ST(ST_HERO));
                     CB->animation("Sar_50");
-                    CB->modify_var(&ST(0xBC), ST(ST_DEBUG_PRINT));
+                    CB->modify_var(&ST(0xBC), ST(ST_GAME_TIME));
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -511,7 +511,7 @@ static void trig02(void) {
                     }
                     CB->joindre_perm(-P_GUARDIAN1, ST(ST_HERO));
                     CB->animation("Sar_50");
-                    CB->modify_var(&ST(0xBC), ST(ST_DEBUG_PRINT));
+                    CB->modify_var(&ST(0xBC), ST(ST_GAME_TIME));
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -1286,7 +1286,7 @@ static void trig12(void) {
                 } else {
                     lieu_action_register("L20D07B", P_GUARDIAN1, "SP41ARR02", "SP41ARR02");
                 }
-                ST(0xBC) = ST(ST_DEBUG_PRINT);
+                ST(0xBC) = ST(ST_GAME_TIME);
                 CB->evenement(1, 5000);
                 CB->joindre(-ST(ST_HERO), 5536, -4406, 0x7D7A, -1);
                 CB->animation("Sar_50");

@@ -1222,11 +1222,11 @@ static void trig41(void) {
         CB->divers(DV_MUSIC, 1, 1);
         ST(V_MUSIC_TRACK) = 1;
         CB->evenement(EV_MUSIC_LOOP_A, 45000);
-        ST(0xB8) = ST(ST_DEBUG_PRINT);
+        ST(0xB8) = ST(ST_GAME_TIME);
     }
     /* 0x1D3F */
     if ((ST(0xB3C) == 1 || ST(0xB3C) == 2) && ST(V_GUARD_FIGHT_DONE) != 1) {
-        ST(0xB8) = ST(ST_DEBUG_PRINT);
+        ST(0xB8) = ST(ST_GAME_TIME);
         CB->divers(DV_MUSIC, 2, 1);
         ST(V_MUSIC_TRACK) = 2;
         CB->evenement(EV_MUSIC_LOOP_A, 30000);

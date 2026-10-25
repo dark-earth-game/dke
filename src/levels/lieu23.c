@@ -169,7 +169,7 @@ static void tick_body(void) {
         CB->evenement(33, 475);
         CB->animation("P20OUV01");
         ST(0xE78) = 6;
-        ST(0xA0) = ST(ST_DEBUG_PRINT);
+        ST(0xA0) = ST(ST_GAME_TIME);
         CB->animation("P20MAR02");
         CB->evenement(1, 475);
         CB->animation("P20MAR02");
