@@ -38,6 +38,7 @@
 #include "game_init.h"
 #include "anim2d.h"
 #include "object.h"
+#include "sfx.h"
 #include "lieu_action.h"
 #include "lieu01.h"
 #include "player.h"
@@ -586,13 +587,14 @@ i32 lieu_poll_level_change(i32 *entry) {
     if (t >= 0) { if (entry) *entry = g_next_entry; g_next_level = -1; }
     return t;
 }
-/* slot 11 sub_44569A @ 0x44569A "Bruitage" — queue a positional sound.
- * name = WAV base name, id = source entity/object, coord = placement. */
-static void cb_place_95C(const c8 *name, i32 id, i32 coord) {
+/* slot 11 sub_44569A @ 0x44569A "Bruitage" — queue a sound (action 0x0B):
+ * name, and the tile x / z it plays at (ambience loops only). */
+static void cb_place_95C(const c8 *name, i32 x, i32 z) {
+    if (name && name[0] == 'Z') return;            /* sub_44D23D: dead body */
     lieu_action_t *n = lieu_action_push(LA_BRUITAGE);
     if (name) snprintf(n->name, sizeof(n->name), "%s", name);
-    n->actor = id;
-    n->p20   = coord;
+    n->x = x;                                      /* +0x14, script units */
+    n->z = z;                                      /* +0x1C */
 }
 /* slot 12 sub_445765 AjouteZone(id, cx, cz, sizeX, sizeZ, flag): register
  * a static zone rectangle (spatial args scaled tile->world by 600). */
@@ -906,15 +908,6 @@ static i32 lo_zone_at(i32 x, i32 z) {
     return -1;
 }
 
-/* unk_4FF0B0[10], stride 0x110: ambient "event" WAVs (op 4). The per-frame
- * player of these (the reader of +0x100 / +0x104) is elsewhere in the engine. */
-typedef struct {
-    c8   path[0x100];   /* +0x000 unk_4FF0B0  */
-    i32  next_time;     /* +0x100 dword_4FF1B0: game time of next play */
-    i32  param;         /* +0x104 dword_4FF1B4: b = period<<16 | jitter */
-    void *handle;       /* +0x108 dword_4FF1B8: ls_load_sound result */
-} lo_evsound_t;
-static lo_evsound_t g_evsound[10];
 
 /* word_509B40: 8 i16 per row, row = a (op 26). Row count unknown — sized
  * generously; check the binary's extent before relying on it. */
@@ -997,22 +990,9 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
      *     next_time = now + (b>>16) - random(b&0xFFFF), handle = ls_load_sound(path, 8)
      *     (bracketed by set_display_mode(0xC)/restore_display_mode(1,0xC));
      *   busy && b==0: ls_stop_sound(handle, 0) (slot fields are left as is). */
-    case 4: {
-        /* if (!samples_enabled) return 0;  TODO: no audio in dke */
-        i32 slot = a >> 16;
-        if (slot < 0 || slot >= 10) return 0;
-        lo_evsound_t *s = &g_evsound[slot];
-        if (!s->handle && !s->next_time) {
-            snprintf(s->path, sizeof s->path, "DATAS>SOUND>L%02dEV%01d.WAV",
-                     g_lieu_level /* world_state */, a & 0xFFFF);
-            s->param     = b;
-            s->next_time = (i32)lo_now() + (b >> 16) - lo_random(b & 0xFFFF);
-            s->handle    = NULL; /* TODO ls_load_sound(path, 8) */
-        } else if (b == 0 && s->handle) {
-            /* TODO ls_stop_sound(s->handle, 0) */
-        }
+    case 4:
+        sfx_divers_event(a, b);                    /* event slots live in sfx.c */
         return 0;
-    }
 
     /* op 5 @ 0x44729A — item charge (resource) read/write, in percent.
      * a==0: object = get_entity_character(player+0xD2) (held item).
@@ -1875,11 +1855,8 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         return 1;
     }
 
-    case LA_BRUITAGE:                          /* case 0x0B */
-        /* Positional sound: needs the sound emitter path (sub_44D23D for
-         * 'Z'-prefixed zone sounds). Recorded, not yet audible. */
-        print("lieu_act: BRUITAGE '%s' src=%d coord=%d (no emitter yet)\n",
-              n->name, n->actor, n->p20);
+    case LA_BRUITAGE:                          /* case 0x0B -> sub_44E57B */
+        sfx_bruitage(n->name, n->x, n->z);
         return 1;
 
     case LA_ANIMOBJET: {                       /* case 0x13 */

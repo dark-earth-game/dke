@@ -32,6 +32,7 @@
 #include "lieu_cb.h"
 #include "anim2d.h"
 #include "object.h"
+#include "sfx.h"
 #include "nav_grid.h"
 #include "lieu_action.h"
 #include "world.h"
@@ -479,10 +480,8 @@ static void anim_messages(entity_t *e, i32 tick) {
             if (b) { E32(e, 0xC1C) = NX(b); E32(e, 0xC20) = NY(b); E32(e, 0xC24) = NZ(b); }
             sample_at_message(e, mt);
         }
-        if (type == 1 || type == 0x13) {
-            /* Sound event: "A%03d" (negative param) or the 9-byte name table
-             * at "fend1a", footsteps suffixed with the surface. Positional
-             * sound playback is not ported. */
+        if (type == 1 || type == 0x13) {                    /* sound (sfx.c) */
+            if (sfx_anim_message(e, type, p, mt)) continue;
         }
         if (type == 3 || type == 4 || type == 5) {           /* ballistic impulse */
             ballistic_decay(e, tick);

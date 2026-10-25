@@ -63,6 +63,7 @@
 #include "nav_grid.h"
 #include "anim2d.h"
 #include "object.h"
+#include "sfx.h"
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
@@ -552,6 +553,7 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     g_scene_bg_level = level_id;
     g_scene_camera   = camera;
     anim2d_load_camera(level_id, camera);          /* sub_4130FB */
+    sfx_camera_changed();                          /* sub_46E883 tail */
 
     /* Character shade ramp: DATAS>L<lvl>>PAL>FL<lvl>C<cam>L0.GRD (256*64 =
      * 16384 bytes). Maps (base palette index, light level) -> shaded palette
@@ -2529,6 +2531,23 @@ i32 scene_load_level(i32 level_id) {
     scene_load_camera_regions(g_scene_bg_level);
 
     object_reset();                                /* objects load lazily per room */
+    {
+        /* sub_46D305: wav>reverb> when the level .DAT says "reverb : 1". */
+        const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+        c8 vpath[64], host[512];
+        i32 reverb = 0;
+        snprintf(vpath, sizeof(vpath), "DATAS>L%02d>L%02d.DAT", level_id, level_id);
+        if (ls_resolve_path(gp, vpath, host, (i32)sizeof(host))) {
+            FILE *df = ls_open(host, "rb");
+            if (df) {
+                c8 line[256];
+                while (fgets(line, sizeof(line), df))
+                    if (!strncasecmp(line, "reverb", 6)) { c8 *c = strchr(line, ':'); if (c) reverb = atoi(c + 1); }
+                ls_close(df);
+            }
+        }
+        sfx_level_begin(gp, level_id, reverb);
+    }
     /* LIEU scripting (sub_448F4D's INIT; see init_level_scripting): native
      * hand-port, per-frame tick from scene_render, deinit in release. */
     lieu_enter(level_id);
@@ -2691,6 +2710,18 @@ static const ome_matr_t *actor_matr(i32 num) {
         model_ome_free(&ome);
     }
     return g_actor_matr[slot].ok ? &g_actor_matr[slot].matr : NULL;
+}
+
+/* Sound placement hooks (sfx.c): transformation_origin = -camera eye, and
+ * sub_45ACC5's screen x of a world point (1 = in front of the camera). */
+void sfx_hook_camera_origin(i32 origin[3]) {
+    origin[0] = -g_proj_eye[0]; origin[1] = -g_proj_eye[1]; origin[2] = -g_proj_eye[2];
+}
+i32 sfx_hook_project(i32 wx, i32 wy, i32 wz, i32 *sx) {
+    i32 x = 0, y = 0;
+    i32 vis = scene_project_world(wx, wy, wz, &x, &y);
+    if (sx) *sx = x;
+    return vis;
 }
 
 /* Debug (DKE_ZONEDBG): outline the level's polygons on screen with the
@@ -2881,6 +2912,7 @@ i32 scene_render(system_t *sys) {
         lieu_set_updown_key(sys ? (sys->actions[38] || sys->actions[40]) : 0);
     }
     actor_frame((u32)system_get_gametime());
+    sfx_tick();                                    /* sub_44968B sound part */
     lieu_tick(sys ? sys->timer.tick : 0);
     {
         static i32 s_last_zone = -2;

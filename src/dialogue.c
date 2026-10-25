@@ -17,6 +17,7 @@
 #include "libsys/file_system.h"
 #include "libsys/audio/wav.h"
 #include "dialogue.h"
+#include "sfx.h"
 
 #define DLG_BUF     (96 * 1024)
 
@@ -111,15 +112,10 @@ u32 dlg_start(const c8 *code, u32 now_ms) {
         snprintf(text, sizeof(text), "[%s]", code);
     snprintf(g_active, sizeof(g_active), "%s", text);
 
-    c8 wp[512];
-    wav_t w = {0};
-    u32 dur = 0xFA0;
-    snprintf(wp, sizeof(wp), "%s/dialog/L%02d/%s.WAV", g_ctx_root, g_ctx_level, code);
-    if (wav_load(&w, wp)) {
-        sfx_play(&w);
-        if (w.sample_rate) dur = (u32)((f64)w.num_samples * (1000.0 / (f64)w.sample_rate));
-        wav_free(&w);
-    }
+    /* sub_44E57B voice slot 0 (shared with Bruitage one-shots, mixed by
+     * sfx.c); no voice file -> 0xFA0 ms. */
+    u32 dur = sfx_voice_play(NULL, code, 0, 0);
+    if (!dur) dur = 0xFA0;
     g_start_ms    = now_ms;
     g_duration_ms = dur;
     print("dlg: '%s' -> \"%s\" (%.1fs)\n", code, g_active, dur / 1000.0);
