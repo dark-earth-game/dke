@@ -127,7 +127,7 @@ class PE:
         # debug texts carry accented letters (ANSI bytes): show them as C
         # octal escapes, but only for text that is mostly plain ASCII
         high = sum(1 for c in t if c >= 0xA0)
-        if not all(32 <= c < 127 or c >= 0xA0 for c in t) or high * 5 > len(t) or len(t) - high < 3:
+        if not all(32 <= c < 127 or c >= 0xA0 for c in t) or (high and (high * 5 > len(t) or len(t) - high < 3)):
             return None
         return ''.join(chr(c) if c < 127 else '\\%03o' % c for c in t)
 
