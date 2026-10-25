@@ -13,6 +13,7 @@ i32 lieu11_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 i32 lieu12_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 i32 lieu13_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 i32 lieu14_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
+i32 lieu16_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 
 static const lieu_entry_t k_level_entry[100] = {
     [1] = lieu01_fonction_editor,
@@ -28,4 +29,5 @@ static const lieu_entry_t k_level_entry[100] = {
     [12] = lieu12_fonction_editor,
     [13] = lieu13_fonction_editor,
     [14] = lieu14_fonction_editor,
+    [16] = lieu16_fonction_editor,
 };
