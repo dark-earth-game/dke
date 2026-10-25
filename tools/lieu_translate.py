@@ -32,8 +32,8 @@ CB = {
  'stop_joindre':(1,0,'N'), 'vire_col':(2,0,'gg'), 'print_msg':(3,0,'sgg'), 'joindre_perm':(2,0,'Ng'),
  'modify_var':(2,0,'ag'), 'random':(1,1,'d'), 'select_pile':(2,0,'gg'), 'on_joindre':(1,1,'P'),
  'link_objet':(4,0,'gsgg'), 'divers':(3,1,'VAg'), 'free_anim':(1,0,'g'), 'play_anim':(2,0,'gg'),
- 'divers_empile':(3,0,'VAg'), 'place_animal':(6,0,'ddddxx'), 'load_anim':(2,0,'sg'),
- 'col_objet':(2,0,'gg'), 'simult':(2,0,'gg'), 'joindre_obj':(2,0,'gg'), 'pause_anim':(2,0,'gg'),
+ 'divers_empile':(3,0,'VAg'), 'place_animal':(6,0,'dddddd'), 'load_anim':(2,0,'sg'),
+ 'col_objet':(5,0,'sdddd'), 'simult':(1,0,'g'), 'joindre_obj':(2,0,'sd'), 'pause_anim':(3,0,'ggg'),
 }
 HELPERS = {'lieu_action_register':(4,0,'sPss'), 'lieu_pre_scene':(5,0,'PPddd')}
 
@@ -189,7 +189,7 @@ class Tr:
             if f == 'a':
                 txts.append(s.text(v)); continue
             txts.append(s.textf(v, f))
-        expr = ('%s(%s)' if name in ('place_animal','load_anim') else 'CB->%s(%s)') % (name, ', '.join(txts))
+        expr = 'CB->%s(%s)' % (name, ', '.join(txts))
         return expr, ret
 
     def run(s):

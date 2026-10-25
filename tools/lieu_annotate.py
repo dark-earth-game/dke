@@ -242,6 +242,18 @@ def analyze(path):
         if pe.sec(T)[0] == '.text':
             for j in range(len(ents) * 4):
                 skip.add(T + j)
+    # switch case-index byte tables (mov cl, byte ptr [eax + T]) follow the
+    # jump table: data up to the next function start
+    starts = sorted(f for f in funcs if f in idx)
+    for a, t in ins:
+        m = re.search(r'byte ptr \[e[a-z]{2} \+ 0x([0-9a-f]{8})\]', t)
+        if m:
+            T = int(m.group(1), 16)
+            sc = pe.sec(T)
+            if sc and sc[0] == '.text':
+                nxt = next((f for f in starts if f > T), T + 256)
+                for j in range(T, min(nxt, T + 256)):
+                    skip.add(j)
 
     def fname(v):
         if v == entry:
@@ -250,7 +262,12 @@ def analyze(path):
             return 'trig%s_%08X' % ('_'.join('%02d' % k for k in trig[v]), v)
         return 'sub_%08X' % v
 
+    m = re.search(r'LIEU(\d+)\.DLL$', path, re.I)
+    level = int(m.group(1)) if m else -1
+
     def stn(off):
+        if off == 0x960 + 4 * level:
+            return 'ST_START_POINT(%d)' % level
         if off in stnames:
             return stnames[off]
         if 0x190 < off < 0x190 + 100 * 4 and off % 4 == 0:
@@ -297,7 +314,13 @@ def signature(info, f):
 
 
 def finish(info):
-    info['funcs'] = {f for f in info['funcs'] if f in info['idx']}
+    ins, idx = info['ins'], info['idx']
+    info['funcs'] = {f for f in info['funcs'] if f in idx}
+    # a thunk / jump target that starts by using the caller's frame is a
+    # fragment inside another function, not a function of its own
+    frag = {f for f in info['funcs']
+            if '[ebp ' in ins[idx[f]][1] and not ins[idx[f]][1].startswith('push')}
+    info['funcs'] -= frag
     info['sorted'] = sorted(info['funcs'])
     info['funcset'] = set(info['funcs'])
     return info
@@ -378,7 +401,7 @@ def main():
             callers[thunk.get(v, v)] += 1
     print('; functions to port (level-specific; size in bytes, calls from code), plus the entry\'s INIT tail:')
     for i, f in enumerate(order):
-        if f in same or f >= lib or f == entry:
+        if f in same or f == entry:
             continue
         end = order[i + 1] if i + 1 < len(order) else f
         if end - f < 8:
@@ -388,7 +411,7 @@ def main():
         print('; functions identical to an already-ported level (reuse the C port):')
         rest = 0
         for f in sorted(same):
-            if f >= lib and f not in common:
+            if f not in common and f not in trig:
                 rest += 1
                 continue
             first = {}
@@ -398,7 +421,7 @@ def main():
                              for lv, (ra, n) in sorted(first.items())[:1])
             print(';   %s == %s' % (fname(f), hits))
         if rest:
-            print(';   + %d library functions (C runtime: sprintf, abs, ...) from 0x%08X' % (rest, lib))
+            print(';   + %d more (C runtime: sprintf, abs, ...)' % rest)
     if trig_base:
         print('; trigger table 0x%08X (op 3: call [4*arg + table], filled by INIT):' % trig_base)
         for v, ks in sorted(trig.items(), key=lambda x: x[1][0]):
