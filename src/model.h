@@ -163,6 +163,9 @@ typedef struct {
     i32 light_s;
 } model_draw_t;
 
+/* Screen point the batch projects the camera axis to (default 320, 240). */
+void model_set_center(i32 cx, i32 cy);
+
 /* While value >= 0, every pixel drawn in depth mode also writes `value`
  * into zb (object Z stamp). Pass -1 to stop. */
 void model_set_zstamp(bmap_t *zb, i32 value);

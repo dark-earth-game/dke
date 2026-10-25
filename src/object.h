@@ -66,6 +66,9 @@ void object_tick(u32 now_ms);
 /* ColObjet (case 7): box [x +- w/2] x [z +- d/2]; all zero clears it. */
 void object_colobjet(const c8 *name, i32 x, i32 z, i32 w, i32 d);
 
+/* sub_472B47: take an item instance (name's letter) out of the world. */
+void object_world_remove(const c8 *name);
+
 /* Footprint centre (+0xD8 / +0xDC) of a loaded object, for JoindreObj. */
 i32 object_pos_xz(const c8 *name, i32 *x, i32 *z);
 

@@ -296,3 +296,10 @@ i32 object_pos_xz(const c8 *name, i32 *x, i32 *z) {
     }
     return 1;
 }
+
+void object_world_remove(const c8 *name) {                     /* sub_472B47 */
+    game_object_t *o = name ? obj_lookup(name) : NULL;
+    if (!o || o->is_prop) return;
+    i32 v = name[4] ? name[4] - 'A' : 0;
+    if (v >= 0 && v < OBJ_VARIANTS) o->var_on[v] = 0;
+}

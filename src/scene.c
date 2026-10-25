@@ -66,6 +66,7 @@
 #include "sfx.h"
 #include "screen_fx.h"
 #include "music.h"
+#include "inventory.h"
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
@@ -2533,6 +2534,13 @@ i32 scene_load_level(i32 level_id) {
     scene_load_camera_regions(g_scene_bg_level);
 
     object_reset();                                /* objects load lazily per room */
+    {
+        static i32 s_ctx = 0;                      /* sub_4723C0, once */
+        c8 host[512];
+        const c8 *gp = (state && state->game_path) ? state->game_path : ".";
+        if (!s_ctx && ls_resolve_path(gp, "OBJETS>OBJETS.CTX", host, (i32)sizeof(host)))
+            s_ctx = objets_ctx_load(host);
+    }
     g_character_scale_factor = 1.0;                /* sub_42BE0E */
     {
         /* sub_46D305: wav>reverb> when the level .DAT says "reverb : 1". */
@@ -2921,6 +2929,20 @@ i32 scene_render(system_t *sys) {
         }
         lieu_set_action_key(action);
         lieu_set_updown_key(sys ? (sys->actions[38] || sys->actions[40]) : 0);
+    }
+    /* dword_4DD9B4: a pending redraw (2) or a screen just closed (10)
+     * settles back to normal play. */
+    if (g_ui_state == 10) g_ui_state = 2;
+    else if (g_ui_state != 1) g_ui_state = 1;
+    /* 'I' (process_menu): the inventory screen, when the player is free. */
+    {
+        static i32 s_i_prev = 0;
+        i32 ik = sys ? sys->actions[105] : 0;
+        static i32 s_fr = 0;                       /* headless: DKE_AUTOI=<frame> */
+        if (getenv("DKE_AUTOI") && ++s_fr == atoi(getenv("DKE_AUTOI"))) ik = 1, s_i_prev = 0;
+        if (ik && !s_i_prev && !g_player_movement_locked && g_ui_state == 1)
+            inventory_screen_open();
+        s_i_prev = ik;
     }
     actor_frame((u32)system_get_gametime());
     sfx_tick();                                    /* sub_44968B sound part */

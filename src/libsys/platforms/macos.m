@@ -211,6 +211,25 @@ static void handle_events(system_t *system, i32 type, i32 key) {
         case 0x7C:
             system->actions[39] = type;
             break;
+        // i (keyCode 0x22) → actions[105]: inventory
+        case 0x22: system->actions[105] = type; break;
+        // Backspace (keyCode 0x33) → actions[8] (VK_BACK)
+        case 0x33: system->actions[8] = type; break;
+        // Digits 1..9, 0 → actions['1'..'9'], actions['0'] (inventory hotkeys)
+        case 0x12: system->actions['1'] = type; break;
+        case 0x13: system->actions['2'] = type; break;
+        case 0x14: system->actions['3'] = type; break;
+        case 0x15: system->actions['4'] = type; break;
+        case 0x17: system->actions['5'] = type; break;
+        case 0x16: system->actions['6'] = type; break;
+        case 0x1A: system->actions['7'] = type; break;
+        case 0x1C: system->actions['8'] = type; break;
+        case 0x19: system->actions['9'] = type; break;
+        case 0x1D: system->actions['0'] = type; break;
+        // Page Up / Page Down / F1 → VK_PRIOR / VK_NEXT / VK_F1
+        case 0x74: system->actions[33] = type; break;
+        case 0x79: system->actions[34] = type; break;
+        case 0x7A: system->actions[112] = type; break;
         // Space (keyCode 49) → actions[32] (VK_SPACE: action / talk key)
         case 0x31:
             system->actions[32] = type;

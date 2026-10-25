@@ -147,6 +147,11 @@ static i32 g_actor_z = -1;
 static bmap_t *g_zstamp = NULL;
 static i32     g_zstamp_val = 0;
 
+/* Projection centre of model_render_batch (the 640x480 screen centre; the
+ * inventory windows move it). */
+static i32 g_model_cx = 320, g_model_cy = 240;
+void model_set_center(i32 cx, i32 cy) { g_model_cx = cx; g_model_cy = cy; }
+
 void model_set_zstamp(bmap_t *zb, i32 value) {
     g_zstamp = (value >= 0) ? zb : NULL;
     g_zstamp_val = value;
@@ -747,8 +752,8 @@ void model_render_batch(const model_draw_t *items, i32 n_items, i32 gscale,
             i64 czc = (cz < -32768) ? cz : -32768;
             i32 d = (i32)((-czc) >> 9); if (d < 1) d = 1;
             double sc = ((double)gscale / 16384.0) / (double)d;
-            P[nv].sx = 320 + (i32)(cx * sc + (cx < 0 ? -0.5 : 0.5));
-            P[nv].sy = 240 - (i32)(cy * sc + (cy < 0 ? -0.5 : 0.5));
+            P[nv].sx = g_model_cx + (i32)(cx * sc + (cx < 0 ? -0.5 : 0.5));
+            P[nv].sy = g_model_cy - (i32)(cy * sc + (cy < 0 ? -0.5 : 0.5));
             P[nv].cx = cx; P[nv].cy = cy; P[nv].cz = cz;
             P[nv].vis = vis;
             P[nv].shade = -1;

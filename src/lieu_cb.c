@@ -40,6 +40,7 @@
 #include "object.h"
 #include "sfx.h"
 #include "screen_fx.h"
+#include "inventory.h"
 #include "music.h"
 #include "libsys/file_system.h"
 #include "lieu_action.h"
@@ -410,7 +411,6 @@ static void zone_clear(i32 i) {
 
 
 static i32 g_last_zone = 0;          /* dword_50725C */
-static i32 g_ui_state = 1;           /* dword_4DD9B4: 1 in game, 2 inventory open */
 static i32 g_cam_lock = 0;           /* dword_4FF0A0 */
 static i32 g_game_exit_code = 0;     /* game_exit_code */
 static u8  g_movie_seen[8];          /* byte_507350 */
@@ -1915,9 +1915,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                     c8 obj[8];
                     if (v / 100) snprintf(obj, sizeof(obj), "OB%02d%c", v % 100, '@' + v / 100);
                     else         snprintf(obj, sizeof(obj), "OB%02d", v % 100);
-                    /* TODO inventory: target_entity = byte_4DB3C0 named obj,
-                     * +0xC4 &= ~0x20, sub_427816(), sub_42639A(target, 1, 1). */
-                    print("lieu_act: FOUILLE takes %s\n", obj);
+                    inv_add(obj, 1, 1);                /* sub_42639A(target, 1, 1) */
                     inv[i] = 0;
                 }
                 if (corpse) {                  /* strip the corpse's weapon */
@@ -1933,6 +1931,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             }
         }
         /* state 9 (after the line) or 2 (inventory open): wait for the game UI */
+        if (n->duration == 2 && g_ui_state == 2) { inventory_screen_open(); return 0; }
         if (g_ui_state != 1) return 0;
         /* if state == 2: sub_42701B() (inventory close bookkeeping) TODO */
         {
@@ -2005,6 +2004,22 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             o->x = n->x; o->y = n->y; o->z = n->z;
             o->p20 = n->p20; o->p24 = n->p24; o->p28 = n->p28;
             o->owner = n->actor;
+        }
+        {
+            /* Item inventory states (a6 <= -2, and phase 3 of a pickup)
+             * run in inventory.c and may keep the action waiting. */
+            i32 s_pre = n->name[0] == 'S';
+            const c8 *nm = s_pre ? n->name + 1 : n->name;
+            i32 item = (nm[0] == 'O' || nm[0] == 'Q') && nm[1] == 'B';
+            if (item && (n->actor <= -2 || n->actor == 3)) {
+                etat_item_t it;
+                snprintf(it.name, sizeof(it.name), "%s", nm);
+                it.a6 = n->actor;
+                it.a7 = n->p54;
+                i32 done = etat_objet_item(&it, s_pre);
+                n->actor = it.a6;                      /* -3 -> 3 in place */
+                return done;
+            }
         }
         object_etat(n->name, n->x, n->y, n->z, n->p20, n->p24, n->p28, n->actor, n->p54);
         return 1;
