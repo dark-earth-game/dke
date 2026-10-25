@@ -404,6 +404,10 @@ def main():
         if f in same or f == entry:
             continue
         end = order[i + 1] if i + 1 < len(order) else f
+        j = idx[f]
+        while j < len(ins) and ins[j][0] < end and ins[j][1] != 'int3':
+            j += 1
+        end = ins[j][0] if j < len(ins) else end      # stop at int3 padding
         if end - f < 8:
             continue           # jump target inside a shared function
         body = [t for a, t in ins[idx[f]:] if a < end]
