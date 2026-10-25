@@ -121,8 +121,6 @@ static i32 g_dword_505C54 = 0;
 /* dword_4DD9B4 @ 0x4DD9B4 — combat-enabled flag, set to 1 during scene load. */
 static i32 g_combat_enabled = 0;
 
-/* dword_505C58 @ 0x505C58 — shadow of world_state, set in Phase 25. */
-static i32 g_dword_505C58 = 0;
 
 /* dword_4B2AB8 @ 0x4B2AB8 — zeroed in Phase 25 (level transition counter?). */
 static i32 g_dword_4B2AB8 = 0;
@@ -1098,7 +1096,7 @@ static i32 process_zone_transition(void *zone_obj) { /* sub_47398A @ 0x47398A */
 
     /* Update weapon globals */
     u8 new_weapon = desc[0x97];
-    *(i32 *)((u8 *)&g_dword_4EDC30 + 0) = (i32)new_weapon; /* dword_505DDC */
+    *lieu_state_slot(ST_PLAYER_WEAPON) = new_weapon;          /* dword_505DDC */
 
     print("process_zone_transition: weapon swap '%s' (old=%d new=%d)\n",
           obj_name, old_weapon, new_weapon);
@@ -2390,7 +2388,8 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     print("scene: phase 25 — update_game_time_entities, wire dword_505C58\n");
     update_game_time_entities();   /* sub_40636D @ 0x40636D */
-    g_dword_505C58 = g_world_state;  /* dword_505C58 @ 0x505C58 */
+    /* dword_505C58 = world_state (script ST_LEVEL): written after lieu_enter
+     * below, because the original runs INIT (sub_448F4D) before this. */
     g_dword_4B2AB8 = 0;              /* dword_4B2AB8 @ 0x4B2AB8 */
 
     /* -----------------------------------------------------------------
@@ -2571,6 +2570,7 @@ i32 scene_load_level(i32 level_id) {
     /* LIEU scripting (sub_448F4D's INIT; see init_level_scripting): native
      * hand-port, per-frame tick from scene_render, deinit in release. */
     lieu_enter(level_id);
+    *lieu_state_slot(ST_LEVEL) = g_world_state;   /* phase 25: dword_505C58 */
 
     /* Load P00.CAN for player character animation. */
     {

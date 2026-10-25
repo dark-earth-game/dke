@@ -159,10 +159,15 @@ enum {
 /* Script state slots the engine reads or writes (byte offsets for ST()). */
 #define ST_UPDOWN_KEY     0x004
 #define ST_ACTION_KEY     0x00C   /* action-key edge */
-#define ST_COMBAT_STANCE  0x010   /* dword_505C50 */
+#define ST_COMBAT_STANCE  0x010   /* dword_505C50: player +0xD60 */
+#define ST_LEVEL          0x018   /* dword_505C58: set after INIT, so INIT
+                                     still sees the room it came from */
 #define ST_SCRIPT_BUSY    0x030
+#define ST_USED_VARIANT   0x128   /* dword_505D68: held item letter - 'A' */
 #define ST_VIE(id)        (0x190 + (id) * 4)   /* persona state, id >= 4 */
 #define ST_HERO           0x194   /* current hero persona; 4 = dead */
+#define ST_SPECIAL_MODE   0x198   /* dword_505DD8: Tab walk-set toggle */
+#define ST_PLAYER_WEAPON  0x19C   /* dword_505DDC: player desc[0x97] */
 #define ST_LOCKED_CAMERA  0xF90   /* dword_506BD0 */
 
 /* ST_VIE values: the engine writes VIE_DEAD when the persona is killed. */

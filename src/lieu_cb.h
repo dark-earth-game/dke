@@ -23,6 +23,7 @@
  */
 
 #include "libsys/common.h"
+#include "levels/lieu_names.h"
 
 /* Per-level state buffer (engine dword_505C40, 0xFA0 = 4000 bytes).
  * Handlers index it by raw byte offset; keep it as bytes. */

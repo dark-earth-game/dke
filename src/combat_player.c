@@ -50,11 +50,12 @@ i32 g_control_scheme      = 0;  /* dword_4B7494: 0 = sub_451BF9, 1 = sub_4342C7;
                                    toggled on the MENUPERS options page
                                    (sub_43F8C7 @ 0x440308), saved in gamedke.cfg
                                    (config_load_gamedke_cfg @ 0x45B06F). */
-i32 g_held_weapon_id      = 0;  /* dword_505DDC: copy of desc[0x97]          */
-i32 g_held_variant        = 0;  /* dword_505D68: player+0xD6 - 'A' (sub_471B80) */
-i32 g_stance_copy         = 0;  /* dword_505C50: copy of +0xD60 (lieu_cb.c has
-                                   a private g_dword_505C50, merge them)      */
-i32 g_special_mode_copy   = 0;  /* dword_505DD8 (game_init.c has a private one) */
+/* Copies the scripts read: dword_505C50 / 505D68 / 505DD8 / 505DDC are
+ * slots of the script state block dword_505C40. */
+#define g_held_weapon_id      (*lieu_state_slot(ST_PLAYER_WEAPON))  /* desc[0x97] */
+#define g_held_variant        (*lieu_state_slot(ST_USED_VARIANT))   /* +0xD6 - 'A' (sub_471B80) */
+#define g_stance_copy         (*lieu_state_slot(ST_COMBAT_STANCE))  /* +0xD60 */
+#define g_special_mode_copy   (*lieu_state_slot(ST_SPECIAL_MODE))
 i32 g_bare_desc_cached    = 0;  /* dword_4B74A0: hero id + 1 whose bare-hand
                                    descriptor is cached (sub_46386D/sub_463906) */
 

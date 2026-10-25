@@ -74,6 +74,7 @@
 #include "material.h"
 #include "obc.h"
 #include "scene.h"
+#include "lieu_cb.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols not yet in state_t.
@@ -143,7 +144,6 @@ static const u8 *g_sort_pal_channel = NULL; /* dword_4BF594 @ 004BF594 — compa
 static i32 g_dword_4ECD3C        = 0;       /* dword_4ECD3C @ 004ECD3C  */
 static i32 g_is_using_hdd        = 0;       /* is_using_hdd (asm sym)   */
 /* g_special_mode_active (special_mode_active) lives in actor_move.c */
-static i32 g_dword_505DD8        = 0;       /* dword_505DD8 @ 00505DD8  */
 static i32 g_dword_4B787C        = 0;       /* dword_4B787C @ 004B787C  */
 
 /* Index buffer computed from gouraud table */
@@ -1636,7 +1636,7 @@ b8 game_init(state_t *state) {
     /* ------------------------------------------------------------------ */
     /* Phase 41 — special_mode_active → dword_505DD8                      */
     /* ------------------------------------------------------------------ */
-    g_dword_505DD8 = g_special_mode_active;   /* 46C4E4 */
+    *lieu_state_slot(ST_SPECIAL_MODE) = g_special_mode_active;   /* 46C4E4: dword_505DD8 */
 
     /* ------------------------------------------------------------------ */
     /* Phase 42 — 16-bit colour branch: sub_491ED0 + sub_491FD0            */

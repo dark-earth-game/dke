@@ -946,7 +946,6 @@ static i32 lo_zone_at(i32 x, i32 z) {
 static i16 g_tab_509B40[LO_TAB509B40_ROWS * 8];
 
 static i32 g_dword_505D70 = 0;   /* op 18: hit-reaction delay by weapon   */
-static i32 g_dword_505C50 = 0;   /* op 23: copy of player +0xD60          */
 static i32 g_dword_4B2B98 = 0;   /* op 15                                 */
 static c8  g_byte_4B71F0  = 0;   /* op 14                                 */
 static c8  g_byte_507260[0x10];  /* op 40: "s" + clip name                */
@@ -1257,7 +1256,7 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
     case 23:
         e = g_player_entity;
         E32(e, 0xD60) = a;
-        g_dword_505C50 = a;
+        LIEU_ST(g_lieu_state, ST_COMBAT_STANCE) = a;   /* dword_505C50 */
         if (E32(e, 0xCEC) != 3) {
             E32(e, 0xCEC) = 0;
             E32(e, 0xCF0) = 1;
@@ -1465,7 +1464,7 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
      * player: CEC==1 -> CF0=0; CEC==0 -> CF0=1; update_player_interface. */
     case 43:
         g_special_mode_active ^= 1;
-        /* dword_505DD8 = g_special_mode_active; */
+        LIEU_ST(g_lieu_state, ST_SPECIAL_MODE) = g_special_mode_active;  /* dword_505DD8 */
         e = g_player_entity;
         if (E32(e, 0xCEC) == 1) E32(e, 0xCF0) = 0;
         if (E32(e, 0xCEC) == 0) E32(e, 0xCF0) = 1;
