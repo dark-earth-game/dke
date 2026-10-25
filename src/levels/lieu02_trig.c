@@ -1785,78 +1785,6 @@ static void trig41(void) {   /* sub_1000924D */
     }
 }
 
-/* -------------------------------------------------------------------------
- * sub_1001A24C (thunk sub_100010D7) — used only by c_pre_scene.
- * __fastcall(ecx=n). Builds "OB%02d" from state[0xD38] and plays the
- * SPnnPRE90 / SPnnPRE91 sequences of actor n around an attach_99C.
- * ---------------------------------------------------------------------- */
-static void c_pre90_scene(i32 n) {                          /* sub_1001A24C */
-    c8 ob[256];
-    c8 b[256];
-    snprintf(ob, sizeof(ob), "OB%02d", ST(V_PRE90_OBJECT));
-    snprintf(b, sizeof(b), "SP%02dPRE90", n);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "P%02d_65535", n);
-    CB->animation(b);
-    CB->link_objet(n, ob, 0x1B, 0);
-    snprintf(b, sizeof(b), "P%02dPRE91", n);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "P%02d_65535", n);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "SP%02darr01_10", n);
-    CB->animation(b);
-}
-
-/* -------------------------------------------------------------------------
- * sub_1001A35C (thunk sub_100010AF) — used only by trig26.
- * __fastcall(ecx=hero, edx=n) + stdcall stack (a1 unused, a2, a3);
- * ret 0Ch. a2/a3 go to query_990.
- * ---------------------------------------------------------------------- */
-static void c_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3) { /* sub_1001A35C */
-    c8 b[256];
-    (void)a1;   /* [ebp+8] is never read */
-
-    if (ST(ST_PLAYER_WEAPON) != 0 && ST(V_WEAPON_WARNED) == 1 &&
-        (ST(ST_LEVEL) == 5 || ST(ST_LEVEL) == 15 || ST(ST_LEVEL) == 18 ||
-         ST(ST_LEVEL) == 36 || ST(ST_LEVEL) == 48)) {
-        ST(ST_PLAYER_WEAPON) = 0;
-        if (ST(ST_HERO) == P_ARKHAN2) {
-            CB->animation("SP02PRE73");
-            CB->animation("P02_65535");
-        }
-        if (ST(ST_HERO) == P_ARKHAN3) {
-            CB->animation("SP03PRE73");
-            CB->animation("P03_65535");
-        }
-    }
-    if (ST(ST_PLAYER_WEAPON) != 0 && ST(V_PRE90_OBJECT) != 0)
-        c_pre90_scene(n);
-
-    if (CB->distance(a2, a3) < 0x50 && n != 6) {
-        snprintf(b, sizeof(b), "Sp%02dMAR30", hero);
-        CB->animation(b);
-        snprintf(b, sizeof(b), "P%02d_65535", hero);
-        CB->animation(b);
-    }
-    snprintf(b, sizeof(b), "SG%02dPRE80", hero);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "G%02dPRE81", hero);    /* sic: no leading 'S' */
-    CB->animation(b);
-    snprintf(b, sizeof(b), "SP%02dPRE60", n);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "P%02d_65535", n);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "SG%02dPRE82", hero);
-    CB->animation(b);
-    if (ST(ST_PLAYER_WEAPON) != 0)
-        snprintf(b, sizeof(b), "G%02darr02_10", hero);
-    else
-        snprintf(b, sizeof(b), "G%02darr01_10", hero);
-    CB->animation(b);
-    snprintf(b, sizeof(b), "SP%02darr01_10", n);
-    CB->animation(b);
-}
-
 /* trigger 26 — sub_10012166. Actor 13 (SP13) dialogue zone; when the
  * actor query fails, re-dispatches the triggers whose layer-9 bit is set. */
 static void trig26(void) {   /* sub_10012166 */
@@ -1952,7 +1880,7 @@ static void trig26(void) {   /* sub_10012166 */
                         }
                         if (ST(ST_HERO) == P_ARKHAN3)
                             CB->dialogue("L02D115", P_ARKHAN3);
-                        c_pre_scene(ST(ST_HERO), 0x0D, 1, 6, 5);
+                        lieu_pre_scene(ST(ST_HERO), 0x0D, 1, 6, 5);
                         CB->dialogue("L02D116", P_KALHI13);
                         CB->animation("SP13ARR01_50");
                         CB->modify_var(&ST(0x74), 1);

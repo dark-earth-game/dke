@@ -53,6 +53,20 @@ def load_names():
     return names
 
 
+# Shared C ports of functions most DLLs carry unchanged, by their address
+# in LIEU01 / LIEU02 (see src/levels/lieu_common.c).
+COMMON = {
+    (1, 0x1000123A): 'lieu_event4', (2, 0x1000123A): 'lieu_event4',
+    (1, 0x100022B4): 'lieu_event5', (2, 0x100022B4): 'lieu_event5',
+    (1, 0x10005BEC): 'lieu_event6', (2, 0x10005BEC): 'lieu_event6',
+    (1, 0x10001200): 'reset_floats', (2, 0x10001200): 'reset_floats',
+    (1, 0x1001932C): 'lieu_action_register', (2, 0x1001A1AC): 'lieu_action_register',
+    (1, 0x100193CC): 'pre90_scene', (2, 0x1001A24C): 'pre90_scene',
+    (1, 0x100194DC): 'lieu_pre_scene', (2, 0x1001A35C): 'lieu_pre_scene',
+    (1, 0x10019B00): 'sprintf', (2, 0x1001A980): 'sprintf',
+}
+
+
 def load_personas():
     p = os.path.join(ROOT, 'src', 'levels', 'lieu_names.h')
     if not os.path.exists(p):
@@ -321,6 +335,15 @@ def main():
         sg = signature(info, f)
         if sg in sigs:
             same[f] = sigs[sg]
+    common = {}
+    for f, hits in same.items():
+        for lv, ra, _ in hits:
+            if (lv, ra) in COMMON:
+                common[f] = COMMON[(lv, ra)]
+    base_fname = fname
+
+    def fname(v):
+        return common[v] if v in common else base_fname(v)
 
     # header
     print('; %s  image base 0x%08X' % (os.path.basename(path), pe.base))

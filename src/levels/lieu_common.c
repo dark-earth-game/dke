@@ -1,6 +1,7 @@
 /*
  * lieu_common.c — script code every level DLL carries unchanged: the
- * dialogue helper action_register, event4 (sub_1000123A), event5
+ * dialogue helper action_register, the greeting scene lieu_pre_scene
+ * (LIEU02 sub_1001A35C), event4 (sub_1000123A), event5
  * (sub_100022B4), event6 (sub_10005BEC) and the float accumulators they
  * use. tools/lieu_annotate.py lists, per DLL, which functions are
  * byte-identical to these (modulo relocations); a level whose copy differs
@@ -1029,6 +1030,78 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     }
 }
 
+
+/* -------------------------------------------------------------------------
+ * sub_1001A24C (thunk sub_100010D7) — used by lieu_pre_scene.
+ * __fastcall(ecx=n). Builds "OB%02d" from state[0xD38] and plays the
+ * SPnnPRE90 / SPnnPRE91 sequences of actor n around an attach_99C.
+ * ---------------------------------------------------------------------- */
+static void pre90_scene(i32 n) {                          /* sub_1001A24C */
+    c8 ob[256];
+    c8 b[256];
+    snprintf(ob, sizeof(ob), "OB%02d", ST(V_PRE90_OBJECT));
+    snprintf(b, sizeof(b), "SP%02dPRE90", n);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "P%02d_65535", n);
+    CB->animation(b);
+    CB->link_objet(n, ob, 0x1B, 0);
+    snprintf(b, sizeof(b), "P%02dPRE91", n);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "P%02d_65535", n);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "SP%02darr01_10", n);
+    CB->animation(b);
+}
+
+/* -------------------------------------------------------------------------
+ * sub_1001A35C (thunk sub_100010AF): the hero greets persona n (search / handshake sequence).
+ * __fastcall(ecx=hero, edx=n) + stdcall stack (a1 unused, a2, a3);
+ * ret 0Ch. a2/a3 go to query_990.
+ * ---------------------------------------------------------------------- */
+void lieu_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3) { /* sub_1001A35C */
+    c8 b[256];
+    (void)a1;   /* [ebp+8] is never read */
+
+    if (ST(ST_PLAYER_WEAPON) != 0 && ST(V_WEAPON_WARNED) == 1 &&
+        (ST(ST_LEVEL) == 5 || ST(ST_LEVEL) == 15 || ST(ST_LEVEL) == 18 ||
+         ST(ST_LEVEL) == 36 || ST(ST_LEVEL) == 48)) {
+        ST(ST_PLAYER_WEAPON) = 0;
+        if (ST(ST_HERO) == P_ARKHAN2) {
+            CB->animation("SP02PRE73");
+            CB->animation("P02_65535");
+        }
+        if (ST(ST_HERO) == P_ARKHAN3) {
+            CB->animation("SP03PRE73");
+            CB->animation("P03_65535");
+        }
+    }
+    if (ST(ST_PLAYER_WEAPON) != 0 && ST(V_PRE90_OBJECT) != 0)
+        pre90_scene(n);
+
+    if (CB->distance(a2, a3) < 0x50 && n != 6) {
+        snprintf(b, sizeof(b), "Sp%02dMAR30", hero);
+        CB->animation(b);
+        snprintf(b, sizeof(b), "P%02d_65535", hero);
+        CB->animation(b);
+    }
+    snprintf(b, sizeof(b), "SG%02dPRE80", hero);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "G%02dPRE81", hero);    /* sic: no leading 'S' */
+    CB->animation(b);
+    snprintf(b, sizeof(b), "SP%02dPRE60", n);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "P%02d_65535", n);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "SG%02dPRE82", hero);
+    CB->animation(b);
+    if (ST(ST_PLAYER_WEAPON) != 0)
+        snprintf(b, sizeof(b), "G%02darr02_10", hero);
+    else
+        snprintf(b, sizeof(b), "G%02darr01_10", hero);
+    CB->animation(b);
+    snprintf(b, sizeof(b), "SP%02darr01_10", n);
+    CB->animation(b);
+}
 
 /* A level DLL is loaded per room (LoadLibraryA/FreeLibrary, dkev
  * 0x43A4xx), so its globals start from their initial values every visit. */
