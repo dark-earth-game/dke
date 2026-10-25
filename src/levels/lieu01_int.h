@@ -10,6 +10,7 @@
 #include "libsys/common.h"
 #include "lieu_cb.h"
 #include "levels.h"
+#include "lieu_names.h"
 #include "lieu01.h"
 
 /* The state buffer of the call in flight (the DLL's dword_1002C96C). */

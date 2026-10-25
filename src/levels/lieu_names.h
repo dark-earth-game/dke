@@ -1,0 +1,169 @@
+#pragma once
+
+/*
+ * lieu_names.h — names for the numbers the LIEUnn.DLL scripts pass to the
+ * engine callbacks. Shared by every level port.
+ *
+ * Persona ids are the indices of the persos table (persos>Pnn.OME); the
+ * names come from the speaker comments in the dialogue files. Where one
+ * character has several ids (costume or story variants) the id is part of
+ * the name.
+ */
+
+/* Persona ids (PosPerso, Joindre, Combat, Fouille, Dialogue speaker, ...) */
+enum {
+    P_ARKHAN0      = 0,     /* nightclothes */
+    P_ARKHAN1      = 1,     /* guard uniform (heroes 1..3: ST_HERO) */
+    P_ARKHAN2      = 2,
+    P_ARKHAN3      = 3,
+    P_ARCHIVIST    = 5,
+    P_ARMAL        = 6,
+    P_BANDOR       = 7,
+    P_BOGDARAN     = 8,
+    P_DANRYS       = 9,
+    P_DELIA        = 10,
+    P_DHORKAN11    = 11,
+    P_KALHI12      = 12,
+    P_KALHI13      = 13,
+    P_LEONA        = 14,
+    P_LORY         = 15,
+    P_PROVIDER     = 16,
+    P_MAOR         = 17,
+    P_SUNSEER1     = 18,
+    P_SUNSEER2     = 19,
+    P_RYLSADHAR20  = 20,
+    P_RYLSADHAR21  = 21,
+    P_SORDOS       = 23,
+    P_THANANDAR24  = 24,
+    P_THANANDAR25  = 25,
+    P_PHEDORIA     = 26,
+    P_ZED27        = 27,
+    P_BORK         = 30,
+    P_GORK         = 31,
+    P_GUARD        = 32,
+    P_KALHI33      = 33,
+    P_GUARDIAN1    = 41,
+    P_GUARDIAN2    = 42,
+    P_GUARDIAN3    = 43,
+    P_GUARDIAN4    = 44,
+    P_GUARDIAN5    = 45,
+    P_GUARDIAN6    = 46,
+    P_GUARDIAN7    = 47,
+    P_GUARDIAN8    = 48,
+    P_GUARDIAN9    = 49,
+    P_GUARDIAN10   = 50,
+    P_GUARDIAN11   = 51,
+    P_GUARDIAN13   = 53,
+    P_GUARDIAN14   = 54,
+    P_GUARDIAN15   = 55,
+    P_GUARDIAN16   = 56,
+    P_GUARDIAN17   = 57,
+    P_GUARDIAN18   = 58,
+    P_GUARDIAN19   = 59,
+    P_GUARDIAN20   = 60,
+    P_MALROT1      = 61,
+    P_MALROT2      = 62,
+    P_MALROT3      = 63,
+    P_MALROT4      = 64,
+    P_MALROT5      = 65,
+    P_MALROT6      = 66,
+    P_MALROT7      = 67,
+    P_MALROT8      = 68,
+    P_KONKALITE1   = 71,
+    P_KONKALITE2   = 72,
+    P_KONKALITE3   = 73,
+    P_KONKALITE4   = 74,
+    P_KONKALITE5   = 75,
+    P_KONKALITE6   = 76,
+    P_KONKALITE7   = 77,
+    P_KONKALITE8   = 78,
+    P_KONKALITE9   = 79,
+    P_KONKALITE10  = 80,
+    P_KONKALITE11  = 81,
+    P_KONKALITE12  = 82,
+    P_KHORAD       = 83,
+    P_ZED84        = 84,
+    P_LODAR        = 86,
+    P_KABAK        = 87,
+    P_GUARDIAN23   = 88,
+    P_GUARDIAN24   = 89,
+    P_GUARDIAN25   = 93,
+    P_DHORKAN95    = 95,
+};
+
+/* Divers(op, a, b) / DiversEmpile(op, a, b) — sub_446E19 cases. */
+enum {
+    DV_DESC_POS        = 1,   /* persona a: position/heading from descriptor */
+    DV_CAN_FIGHT       = 2,   /* player ability a (7/8/9) */
+    DV_RUN             = 3,   /* persona a: run flag */
+    DV_EVENT_SOUND     = 4,   /* LnnEVn.WAV */
+    DV_ITEM_CHARGE     = 5,
+    DV_HP              = 6,   /* persona a: b < 0 reads, else writes */
+    DV_INVENTORY       = 7,
+    DV_ANGLE_TO        = 8,   /* persona a */
+    DV_IN_ZONE         = 9,   /* persona a */
+    DV_TRANSITION      = 10,  /* dissolve, hold, restore */
+    DV_IDLE_TIME       = 11,
+    DV_LOOK_AT_PLAYER  = 12,  /* persona a */
+    DV_PRELOAD_ANIMS   = 13,
+    DV_NIGHT           = 14,
+    DV_FLAG_4B2B98     = 15,
+    DV_SCREEN          = 16,
+    DV_BIG_ANIM        = 17,
+    DV_WAS_HIT         = 18,  /* persona a */
+    DV_INN_MENU        = 19,
+    DV_DARKNESS        = 20,  /* score_counter */
+    DV_CINEMATIC       = 21,
+    DV_SAVE_SCREEN     = 22,
+    DV_COMBAT_STANCE   = 23,
+    DV_MUSIC           = 24,
+    DV_GIVE_ITEM       = 25,
+    DV_PERSONA_ITEMS   = 26,  /* persona a */
+    DV_END_GAME        = 27,
+    DV_BONE_SOUND      = 28,
+    DV_PERSONA_PRESENT = 29,  /* persona a */
+    DV_P25_SOUND       = 30,
+    DV_STRUCT_DIST     = 31,
+    DV_PLAYER_ZONE     = 32,  /* collision zone under the player */
+    DV_CREDITS         = 33,
+    DV_PLAYER_LOOK_AT  = 34,  /* persona a */
+    DV_CUT_SPEECH      = 35,
+    DV_COMBAT_NEAR     = 36,
+    DV_SCALE_BODY      = 37,
+    DV_SCALE_BONE      = 38,
+    DV_P40_TIMER       = 39,
+    DV_ANIM_NAME       = 40,  /* persona a */
+    DV_HUD_REFRESH     = 41,
+    DV_WORLD_TICK      = 42,
+    DV_SPECIAL_MODE    = 43,
+    DV_USE_ITEM        = 44,
+    DV_WAIT_KEY        = 45,
+    DV_ACTION_EDGE     = 46,
+    DV_SOLID_TILE      = 47,
+    DV_RANDOM          = 48,
+};
+
+/* ChangeCamera(camera, mode) */
+enum {
+    CAM_AUTO   = 1,
+    CAM_LOCKED = 2,
+    CAM_ANY    = 99,          /* camera: keep the current one */
+};
+
+/* Bloque(mode): 3 opens a cutscene bracket (player + camera), 0 closes it. */
+enum {
+    BLOQUE_NONE = 0,
+    BLOQUE_ALL  = 3,
+};
+
+/* Script state slots the engine reads or writes (byte offsets for ST()). */
+#define ST_UPDOWN_KEY     0x004
+#define ST_ACTION_KEY     0x00C   /* action-key edge */
+#define ST_COMBAT_STANCE  0x010   /* dword_505C50 */
+#define ST_SCRIPT_BUSY    0x030
+#define ST_VIE(id)        (0x190 + (id) * 4)   /* persona state, id >= 4 */
+#define ST_HERO           0x194   /* current hero persona; 4 = dead */
+#define ST_LOCKED_CAMERA  0xF90   /* dword_506BD0 */
+
+/* ST_VIE values: the engine writes VIE_DEAD when the persona is killed. */
+#define VIE_DEAD          2
