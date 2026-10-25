@@ -498,15 +498,15 @@ static void tick_body(void) {
                     if (ST(0x8B4) == 0) {
                         ST(0x8B4) = 1;
                         if (ST(ST_HERO) == P_ARKHAN2) {
-                            if (ST(0x198) == 1)
+                            if (ST(ST_SPECIAL_MODE) == 1)
                                 l01_action_register("L01D60A", 2, "SG02DIA03", NULL);
-                            if (ST(0x198) == 0)
+                            if (ST(ST_SPECIAL_MODE) == 0)
                                 l01_action_register("L01D60B", 2, "SG02DIA03", NULL);
                         }
                         if (ST(ST_HERO) == P_ARKHAN3) {
-                            if (ST(0x198) == 1)
+                            if (ST(ST_SPECIAL_MODE) == 1)
                                 l01_action_register("L01D61A", 3, "SG03DIA03", NULL);
-                            if (ST(0x198) == 0)
+                            if (ST(ST_SPECIAL_MODE) == 0)
                                 l01_action_register("L01D61B", 3, "SG03DIA03", NULL);
                         }
                         l01_action_register("L01D30A", 0x57, "SP87DIA50", "SP87ARR01_10");
@@ -943,14 +943,14 @@ static void event4(i32 arg) {        /* sub_1000123A */
         break;
 
     case 19:
-        if (ST(0xEBC) == 1 && ST(0x18) != 0x1C)
+        if (ST(0xEBC) == 1 && ST(ST_LEVEL) != 28)
             ST(0xEBC) = 2;
         break;
 
     case 20:
-        if (ST(0x18) == 0x12)
+        if (ST(ST_LEVEL) == 18)
             CB->bruitage("L08B06", 2740, 1983);
-        if (ST(0x18) == 8) {
+        if (ST(ST_LEVEL) == 8) {
             CB->select_pile(2, 1);
             CB->bruitage("L08B06", 44, -960);
             CB->select_pile(0, 1);
@@ -965,8 +965,8 @@ static void event4(i32 arg) {        /* sub_1000123A */
     case 28:
         if (ST(0x390) == 0) {
             CB->bloque(BLOQUE_NONE);
-            ST(0x18) = 0x17;
-            CB->change_piece(0x19, -1);
+            ST(ST_LEVEL) = 23;
+            CB->change_piece(25, -1);
         }
         break;
 
@@ -1066,9 +1066,9 @@ static void event4(i32 arg) {        /* sub_1000123A */
         CB->animation("SP01ACT96");
         CB->animation("ar");
         c8 buf1[48], buf2[48];
-        snprintf(buf1, sizeof(buf1), "SOB24%c", (char)(ST(0x128) + 0x41));
+        snprintf(buf1, sizeof(buf1), "SOB24%c", (char)(ST(ST_USED_VARIANT) + 0x41));
         CB->etat_objet(buf1, -1, -1, -1, -1, -1, -1, -2, 0);
-        snprintf(buf2, sizeof(buf2), "SOB77%c", (char)(ST(0x128) + 0x41));
+        snprintf(buf2, sizeof(buf2), "SOB77%c", (char)(ST(ST_USED_VARIANT) + 0x41));
         CB->etat_objet(buf2, -1, -1, -1, -1, -1, -1, -3, 0);
         CB->bloque(BLOQUE_NONE);
         break;
@@ -1187,12 +1187,12 @@ static void e5_clamp6(i32 k) {
 /* SGxxMAN03/04 (levels 2,3) by [0x198], + ar_50 + clamp(k). */
 static void e5_man34(i32 k) {
     if (ST(ST_HERO) == P_ARKHAN2) {
-        if (ST(0x198) == 1) CB->animation("SG02MAN03");
-        if (ST(0x198) == 0) CB->animation("SG02MAN04");
+        if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG02MAN03");
+        if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG02MAN04");
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
-        if (ST(0x198) == 1) CB->animation("SG03MAN03");
-        if (ST(0x198) == 0) CB->animation("SG03MAN04");
+        if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG03MAN03");
+        if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG03MAN04");
     }
     CB->animation("ar_50");
     e5_clamp6(k);
@@ -1219,7 +1219,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 27:
     case 35:
     case 55:
-        if (ST(0x18) == 0x23) {
+        if (ST(ST_LEVEL) == 35) {
             e5_reset();
             CB->animation("SG00ATT01");
             CB->bloque(BLOQUE_NONE);
@@ -1265,7 +1265,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
                 }
                 ST(0xEA8) = 1;
             }
-            if (ST(0x18) == 2 && ST(ST_LOCKED_CAMERA) == 1 && ST(0xEB8) == 1
+            if (ST(ST_LEVEL) == 2 && ST(ST_LOCKED_CAMERA) == 1 && ST(0xEB8) == 1
                 && CB->divers(DV_PERSONA_PRESENT, P_PHEDORIA, 0)) {
                 CB->divers(DV_COMBAT_STANCE, 0, 0);
                 if (CB->distance(20, 31) < 0x96)
@@ -1331,12 +1331,12 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 13:  /* 0x39E1 — Sar mannequin dialogue + layer clamp */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) {
-            if (ST(0x198) == 1) CB->animation("SG02MAN01");
-            if (ST(0x198) == 0) CB->animation("SG02MAN02");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG02MAN01");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG02MAN02");
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
-            if (ST(0x198) == 1) CB->animation("SG03MAN01");
-            if (ST(0x198) == 0) CB->animation("SG03MAN02");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG03MAN01");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG03MAN02");
         }
         CB->animation("ar_50");
         e5_clamp6(0x64);
@@ -1358,7 +1358,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 81:  /* 0x36B3 — LCOD23/24 A-G */
         e5_reset();
         if (ST(0xEAC) == 0) ST(0xEAC) = 1;
-        if (ST(0x18) == 0x1C) ST(0x84) = 1;
+        if (ST(ST_LEVEL) == 28) ST(0x84) = 1;
         if (ST(ST_HERO) == P_ARKHAN2) {
             l01_action_register("LCOD23A", 2, "SP02ACT64", "SP02ACT64");
             CB->dialogue("LCOD23B", P_ARKHAN2);
@@ -1402,12 +1402,12 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 34:  /* 0x44E2 — SGxxMAN01/02 + clamp 0x4B */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) {
-            if (ST(0x198) == 1) CB->animation("SG02MAN01");
-            if (ST(0x198) == 0) CB->animation("SG02MAN02");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG02MAN01");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG02MAN02");
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
-            if (ST(0x198) == 1) CB->animation("SG03MAN01");
-            if (ST(0x198) == 0) CB->animation("SG03MAN02");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG03MAN01");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG03MAN02");
         }
         CB->animation("ar_50");
         e5_clamp6(0x4B);
@@ -1437,20 +1437,20 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 44:  /* 0x4929 — SGxxMAN (levels 0-3) + clamp 0x96 */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN0) {
-            if (ST(0x198) == 1) CB->animation("SG00MAN01");
-            if (ST(0x198) == 0) CB->animation("SG00MAN02");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG00MAN01");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG00MAN02");
         }
         if (ST(ST_HERO) == P_ARKHAN1) {
-            if (ST(0x198) == 1) CB->animation("SG01MAN01");
-            if (ST(0x198) == 0) CB->animation("SG01MAN02");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG01MAN01");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG01MAN02");
         }
         if (ST(ST_HERO) == P_ARKHAN2) {
-            if (ST(0x198) == 1) CB->animation("SG02MAN03");
-            if (ST(0x198) == 0) CB->animation("SG02MAN04");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG02MAN03");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG02MAN04");
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
-            if (ST(0x198) == 1) CB->animation("SG03MAN03");
-            if (ST(0x198) == 0) CB->animation("SG03MAN04");
+            if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG03MAN03");
+            if (ST(ST_SPECIAL_MODE) == 0) CB->animation("SG03MAN04");
         }
         CB->animation("ar_50");
         e5_clamp6(0x96);
@@ -1520,11 +1520,11 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         else if (phase == 1) ob = "OB21B";
         else                 ob = "OB21C";
         e5_reset();
-        if (ST(0x198) == 1) {
+        if (ST(ST_SPECIAL_MODE) == 1) {
             if (ST(ST_HERO) == P_ARKHAN2) CB->animation("SP02ATT19");
             if (ST(ST_HERO) == P_ARKHAN3) CB->animation("SP03ATT19");
         }
-        if (ST(0x198) == 0) {
+        if (ST(ST_SPECIAL_MODE) == 0) {
             if (ST(ST_HERO) == P_ARKHAN2) CB->animation("SP02ATT20");
             if (ST(ST_HERO) == P_ARKHAN3) CB->animation("SP03ATT20");
         }
@@ -1538,7 +1538,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 24: {  /* 0x3F9C — OB24%c/OB77%c timer, phase=array index */
         if (ST(ST_COMBAT_STANCE) != 0) break;
         e5_reset();
-        if (ST(0x198) != 1 && (ST(0x198) != 0 || ST(ST_HERO) == P_ARKHAN1))
+        if (ST(ST_SPECIAL_MODE) != 1 && (ST(ST_SPECIAL_MODE) != 0 || ST(ST_HERO) == P_ARKHAN1))
             goto case24_fallback;
         {
             i32 *timer = &ST(0x140 + phase * 4);
@@ -1572,7 +1572,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
             }
         }
     case24_fallback:
-        if (ST(0x198) == 0 && ST(ST_HERO) == P_ARKHAN1) {
+        if (ST(ST_SPECIAL_MODE) == 0 && ST(ST_HERO) == P_ARKHAN1) {
             ST(0x140 + phase * 4) = 0;
             CB->animation("SP01ACT98");
             CB->evenement(0x50, 0x7D0);
@@ -1603,7 +1603,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->divers_empile(DV_RANDOM, 0, 0);
         CB->divers_empile(DV_RANDOM, 0, 0);
         if (ST(0xF44) == 0) {
-            if (ST(0x18) == 0x1E) {
+            if (ST(ST_LEVEL) == 30) {
                 if (ST(ST_LOCKED_CAMERA) != 5 || ST(ST_VIE(P_KONKALITE2)) != VIE_DEAD) goto case71_lcod;
                 ST(0xF44) = 1;
                 i32 v4 = CB->divers(DV_DESC_POS, ST(ST_HERO), 2);
@@ -1647,7 +1647,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
                 CB->bloque(BLOQUE_NONE);
                 break;
             }
-            if (ST(0x18) == 0x25) {
+            if (ST(ST_LEVEL) == 37) {
                 if (ST(ST_LOCKED_CAMERA) != 0 || CB->distance(1, 6) >= 0x15E)
                     goto case71_lcod;
                 ST(0xF44) = 1;
@@ -1678,7 +1678,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
             CB->bloque(BLOQUE_NONE);
             break;
         } else {
-            if (ST(0x18) == 0x23) {
+            if (ST(ST_LEVEL) == 35) {
                 CB->bloque(BLOQUE_ALL);
                 if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("LCOD670", 2, "SG02DIA02", NULL);
                 if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("LCOD671", 3, "SG03DIA02", NULL);
@@ -1707,7 +1707,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     case 88: {  /* 0x54F1 — SPxxATT02 health decrement */
         e5_reset();
         if (ST(0x6D8) == 0) {
-            if (ST(0x198) == 0) {
+            if (ST(ST_SPECIAL_MODE) == 0) {
                 ST(0x6D8) = 1;
                 if (ST(ST_HERO) == P_ARKHAN1) {
                     i32 v = CB->divers(DV_HP, P_ARKHAN1, -1);
@@ -1731,7 +1731,7 @@ static void event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
                     CB->animation("ar_50");
                 }
             }
-            if (ST(0x198) == 1) {
+            if (ST(ST_SPECIAL_MODE) == 1) {
                 if (ST(ST_HERO) == P_ARKHAN1) {
                     CB->animation("SG00ATT01");
                     CB->dialogue("LCOD25", P_ARKHAN1);
