@@ -471,6 +471,7 @@ static void e5_att01_lcod(const c8 *a, const c8 *b) {
 }
 
 void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
+    ST(ST_SCRIPT_BUSY) = 0;                /* 0x100022CA */
     switch (arg) {
 
     case OB_DISH:   /* 0x22E1 */
