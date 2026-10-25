@@ -44,7 +44,7 @@
 #include "music.h"
 #include "libsys/file_system.h"
 #include "lieu_action.h"
-#include "lieu01.h"
+#include "levels/lieu01.h"
 #include "player.h"
 #include "dialogue.h"
 #include "actor.h"

@@ -1,12 +1,13 @@
 BIN = ./bin/game
-INCLUDES = -I./src/*.h -I./src/libsys
+INCLUDES = -I./src -I./src/libsys
 
 CFLAGS = -std=c99 -Wall -Wno-missing-braces -g -DDEBUG -DMEM_DEBUG -O3 -mavx2
 
 BASE_SRCS = src/libsys/*.c \
 			src/libsys/audio/*.c \
 			src/libsys/graphics/*.c \
-			src/*.c
+			src/*.c \
+			src/levels/*.c
 
 ifeq ($(shell uname),Darwin)
 	CC = $(shell brew --prefix llvm)/bin/clang
