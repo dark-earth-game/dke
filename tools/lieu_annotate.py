@@ -406,7 +406,10 @@ def main():
         end = order[i + 1] if i + 1 < len(order) else f
         if end - f < 8:
             continue           # jump target inside a shared function
-        print(';   %-24s %6d bytes  %d calls' % (fname(f), end - f, callers.get(f, 0)))
+        body = [t for a, t in ins[idx[f]:] if a < end]
+        script = any(('dword ptr [0x%08x]' % g) in t for t in body for g in list(slot) + [state_g or 0])
+        print(';   %-24s %6d bytes  %d calls%s' % (fname(f), end - f, callers.get(f, 0),
+                                                 '' if script else '  (no CB/ST: C runtime, skip)'))
     if same:
         print('; functions identical to an already-ported level (reuse the C port):')
         rest = 0
