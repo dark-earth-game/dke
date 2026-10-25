@@ -433,7 +433,7 @@ class Structurer:
                 if best is None:
                     s.used_labels.add(it.target)
                     c = it.cond
-                    out.append(Node('stmt', text='if (%s) goto L%X;' % (cond_text(c[0], c[1], False), it.target & 0xffff), addr=it.addr))
+                    out.append(Node('stmt', text='if (%s) goto L%X;' % (cond_text(c[0], c[1], False), it.target & 0xfffffff), addr=it.addr))
                     i += 1; continue
                 k, B, S = best
                 memo = {}
