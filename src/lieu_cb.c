@@ -44,7 +44,7 @@
 #include "music.h"
 #include "libsys/file_system.h"
 #include "lieu_action.h"
-#include "levels/lieu01.h"
+#include "levels/levels.h"
 #include "player.h"
 #include "dialogue.h"
 #include "actor.h"
@@ -2184,13 +2184,19 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
  * action it queued before the level starts (with dword_4B52DC = -1, which
  * makes is_entity_in_animation report "done"), then fire trigger 41
  * (sub_44A263, "room entered"). */
+/* The current level's script entry (NULL: not ported). */
+static i32 lieu_call(i32 op, i32 arg, i32 arg2) {
+    lieu_entry_t fe = lieu_level_entry(g_lieu_level);
+    return fe ? fe(op, g_lieu_state, arg, arg2) : 0;
+}
+
 static void lieu_run_init(void) {
     g_lieu_loading = 1;
-    lieu01_fonction_editor(LIEU_OP_INIT, g_lieu_state, 0, 0);   /* op 1 */
+    lieu_call(LIEU_OP_INIT, 0, 0);                                /* op 1 */
     u32 t0 = state ? state->current_game_time : 0;
     for (i32 guard = 0; lieu_action_pending() && guard < 100000; guard++)
         lieu_action_run(t0 + (u32)guard);
-    lieu01_fonction_editor(LIEU_OP_EVENT, g_lieu_state, 0x29, 0);  /* op 3 (41) */
+    lieu_call(LIEU_OP_EVENT, 0x29, 0);                            /* op 3 (41) */
     g_lieu_loading = 0;
 }
 /* sub_43A63D @ 0x43A79B: a new game clears the script variables. */
@@ -2222,9 +2228,8 @@ void lieu_enter(i32 level_id) {
     /* Trace on via env LIEU_TRACE=1 (observe opcode dispatch at runtime). */
     g_lieu_trace = (getenv("LIEU_TRACE") != NULL);
 
-    if (level_id != 1) {
-        print("lieu: level %02d has no native scripting yet (only L01 ported)\n",
-              level_id);
+    if (!lieu_level_entry(level_id)) {
+        print("lieu: level %02d has no native scripting yet\n", level_id);
         return;
     }
 
@@ -2233,7 +2238,7 @@ void lieu_enter(i32 level_id) {
      * the value 4. ST(0x964) = 1 selects trig00's fresh-entry setup.
      * TODO: take both from the engine's game state once hero swaps exist. */
     LIEU_ST(g_lieu_state, 0x194) = actor_hero_id();
-    LIEU_ST(g_lieu_state, 0x964) = 1;
+    if (level_id == 1) LIEU_ST(g_lieu_state, 0x964) = 1;   /* L01 trig00 entry phase */
     /* +0x0C is dword_505C4C, the per-frame action-key flag sub_449F9F
      * writes (see lieu_detect_zone); it is not a constant. */
 
@@ -2305,16 +2310,14 @@ i32 lieu_detect_zone(void) {                              /* sub_449E03 */
 void lieu_tick(u32 now_ms) {
     zones_follow();
     /* Per-frame: engine calls op -1 every frame (drain + tick_body). */
-    if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_TICK, g_lieu_state, 0, 0);   /* op -1 */
+    lieu_call(LIEU_OP_TICK, 0, 0);   /* op -1 */
 
     (void)now_ms;   /* the piles are drained by actor_frame (sub_461468 order) */
 }
 
 void lieu_exit(void) {
     /* Teardown: engine op 2 (DLL handler is a no-op). */
-    if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_TEARDOWN, g_lieu_state, 0, 0); /* op 2 */
+    lieu_call(LIEU_OP_TEARDOWN, 0, 0); /* op 2 */
     g_lieu_level = 0;
 }
 
@@ -2327,16 +2330,13 @@ void lieu_exit(void) {
  * real engine systems later) to exercise the trigger / event handlers.
  * ---------------------------------------------------------------------- */
 void lieu_zone_trigger(i32 zone_id) {   /* op 3: run trigger[zone_id]      */
-    if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_EVENT, g_lieu_state, zone_id, 0);
+    lieu_call(LIEU_OP_EVENT, zone_id, 0);
 }
 void lieu_object_timer(i32 id) {        /* op 4: event4(id)                */
-    if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_CALL4, g_lieu_state, id, 0);
+    lieu_call(LIEU_OP_CALL4, id, 0);
 }
 void lieu_pending_event(i32 v, i32 phase) { /* op 5: event5(v, phase)      */
-    if (g_lieu_level == 1)
-        lieu01_fonction_editor(LIEU_OP_CALL5, g_lieu_state, v, phase);
+    lieu_call(LIEU_OP_CALL5, v, phase);
 }
 
 /* Read/write the live state buffer (so the engine can populate the fields

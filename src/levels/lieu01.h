@@ -15,32 +15,7 @@
 
 #include "libsys/common.h"
 #include "lieu_cb.h"
-
-/*
- * Opcodes, matching the original jump table (index = opcode+1), verified
- * against dkev.exe drivers sub_44968B (per-frame) / sub_449BAD (teardown):
- *   op -1 = per-frame tick (drain pending sound + tick_body) — EVERY frame
- *   op  1 = INIT (arm; edx = state buffer dword_505C40; flag = reload)
- *   op  2 = teardown (DLL-side no-op; engine frees sounds + unloads)
- *   op  3 = dispatch trigger[arg], arg = zone id from sub_449F9F
- *   op  4 = event4(arg), arg = expired object-timer id
- *   op  5 = event5(arg), arg = pending event (dword_507258)
- *   op  6 = event6(arg) (LCOD zone sub-triggers)
- * NB: there is no runtime op-0 call in the engine.
- */
-typedef enum {
-    LIEU_OP_TICK   = -1,  /* per-frame: drain pending sound + tick body */
-    LIEU_OP_INIT   = 1,
-    LIEU_OP_TEARDOWN = 2,
-    LIEU_OP_EVENT  = 3,   /* dispatch trigger[arg] */
-    LIEU_OP_CALL4  = 4,
-    LIEU_OP_CALL5  = 5,
-    LIEU_OP_CALL6  = 6,
-} lieu_opcode_e;
-
-/* Runtime dispatch trace: when non-zero, each lieu01_fonction_editor call
- * logs "lieu01: op=N arg=M". Toggle from the bridge / a debug keybind. */
-extern i32 g_lieu_trace;
+#include "levels.h"
 
 /*
  * lieu01_fonction_editor — the exported entry, hand-ported.
