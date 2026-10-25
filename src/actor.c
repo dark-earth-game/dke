@@ -784,6 +784,39 @@ static void actor_place_ex(i32 id, entity_t *e, i32 x, i32 z, i32 facing,
     }
 }
 
+static void actor_place_ex(i32 id, entity_t *e, i32 x, i32 z, i32 facing,
+                           const c8 *anim, i32 zone, i32 radius);
+
+/* sub_465278 @ 0x465278: replace the player with hero `id` (0..3), e.g.
+ * Arkhan putting his uniform on (P00 -> P01). The new actor takes the old
+ * one's spot, heading, combat stance and a few bookkeeping fields. */
+void actor_hero_swap(i32 id) {
+    entity_t *old = g_player_entity;
+    if (id < 0 || id > 0x62 || !old || !EROOT(old)) return;
+    entity_t keep = *old;                                   /* rep movsd 0x3A8 */
+    i32 px = EROOT(old)->pos[0], py = EROOT(old)->pos[1], pz = EROOT(old)->pos[2];
+    i32 head = EROOT(old)->rot[2];
+    lieu_set_death_state(id);                               /* game_state = game_death_state */
+    lieu_zone_detach(old);
+    g_player_entity = NULL;
+    actor_free(old);                                        /* sub_4658D4 */
+    entity_t *e = actor_create(id);                         /* sub_46493B */
+    if (!e) { print("actor: hero swap to %d failed\n", id); return; }
+    g_player_entity = e;
+    actor_place_ex(id, e, px, pz, head, "ar", -1, -1);      /* sub_463FB5 */
+    EROOT(e)->pos[0] = px; EROOT(e)->pos[1] = py; EROOT(e)->pos[2] = pz;
+    for (i32 k = 0; k < 4; k++) E32(e, k * 4) = E32(&keep, 0x10 + k * 4);
+    for (i32 k = 0; k < 4; k++) E32(e, 0x78 + k * 4) = E32(&keep, 0x78 + k * 4);
+    E32(e, 0x64) = E32(&keep, 0x64);
+    E32(e, 0x70) = E32(&keep, 0x70);
+    E32(e, 0x74) = E32(&keep, 0x74);
+    E32(e, 0x90) = E32(&keep, 0x90);
+    E32(e, 0x94) = E32(&keep, 0x94);
+    E32(e, 0xD60) = E32(&keep, 0xD60);
+    E32(e, 0xCF0) = 1;
+    print("actor: hero swap -> P%02d\n", id);
+}
+
 entity_t *actor_pos_perso(i32 id, i32 x, i32 z, i32 facing, i32 vie,
                           const c8 *anim, i32 zone, i32 radius) {    /* sub_4640BC */
     /* 0x4640E9..0x464250: the 0x62..0x67 ids swap the player to another
@@ -797,10 +830,10 @@ entity_t *actor_pos_perso(i32 id, i32 x, i32 z, i32 facing, i32 vie,
     switch (vie) {
     case 0: case 1: case 2:
         if (id >= 0 && id < HERO_COUNT) {
-            /* sub_465278 switches hero when the id differs from the current
-             * one; with a single hero loaded it just reuses the player. */
-            if (id != g_hero_id && vie == 0)
-                print("actor: PosPerso hero %d (current %d) — swap not ported\n", id, g_hero_id);
+            /* 0x4643A0: another hero, or vie 0 (reload), rebuilds the player
+             * (sub_465278); vie 0 then counts as 1. */
+            if (id != g_hero_id || vie == 0) actor_hero_swap(id);
+            if (vie == 0) vie = 1;
             e = g_player_entity;
             if (e) E32(e, 0xC78) = 0;
         } else {

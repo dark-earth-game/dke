@@ -2920,6 +2920,9 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
  */
 /* Headless autopilot: DKE_AUTOWALK=<ms> walks forward once that much game
  * time has passed since the first frame. */
+/* DKE_AUTOPATH waypoint reached so far. */
+static i32 s_wp = 0;
+
 static i32 scene_autowalk_on(void) {
     static u32 t0 = 0;
     if (!getenv("DKE_AUTOWALK")) return 0;
@@ -2948,7 +2951,22 @@ i32 scene_render(system_t *sys) {
             u32 t = (u32)system_get_gametime();
             if (t >= next) next = t + hold + 2000;
             if (next - t > 2000) action = 1;
-            if (scene_autowalk_on() && !getenv("DKE_WALKACTION")) action = 0;
+            /* DKE_WALKACTION=<n>: keep pressing while walking, but only
+             * from DKE_AUTOPATH waypoint n onwards ("1" = from the start;
+             * comma list "a-b,c" = press only between those waypoints). */
+            if (scene_autowalk_on()) {
+                const c8 *wa = getenv("DKE_WALKACTION");
+                i32 ok = 0;
+                for (const c8 *q = wa; q && *q; ) {
+                    i32 lo = atoi(q), hi = lo;
+                    const c8 *dash = strchr(q, '-'), *comma = strchr(q, ',');
+                    if (dash && (!comma || dash < comma)) hi = atoi(dash + 1);
+                    else if (!comma) hi = 1 << 30;
+                    if (s_wp >= lo - 1 && s_wp <= hi) ok = 1;
+                    q = comma ? comma + 1 : NULL;
+                }
+                if (!ok) action = 0;
+            }
         }
         lieu_set_action_key(action);
         lieu_set_updown_key(sys ? (sys->actions[38] || sys->actions[40]) : 0);
@@ -3228,7 +3246,6 @@ i32 scene_render(system_t *sys) {
                     want = (i32)strtol(rest + 1, NULL, 16) & 0xFFFF;
                 /* DKE_AUTOPATH="x,z;x,z;..." (world units): once walking,
                  * head for each waypoint in turn (heading 0 = +Z). */
-                static i32 s_wp = 0;
                 const c8 *path = getenv("DKE_AUTOPATH");
                 if (path && scene_autowalk_on()) {
                     const c8 *q = path;
@@ -3238,6 +3255,14 @@ i32 scene_render(system_t *sys) {
                         f64 tx = strtod(q, &r2), tz = (r2 && *r2 == ',') ? strtod(r2 + 1, NULL) : 0;
                         f64 dx = tx - EROOT(pe)->pos[0], dz = tz - EROOT(pe)->pos[2];
                         if (dx * dx + dz * dz < 12000.0 * 12000.0) s_wp++;
+                        /* Stalled (blocked) for ~1 s: take the next waypoint. */
+                        static i32 s_lx = 0, s_lz = 0, s_still = 0;
+                        if (abs(EROOT(pe)->pos[0] - s_lx) + abs(EROOT(pe)->pos[2] - s_lz) < 300) {
+                            if (++s_still > 90) { s_wp++; s_still = 0; }
+                        } else {
+                            s_still = 0;
+                        }
+                        s_lx = EROOT(pe)->pos[0]; s_lz = EROOT(pe)->pos[2];
                         want = (i32)(-atan2(dx, dz) * 65536.0 / (2.0 * 3.14159265358979)) & 0xFFFF;
                     } else {
                         E32(pe, 0xCEC) = mode = 0;

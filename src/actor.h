@@ -57,6 +57,9 @@ void actor_free(entity_t *e);
 /* game_state @ 0x4B70E8: the hero being played (0..3). */
 i32 actor_hero_id(void);
 
+/* sub_465278: replace the player with hero id (P00 -> P01 ...). */
+void actor_hero_swap(i32 id);
+
 /* sub_46E4A8: free the companion slots on a room change. */
 void actor_release_companions(void);
 
