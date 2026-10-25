@@ -413,7 +413,7 @@ class Structurer:
                 elif t == i + 1: pass
                 else:
                     s.used_labels.add(it.target)
-                    out.append(Node('stmt', text='goto L%X;' % (it.target & 0xffff), addr=it.addr))
+                    out.append(Node('stmt', text='goto L%X;' % (it.target & 0xfffffff), addr=it.addr))
                 i += 1; continue
             if it.kind == 'cond':
                 j = i
@@ -468,9 +468,9 @@ def render(nodes, ind=1, out=None, comment_ifs=True):
     pad = '    ' * ind
     for n in nodes:
         if n.kind == 'stmt': out.append(pad + n.text)
-        elif n.kind == 'label': out.append('L%X:' % (n.addr & 0xffff))
+        elif n.kind == 'label': out.append('L%X:' % (n.addr & 0xfffffff))
         elif n.kind == 'if':
-            out.append(pad + '/* 0x%X */' % (n.addr & 0xffff))
+            out.append(pad + '/* 0x%X */' % (n.addr & 0xfffffff))
             render_if(n, ind, out)
     return out
 
