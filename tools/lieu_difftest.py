@@ -260,6 +260,13 @@ R16 = {'ax': 0, 'cx': 1, 'dx': 2, 'bx': 3, 'sp': 4, 'bp': 5, 'si': 6, 'di': 7}
 JCC = {'je', 'jne', 'jl', 'jge', 'jle', 'jg', 'ja', 'jae', 'jb', 'jbe', 'js', 'jns'}
 
 
+class Runaway(Exception):
+    """Unbounded recursion in the DLL: the mock callbacks answer the same
+    for the same arguments, so a guard such as `in_zone(...) && direction(...)`
+    that makes trigger A call trigger B and back never ends. The real engine's
+    answers change between calls; the case is not a valid input."""
+
+
 class EmuError(Exception):
     pass
 
@@ -582,7 +589,9 @@ class Emu:
                 f = code[pc] = decode(self.ctx, pc)
             self.steps += 1
             if self.steps > maxsteps:
-                raise EmuError('step limit')
+                if STACK - self.r[4] > 4096:
+                    raise Runaway('step limit at %08x, stack depth %d' % (pc, STACK - self.r[4]))
+                raise EmuError('step limit at %08x' % pc)
             pc = f(self)
 
 
@@ -856,7 +865,7 @@ def decode(ctx, pc):
         if direct:
             tgt = int(ops[0], 16)
             tfun = L.func_of(L.resolve(tgt))
-            if not ctx.ev and (cmt.startswith('lieu_event') or cmt in ('reset_floats', 'pre90_scene')):
+            if not ctx.ev and (cmt.startswith('lieu_event') or cmt == 'reset_floats'):
                 raise EmuError('%08x: call to shared %s not supported' % (pc, cmt))
         else:
             a = O(0)
@@ -1070,7 +1079,7 @@ def explore(ctx, op, vals, slots, argchoices, budget, seed):
         n += 1
         try:
             e = emulate(ctx, c, op)
-        except (EmuError, NotImplementedError, KeyError):
+        except (EmuError, Runaway, NotImplementedError, KeyError):
             continue
         fresh = bool(e.cov - covered)
         if fresh:
@@ -1361,6 +1370,19 @@ def run_target(t):
             cases.append(make_case(rng, vals, slots, ac))
     for _ in range(extra):
         cases.append(make_case(rng, vals, slots, rng.choice(argchoices)))
+    # emulate first: runaway-recursion cases are dropped before the C side
+    # (which would overflow its stack on them) sees them
+    emu = []
+    for c in cases:
+        try:
+            emu.append(emulate(ctx, c, op))
+        except Runaway:
+            emu.append(None)
+        except (EmuError, NotImplementedError, KeyError, IndexError) as ex:
+            emu.append(ex)
+    runaway = sum(1 for x in emu if x is None)
+    cases = [c for c, x in zip(cases, emu) if x is not None]
+    emu = [x for x in emu if x is not None]
     res = run_c(harness, op, cases)
     cov = set()
     funcs = set()
@@ -1369,10 +1391,9 @@ def run_target(t):
     badargs = collections.Counter()
     mism = []
     errs = []
-    for c, cr in zip(cases, res):
-        try:
-            e = emulate(ctx, c, op)
-        except (EmuError, NotImplementedError, KeyError, IndexError) as ex:
+    for c, cr, e in zip(cases, res, emu):
+        if isinstance(e, Exception):
+            ex = e
             err += 1
             if len(errs) < 2:
                 errs.append(repr(ex))
@@ -1403,7 +1424,7 @@ def run_target(t):
     both = sum(1 for a in jcc if (a, True) in cov and (a, False) in cov)
     oneway = [(a, (a, True) in cov) for a in jcc if ((a, True) in cov) != ((a, False) in cov)]
     never = [a for a in jcc if (a, True) not in cov and (a, False) not in cov]
-    return dict(label=label, cases=ran, bad=bad, pure=pure, err=err, errs=errs, mism=mism, jcc=len(jcc), both=both,
+    return dict(label=label, cases=ran, bad=bad, pure=pure, err=err, runaway=runaway, errs=errs, mism=mism, jcc=len(jcc), both=both,
                 oneway=oneway, never=never, funcs=funcs, secs=time.time() - t0, argsseen=argsseen, badargs=badargs)
 
 
@@ -1562,6 +1583,8 @@ def main():
         status = 'ok' if not r['bad'] and not r['err'] else ('MISMATCH x%d' % r['bad'] if r['bad'] else 'EMU-ERROR x%d' % r['err'])
         if status == 'ok' and r['pure']:
             status += ' (%d cases differ only in pure queries)' % r['pure']
+        if r.get('runaway'):
+            status += ' (%d runaway-recursion cases skipped)' % r['runaway']
         print('%-7s %-28s %-24s %6d %4d/%-4d %6.1f%% %s' % (lab, dn[:28], cn[:24], r['cases'], r['both'], r['jcc'], pct, status))
         if ev and lab in evinfo:
             fa_, nh, nu = evinfo[lab]

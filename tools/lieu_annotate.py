@@ -156,7 +156,8 @@ def disasm(path, tables_text=()):
     # targets that land shortly after a table and are not instruction starts.
     for T in sorted(tables_text):
         starts = {a for a, _ in ins}
-        targets = sorted({int(m.group(1), 16) for _, t in ins
+        tend = tables_text[T] if isinstance(tables_text, dict) else T
+        targets = sorted({int(m.group(1), 16) for a, t in ins if not T <= a < tend
                           for m in [re.match(r'j[a-z]+ 0x([0-9a-f]+)$', t)] if m
                           and T < int(m.group(1), 16) < T + 512
                           and int(m.group(1), 16) not in starts})
@@ -233,12 +234,21 @@ def resync_tables(path, pe, ins, tables):
 def analyze(path, _tables=None):
     pe = PE(path)
     ins = disasm(path)
-    ttab = set()
+    ttab = {}
     for _, t in ins:
         for m in re.finditer(r'(?:\[4\*e[a-z]{2} \+ |byte ptr \[e[a-z]{2} \+ )0x([0-9a-f]{8})\]', t):
             v = int(m.group(1), 16)
             if pe.sec(v) and pe.sec(v)[0] == '.text':
-                ttab.add(v)
+                # extent of a table of code pointers: its entries are not code
+                # (garbage branches decoded from them must not seed a resync)
+                e = v
+                while True:
+                    b = pe.read(e, 4)
+                    w = struct.unpack('<I', b)[0] if b and len(b) == 4 else 0
+                    if not (pe.sec(w) and pe.sec(w)[0] == '.text'):
+                        break
+                    e += 4
+                ttab[v] = e
     if ttab:
         ins = disasm(path, ttab)
     idx = {a: i for i, (a, _) in enumerate(ins)}
