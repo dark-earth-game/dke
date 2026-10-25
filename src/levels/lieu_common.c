@@ -1103,6 +1103,10 @@ void lieu_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3) { /* sub_1001A35C *
     CB->animation(b);
 }
 
+const c8 *lieu_anim_name(i32 persona, i32 state) {
+    return CB->divers(DV_ANIM_NAME, persona, state) ? lieu_divers_text() : NULL;
+}
+
 /* A level DLL is loaded per room (LoadLibraryA/FreeLibrary, dkev
  * 0x43A4xx), so its globals start from their initial values every visit. */
 void lieu_common_reset(void) {

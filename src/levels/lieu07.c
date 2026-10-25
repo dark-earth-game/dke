@@ -15,7 +15,6 @@
  * INIT follow LIEU03. tick_body (sub_10007F20) is level-7 specific.
  */
 
-#include <stdint.h>
 #include <stdlib.h>
 
 #include "lieu07_int.h"
@@ -25,12 +24,6 @@
  * Ported faithfully from disassembly (labels in comments = original
  * addresses). `return` == original `jmp` to the epilogue.
  * ---------------------------------------------------------------------- */
-/* DIVERS(DV_ANIM_NAME) returns the clip name as a char* through the i32 slot
- * (the engine callback still returns 0 for it, which Animation rejects). */
-static const c8 *clip_name(i32 persona, i32 state) {
-    return (const c8 *)(intptr_t)CB->divers(DV_ANIM_NAME, persona, state);
-}
-
 static void tick_body(void) {
     /* 0x7F35 */
     if (ST(V_DEATH_EVENT_SENT) == 1) {
@@ -675,7 +668,7 @@ static void tick_body(void) {
                 /* 0xA38B */
                 if (ST(0x78) == 2) {
                     CB->divers_empile(DV_BONE_SOUND, ST(ST_HERO), 0);
-                    CB->animation(clip_name(P_ARKHAN2, 0x1A));
+                    CB->animation(lieu_anim_name(P_ARKHAN2, 0x1A));
                     CB->modify_var(&ST(V_DEATH_EVENT_SENT), 1);
                     return;
                 }
@@ -721,14 +714,14 @@ static void tick_body(void) {
             ST(V_EVENT_34) = 0;
             CB->select_pile(0, 2);
             CB->divers_empile(DV_BONE_SOUND, ST(ST_HERO), 0);
-            CB->animation(clip_name(P_ARKHAN2, 0x1A));
+            CB->animation(lieu_anim_name(P_ARKHAN2, 0x1A));
             CB->modify_var(&ST(V_DEATH_EVENT_SENT), 1);
             return;
         }
         /* 0xA674 */
         if (ST(V_EVENT_35) == 1) {
             ST(V_EVENT_35) = 0;
-            CB->animation(clip_name(P_ARKHAN2, 0x18));
+            CB->animation(lieu_anim_name(P_ARKHAN2, 0x18));
             /* 0xA6AF */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->animation("P02_65535");
@@ -737,7 +730,7 @@ static void tick_body(void) {
             if (ST(ST_HERO) == P_ARKHAN3) {
                 CB->animation("P03_65535");
             }
-            CB->animation(clip_name(P_ARKHAN2, 6));
+            CB->animation(lieu_anim_name(P_ARKHAN2, 6));
             CB->animation("ar_50");
             CB->animation("SG26FRA01");
             CB->evenement(0x22, 600);

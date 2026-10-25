@@ -1446,8 +1446,10 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
         c8 clip[16] = {0};
         actor_prepare_anim(e, b, clip);
         if (clip[0]) snprintf(g_byte_507260, sizeof g_byte_507260, "s%s", clip);
-        /* TODO returns a char* through i32 — needs a typed callback on 64-bit. */
-        return 0;
+        /* The original returns the pointer byte_507260; a 64-bit pointer does
+         * not fit the i32 result, so return 1 and let the script read the
+         * buffer with lieu_divers_text() (lieu_anim_name in the levels). */
+        return 1;
     }
 
     /* op 41 @ 0x448CC4 — update_player_interface(game_context, 1). */
@@ -2414,6 +2416,8 @@ void lieu_pending_event(i32 v, i32 phase) { /* op 5: event5(v, phase)      */
 
 /* Read/write the live state buffer (so the engine can populate the fields
  * handler guards read: 0xC, 0x18, 0x194 submode, 0x964 phase, ...). */
+const c8 *lieu_divers_text(void) { return g_byte_507260; }
+
 i32 *lieu_state_slot(i32 off) { return &LIEU_ST(g_lieu_state, off); }
 
 /* Debug: place persona `id` next to the player and start a fight (the

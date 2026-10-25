@@ -167,6 +167,9 @@ void lieu_pending_event(i32 v, i32 phase); /* op 5: event5(v, phase)  */
  * guards handlers read (e.g. *lieu_state_slot(0x194) = submode). */
 i32 *lieu_state_slot(i32 off);
 
+/* byte_507260: the text Divers(DV_ANIM_NAME) returns a pointer to. */
+const c8 *lieu_divers_text(void);
+
 /* Per-frame zone lookup (op-3 source). Returns a zone/trigger id, or -1
  * for none. Stub returns -1 until player transform + zone geometry exist. */
 i32 lieu_detect_zone(void);
