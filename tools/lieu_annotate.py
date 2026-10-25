@@ -122,9 +122,14 @@ class PE:
         t = b.split(b'\0')[0]
         if len(t) == 0 and s[0] == '.data' and va % 4 == 0:
             return ''          # empty string ("" arguments, e.g. pos_perso)
-        if len(t) < 2 or not all(32 <= c < 127 for c in t):
+        if len(t) < 2:
             return None
-        return t.decode()
+        # debug texts carry accented letters (ANSI bytes): show them as C
+        # octal escapes, but only for text that is mostly plain ASCII
+        high = sum(1 for c in t if c >= 0xA0)
+        if not all(32 <= c < 127 or c >= 0xA0 for c in t) or high * 5 > len(t) or len(t) - high < 3:
+            return None
+        return ''.join(chr(c) if c < 127 else '\\%03o' % c for c in t)
 
 
 def disasm(path, tables_text=()):
@@ -171,6 +176,57 @@ def disasm(path, tables_text=()):
             prev = max((a for a in have if a < v), default=None)
             ins = [x for x in ins if not (v <= x[0] < end or x[0] == prev)] + keep
             ins.sort()
+    return ins
+
+
+def objdump():
+    od = os.environ.get('OBJDUMP')
+    if not od:
+        try:
+            od = subprocess.check_output(['brew', '--prefix', 'llvm'], text=True).strip() + '/bin/llvm-objdump'
+        except Exception:
+            od = 'llvm-objdump'
+        os.environ['OBJDUMP'] = od
+    return od
+
+
+def disasm_range(path, lo, hi):
+    od = objdump()
+    out = subprocess.check_output([od, '-d', '--no-show-raw-insn', '--x86-asm-syntax=intel',
+                                   '--start-address=0x%x' % lo, '--stop-address=0x%x' % hi, path], text=True)
+    res = []
+    for ln in out.splitlines():
+        m = re.match(r'^([0-9a-f]{8}):\s+(.*)$', ln)
+        if m:
+            t = re.sub(r'\s*<[^>]*>', '', m.group(2)).replace('\t', ' ').strip()
+            res.append((int(m.group(1), 16), t))
+    return res
+
+
+def resync_tables(path, pe, ins, tables):
+    """A jump table inside .text is data, and the linear disassembly of it
+    can swallow the first instructions after it (the switch's epilogue).
+    Re-disassemble from the end of each table and splice the result in
+    where it agrees with the original again."""
+    for T, (kind, ents) in sorted(tables.items()):
+        sc = pe.sec(T)
+        if not sc or sc[0] != '.text':
+            continue
+        end = T + 4 * len(ents)
+        new = disasm_range(path, end, end + 0x80)
+        newd = dict(new)
+        addrs = [a for a, _ in ins]
+        sync = None
+        for k, a in enumerate(addrs):
+            if a >= end and a in newd and all(b in newd for b in addrs[k:k + 3]):
+                sync = a
+                break
+        if sync is None:
+            continue
+        keep = [(a, t) for a, t in ins if a < T or a >= sync]
+        keep += [(a, t) for a, t in new if end <= a < sync]
+        keep.sort()
+        ins = keep
     return ins
 
 
@@ -253,6 +309,9 @@ def analyze(path, _tables=None):
                 tables[T] = (t.split()[0], ents)
                 if t.startswith('call'):
                     funcs.update(ents)
+
+    ins = resync_tables(path, pe, ins, tables)
+    idx = {a: i for i, (a, _) in enumerate(ins)}
 
     # trigger table: op 3 calls [4*arg + TRIG]; INIT fills it with
     # mov dword ptr [TRIG + 4*k], imm

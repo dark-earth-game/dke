@@ -50,7 +50,9 @@ The listing annotates:
 - callback calls (`; CB->dialogue`)
 - state accesses (`; ST(V_DELIA_PHASE)`, `; ST(0xE9C)`) and their
   addresses (`; &ST(0x68)`, for `CB->modify_var`)
-- strings and negative immediates
+- strings and negative immediates. Accented letters in debug texts show as
+  C octal escapes (`"phedoria alert\351e"`): copy them exactly, also for
+  `print_msg`, whose text a port must not shorten to `""`.
 - calls through the thunk block, resolved to the target function
 
 If the header says a function is identical to an L01/L02 function, read
@@ -197,5 +199,54 @@ get wrong:
    crash or assertion, and the room's `PosPerso`, zone and dialogue
    activity. Frame pacing is wall-clock, so raise `DKE_FRAMES` on a busy
    machine.
-3. Review the port against the listing, function by function: every
+3. Run the differential test against the DLL:
+
+   ```sh
+   python3 tools/lieu_difftest.py NN            # whole level
+   python3 tools/lieu_difftest.py NN trig05 tick init
+   ```
+
+   `tools/lieu_difftest.py` runs the DLL's x86 code in a small emulator
+   (from the same listing `lieu_annotate.py` prints) and the C port on
+   identical random inputs, both with mock engine callbacks. It enters
+   through the exported entry, so it covers `init` (op 1), `tick` (op -1)
+   and every slot of the trigger table (op 3, `trigNN`). Helpers and the
+   tick body are checked through their callers. For each case it compares:
+
+   - the sequence of callback calls with all arguments, strings included
+   - the final state block, dword by dword
+   - the value the entry returns
+
+   Callbacks that return a value get it from a per-case pool, indexed by the
+   call text and the number of identical earlier calls, so both sides see the
+   same answer whatever the order. The inputs are random state blocks biased
+   to the constants the code compares against, then steered by branch
+   coverage: a conditional jump that was only taken one way gets the state
+   slot or callback result it tests changed to take the other way.
+
+   The output has one line per function: cases run, branches seen both ways
+   over the listing's conditional jumps, and the first difference of each
+   failing case (a few calls of context, then the listing's call against the
+   C port's). `--full` prints both whole traces with listing addresses,
+   `-v` lists the branches that were never taken both ways. Exit status is 1
+   on a mismatch. A level takes under a minute, a few minutes for level 8.
+
+   Known limits:
+
+   - Calls that only read (`direction_*`, `distance`, `on_joindre`, the
+     query forms of `divers`) are not compared. The original evaluates
+     nested calls such as `pos_perso(..., divers(DV_DESC_POS, ...), ...)` and
+     short-circuit chains in its own order, and the C port may order them
+     differently. Their results still steer both sides, so a wrong query
+     changes the other calls. Cases that differ only in these are counted in
+     the summary.
+   - `lieu_common.c` is not linked. `lieu_action_register`, `lieu_pre_scene`,
+     `lieu_anim_name` and the event handlers are traced stubs, so the shared
+     code is not checked. Ops 2, 4, 5 and 6 are not run.
+   - Branch coverage is below 100% where a condition depends on something
+     the code computed or wrote earlier (not a plain state slot or callback
+     result). Look at `-v` before trusting a function with low coverage.
+   - Integer code only, and only the state block and the callback calls are
+     compared, not other DLL globals.
+4. Review the port against the listing, function by function: every
    callback call, every state write, and every branch.
