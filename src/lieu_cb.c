@@ -40,6 +40,8 @@
 #include "object.h"
 #include "sfx.h"
 #include "screen_fx.h"
+#include "music.h"
+#include "libsys/file_system.h"
 #include "lieu_action.h"
 #include "lieu01.h"
 #include "player.h"
@@ -1266,16 +1268,41 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
 
     /* op 24 @ 0x447F9D — music. !music_enabled -> 0.
      * file "%sDATAS>MOD>L%02dMUS%02d.MOD"(world_state, a); cmd = b & 0xFF:
-     * 0 load+play (skip if same file as byte_4F9320; else stop/free old,
+     * 0 load only (skip if same file as byte_4F9320; else stop/free old,
      *   sub_48D940 load -> dword_4B729C);
      * 1 (if loaded && !sub_48E070 && volume): start sub_48DA10(mod,0x40,0),
      *   set volume dword_4B60B4;
      * 2 free (sub_48DCA0), then falls into 3;
      * 3 volume = ((b>>8) * dword_4B60B4) / 64;
      * 4 fade out sub_48DE30(1000). */
-    case 24:
-        /* TODO music (MOD player) */
+    case 24: {                                 /* cmd 0 loads only */
+        static i32 s_mod = 0;
+        static c8  s_mod_name[512];            /* byte_4F9320, kept after a free */
+        if (!state || !state->music_enabled) return 0;
+        c8 path[512];
+        snprintf(path, sizeof(path), "%s/datas/mod/L%02dMUS%02d.MOD",
+                 state->game_path ? state->game_path : ".", g_lieu_level, a);
+        switch (b & 0xFF) {
+        case 0:
+            if (s_mod && !strcmp(path, s_mod_name)) break;
+            if (s_mod) { music_stop(0); music_free(); }
+            s_mod = ls_exists(path) && music_load(path);
+            if (s_mod) snprintf(s_mod_name, sizeof(s_mod_name), "%s", path);
+            print("lieu_cb: music %s %s\n", path, s_mod ? "loaded" : "missing");
+            break;
+        case 1:
+            if (s_mod && !music_is_playing() && g_music_option) {
+                music_play(0x40, 0);
+                music_volume(g_music_option);
+                print("lieu_cb: music play\n");
+            }
+            break;
+        case 2: if (s_mod) { music_free(); s_mod = 0; } break;
+        case 3: if (s_mod) music_volume(((b >> 8) * g_music_option) / 64); break;
+        case 4: if (s_mod) music_fade(1000); break;
+        }
         return 0;
+    }
 
     /* op 25 @ 0x44828D — give/take item: target_entity = byte_4DB3C0, name
      * "OB%02d"(a), +0xC4 &= ~0x20. b<=0 -> sub_426A24(obj) (remove);

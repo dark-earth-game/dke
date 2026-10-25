@@ -53,6 +53,7 @@
 extern state_t *state;
 
 #include "sfx.h"
+#include "music.h"
 
 /* ========================================================================
  * Constants
@@ -144,6 +145,7 @@ static void mix(i16 *out, u32 frames) {
             v->pos += v->step;
         }
     }
+    music_mix(acc, frames);            /* its own DS buffer at 0 dB in the original */
     for (u32 i = 0; i < frames * 2; i++) {
         i32 s = acc[i];
         out[i] = (i16)(s > 32767 ? 32767 : s < -32768 ? -32768 : s);
@@ -156,6 +158,7 @@ static void mixer_pump(u32 now) {
     if (!state || !state->audio_enabled) return;
     b8 any = 0;
     for (i32 i = 0; i < SFX_VOICES && !any; i++) any = g_v[i].active;
+    any = any || music_is_playing();
     if (!any) { g_streaming = 0; return; }
     if (!g_streaming) { g_streaming = 1; g_clock_t0 = now; g_pushed = 0; }
     u32 played = (u32)((u64)(now - g_clock_t0) * SFX_RATE / 1000);

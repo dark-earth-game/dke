@@ -65,6 +65,7 @@
 #include "object.h"
 #include "sfx.h"
 #include "screen_fx.h"
+#include "music.h"
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
@@ -3006,7 +3007,7 @@ i32 scene_render(system_t *sys) {
         const c8 *mv = lieu_poll_movie();
         if (mv) {
             if (getenv("DKE_NOMOVIE")) print("scene: DKE_NOMOVIE skip movie %s\n", mv);
-            else                       ls_play_movie(mv);
+            else                     { music_stop(0); ls_play_movie(mv); }   /* sub_444BF7 */
         }
     }
 
