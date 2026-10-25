@@ -320,7 +320,7 @@ static i32 g_op9c_counter = 0;
  *        (node+0x40 = -1).
  * A "_NN" suffix is split off the name and stored as a number at node+0x5C.
  */
-static void cb_named_object(const c8 *name) {
+static void cb_animation(const c8 *name) {
     if (!name) {
         print("lieu_cb: Scripteur, tu es un bougre d'ane : mets un nom d'animation\n");
         return;
@@ -374,7 +374,7 @@ static void cb_named_object(const c8 *name) {
 }
 
 /* slot 1 sub_4449A5 "Dialogue": enqueue dialogue line. */
-static void cb_named_object_int(const c8 *name, i32 v) {      /* sub_4449A5 */
+static void cb_dialogue(const c8 *name, i32 v) {      /* sub_4449A5 */
     lieu_action_t *n = lieu_action_push(LA_DIALOGUE);
     if (name) snprintf(n->name, sizeof(n->name), "%s", name);
     n->actor = v;
@@ -387,7 +387,7 @@ static void cb_named_object_int(const c8 *name, i32 v) {      /* sub_4449A5 */
  * arms a timer that fires FonctionEditor opcode 4 with `id` once it
  * expires, delay == -1 cancels the pending timer for that id.
  */
-static void cb_named_two_ints(i32 id, i32 p) {
+static void cb_evenement(i32 id, i32 p) {
     lieu_action_t *n = lieu_action_push(LA_EVENEMENT);
     n->id48     = id;
     n->duration = p;
@@ -450,7 +450,7 @@ static lieu_spawn_t g_spawns[LIEU_SPAWN_MAX];
 static i32          g_spawn_count = 0;
 
 /* PosPerso (sub_44502D): anim*600=worldX, x*600=worldZ, y=facing, z=world Y. */
-static void cb_spawn_678(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
+static void cb_pos_perso(i32 zone, i32 anim, i32 x, i32 y, i32 flag,
                          const c8 *name, i32 kind, i32 z) {
     (void)kind;
     if (name && g_spawn_count < LIEU_SPAWN_MAX) {
@@ -516,7 +516,7 @@ const c8 *lieu_spawn_get(i32 i, i32 *wx, i32 *wz, i32 *view) {
  *   node+0x54 = a7        node+0x1C = a2 * 600   (world Z)
  *   node+0x20 = a3        node+0x24 = a4         node+0x28 = a5
  */
-static void cb_named_ex_988(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
+static void cb_etat_objet(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
                             i32 a4, i32 a5, i32 a6, i32 a7) {
     lieu_action_t *n = lieu_action_push(LA_ETATOBJET);
     if (name) {
@@ -551,7 +551,7 @@ static void cb_named_ex_988(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
  * asm: node+0x0C = abs(actor)  node+0x14 = X*600  node+0x1C = Z*600
  *      node+0x10 = a4          node+0x24 = a3
  */
-static void cb_actor_934(i32 actor, i32 tile_x, i32 tile_z, i32 a3, i32 a4) {
+static void cb_joindre(i32 actor, i32 tile_x, i32 tile_z, i32 a3, i32 a4) {
     i32 id = actor < 0 ? -actor : actor;
 
     /* Engine guard: skip if this actor already has a walk in flight and the
@@ -571,7 +571,7 @@ static void cb_actor_934(i32 actor, i32 tile_x, i32 tile_z, i32 a3, i32 a4) {
  * Queue it; the scene loop applies it via lieu_poll_camera_change. */
 static i32 g_next_cam = -1;      /* -1 none, -2 mode change only */
 static i32 g_next_cam_mode = 1;  /* byte_4B7280 */
-static void cb_cb_458(i32 a, i32 b) {                       /* sub_4454F2 */
+static void cb_change_camera(i32 a, i32 b) {                       /* sub_4454F2 */
     if (a < 0) {
         /* Immediate: mode b; mode 2 locks camera -a-1 (color_mode). */
         g_next_cam_mode = b;
@@ -596,7 +596,7 @@ i32 lieu_poll_camera_change(i32 *mode) {
  * entry point (dword_4B52E0). Case 10 of the dispatcher performs it. */
 static i32 g_next_level = -1;
 static i32 g_next_entry = 0;      /* dword_4B52E0 */
-static void cb_cb_984(i32 a, i32 b) {
+static void cb_change_piece(i32 a, i32 b) {
     if (a < 0) { g_next_entry = b; return; }
     lieu_action_t *n = lieu_action_push(LA_CHANGEPIECE);
     n->p58   = a;                 /* +0x08 in the original node */
@@ -611,7 +611,7 @@ i32 lieu_poll_level_change(i32 *entry) {
 }
 /* slot 11 sub_44569A @ 0x44569A "Bruitage" — queue a sound (action 0x0B):
  * name, and the tile x / z it plays at (ambience loops only). */
-static void cb_place_95C(const c8 *name, i32 x, i32 z) {
+static void cb_bruitage(const c8 *name, i32 x, i32 z) {
     if (name && name[0] == 'Z') return;            /* sub_44D23D: dead body */
     lieu_action_t *n = lieu_action_push(LA_BRUITAGE);
     if (name) snprintf(n->name, sizeof(n->name), "%s", name);
@@ -619,7 +619,7 @@ static void cb_place_95C(const c8 *name, i32 x, i32 z) {
     n->z = z;                                      /* +0x1C */
 }
 /* dword_50725C */
-static void cb_spawn_978(i32 id, i32 cx, i32 cz, i32 sx, i32 sz, i32 flag) {
+static void cb_ajoute_zone(i32 id, i32 cx, i32 cz, i32 sx, i32 sz, i32 flag) {
     if (id < 0 || id >= LIEU_ZONE_COUNT) return;
     g_last_zone = id;
     g_zones[id].center_x = cx * LIEU_ZONE_SCALE;
@@ -630,13 +630,13 @@ static void cb_spawn_978(i32 id, i32 cx, i32 cz, i32 sx, i32 sz, i32 flag) {
     g_zones[id].active   = flag;
 }
 /* slot 13 sub_4458AD "RetireZone"(id) — IMMEDIATE, no range check in dkev. */
-static void cb_cb_93C(i32 id) { zone_clear(id); }
+static void cb_retire_zone(i32 id) { zone_clear(id); }
 
 /* slot 14 sub_445919 "Combat"(id, mode): QUEUES type 14,
  * +0x0C = id, +0x5C = mode. Effect happens in the dispatcher (combat_set).
  * NOTE the port had the sense inverted: mode -1 = LEAVE combat,
  * anything else = ENTER combat (bit 0 of mode -> entity+0xD14). */
-static void cb_cb_970(i32 id, i32 mode) {
+static void cb_combat(i32 id, i32 mode) {
     lieu_action_t *n = lieu_action_push(LA_COMBAT);
     n->actor = id;
     n->num5C = mode;
@@ -657,7 +657,7 @@ static i32 obj_world(const lieu_obj_t *o, i32 *x, i32 *z);
  * Falls back to permissive when the target or the player transform is
  * unknown, so a missing placement cannot deadlock a script.
  */
-static i32 cb_query_954(i32 a) {
+static i32 cb_direction_perso(i32 a) {
     i32 px, pz;
     if (!player_get_pos(&px, NULL, &pz)) return 1;
 
@@ -689,7 +689,7 @@ static i32 cb_query_954(i32 a) {
  * (dword_506CA0[n], zone struct +0x20) and falls back to the zone centre
  * (dword_506C80[n] / +8); the port only tracks centres. No distance bypass.
  */
-static i32 cb_query_944(i32 n) {
+static i32 cb_direction_zone(i32 n) {
     i32 px, pz;
     if (n < 1 || n >= LIEU_ZONE_COUNT) return 1;
     if (g_zones[n].center_x == -1) return 1;
@@ -707,7 +707,7 @@ static i32 cb_query_944(i32 n) {
  * so this stays permissive rather than guessing which thing it aims at. */
 /* slot 17 sub_445E99 @ 0x445E99 "DirectionSpec" — is the player facing
  * BAM angle `a` (within 0x2400)? The heading includes a clip's root yaw. */
-static i32 cb_query_998(i32 a) {
+static i32 cb_direction_spec(i32 a) {
     entity_t *p = g_player_entity;
     if (!p || !EROOT(p)) return 0;
     a &= 0xFFFF;
@@ -724,7 +724,7 @@ static i32 cb_query_998(i32 a) {
     return abs(d) < 0x2400;
 }
 /* query_990: distance between zone a and b, world units / 600. */
-static i32  cb_query_990(i32 a, i32 b) {
+static i32  cb_distance(i32 a, i32 b) {
     if (a < 1 || a >= LIEU_ZONE_COUNT || b < 1 || b >= LIEU_ZONE_COUNT) return 0;
     double dx = (double)(g_zones[a].center_x - g_zones[b].center_x);
     double dz = (double)(g_zones[a].center_z - g_zones[b].center_z);
@@ -733,7 +733,7 @@ static i32  cb_query_990(i32 a, i32 b) {
 /* slot 19 sub_446159 @ 0x446159 "AnimObjet" — queue an object animation.
  * asm: node+0x30 = name, node+0x20 = p, node+0x24 = a1, node+0x28 = a3,
  *      node+0x40 = a2 (hold time in ms). */
-static void cb_cb_98C(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3) {
+static void cb_anim_objet(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3) {
     lieu_action_t *n = lieu_action_push(LA_ANIMOBJET);
     if (name) snprintf(n->name, sizeof(n->name), "%s", name);
     n->p20      = p;
@@ -748,7 +748,7 @@ static void cb_cb_98C(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3) {
  * Negative values (not used in L01) have immediate effects: bit 1=unlock
  * movement, bit 2=unlock camera, bit 4=reset combat state.
  * Since dke has no action queue, we apply the blocking directly. */
-static void cb_group(i32 a) {                               /* sub_446227 */
+static void cb_bloque(i32 a) {                               /* sub_446227 */
     lieu_action_t *n = lieu_action_push(LA_BLOQUE);
     if (a < 0) {
         /* Negative: immediate. 1 = lock movement, 2 = lock camera
@@ -772,7 +772,7 @@ static void cb_group(i32 a) {                               /* sub_446227 */
  *   IMMEDIATELY: every zone whose attached entity (506CA0) is that persona's
  *   entity gets centre = -1 and entity = -1 (so the corpse zone is gone
  *   before the queue runs). (The inner 0x62 loop in the asm is redundant.) */
-static void cb_cb_454(i32 id) {
+static void cb_fouille(i32 id) {
     lieu_action_t *n = lieu_action_push(LA_FOUILLE);
     n->actor    = id;
     n->duration = 1;                          /* +0x40 state */
@@ -790,7 +790,7 @@ static void cb_cb_454(i32 id) {
  *     if e+0xCBC: D14=0, CDC=1, CBC=0, C44=0, CEC=0, CF0=1, CF4=0
  *   a >= 0: QUEUE type 22, +0x0C = a (case 22 does the same clears).
  * The port's immediate path only touched g_ents[], never the entity. */
-static void cb_select_468(i32 a) {
+static void cb_stop_joindre(i32 a) {
     if (a > 4 && !actor_find(a)) {
         print("lieu_cb: DirectionPerso : Perso %d non charge !!\n", a);
         return;
@@ -814,14 +814,14 @@ static void cb_select_468(i32 a) {
 
 /* slot 23 sub_44660D @ 0x44660D "VireCol" — queue a script flag write.
  * asm: node+0x68 = ecx (flag id), node+0x4C = edx (value). */
-static void cb_cb_964(i32 flag_id, i32 value) {
+static void cb_vire_col(i32 flag_id, i32 value) {
     lieu_action_t *n = lieu_action_push(LA_VIRECOL);
     n->p68 = flag_id;
     n->p4C = value;
 }
 
 /* slot 25: debug/subtitle text — no-op. */
-static void cb_debug_text(const c8 *t, i32 edx, i32 len) { (void)t; (void)edx; (void)len; }
+static void cb_print_msg(const c8 *t, i32 edx, i32 len) { (void)t; (void)edx; (void)len; }
 
 /*
  * slot 27 sub_446808 @ 0x446808 "JoindrePerm" — permanent actor join.
@@ -831,7 +831,7 @@ static void cb_debug_text(const c8 *t, i32 edx, i32 len) { (void)t; (void)edx; (
  * when the entity does not exist at all.
  * asm: node+0x0C = abs(actor), node+0x10 = target.
  */
-static void cb_flush_958(i32 actor, i32 target) {
+static void cb_joindre_perm(i32 actor, i32 target) {
     i32 id = actor < 0 ? -actor : actor;
     if (id >= ENT_MAX || !g_ents[id].alive) return;      /* sub_44411D -> NULL */
     if (actor >= 0 && ent_is_joined(id)) return;
@@ -842,7 +842,7 @@ static void cb_flush_958(i32 actor, i32 target) {
 }
 
 /* slot 28: cb_46C sets the state slot the handler passed. */
-static void cb_cb_46C(i32 *slot, i32 edx) {                 /* sub_4468E1 */
+static void cb_modify_var(i32 *slot, i32 edx) {                 /* sub_4468E1 */
     if (!slot) {
         print("lieu_cb: Bad parameter ptr in MODIFYVAR function\n");
         return;
@@ -853,7 +853,7 @@ static void cb_cb_46C(i32 *slot, i32 edx) {                 /* sub_4468E1 */
 }
 
 /* slot 29: query_940 — random integer in [0, n]. */
-static i32  cb_query_940(i32 n) {
+static i32  cb_random(i32 n) {
     return (i32)(((u32)n * ((u32)rand() & 0x7FFFu)) / 32767u) & 0xFFFF;
 }
 
@@ -866,7 +866,7 @@ static i32  cb_query_940(i32 n) {
  * bytes (100 nodes x 0x78) to -1, forces the enable flag back to 1 and zeroes
  * the count. Anything else is stored as-is, so mode 0 parks the pile.
  */
-static void cb_state_toggle(i32 pile, i32 mode) {
+static void cb_select_pile(i32 pile, i32 mode) {
     if (pile < 0 || pile > 2) return;
 
     lieu_action_select_pile(pile);
@@ -884,7 +884,7 @@ static void cb_state_toggle(i32 pile, i32 mode) {
 /* slot 32 sub_446BE9 @ 0x446BE9 "LinkObjet" — attach an object to a holder.
  * asm: name _strupr'd into node+0x30, node+0x0C = holder id,
  *      node+0x54 = a, node+0x5C = b. */
-static void cb_attach_99C(i32 holder, const c8 *name, i32 a, i32 b) {
+static void cb_link_objet(i32 holder, const c8 *name, i32 a, i32 b) {
     lieu_action_t *n = lieu_action_push(LA_LINKOBJET);
     if (name) {
         i32 k = 0;
@@ -904,7 +904,7 @@ static void cb_attach_99C(i32 holder, const c8 *name, i32 a, i32 b) {
 static u32 lo_now(void) { return state ? state->current_game_time : 0; }  /* current_game_time */
 
 /* ls_random(n): 0..n, & 0xFFFF at every call site. Same formula as
- * cb_query_940 (slot 29). */
+ * cb_random (slot 29). */
 static i32 lo_random(i32 n) {
     return (i32)(((u32)n * ((u32)rand() & 0x7FFFu)) / 32767u) & 0xFFFF;
 }
@@ -953,7 +953,7 @@ static c8  g_byte_507260[0x10];  /* op 40: "s" + clip name                */
 
 /* ------------------------------------------------------------------------ */
 
-static i32 cb_layer_op(i32 op, i32 a, i32 b) {
+static i32 cb_divers(i32 op, i32 a, i32 b) {
     entity_t *e;
 
     /* TODO sub_45D560 replay record (dword_4F4CC0 = {0x22, op, a, b}). */
@@ -1502,7 +1502,7 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
 
 /* slot 36 sub_443273 @ 0x443273 "FreeAnim" — release a 2D anim slot.
  * asm: type 0x27 (FREEANIM), node+0x48 = slot. */
-static void cb_cb_950(i32 slot) {
+static void cb_free_anim(i32 slot) {
     lieu_action_t *n = lieu_action_push(LA_FREEANIM);
     n->id48 = slot;
 }
@@ -1510,7 +1510,7 @@ static void cb_cb_950(i32 slot) {
 /* slot 37 sub_44356F @ 0x44356F "PlayAnim" — start a 2D anim slot.
  * asm: type 0x23 (PLAYANIM), node+0x48 = slot, node+0x70 = mode. Slots
  * >= 20 are rejected with "Plantage! animation invalid". */
-static void cb_cb_97C(i32 slot, i32 mode) {
+static void cb_play_anim(i32 slot, i32 mode) {
     if (slot >= 20) {
         print("lieu_cb: Plantage! animation invalid (slot %d)\n", slot);
         return;
@@ -1522,10 +1522,10 @@ static void cb_cb_97C(i32 slot, i32 mode) {
 
 /* slot 39 sub_446D84 "DiversEmpile"(op, a, arg): QUEUE type 37,
  * +0x14 = op, +0x18 = a, +0x1C = arg. Nothing else. Case 37 completes the
- * node and calls sub_446E19(op, a, arg) = cb_layer_op, result discarded.
+ * node and calls sub_446E19(op, a, arg) = cb_divers, result discarded.
  * So op_9c is "DIVERS, but in pile order" — replace the old immediate
  * switch entirely. */
-static void cb_op_9c(i32 op, i32 a, i32 arg) {
+static void cb_divers_empile(i32 op, i32 a, i32 arg) {
     lieu_action_t *n = lieu_action_push(LA_DIVERSEMPILE);
     n->x = op;
     n->y = a;
@@ -1534,7 +1534,7 @@ static void cb_op_9c(i32 op, i32 a, i32 arg) {
 
 /* slot 31 sub_446B54 "OnJoindre"(a) — immediate query: -1 when the actor
  * is not loaded, 5 for a permanent join (+0xCB4), else +0xCBC (walking). */
-static i32 cb_onjoindre(i32 a) {
+static i32 cb_on_joindre(i32 a) {
     entity_t *e = actor_find(a < 0 ? -a : a);
     if (!e) return -1;
     if (E32(e, 0xCB4)) return 5;
@@ -1544,39 +1544,39 @@ static i32 cb_onjoindre(i32 a) {
 /* Concrete vtable. Unlisted (void*) slots stay NULL — the ported handlers
  * never call them. */
 static const lieu_cb_t g_lieu_cb_impl = {
-    .named_object     = cb_named_object,
-    .named_object_int = cb_named_object_int,
-    .named_two_ints   = cb_named_two_ints,
+    .animation     = cb_animation,
+    .dialogue = cb_dialogue,
+    .evenement   = cb_evenement,
     .cinematique      = cb_cinematique,
-    .spawn_678        = cb_spawn_678,
-    .named_ex_988     = cb_named_ex_988,
-    .actor_934        = cb_actor_934,
-    .cb_458           = cb_cb_458,
-    .cb_984           = cb_cb_984,
-    .place_95C        = cb_place_95C,
-    .spawn_978        = cb_spawn_978,
-    .cb_93C           = cb_cb_93C,
-    .cb_970           = cb_cb_970,
-    .query_954        = cb_query_954,
-    .query_944        = cb_query_944,
-    .query_998        = cb_query_998,
-    .query_990        = cb_query_990,
-    .cb_98C           = cb_cb_98C,
-    .cb_968           = cb_onjoindre,
-    .group            = cb_group,
-    .cb_454           = cb_cb_454,
-    .select_468       = cb_select_468,
-    .cb_964           = cb_cb_964,
-    .debug_text       = cb_debug_text,
-    .flush_958        = cb_flush_958,
-    .cb_46C           = cb_cb_46C,
-    .query_940        = cb_query_940,
-    .state_toggle     = cb_state_toggle,
-    .attach_99C       = cb_attach_99C,
-    .layer_op         = cb_layer_op,
-    .cb_950           = cb_cb_950,
-    .cb_97C           = cb_cb_97C,
-    .op_9c            = cb_op_9c,
+    .pos_perso        = cb_pos_perso,
+    .etat_objet     = cb_etat_objet,
+    .joindre        = cb_joindre,
+    .change_camera           = cb_change_camera,
+    .change_piece           = cb_change_piece,
+    .bruitage        = cb_bruitage,
+    .ajoute_zone        = cb_ajoute_zone,
+    .retire_zone           = cb_retire_zone,
+    .combat           = cb_combat,
+    .direction_perso        = cb_direction_perso,
+    .direction_zone        = cb_direction_zone,
+    .direction_spec        = cb_direction_spec,
+    .distance        = cb_distance,
+    .anim_objet           = cb_anim_objet,
+    .on_joindre           = cb_on_joindre,
+    .bloque            = cb_bloque,
+    .fouille           = cb_fouille,
+    .stop_joindre       = cb_stop_joindre,
+    .vire_col           = cb_vire_col,
+    .print_msg       = cb_print_msg,
+    .joindre_perm        = cb_joindre_perm,
+    .modify_var           = cb_modify_var,
+    .random        = cb_random,
+    .select_pile     = cb_select_pile,
+    .link_objet       = cb_link_objet,
+    .divers         = cb_divers,
+    .free_anim           = cb_free_anim,
+    .play_anim           = cb_play_anim,
+    .divers_empile            = cb_divers_empile,
 };
 
 /* -------------------------------------------------------------------------
@@ -2002,7 +2002,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
     case LA_DIVERSEMPILE:                      /* case 37 @ 0x44CC77 */
         /* dkev completes the node BEFORE the call; nothing in sub_446E19
          * queues, so calling first and returning 1 is equivalent. */
-        cb_layer_op(n->x, n->y, n->z);
+        cb_divers(n->x, n->y, n->z);
         return 1;
 
     /* 15-18, 25, 29-31, 34 (DIRECPERSO..DISTANCE, PRINT, RANDOM, SELECTPILE,
@@ -2295,7 +2295,7 @@ i32 lieu_detect_zone(void) {                              /* sub_449E03 */
             print("lieudbg: t=%u key=%d blocked=%d st0C=%d st30=%d st708=%d st68=%d facing=%04X q998=%d pend=%d d64=%d d67=%d z6=(%d,%d) z4=(%d,%d)\n",
                   t, g_action_key, g_player_blocked, LIEU_ST(g_lieu_state, 0x0C), LIEU_ST(g_lieu_state, 0x30),
                   LIEU_ST(g_lieu_state, 0x708), LIEU_ST(g_lieu_state, 0x68), player_get_facing(),
-                  cb_query_998(0x8660), lieu_action_pending(), cb_query_990(6, 4), cb_query_990(6, 7), g_zones[6].center_x, g_zones[6].center_z, g_zones[4].center_x, g_zones[4].center_z);
+                  cb_direction_spec(0x8660), lieu_action_pending(), cb_distance(6, 4), cb_distance(6, 7), g_zones[6].center_x, g_zones[6].center_z, g_zones[4].center_x, g_zones[4].center_z);
         }
     }
     zones_follow();
