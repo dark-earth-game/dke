@@ -394,14 +394,30 @@ static void cb_named_two_ints(i32 id, i32 p) {
  * mid update; playing synchronously re-enters the frame loop). */
 static c8  g_lieu_movie[64];
 static i32 g_lieu_movie_pending = 0;
+/* RetireZone / Fouille clear BOTH the centre (dword_506C80 = -1) and the
+ * attached entity (dword_506CA0 = -1). The port's cb_93C clears only the
+ * centre, so a zone hung on an actor by POSPERSO survives (zones_follow puts
+ * the centre back the next frame). */
+static void zone_clear(i32 i) {
+    if (i < 0 || i >= LIEU_ZONE_COUNT) return;
+    g_zones[i].center_x = -1;
+    g_zones[i].entity   = NULL;
+}
+
+
+
+static i32 g_last_zone = 0;          /* dword_50725C */
+static i32 g_ui_state = 1;           /* dword_4DD9B4: 1 in game, 2 inventory open */
+static i32 g_cam_lock = 0;           /* dword_4FF0A0 */
+static i32 g_game_exit_code = 0;     /* game_exit_code */
+static u8  g_movie_seen[8];          /* byte_507350 */
+
+/* slot 3 sub_444AC0 "Cinematique": QUEUES type 3, strcpy(node+0x30, name).
+ * The port played it straight away; it must wait its turn in the pile
+ * (L01 queues e.g. "Sar_50" then "SC21_500"). */
 static void cb_cinematique(const c8 *name) {
-    c8 base[32];
-    i32 i = 0;
-    while (name[i] && name[i] != '_' && i < 30) { base[i] = name[i]; i++; }
-    base[i] = '\0';
-    snprintf(g_lieu_movie, sizeof(g_lieu_movie), "%s.CRH", base);
-    g_lieu_movie_pending = 1;
-    print("lieu_cb: cinematique '%s' -> queued %s\n", name, g_lieu_movie);
+    lieu_action_t *n = lieu_action_push(LA_CINEMA);
+    if (name) snprintf(n->name, sizeof(n->name), "%s", name);
 }
 
 /* Drained by scene_render: returns a queued cutscene path (or NULL). */
@@ -596,32 +612,28 @@ static void cb_place_95C(const c8 *name, i32 x, i32 z) {
     n->x = x;                                      /* +0x14, script units */
     n->z = z;                                      /* +0x1C */
 }
-/* slot 12 sub_445765 AjouteZone(id, cx, cz, sizeX, sizeZ, flag): register
- * a static zone rectangle (spatial args scaled tile->world by 600). */
-static void cb_spawn_978(i32 id, i32 param, i32 x, i32 y, i32 z, i32 flag) {
-    if (id >= 1 && id < LIEU_ZONE_COUNT) {
-        g_zones[id].center_x = param * LIEU_ZONE_SCALE;
-        g_zones[id].center_z = x     * LIEU_ZONE_SCALE;
-        g_zones[id].size_x   = y     * LIEU_ZONE_SCALE;
-        g_zones[id].size_z   = z     * LIEU_ZONE_SCALE;
-        g_zones[id].active   = flag;
-    }
+/* dword_50725C */
+static void cb_spawn_978(i32 id, i32 cx, i32 cz, i32 sx, i32 sz, i32 flag) {
+    if (id < 0 || id >= LIEU_ZONE_COUNT) return;
+    g_last_zone = id;
+    g_zones[id].center_x = cx * LIEU_ZONE_SCALE;
+    g_zones[id].center_z = cz * LIEU_ZONE_SCALE;
+    /* zone Y = actor_floor_height(cx*600, cz*600, NULL) — no field in zone_t */
+    g_zones[id].size_x   = sx * LIEU_ZONE_SCALE;
+    g_zones[id].size_z   = sz * LIEU_ZONE_SCALE;
+    g_zones[id].active   = flag;
 }
-/* slot 13 sub_4458AD RetireZone(id): clear a zone slot. */
-static void cb_cb_93C(i32 id) {
-    if (id >= 1 && id < LIEU_ZONE_COUNT) g_zones[id].center_x = -1;
-}
-/* slot 14 sub_445919 "Combat": enqueue combat action.
- * a = entity ID, b = combat mode (-1 = engage, 0 = assign target).
- * Marks entity as combat-ready. */
-static void cb_cb_970(i32 a, i32 b) {
-    print("lieu_cb: cb_970 (combat) entity=%d mode=%d\n", a, b);
-    if (a >= 0 && a < ENT_MAX) {
-        if (b == -1)
-            g_ents[a].combat_ready = 1;
-        else
-            g_ents[a].combat_ready = 0;
-    }
+/* slot 13 sub_4458AD "RetireZone"(id) — IMMEDIATE, no range check in dkev. */
+static void cb_cb_93C(i32 id) { zone_clear(id); }
+
+/* slot 14 sub_445919 "Combat"(id, mode): QUEUES type 14,
+ * +0x0C = id, +0x5C = mode. Effect happens in the dispatcher (combat_set).
+ * NOTE the port had the sense inverted: mode -1 = LEAVE combat,
+ * anything else = ENTER combat (bit 0 of mode -> entity+0xD14). */
+static void cb_cb_970(i32 id, i32 mode) {
+    lieu_action_t *n = lieu_action_push(LA_COMBAT);
+    n->actor = id;
+    n->num5C = mode;
 }
 /* Defined further down with the object registry / spawn helpers. */
 typedef struct lieu_obj_s lieu_obj_t;
@@ -749,32 +761,45 @@ static void cb_group(i32 a) {                               /* sub_446227 */
     if (a & 2) n->p60 = a;
 }
 
-/* slot 21 sub_44637B "Fouille": remove entity and clear its zone slots.
- * In the original, iterates 41 zone slots and clears any whose entity
- * pointer matches. Also marks entity as no longer alive. */
-static void cb_cb_454(i32 a) {
-    print("lieu_cb: cb_454 (fouille) entity=%d\n", a);
-    if (a >= 0 && a < ENT_MAX) ent_kill(a);
+/* slot 21 sub_44637B "Fouille"(id): search the body of persona id.
+ *   QUEUE type 21, +0x0C = id, +0x40 = 1 (state "start").
+ *   IMMEDIATELY: every zone whose attached entity (506CA0) is that persona's
+ *   entity gets centre = -1 and entity = -1 (so the corpse zone is gone
+ *   before the queue runs). (The inner 0x62 loop in the asm is redundant.) */
+static void cb_cb_454(i32 id) {
+    lieu_action_t *n = lieu_action_push(LA_FOUILLE);
+    n->actor    = id;
+    n->duration = 1;                          /* +0x40 state */
+    entity_t *e = actor_find(id);
+    for (i32 i = 0; i < LIEU_ZONE_COUNT; i++)
+        if (e && g_zones[i].entity == (void *)e) zone_clear(i);
 }
 
-/*
- * slot 22 sub_44648B @ 0x44648B "StopJoindre".
- *   a < 0  IMMEDIATE: stop actor -a. asm clears the join block
- *          (entity+0xCB4 = 0, +0xCEC = 0, +0xCF0 = 1, +0xCF4 = 0) and the
- *          walk block (+0xCBC = 0, +0xD14 = 0, +0xCDC = 1, +0xC44 = 0).
- *   a >= 0 queue a STOPJOINDRE action.
- * Both paths first refuse ids > 4 whose entity slot dword_4DF5D0 is empty
- * ("DirectionPerso : Perso %d non charge !!").
- */
+/* slot 22 sub_44648B "StopJoindre"(a).
+ *   a > 4 and persona table slot dword_4DF5D0[a] empty -> log
+ *     "DirectionPerso : Perso %d non charge !!" and return. Only POSITIVE
+ *     ids are checked (cmp a,4 / jle is signed), negative ids skip it.
+ *   a < 0: IMMEDIATE on e = sub_44411D(-a) (return if NULL):
+ *     if e+0xCB4: CB4=0, CEC=0, CF0=1, CF4=0
+ *     if e+0xCBC: D14=0, CDC=1, CBC=0, C44=0, CEC=0, CF0=1, CF4=0
+ *   a >= 0: QUEUE type 22, +0x0C = a (case 22 does the same clears).
+ * The port's immediate path only touched g_ents[], never the entity. */
 static void cb_select_468(i32 a) {
-    i32 id = a < 0 ? -a : a;
-    if (id > 4 && (id >= ENT_MAX || !g_ents[id].alive)) {
-        print("lieu_cb: StopJoindre : Perso %d non charge !!\n", id);
+    if (a > 4 && !actor_find(a)) {
+        print("lieu_cb: DirectionPerso : Perso %d non charge !!\n", a);
         return;
     }
     if (a < 0) {
-        if (id < ENT_MAX) { g_ents[id].walking = 0; g_ents[id].joined = 0; }
-        print("lieu_cb: StopJoindre — actor %d stopped\n", id);
+        entity_t *e = actor_find(-a);
+        if (!e) return;
+        if (E32(e, 0xCB4)) {
+            E32(e, 0xCB4) = 0; E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1; E32(e, 0xCF4) = 0;
+        }
+        if (E32(e, 0xCBC)) {
+            E32(e, 0xD14) = 0; E32(e, 0xCDC) = 1; E32(e, 0xCBC) = 0; E32(e, 0xC44) = 0;
+            E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1; E32(e, 0xCF4) = 0;
+        }
+        if (-a < ENT_MAX) { g_ents[-a].walking = 0; g_ents[-a].joined = 0; }
         return;
     }
     lieu_action_t *n = lieu_action_push(LA_STOPJOINDRE);
@@ -1455,85 +1480,16 @@ static void cb_cb_97C(i32 slot, i32 mode) {
     n->flag70 = mode;
 }
 
-/* slot 39 sub_446D84 "Diversempile": deferred action dispatch.
- * Original enqueues action type 37 ("DiversEmpile") with op/a/arg at
- * action[0x14/0x18/0x1C]. The action processor switches on op to apply
- * effects. We apply the critical effects immediately since dke has no
- * deferred action queue. */
+/* slot 39 sub_446D84 "DiversEmpile"(op, a, arg): QUEUE type 37,
+ * +0x14 = op, +0x18 = a, +0x1C = arg. Nothing else. Case 37 completes the
+ * node and calls sub_446E19(op, a, arg) = cb_layer_op, result discarded.
+ * So op_9c is "DIVERS, but in pile order" — replace the old immediate
+ * switch entirely. */
 static void cb_op_9c(i32 op, i32 a, i32 arg) {
-    switch (op) {
-    case 0x06:
-        /* Set entity anim state. a = entity ID, arg = state value. */
-        if (a >= 0 && a < ENT_MAX) g_ents[a].hp = arg;
-        break;
-    case 0x0C:
-        /* Show/hide companion. a = entity ID, arg = 0 (hide) / 1 (show). */
-        if (a >= 0 && a < ENT_MAX) g_ents[a].visible = arg;
-        break;
-    case 0x10: {
-        /* Camera mode set. a = camera mode, arg = sub-param. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x10) camera mode=%d sub=%d\n", a, arg); }
-        break;
-    }
-    case 0x12:
-        /* Entity combat enable/disable. a = entity ID, arg = 0/1. */
-        if (a >= 0 && a < ENT_MAX) g_ents[a].combat_ready = arg;
-        break;
-    case 0x14:
-        /* Counter write. Stored for layer_op(20) reads. */
-        g_op9c_counter = a;
-        break;
-    case 0x16: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x16) a=%d arg=%d\n", a, arg); }
-        break;
-    }
-    case 0x17: {
-        /* Stop entity movement. a = entity ID. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x17) stop entity=%d\n", a); }
-        break;
-    }
-    case 0x18: {
-        /* Sound/music control. a = sound index, arg = sub-command. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x18) sound=%d cmd=%d\n", a, arg); }
-        break;
-    }
-    case 0x1B: {
-        /* Screen fade / transition. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x1B) fade a=%d\n", a); }
-        break;
-    }
-    case 0x1C: {
-        /* Entity reset/remove. a = entity ID. */
-        if (a >= 0 && a < ENT_MAX) ent_kill(a);
-        break;
-    }
-    case 0x29: {
-        /* Timer trigger. a = timer value. Deferred. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x29) timer=%d\n", a); }
-        break;
-    }
-    case 0x2A: {
-        /* Long timer. */
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c(0x2A) long_timer a=%d\n", a); }
-        break;
-    }
-    case 0x30:
-        /* Action queue clear / sync point. Called 3x in sequence as a
-         * flush barrier. No-op without action queue. */
-        break;
-    default: {
-        static i32 w = 0;
-        if (!w) { w = 1; print("lieu_cb: op_9c unknown op=%d a=%d arg=%d\n", op, a, arg); }
-        break;
-    }
-    }
+    lieu_action_t *n = lieu_action_push(LA_DIVERSEMPILE);
+    n->x = op;
+    n->y = a;
+    n->z = arg;
 }
 
 /* Concrete vtable. Unlisted (void*) slots stay NULL — the ported handlers
@@ -1668,6 +1624,69 @@ static i32 spawn_get_world(i32 id, i32 *wx, i32 *wz) {
  * struct (entity+0xC28 start time vs node+0x40) and the per-pile busy flag
  * dword_4B5418[]; we hold on node->start_ms instead.
  */
+/* ==========================================================================
+ * sub_46FF9A @ 0x46FF9A — COMBAT (case 14)
+ * ========================================================================== */
+static void combat_set(i32 id, i32 mode) {
+    /* world_state == 0x3D && id == 0x1B -> id = dword_5512CC (not L01). */
+    if (id < 4) {                                  /* the player */
+        entity_t *p = g_player_entity;
+        if (!p) return;
+        E32(p, 0xD60) = 1;                         /* dword_505C50 = 1 */
+        E32(p, 0xCEC) = 0; E32(p, 0xCF0) = 1; E32(p, 0xCF8) = 0; E32(p, 0xCF4) = 0;
+        E32(p, 0xD04) = 0; E32(p, 0xD00) = 0;
+        /* dword_4B219C = 1 */
+        return;
+    }
+    entity_t *e = actor_find(id);                  /* dword_4DF5D0[id*0x220] */
+    if (!e) { print("COMBAT : perso %d not loaded\n", id); return; }
+    E32(e, 0xD30) = 0;
+    if (mode == -1) {                              /* leave combat */
+        E32(e, 0xD60) = 0; E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1; E32(e, 0xD14) = 0;
+        if (id < ENT_MAX) g_ents[id].combat_ready = 0;
+        return;
+    }
+    /* debug_flags = mode (global really used as the combat mode) */
+    if (E32(e, 0xD60)) return;                     /* already fighting */
+    E32(e, 0xD14) = 0; E32(e, 0xCBC) = 0; E32(e, 0xCB4) = 0;   /* drop walk / join */
+    E32(e, 0xD60) = 1;
+    if (E32(e, 0xB0) != 0x5C) {
+        E32(e, 0xD08) = 0; E32(e, 0xD04) = 0; E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1;
+    }
+    /* dword_506520 = damage_counter = 0 */
+    E32(e, 0xC64) = 0x10000;
+    E32(e, 0xC68) = 0x4000;
+    E32(e, 0xD14) = (mode & 1) ? 1 : 0;
+    if (id < ENT_MAX) g_ents[id].combat_ready = 1;
+    /* TODO combat AI: whatever reads entity+0xD60 / +0xD14 (sub_41AED1 ...). */
+}
+
+/* ==========================================================================
+ * sub_444BF7 @ 0x444BF7 — CINEMA (case 3)
+ * ========================================================================== */
+static void cinema_play(const c8 *arg) {
+    c8 base[32];
+    i32 i = 0, start = 0;
+    while (arg[i] && arg[i] != '_' && i < 30) { base[i] = arg[i]; i++; }
+    base[i] = '\0';
+    if (arg[i] == '_') { start = atoi(arg + i + 1); if (start < 0) start = 0; }
+    /* music loaded (dword_4B729C) -> sub_48DE30(0) stop. TODO audio. */
+    i32 num = atoi(base + 2);                      /* "SC21" -> 21 */
+    if (!(num == 2 && g_lieu_level == 7))          /* world_state == 7 */
+        g_movie_seen[(num >> 3) & 7] |= (u8)(1u << (num & 7));
+    /* subtitles "DATAS>SBT>SC%02d_%s.TXT"(num, language) ; file "SC>%s.CRH".
+     * `start` (the _500 suffix) goes to ls_play_movie as its 3rd argument. */
+    snprintf(g_lieu_movie, sizeof(g_lieu_movie), "%s.CRH", base);
+    g_lieu_movie_pending = 1;
+    /* Movies 16, 21, 22, 23 are endings: played with the skip callback
+     * sub_444B10, then the three buffers are cleared and game_exit_code = 3. */
+    if (num == 16 || num == 21 || num == 22 || num == 23) g_game_exit_code = 3;
+    (void)start;
+    print("lieu_act: CINEMA %s (start %d)\n", g_lieu_movie, start);
+    /* After the movie: ls_flush_keyboard, clear screen, default palette and
+     * spin until ESC is released. */
+}
+
 i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
     if (!n) return 1;
 
@@ -1783,6 +1802,163 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             print("lieu_act: EVENEMENT arm id=%d in %d ms\n", n->id48, n->duration);
         }
         return 1;
+
+    case LA_CINEMA:                            /* case 3 @ 0x44CAF9 */
+        /* sub_444BF7 plays synchronously in dkev, so the pile is stalled for
+         * the whole movie. The port plays from scene_render: hold the node
+         * until the movie has been taken and finished if exact pile timing
+         * matters (TODO: lieu_movie_done()); completing at once is the
+         * current behaviour. */
+        cinema_play(n->name);
+        return 1;
+
+    case LA_KILLPERSO:                         /* case 4: never queued */
+    case LA_AJOUTEZONE:                        /* case 12: never queued */
+    case LA_RETIREZONE:                        /* case 13: never queued */
+        return 1;
+
+    case LA_COLOBJET:                          /* case 7 @ 0x44B432 */
+        /* obj = get_entity_character(name); if obj && obj+0xB0 (polygon):
+         *   all of x,z,w/2,d/2 zero -> memset(poly, 0, 0x208)
+         *   else +0xF8 = x-w/2, +0xFC = z-d/2, +0x100 = x+w/2, +0x104 = z+d/2,
+         *        +0x108 = world_controller+0x1E0, +0xE8 = 0,
+         *        sub_47701F(obj, minx, minz, maxx, maxz, +0x108). */
+        object_colobjet(n->name, n->x, n->z, n->p20, n->p28);
+        return 1;
+
+    case LA_COMBAT:                            /* case 14 @ 0x44BB4C */
+        combat_set(n->actor, n->num5C);
+        /* update_display_state(graphics_context) */
+        return 1;
+
+    case LA_FOUILLE: {                         /* case 21 @ 0x44BDAD */
+        entity_t *p = g_player_entity;
+        entity_t *corpse = actor_find(n->actor);           /* var_8 */
+        i16 *inv = (n->actor >= 0 && n->actor < LO_TAB509B40_ROWS) ? &g_tab_509B40[n->actor * 8] : NULL;
+        i32 hero = actor_hero_id();                        /* game_state */
+        if (!p) return 1;
+
+        if (n->duration == 1) {                /* start: crouch animation */
+            i32 anim = 9;                      /* 9 = nothing to take */
+            for (i32 i = 0; inv && i < 8; i++) if (inv[i]) anim = 8;
+            E32(p, 0xCF0) = 0; E32(p, 0xCEC) = 0; E32(p, 0xCF8) = 0; E32(p, 0xCF4) = 0;
+            c8 clip[16];
+            if ((n->actor == 0x42 && g_lieu_level == 0x23) || n->actor == 0x5F)
+                snprintf(clip, sizeof(clip), "g%02dpre05", hero);
+            else
+                snprintf(clip, sizeof(clip), "g%02dpre%02d", hero, anim);
+            actor_bake_root_yaw(p);            /* process_entity_state_change */
+            actor_play_anim(p, can_get_anim(clip), 0);
+            E32(p, 0xD58) = actor_anim_state(p, clip);     /* sub_41918C */
+            g_cam_lock = 1;                    /* dword_4FF0A0 */
+            g_player_blocked = 1;              /* player_movement_enabled */
+            /* if (!g_lieu_loading) update_player_interface */
+            n->duration = anim;
+            return 0;
+        }
+        /* every later state first waits for the player's clip (0x44BF5B) */
+        if (!actor_anim_done(p)) return 0;                 /* is_entity_in_animation */
+        if (n->duration == 8 || n->duration == 9) {
+            if (n->duration == 9) {            /* "nothing here" line */
+                static const c8 *a[4] = { NULL, "LCOD75", "LCOD76", "LCOD77" };
+                i32 id = n->actor;
+                i32 cls_a = (id == 10 || (id >= 12 && id <= 16) || id == 26 || id == 65);
+                const c8 *msg = NULL;
+                if (cls_a)              msg = (hero >= 1 && hero <= 3) ? a[hero] : NULL;
+                else if (hero == 1)     msg = "LCOD81";
+                else if (hero == 2)     msg = g_special_mode_active ? "LCOD82" : "LCOD83";
+                else if (hero == 3)     msg = g_special_mode_active ? "LCOD84" : "LCOD85";
+                if (msg) dlg_start(msg, now_ms);           /* sub_46BC74(msg, game_state) */
+                /* falls through to the "state != 8" wait below */
+            } else {                           /* 8: take the items */
+                for (i32 i = 0; inv && i < 8; i++) {
+                    i32 v = inv[i];
+                    if (!v) continue;
+                    if (v == 0x3E || v == 0xA2) v = 0x25;  /* item remap */
+                    c8 obj[8];
+                    if (v / 100) snprintf(obj, sizeof(obj), "OB%02d%c", v % 100, '@' + v / 100);
+                    else         snprintf(obj, sizeof(obj), "OB%02d", v % 100);
+                    /* TODO inventory: target_entity = byte_4DB3C0 named obj,
+                     * +0xC4 &= ~0x20, sub_427816(), sub_42639A(target, 1, 1). */
+                    print("lieu_act: FOUILLE takes %s\n", obj);
+                    inv[i] = 0;
+                }
+                if (corpse) {                  /* strip the corpse's weapon */
+                    /* TODO objects: sub_474462(corpse, corpse+0xD68, 1);
+                     * sub_4735A2(corpse, 0); sub_472B47(corpse+0xD64). */
+                    EPTR(corpse, 0xD64) = NULL;
+                    E32(corpse, 0x178) = 0;
+                    if (EDESC(corpse)) EDESC(corpse)[0x97] = 0;
+                }
+                g_ui_state = 2;                /* dword_4DD9B4: open the inventory screen */
+                n->duration = 2;
+                return 0;
+            }
+        }
+        /* state 9 (after the line) or 2 (inventory open): wait for the game UI */
+        if (g_ui_state != 1) return 0;
+        /* if state == 2: sub_42701B() (inventory close bookkeeping) TODO */
+        {
+            c8 clip[16] = { 0 };
+            actor_bake_root_yaw(p);
+            actor_prepare_anim(p, g_special_mode_active ? -5 : 0x3B, clip);
+            E32(p, 0xD58) = actor_anim_state(p, clip);
+            actor_play_anim(p, can_get_anim(clip), 0);
+        }
+        g_cam_lock = 0;
+        g_player_blocked = 0;
+        /* if (!g_lieu_loading) update_player_interface */
+        return 1;
+        /* NOTE: with no inventory screen yet, g_ui_state stays 1, so state 2
+         * releases on the next frame (the items are just logged). */
+    }
+
+    case LA_SIMULT:                            /* case 24 @ 0x44C5D9 */
+        g_skip_next_animation = n->p6C;        /* dword_506BE0 */
+        return 1;
+
+    case LA_JOINOBJ: {                         /* case 26 @ 0x44C747 */
+        /* Walk the PLAYER to the point `dist` (+0x14) from object `name`, on
+         * the object->player line, facing the object.
+         *   obj = get_entity_character(name); o = (obj+0xD8, obj+0xDC)
+         *   d = player - o; f = dist / |d|; t = o + d*f
+         *   sub_4558A0(&player.pos, &t) == 0 -> CC0/CC4 = t, else player pos
+         *   CBC = 1; CC8 = sub_4440A6(&o, &t) (heading); C44 = 1. done.
+         * TODO: the object struct at +0xD8/+0xDC is the dkev object slot
+         * (game_object_t has no such fields yet); sub_4558A0 is the path /
+         * collision check; heading assumed = bam_angle(o - t). */
+        entity_t *p = g_player_entity;
+        i32 ox = 0, oz = 0;
+        if (!p || !EROOT(p) || !object_pos_xz(n->name, &ox, &oz)) return 1;  /* TODO object_pos_xz */
+        double dx = EROOT(p)->pos[0] - ox, dz = EROOT(p)->pos[2] - oz;
+        double len = sqrt(dx * dx + dz * dz);
+        double f = len > 0 ? n->x / len : 0;
+        i32 tx = ox + (i32)(dx * f), tz = oz + (i32)(dz * f);
+        E32(p, 0xCC0) = tx;
+        E32(p, 0xCC4) = tz;
+        E32(p, 0xCBC) = 1;
+        E32(p, 0xCC8) = bam_angle(ox - tx, oz - tz);
+        E32(p, 0xC44) = 1;
+        return 1;
+    }
+
+    case LA_PLACEANIMAL:                       /* case 33 @ 0x44CA4B */
+        /* count used game_structures (16 x 0xF0); > 12 -> log "Ivan faut pas
+         * me prendre pour un con..." and skip; else
+         * process_creature_effects(id, x, y, z, p28, p4C). TODO creatures. */
+        print("lieu_act: PLACEANIMAL id=%d (%d,%d,%d) %d %d (no creatures)\n",
+              n->actor, n->x, n->y, n->z, n->p28, n->p4C);
+        return 1;
+
+    case LA_DIVERSEMPILE:                      /* case 37 @ 0x44CC77 */
+        /* dkev completes the node BEFORE the call; nothing in sub_446E19
+         * queues, so calling first and returning 1 is equivalent. */
+        cb_layer_op(n->x, n->y, n->z);
+        return 1;
+
+    /* 15-18, 25, 29-31, 34 (DIRECPERSO..DISTANCE, PRINT, RANDOM, SELECTPILE,
+     * ONJOINDRE, DIVERS): the default case, done at once. Already covered by
+     * `default:` (drop its "not wired" log for these). */
 
     case LA_ETATOBJET: {                       /* case 6 @ 0x44B00F */
         lieu_obj_t *o = obj_find(n->name, 1);

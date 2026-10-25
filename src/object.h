@@ -66,6 +66,9 @@ void object_tick(u32 now_ms);
 /* ColObjet (case 7): box [x +- w/2] x [z +- d/2]; all zero clears it. */
 void object_colobjet(const c8 *name, i32 x, i32 z, i32 w, i32 d);
 
+/* Footprint centre (+0xD8 / +0xDC) of a loaded object, for JoindreObj. */
+i32 object_pos_xz(const c8 *name, i32 *x, i32 *z);
+
 /* Slots for the renderer and the collision code. */
 game_object_t *object_slot(i32 i);
 const void    *object_poly(i32 i);    /* NULL when the slot has none */

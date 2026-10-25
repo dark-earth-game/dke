@@ -283,3 +283,16 @@ void object_tick(u32 now_ms) {
         g_anim.done = 1;
     }
 }
+
+i32 object_pos_xz(const c8 *name, i32 *x, i32 *z) {
+    game_object_t *o = name ? obj_lookup(name) : NULL;
+    if (!o) return 0;
+    if (o->has_poly) {
+        *x = P32(o, 0x1F4);
+        *z = P32(o, 0x1FC);
+    } else {
+        *x = o->pos[0];
+        *z = o->pos[2];
+    }
+    return 1;
+}
