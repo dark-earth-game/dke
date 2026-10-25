@@ -1333,6 +1333,9 @@ i32 lieu15_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
     case LIEU_OP_INIT:
+        /* The DLL is loaded afresh for every room: its globals restart. */
+        g_dat_26B34 = g_dat_26B38 = g_dat_26B3C = 0;
+        g_l15_txt[0] = '\0';
         if (init(arg))
             return 0;
         break;

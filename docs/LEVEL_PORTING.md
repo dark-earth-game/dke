@@ -103,6 +103,10 @@ If op 4, 5 or 6 calls a function the annotator does **not** mark as
 identical to `lieu_event4/5/6`, the level has its own variant. Port it in
 `lieuNN.c` and call it from the entry.
 
+The DLL's own `.data` globals (flags, sprintf buffers) start from their
+initial values on every room load. Reset them at the top of the entry's
+`LIEU_OP_INIT` case (see `lieu15.c`).
+
 INIT's death branch (hero dead: SC22/SC23 ending) returns 0, not
 `state[0]`. Make `init()` return 1 on that path and the entry return 0, as
 `lieu02.c` does.
