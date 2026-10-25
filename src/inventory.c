@@ -1132,7 +1132,7 @@ void inventory_screen_run(void) {
         in.mx = sys->motion_x; in.my = sys->motion_y;
         in.lclick = sys->mouse_left == 2;
         memcpy(prev, sys->actions, sizeof(prev));
-        if (getenv("DKE_INVAUTO") && ls_tick() - opened > 1500) in.esc = 1;   /* headless */
+        if ((getenv("DKE_INVAUTO") || getenv("DKE_FRAMES")) && ls_tick() - opened > 1500) in.esc = 1;   /* headless */
         /* Load the preview models of the windows on show. */
         for (i32 k = 1; k <= 4; k++)
             inv_model_load(&g_win_model[k], S.win[k].inv_index >= 0
