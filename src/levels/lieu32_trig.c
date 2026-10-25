@@ -1170,7 +1170,7 @@ static void trig14(void) {
                     if (ST(0x114) > 1) {
                         lieu_action_register("L32D224", P_MALROT6, "SP66DIA54", "SP66ATT02_100");
                     }
-                    /*?? inc dword ptr [eax + 0x114] ; ST(0x114)*/
+                    ST(0x114)++;
                 }
                 CB->animation("ar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
