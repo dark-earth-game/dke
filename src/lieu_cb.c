@@ -2274,7 +2274,7 @@ void lieu_new_game(void) {
     memset(g_lieu_state, 0, sizeof(g_lieu_state));
     /* L01 trig00's entry phase: 1 = the opening of a new game (L01 INIT
      * clears it, so later visits take the persisted path). */
-    LIEU_ST(g_lieu_state, 0x964) = 1;
+    LIEU_ST(g_lieu_state, ST_START_POINT(1)) = 1;
 }
 
 /* sub_4640BC @ 0x464306: POSPERSO records a persona's life mode in
@@ -2308,7 +2308,7 @@ void lieu_enter(i32 level_id) {
 
     /* ST(0x194) is game_death_state (dword_505DD4): the hero being played,
      * 0..3 (DKE.CFG FirstPerso = 0 for a new game). INIT only plays SC22 for
-     * the value 4. ST(0x964) = 1 selects trig00's fresh-entry setup.
+     * the value 4. ST_START_POINT(1) = 1 selects trig00's fresh-entry setup.
      * TODO: take both from the engine's game state once hero swaps exist. */
     LIEU_ST(g_lieu_state, 0x194) = actor_hero_id();
     /* +0x0C is dword_505C4C, the per-frame action-key flag sub_449F9F

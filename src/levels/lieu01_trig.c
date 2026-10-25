@@ -36,8 +36,8 @@ static void (*const g_trigger[42])(void) = {
 static void trig41(void) {
     if (ST(V_INTRO_STATE) == 0 && ST(ST_HERO) == P_ARKHAN0) {
         ST(V_INTRO_STATE) = 1;
-        CB->evenement(2, 0x0A);
-        CB->evenement(0, 0x7530);
+        CB->evenement(2, 10);
+        CB->evenement(0, 30000);
     }
     if (ST(ST_HERO) == P_ARKHAN0 && ST(0x74) == 1) {
         ST(0x68) = 1;
@@ -132,14 +132,14 @@ static void trig32(void) { e_trig_spawn_act(0x20); }
  * ---------------------------------------------------------------------- */
 
 static void trig00(void) {   /* sub_100073F0 */
-    if (ST(0x964) == 1) {
+    if (ST(ST_START_POINT(1)) == 1) {
         ST(ST_HERO) = P_ARKHAN0;
         ST(V_INTRO_STATE) = 0;
         ST(V_LEFT_HOME) = 0;
         ST(V_OB38A_STATE) = 0;
         ST(V_GATE_OB25_OPEN) = 0;
     }
-    if (ST(0x964) == 2) {
+    if (ST(ST_START_POINT(1)) == 2) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL)  = 2;
         ST(V_LEFT_HOME) = 1;
@@ -152,7 +152,7 @@ static void trig00(void) {   /* sub_100073F0 */
         ST(V_OB38A_STATE) = 1;
         ST(V_GATE_OB25_OPEN) = 1;
     }
-    if (ST(0x964) == 3) {
+    if (ST(ST_START_POINT(1)) == 3) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL)  = 2;
         ST(V_LEFT_HOME) = 1;
@@ -164,7 +164,7 @@ static void trig00(void) {   /* sub_100073F0 */
         ST(V_OB38A_STATE) = 1;
         ST(V_GATE_OB25_OPEN) = 1;
     }
-    if (ST(0x964) == 4) {
+    if (ST(ST_START_POINT(1)) == 4) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL)  = 2;
         ST(V_LEFT_HOME) = 1;
@@ -176,7 +176,7 @@ static void trig00(void) {   /* sub_100073F0 */
         ST(V_OB38A_STATE) = 1;
         ST(V_GATE_OB25_OPEN) = 1;
     }
-    if (ST(0x964) == 5) {
+    if (ST(ST_START_POINT(1)) == 5) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_VIE(P_KABAK)) = 1;
         ST(ST_LEVEL)  = 2;
@@ -191,7 +191,7 @@ static void trig00(void) {   /* sub_100073F0 */
         ST(V_OB38A_STATE) = 1;
         ST(V_GATE_OB25_OPEN) = 1;
     }
-    if (ST(0x964) == 6) {
+    if (ST(ST_START_POINT(1)) == 6) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL)  = 2;
         ST(V_LEFT_HOME) = 1;
@@ -395,7 +395,7 @@ static void trig00(void) {   /* sub_100073F0 */
     CB->divers(DV_MUSIC, 1, 0);
     CB->divers(DV_EVENT_SOUND, 0x10001, 0x23280000);
 
-    ST(0x964) = 0;
+    ST(ST_START_POINT(1)) = 0;
 }
 
 static void trig01(void) {   /* sub_1000B563 */
@@ -498,7 +498,7 @@ static void trig02(void) {   /* sub_1000BA47 */
 
     if (ST(V_EVENT_0) == 0) {
         CB->evenement(0, -1);
-        CB->evenement(0, 0x3A98);
+        CB->evenement(0, 15000);
     }
     CB->bloque(BLOQUE_ALL);
     ST(ST_SCRIPT_BUSY) = 1;
@@ -1817,7 +1817,7 @@ L_102BF:
     CB->animation("SP87ESA14");
     if (ST(V_KABAK_INTRO) == 0) {
         CB->animation("P87_65535");
-        CB->evenement(2, 0x64);
+        CB->evenement(2, 100);
         goto done;
     }
     if (ST(V_KABAK_INTRO) != 1) goto done;

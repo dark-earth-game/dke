@@ -45,7 +45,7 @@ void lieu_action_register(const c8 *name, i32 count,
  * ---------------------------------------------------------------------- */
 void lieu_event6(i32 arg) {
     switch (arg) {
-    case 0:  /* loc_10005C0A */
+    case EV6_LCOD34:  /* loc_10005C0A */
         if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_COMBAT_STANCE) == 0 && ST(V_LCOD34_SHOWN) == 0) {
             CB->select_pile(0, 1);
             ST(V_LCOD34_SHOWN) = 1;
@@ -54,7 +54,7 @@ void lieu_event6(i32 arg) {
             CB->bloque(BLOQUE_NONE);
         }
         break;
-    case 1:  /* loc_10005C87 */
+    case EV6_LCOD35:  /* loc_10005C87 */
         if (ST(ST_HERO) == P_ARKHAN2 && ST(V_LCOD35_SHOWN) == 0) {
             CB->select_pile(0, 1);
             ST(V_LCOD35_SHOWN) = 1;
@@ -68,7 +68,7 @@ void lieu_event6(i32 arg) {
             CB->bloque(BLOQUE_NONE);
         }
         break;
-    case 2:  /* loc_10005D34 */
+    case EV6_LCOD36:  /* loc_10005D34 */
         if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_COMBAT_STANCE) == 0 && ST(V_LCOD36_SHOWN) == 0) {
             CB->select_pile(0, 1);
             ST(V_LCOD36_SHOWN) = 1;
@@ -78,7 +78,7 @@ void lieu_event6(i32 arg) {
             CB->bloque(BLOQUE_NONE);
         }
         break;
-    case 3:  /* loc_10005DBF */
+    case EV6_LCOD37:  /* loc_10005DBF */
         if (ST(ST_HERO) == P_ARKHAN3 && ST(V_LCOD37_SHOWN) == 0) {
             CB->select_pile(0, 1);
             ST(V_LCOD35_SHOWN) = 0;
@@ -92,7 +92,7 @@ void lieu_event6(i32 arg) {
             CB->bloque(BLOQUE_NONE);
         }
         break;
-    case 4:  /* loc_10005E70 */
+    case EV6_SC21_ENDING:  /* loc_10005E70 */
         if (ST(ST_HERO) == P_ARKHAN3 && ST(0x318) == 0) {
             CB->select_pile(2, 2);
             CB->select_pile(1, 2);
@@ -198,11 +198,11 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
 
     case 17: if (ST(V_EVENT_17) == 1) ST(V_EVENT_17) = 2; break;
 
-    case 18:
+    case EV_HUD_TIMER:
         if ((i32)ST(V_HUD_TIMER_MS) > 0) {
             ST(V_HUD_TIMER_MS) -= 0x1388;
             CB->divers_empile(DV_HUD_REFRESH, 0, 0);
-            CB->evenement(0x12, 0x1388);
+            CB->evenement(EV_HUD_TIMER, 5000);
         }
         break;
 
@@ -226,7 +226,7 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
     case 25: if (ST(V_EVENT_25) == 0) ST(V_EVENT_25) = 2; break;
     case 27: if (ST(V_EVENT_27) == 0) ST(V_EVENT_27) = 1; break;
 
-    case 28:
+    case EV_TO_ROOM_25:
         if (ST(V_EVENT_28) == 0) {
             CB->bloque(BLOQUE_NONE);
             ST(ST_LEVEL) = 23;
@@ -257,23 +257,23 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
     case 40: ST(V_EVENT_40) = 1; break;
     case 41: ST(V_EVENT_41) = 1; break;
 
-    case 42:
+    case EV_MUSIC_LOOP_A:
         if (ST(V_MUSIC_TRACK) != -1) {
             CB->select_pile(2, 1);
             CB->divers_empile(DV_MUSIC, ST(V_MUSIC_TRACK), 4);
-            CB->evenement(0x2B, 0x1388);
+            CB->evenement(EV_MUSIC_LOOP_B, 5000);
             CB->select_pile(0, 1);
         }
         break;
 
-    case 43:
+    case EV_MUSIC_LOOP_B:
         CB->select_pile(2, 1);
         CB->divers_empile(DV_MUSIC, ST(V_MUSIC_TRACK), 1);
-        CB->evenement(0x2A, 0xAFC8);
+        CB->evenement(EV_MUSIC_LOOP_A, 45000);
         CB->select_pile(0, 1);
         break;
 
-    case 44: ST(V_END_GAME_REQ) = 1; break;
+    case EV_END_GAME: ST(V_END_GAME_REQ) = 1; break;
 
     case 51: /* 0x3EC chain 0->1,2->3,4->5 */
         if      (ST(V_EVENT_51) == 0) ST(V_EVENT_51) = 1;
@@ -291,29 +291,29 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
         break;
 
     case 70:  /* alarm bells (named_two_ints F/G/H at fixed values) */
-        CB->select_pile(2, 1); CB->evenement(0x46, 0x2134); CB->select_pile(0, 1);
+        CB->select_pile(2, 1); CB->evenement(0x46, 8500); CB->select_pile(0, 1);
         break;
     case 71:
-        CB->select_pile(2, 1); CB->evenement(0x47, 0x9C4);  CB->select_pile(0, 1);
+        CB->select_pile(2, 1); CB->evenement(0x47, 2500);  CB->select_pile(0, 1);
         break;
     case 72:
-        CB->select_pile(2, 1); CB->evenement(0x48, 0x4844); CB->select_pile(0, 1);
+        CB->select_pile(2, 1); CB->evenement(0x48, 18500); CB->select_pile(0, 1);
         break;
     case 73:
-        CB->select_pile(2, 1); CB->evenement(0x46, 0x2904); CB->select_pile(0, 1);
+        CB->select_pile(2, 1); CB->evenement(0x46, 10500); CB->select_pile(0, 1);
         break;
     case 74:
-        CB->select_pile(2, 1); CB->evenement(0x46, 0x7530); CB->select_pile(0, 1);
+        CB->select_pile(2, 1); CB->evenement(0x46, 30000); CB->select_pile(0, 1);
         break;
 
     case 80:
         CB->select_pile(0, 2);
-        CB->evenement(0x51, 0x9C4);
+        CB->evenement(0x51, 2500);
         CB->animation("SP01ACT99");
         CB->select_pile(0, 1);
         break;
 
-    case 94:  /* pipe puzzle SP02PIPI1/2 by layer query */
+    case EV_PIPE_SCENE:  /* pipe puzzle SP02PIPI1/2 by layer query */
         CB->select_pile(2, 1);
         CB->bloque(BLOQUE_ALL);
         if (CB->divers(DV_CAN_FIGHT, 9, 2))
@@ -325,7 +325,7 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
         CB->select_pile(0, 1);
         break;
 
-    case 50: {  /* SOB24%c/SOB77%c via named_ex_988 */
+    case EV_GOURD_TO_FLASK: {  /* SOB24%c/SOB77%c via named_ex_988 */
         CB->divers(DV_TRANSITION, 0x7D0, 0x7D0);
         CB->animation("SP01ACT96");
         CB->animation("ar");
@@ -340,50 +340,50 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
     case 81: {  /* P01ACT97 + layer-6 clamp(0x1E) */
         CB->select_pile(0, 2);
         CB->animation("P01ACT97");
-        CB->evenement(0x32, 0x320);
+        CB->evenement(EV_GOURD_TO_FLASK, 800);
         e5_clamp6(0x1E);
         CB->select_pile(0, 1);
         break;
     }
-    case 90:  /* float accum grow (index 0) */
+    case EV_FLOAT_GROW_0:  /* float accum grow (index 0) */
         CB->select_pile(2, 1);
         if (g_float_accum[0] < 3.0f && g_float_active != 0) {
             CB->divers(DV_SCALE_BONE, 0x66, 0x10011);
-            CB->evenement(0x5A, 0x64);
+            CB->evenement(EV_FLOAT_GROW_0, 100);
             g_float_accum[0] *= 1.02f;
         }
         CB->select_pile(0, 1);
         break;
-    case 91:  /* float accum grow (index 1, dual layer_op) */
+    case EV_FLOAT_GROW_1:  /* float accum grow (index 1, dual layer_op) */
         CB->select_pile(2, 1);
         if (g_float_accum[1] < 3.0f && g_float_active != 0) {
             CB->divers(DV_SCALE_BONE, 0x66, 0x10005);
             CB->divers(DV_SCALE_BONE, 0x66, 0x10007);
-            CB->evenement(0x5B, 0x64);
+            CB->evenement(EV_FLOAT_GROW_1, 100);
             g_float_accum[1] *= 1.02f;
         }
         CB->select_pile(0, 1);
         break;
-    case 92:  /* float accum grow (index 2, dual layer_op) */
+    case EV_FLOAT_GROW_2:  /* float accum grow (index 2, dual layer_op) */
         CB->select_pile(2, 1);
         if (g_float_accum[2] < 3.0f && g_float_active != 0) {
             CB->divers(DV_SCALE_BONE, 0x66, 0x1000E);
             CB->divers(DV_SCALE_BONE, 0x66, 0x10010);
-            CB->evenement(0x5C, 0x64);
+            CB->evenement(EV_FLOAT_GROW_2, 100);
             g_float_accum[2] *= 1.02f;
         }
         CB->select_pile(0, 1);
         break;
-    case 93:  /* float accum decay (index 3) */
+    case EV_FLOAT_DECAY:  /* float accum decay (index 3) */
         CB->select_pile(2, 1);
         if (g_float_accum[3] > 0.5f && g_float_active != 0) {
             CB->divers(DV_SCALE_BODY, 0x62, 0);
-            CB->evenement(0x5D, 0x64);
+            CB->evenement(EV_FLOAT_DECAY, 100);
             g_float_accum[3] *= 0.98f;
         }
         CB->select_pile(0, 1);
         break;
-    case 98: {  /* float reset + respawn toggle */
+    case EV_RESPAWN_TOGGLE: {  /* float reset + respawn toggle */
         CB->select_pile(2, 1);
         CB->bloque(BLOQUE_ALL);
         if (g_float_active != 0) {
@@ -395,7 +395,7 @@ void lieu_event4(i32 arg) {        /* sub_1000123A */
             CB->pos_perso(ST(ST_HERO) + 100, c0, c1, c2, 1,
                           "ar", ST(0x138), 0);
             CB->animation("Sar_50");
-            CB->evenement(0x62, 0x64);
+            CB->evenement(EV_RESPAWN_TOGGLE, 100);
             CB->bloque(BLOQUE_NONE);
             CB->select_pile(0, 1);
         } else {
@@ -473,16 +473,16 @@ static void e5_att01_lcod(const c8 *a, const c8 *b) {
 void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
     switch (arg) {
 
-    case 4:   /* 0x22E1 */
-    case 22:  /* 0x23C1 */
-    case 65:  /* 0x2C0A */
+    case OB_DISH:   /* 0x22E1 */
+    case OB_FLAGON22:  /* 0x23C1 */
+    case OB_BOWL:  /* 0x2C0A */
         e5_att01();
         break;
 
-    case 23:  /* 0x24A1 (shared 23/27/35/55) */
-    case 27:
-    case 35:
-    case 55:
+    case OB_THBOLT_BEF:  /* 0x24A1 (shared 23/27/35/55) */
+    case OB_F_THROWER:
+    case OB_ZED_THBOLT35:
+    case OB_SPITROD:
         if (ST(ST_LEVEL) == 35) {
             e5_reset();
             CB->animation("SG00ATT01");
@@ -490,7 +490,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         }
         break;
 
-    case 42:  /* 0x250D */
+    case OB_FLAGON42:  /* 0x250D */
         e5_reset();
         CB->animation("SG01ATT01");
         if (ST(ST_HERO) == P_ARKHAN1) CB->dialogue("LCOD41", ST(ST_HERO));
@@ -500,7 +500,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 49:  /* 0x25ED — Sar imp interaction (LCOD02/03 A-H) */
+    case OB_SORDOS_DOC:  /* 0x25ED — Sar imp interaction (LCOD02/03 A-H) */
         if (ST(V_LCOD02_SEEN) == 0 || ST(V_LCOD02_SEEN) == 1) {
             e5_reset();
             if (ST(ST_HERO) == P_ARKHAN2) {
@@ -537,11 +537,11 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
                 else
                     CB->joindre(-ST(ST_HERO), -1, -1, -1, 0x1A);
                 if (CB->distance(20, 31) >= 0x96)
-                    CB->evenement(0x29, 0x7D0);
+                    CB->evenement(0x29, 2000);
                 else if (CB->distance(20, 31) < 0x96 && CB->direction_perso(P_PHEDORIA) == 0)
-                    CB->evenement(0x29, 0x7D0);
+                    CB->evenement(0x29, 2000);
                 else
-                    CB->evenement(0x29, 0x1F4);
+                    CB->evenement(0x29, 500);
             } else {
                 CB->animation("Sar_50");
                 CB->bloque(BLOQUE_NONE);
@@ -552,14 +552,14 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         }
         break;
 
-    case 50:  /* 0x29A5 */
+    case OB_DIAG_WEAPON:  /* 0x29A5 */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("LCOD88", 2, "SG00DIA02", NULL);
         if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("LCOD89", 3, "SG00DIA02", NULL);
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 46:  /* 0x2A47 — LCOD100/101/102/103/104 */
+    case OB_RYLS_NOTES:  /* 0x2A47 — LCOD100/101/102/103/104 */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) {
             lieu_action_register("LCOD100A", 2, "SP02ACT64", "SP02ACT64");
@@ -585,14 +585,14 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 70:  /* 0x2CEA */
+    case OB_BANDOR_DIAG:  /* 0x2CEA */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("LCOD90", 2, "SG00DIA02", NULL);
         if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("LCOD91", 3, "SG00DIA02", NULL);
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 13:  /* 0x39E1 — Sar mannequin dialogue + layer clamp */
+    case OB_VEGETABLE:  /* 0x39E1 — Sar mannequin dialogue + layer clamp */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) {
             if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG02MAN01");
@@ -607,7 +607,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 77:  /* 0x3575 — SPxxACT17 */
+    case OB_FLASK77:  /* 0x3575 — SPxxACT17 */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN1) CB->animation("SP01ACT17");
         if (ST(ST_HERO) == P_ARKHAN2) CB->animation("SP02ACT17");
@@ -619,7 +619,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 81:  /* 0x36B3 — LCOD23/24 A-G */
+    case OB_PARCHMENT:  /* 0x36B3 — LCOD23/24 A-G */
         e5_reset();
         if (ST(V_LCOD23_SEEN) == 0) ST(V_LCOD23_SEEN) = 1;
         if (ST(ST_LEVEL) == 28) ST(0x84) = 1;
@@ -645,7 +645,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 84:  /* 0x3871 */
+    case OB_HELMET:  /* 0x3871 */
         e5_reset();
         CB->animation("SG01ATT01");
         if (ST(ST_HERO) == P_ARKHAN2) CB->dialogue("LCOD672", ST(ST_HERO));
@@ -654,7 +654,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 85:  /* 0x3929 */
+    case OB_BREASTPLATE:  /* 0x3929 */
         e5_reset();
         CB->animation("SG01ATT01");
         if (ST(ST_HERO) == P_ARKHAN2) CB->dialogue("LCOD674", ST(ST_HERO));
@@ -663,7 +663,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 34:  /* 0x44E2 — SGxxMAN01/02 + clamp 0x4B */
+    case OB_POTATO:  /* 0x44E2 — SGxxMAN01/02 + clamp 0x4B */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) {
             if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG02MAN01");
@@ -678,27 +678,27 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 36:  /* 0x464F — SGxxMAN03/04 + clamp 0x4B */
+    case OB_ROOT:  /* 0x464F — SGxxMAN03/04 + clamp 0x4B */
         e5_reset(); e5_man34(0x4B); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 43:  /* 0x47BC — SGxxMAN03/04 + clamp 0x64 */
+    case OB_FISH:  /* 0x47BC — SGxxMAN03/04 + clamp 0x64 */
         e5_reset(); e5_man34(0x64); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 56:  /* 0x4B32 — MAN03/04 + clamp 0x4B */
+    case OB_RAT:  /* 0x4B32 — MAN03/04 + clamp 0x4B */
         e5_reset(); e5_man34(0x4B); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 64:  /* 0x4C9F — MAN03/04 + clamp 0x64 */
+    case OB_ROAST_BIRD:  /* 0x4C9F — MAN03/04 + clamp 0x64 */
         e5_reset(); e5_man34(0x64); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 95:  /* 0x4E0C — MAN03/04 + clamp 0x96 */
+    case OB_MORTAR:  /* 0x4E0C — MAN03/04 + clamp 0x96 */
         e5_reset(); e5_man34(0x96); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 44:  /* 0x4929 — SGxxMAN (levels 0-3) + clamp 0x96 */
+    case OB_MEAT:  /* 0x4929 — SGxxMAN (levels 0-3) + clamp 0x96 */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN0) {
             if (ST(ST_SPECIAL_MODE) == 1) CB->animation("SG00MAN01");
@@ -721,18 +721,18 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 1:   /* 0x5161 — SG01ATT01 + LCOD26/27 */
+    case OB_UNIFORM:   /* 0x5161 — SG01ATT01 + LCOD26/27 */
         e5_reset(); e5_att01_lcod("LCOD26", "LCOD27"); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 2:   /* 0x5219 (shared 2/12/18/19) — SG01ATT01 + L25D79/82 */
-    case 12:
-    case 18:
-    case 19:
+    case OB_BOW_TO_KEY:   /* 0x5219 (shared 2/12/18/19) — SG01ATT01 + L25D79/82 */
+    case OB_CRYSTAL_2:
+    case OB_CRYSTAL_1:
+    case OB_CRYSTAL_3:
         e5_reset(); e5_att01_lcod("L25D79", "L25D82"); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 3:   /* 0x52D1 — state_toggle(1,1) + SG01ATT01 + LCOD39/40 */
+    case OB_METAL_PLATE:   /* 0x52D1 — state_toggle(1,1) + SG01ATT01 + LCOD39/40 */
         CB->select_pile(1, 1);
         CB->divers_empile(DV_RANDOM, 0, 0);
         CB->divers_empile(DV_RANDOM, 0, 0);
@@ -743,15 +743,15 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         break;
 
     /* 0x538C — big shared group: SG01ATT01 + LCOD39/40 */
-    case 5: case 6: case 7: case 8: case 9: case 10: case 11:
-    case 14: case 15: case 16: case 20: case 29: case 33:
-    case 39: case 40: case 41: case 45: case 51: case 60:
-    case 72: case 73: case 74: case 75: case 86: case 87:
-    case 89: case 93: case 94: case 96:
+    case OB_METAL_POLE: case OB_F_THROW_AMMO: case OB_BULLETS: case OB_BOILER: case OB_HANDLE: case OB_PLATE_BEFORE: case OB_RED_KEY:
+    case OB_KONK_KEY: case OB_SORDOS_KEY: case OB_BOGD_KEY: case OB_MIRROR: case OB_SHAFT: case OB_LEAD_PLAQUE:
+    case OB_SM_TH_AMMO: case OB_OBJ_BEFORE40: case OB_OBJ_BEFORE41: case OB_CRYST_SLIV: case OB_PULLEY_BLADE: case OB_COIN:
+    case OB_THBOLT_AMMO: case OB_ZED_AMMO: case OB_PICK_AX: case OB_CRYSTAL_KEY: case OB_FLASK86: case OB_YONG_COUNTER:
+    case OB_STOCK_KEY: case OB_STILETTO: case OB_PESTLE: case OB_LARGE_KEY:
         e5_reset(); e5_att01_lcod("LCOD39", "LCOD40"); CB->bloque(BLOQUE_NONE);
         break;
 
-    case 82:  /* 0x5444 — LCOD55/56 */
+    case OB_BOOK:  /* 0x5444 — LCOD55/56 */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("LCOD55", 2, "SP02ACT64", NULL);
         if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("LCOD56", 3, "SP02ACT64", NULL);
@@ -759,7 +759,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 99:  /* 0x4F7D — SPxxATT20 first-time, else LCOD41/42/43 */
+    case OB_CAN:  /* 0x4F7D — SPxxATT20 first-time, else LCOD41/42/43 */
         e5_reset();
         if (ST(V_ATT20_SEEN) == 0) {
             ST(V_ATT20_SEEN) = 1;
@@ -778,7 +778,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         CB->bloque(BLOQUE_NONE);
         break;
 
-    case 21: {  /* 0x3B4E — OB21A/B/C by phase (edx), ATT19/20 + clamp */
+    case OB_VIAL: {  /* 0x3B4E — OB21A/B/C by phase (edx), ATT19/20 + clamp */
         const c8 *ob;
         if      (phase == 0) ob = "OB21A";
         else if (phase == 1) ob = "OB21B";
@@ -799,7 +799,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         break;
     }
 
-    case 24: {  /* 0x3F9C — OB24%c/OB77%c timer, phase=array index */
+    case OB_FULL_GOURD: {  /* 0x3F9C — OB24%c/OB77%c timer, phase=array index */
         if (ST(ST_COMBAT_STANCE) != 0) break;
         e5_reset();
         if (ST(ST_SPECIAL_MODE) != 1 && (ST(ST_SPECIAL_MODE) != 0 || ST(ST_HERO) == P_ARKHAN1))
@@ -839,13 +839,13 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         if (ST(ST_SPECIAL_MODE) == 0 && ST(ST_HERO) == P_ARKHAN1) {
             ST(0x140 + phase * 4) = 0;
             CB->animation("SP01ACT98");
-            CB->evenement(0x50, 0x7D0);
+            CB->evenement(0x50, 2000);
         }
         CB->bloque(BLOQUE_NONE);
         break;
     }
 
-    case 31: {  /* 0x4385 — OB31 + layer 0x14 reduction */
+    case OB_POTION: {  /* 0x4385 — OB31 + layer 0x14 reduction */
         e5_reset();
         if (ST(ST_HERO) == P_ARKHAN2) CB->animation("SP02ATT20");
         if (ST(ST_HERO) == P_ARKHAN3) CB->animation("SP03ATT20");
@@ -861,7 +861,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         break;
     }
 
-    case 71: {  /* 0x2D8C — SOB86 FSM (multi-branch room logic) */
+    case OB_METAL_SUIT: {  /* 0x2D8C — SOB86 FSM (multi-branch room logic) */
         CB->select_pile(0, 2);
         CB->divers_empile(DV_RANDOM, 0, 0);
         CB->divers_empile(DV_RANDOM, 0, 0);
@@ -968,7 +968,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         }
     }
 
-    case 88: {  /* 0x54F1 — SPxxATT02 health decrement */
+    case OB_TUBE: {  /* 0x54F1 — SPxxATT02 health decrement */
         e5_reset();
         if (ST(0x6D8) == 0) {
             if (ST(ST_SPECIAL_MODE) == 0) {

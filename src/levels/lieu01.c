@@ -41,13 +41,13 @@ static void tick_body(void) {
     /* 0x88FE — debug subtitle */
     {
         c8 buf[64];
-        snprintf(buf, sizeof(buf), "testos printos:%d", ST(0x960));
+        snprintf(buf, sizeof(buf), "testos printos:%d", ST(ST_DEBUG_PRINT));
         CB->print_msg(buf, 0, 0xF0);
     }
     /* 0x8934 */
     if (ST(ST_HERO) == 4 && ST(V_DEATH_EVENT_SENT) == 0) {
         ST(V_DEATH_EVENT_SENT) = 1;
-        CB->evenement(0x2C, 0xBB8);
+        CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x8977 — intro cinematic replay */
     if (ST(V_END_GAME_REQ) == 1) {
@@ -180,7 +180,7 @@ static void tick_body(void) {
             CB->dialogue("L01D99", 0);
             CB->change_camera(1, CAM_LOCKED);
             lieu_action_register("L01D45B", 0x1A, "SP26GAR03", "SG26FRA01");
-            CB->evenement(0x27, 0x2EE);
+            CB->evenement(0x27, 750);
             CB->animation("P26GAR03_10");
         }
         /* 0x91CE */
@@ -432,7 +432,7 @@ static void tick_body(void) {
                 CB->animation("P87GAR02_10");
                 if ((i32)ST(V_PLAYER_STRIKE) >= 1) {
                     ST(V_ENGAGED_PERSONA) = 0x57;
-                    CB->evenement(2, 0x64);
+                    CB->evenement(2, 100);
                 }
                 if (ST(V_PLAYER_STRIKE) == 0) {
                     if (ST(V_KABAK_D81_SAID) == 0) {
@@ -799,7 +799,7 @@ static i32 init(i32 reload_flag) {
 static void tick(void) {
     if (ST(V_PENDING_EVENT) != 0) {
         CB->select_pile(2, 1);
-        CB->evenement(ST(V_PENDING_EVENT) + 0x59, 1000);
+        CB->evenement(ST(V_PENDING_EVENT) + EV_PENDING_BASE, 1000);
         ST(V_PENDING_EVENT) = 0;
         CB->select_pile(0, 1);
     }

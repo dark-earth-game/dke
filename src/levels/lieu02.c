@@ -102,7 +102,7 @@ static void tick_body(void) {
     /* 0x9DCE */
     if (ST(ST_HERO) == 4 && ST(V_DEATH_EVENT_SENT) == 0) {
         ST(V_DEATH_EVENT_SENT) = 1;
-        CB->evenement(0x2C, 0xBB8);
+        CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x9E11 — intro cinematic replay */
     if (ST(V_END_GAME_REQ) == 1) {
@@ -297,7 +297,7 @@ static void tick_body(void) {
     if (ST(V_EVENT_34) == 1 && ST(ST_HERO) == P_ARKHAN1) {
         ST(V_EVENT_34) = 0;
         CB->animation("SP01IMP51");
-        CB->evenement(0x26, 0x7D0);
+        CB->evenement(0x26, 2000);
         CB->animation("P84ACT02");
         CB->animation("P84ARR01_1000");
     }
@@ -379,7 +379,7 @@ static void tick_body(void) {
     if (ST(0xE0) == 4 && !cb968(ST(ST_HERO))) {
         ST(0xE0) = 5;
         CB->select_pile(1, 2);
-        CB->evenement(0x27, 0x352);
+        CB->evenement(0x27, 850);
         CB->animation("SG26FRA01");
         CB->animation("P26GAR03");
         CB->select_pile(0, 1);
@@ -399,12 +399,12 @@ static void tick_body(void) {
     if (ST(V_EVENT_33) == 1) {
         ST(V_EVENT_33) = 0;
         CB->animation("SP00ACT01");
-        CB->evenement(1, 0x320);
+        CB->evenement(1, 800);
     }
     /* 0xB12A */
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
-        ST(0x964) = 0;
+        ST(ST_START_POINT(1)) = 0;
         ST(ST_LEVEL) = 2;
         CB->divers_empile(DV_MUSIC, 1, 4);
         CB->change_piece(1, 0);
@@ -898,7 +898,7 @@ static i32 init(i32 reload_flag) {
 static void tick(void) {
     if (ST(V_PENDING_EVENT) != 0) {
         CB->select_pile(2, 1);
-        CB->evenement(ST(V_PENDING_EVENT) + 0x59, 1000);
+        CB->evenement(ST(V_PENDING_EVENT) + EV_PENDING_BASE, 1000);
         ST(V_PENDING_EVENT) = 0;
         CB->select_pile(0, 1);
     }

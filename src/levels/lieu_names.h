@@ -91,6 +91,138 @@ enum {
     P_DHORKAN95    = 95,
 };
 
+/* Item ids (OBnn objects, inventory, the argument of event5): the names
+ * of datas/dialogue/us/OBJNAME.TXT, descriptions from OBJDESCR.TXT. */
+enum {
+    OB_UNIFORM      =  1,   /* Old Uniform of Bogdaran's */
+    OB_BOW_TO_KEY   =  2,   /* Bow of Rylsadhar's Key */
+    OB_METAL_PLATE  =  3,   /* Punched Metal Plate */
+    OB_DISH         =  4,   /* Dish */
+    OB_METAL_POLE   =  5,   /* Metal Pole */
+    OB_F_THROW_AMMO =  6,   /* Refill for Flame-thrower */
+    OB_BULLETS      =  7,   /* Lead Bullets for Spitrod */
+    OB_BOILER       =  8,   /* Boiler for Spitrod */
+    OB_HANDLE       =  9,   /* Metal Handle */
+    OB_PLATE_BEFORE = 10,   /* Plate from Before */
+    OB_RED_KEY      = 11,   /* Key made of Red Gemstone */
+    OB_CRYSTAL_2    = 12,   /* Pointed Cut-crystal */
+    OB_VEGETABLE    = 13,   /* Large Vegetable */
+    OB_KONK_KEY     = 14,   /* Konkalite Key */
+    OB_SORDOS_KEY   = 15,   /* Sordos' Key */
+    OB_BOGD_KEY     = 16,   /* Bogdaran's key */
+    OB_HAMMER       = 17,   /* Hammer */
+    OB_CRYSTAL_1    = 18,   /* Key Crystal (bevelled on left) */
+    OB_CRYSTAL_3    = 19,   /* Key Crystal (bevelled on right) */
+    OB_MIRROR       = 20,   /* Mirror from Before */
+    OB_VIAL         = 21,   /* Round Vial */
+    OB_FLAGON22     = 22,   /* Flagon */
+    OB_THBOLT_BEF   = 23,   /* Thunderbolt from Before */
+    OB_FULL_GOURD   = 24,   /* Gourd of Stohll (full) */
+    OB_CLOTHING     = 25,   /* Clothing */
+    OB_AX26         = 26,   /* Battle-ax */
+    OB_F_THROWER    = 27,   /* Flame-thrower */
+    OB_LONG_KNIFE   = 28,   /* Long Knife */
+    OB_SHAFT        = 29,   /* Pulley Shaft */
+    OB_CLEAVER      = 30,   /* Provider Woman's Cleaver */
+    OB_POTION       = 31,   /* Thanandar's Potion */
+    OB_SM_THBOLT    = 32,   /* Thunderbolt from Kalhi */
+    OB_LEAD_PLAQUE  = 33,   /* Lead Plaque */
+    OB_POTATO       = 34,   /* Potato */
+    OB_ZED_THBOLT35 = 35,   /* Zed's Thunderbolt */
+    OB_ROOT         = 36,   /* Large Root */
+    OB_HALBERD37    = 37,   /* Short Halberd */
+    OB_SABER38      = 38,   /* Guardian of Fire Saber */
+    OB_SM_TH_AMMO   = 39,   /* Ammo for Thunderbolt from Kalhi */
+    OB_OBJ_BEFORE40 = 40,   /* Unknown Object from Before (soaked in oil) */
+    OB_OBJ_BEFORE41 = 41,   /* Unknown Object from Before */
+    OB_FLAGON42     = 42,   /* Flagon */
+    OB_FISH         = 43,   /* Fish */
+    OB_MEAT         = 44,   /* Smoked Meat */
+    OB_CRYST_SLIV   = 45,   /* Sliver of Rock Crystal */
+    OB_RYLS_NOTES   = 46,   /* Rylsadhar's Notes */
+    OB_KONK_AX      = 47,   /* Heavy Konkalite Ax */
+    OB_BROKEN_SHAFT = 48,   /* Pulley Shaft (broken) */
+    OB_SORDOS_DOC   = 49,   /* Sordos' Document */
+    OB_DIAG_WEAPON  = 50,   /* Diagram of Weapon */
+    OB_PULLEY_BLADE = 51,   /* Pulley Blade from Well */
+    OB_DRAWINGS     = 52,   /* Rylsadhar's Drawings */
+    OB_SPEAR        = 53,   /* Konkalite Spear */
+    OB_FIREBALL     = 54,   /* Fireball */
+    OB_SPITROD      = 55,   /* Spitrod */
+    OB_RAT          = 56,   /* Crushed Rat */
+    OB_SORDOS_WPN   = 57,   /* Sordos' Weapon */
+    OB_ZED_SABER    = 58,   /* Zed's Saber */
+    OB_WANDR_SABER  = 59,   /* Wanderer's Saber */
+    OB_COIN         = 60,   /* Dhorkan's Coin */
+    OB_FLAIL        = 61,   /* Phedoria's Flail (zzz) */
+    OB_HALBERD62    = 62,   /* Halberd (zzz) */
+    OB_DAGGER63     = 63,   /* Kalhi's Dagger */
+    OB_ROAST_BIRD   = 64,   /* Piece of Roast Bird */
+    OB_BOWL         = 65,   /* Terra-cotta Bowl */
+    OB_THUNDERBOLT  = 66,   /* Lory's Thunderbolt */
+    OB_AX67         = 67,   /* Battle-ax */
+    OB_ZED_THBOLT68 = 68,   /* Zed's Thunderbolt (on Zed) */
+    OB_SAVE_ICON    = 69,   /* "Save" icon */
+    OB_BANDOR_DIAG  = 70,   /* Master Builder's Diagram */
+    OB_METAL_SUIT   = 71,   /* Metal suit (very heavy) */
+    OB_THBOLT_AMMO  = 72,   /* Ammunition for Thunderbolts from Before */
+    OB_ZED_AMMO     = 73,   /* Ammunition for Zed's Thunderbolt */
+    OB_PICK_AX      = 74,   /* Danrys' Pick-ax */
+    OB_CRYSTAL_KEY  = 75,   /* Rylsadhar's Crystal Key */
+    OB_MACE         = 76,   /* Maor's Mace */
+    OB_FLASK77      = 77,   /* Flask (empty) */
+    OB_DANRYS_WPN   = 78,   /* Danrys' Small Weapon */
+    OB_AX79         = 79,   /* Guardian of Fire Ax */
+    OB_DHOR_SWORD   = 80,   /* Dhorkan's Sword */
+    OB_PARCHMENT    = 81,   /* Rylsadhar's Parchment */
+    OB_BOOK         = 82,   /* Archivist's Book */
+    OB_SABER83      = 83,   /* Guardian of Fire Saber */
+    OB_HELMET       = 84,   /* Metal Helmet */
+    OB_BREASTPLATE  = 85,   /* Metal Breastplate (very heavy) */
+    OB_FLASK86      = 86,   /* Flask from Before */
+    OB_YONG_COUNTER = 87,   /* Counter for Game of Yong */
+    OB_TUBE         = 88,   /* Bogdaran's Tube */
+    OB_STOCK_KEY    = 89,   /* Stockade Key */
+    OB_BULLET       = 90,   /* Lead Bullet */
+    OB_DAGGER91     = 91,   /* Dagger */
+    OB_LONG_DAGGER  = 92,   /* Long Dagger */
+    OB_STILETTO     = 93,   /* Dhorkan's Stiletto */
+    OB_PESTLE       = 94,   /* Kabak's Pestle */
+    OB_MORTAR       = 95,   /* Kabak's Mortar */
+    OB_LARGE_KEY    = 96,   /* Large Steel Key */
+    OB_JERRYCAN     = 97,   /* Jerrycan */
+    OB_GRINDSTONE   = 98,   /* Grindstone */
+    OB_CAN          = 99,   /* Sealed Metal Can */
+};
+
+/* Timer events: CB->evenement(id, ms) arms id, event4(id) runs when it
+ * expires (ms = -1 cancels). Ids 0..41 and 51..53 only set the flag
+ * V_EVENT_<id>; the ones below do more. */
+enum {
+    EV_HUD_TIMER       = 18,  /* V_HUD_TIMER_MS -= 5000, HUD refresh, re-arm */
+    EV_TO_ROOM_25      = 28,  /* leave for room 25 (from 23) */
+    EV_MUSIC_LOOP_A    = 42,  /* music V_MUSIC_TRACK mode 4, arms B in 5 s */
+    EV_MUSIC_LOOP_B    = 43,  /* music V_MUSIC_TRACK mode 1, arms A in 45 s */
+    EV_END_GAME        = 44,  /* V_END_GAME_REQ = 1 */
+    EV_GOURD_TO_FLASK  = 50,  /* SOB24 (full gourd) out, SOB77 (flask) in */
+    EV_FLOAT_GROW_0    = 90,
+    EV_FLOAT_GROW_1    = 91,
+    EV_FLOAT_GROW_2    = 92,
+    EV_FLOAT_DECAY     = 93,
+    EV_PIPE_SCENE      = 94,  /* SP02PIPI1/2 */
+    EV_RESPAWN_TOGGLE  = 98,
+    EV_PENDING_BASE    = 89,  /* tick: evenement(V_PENDING_EVENT + 89) */
+};
+
+/* event6(id): LCOD zone sub-triggers (hints and the final ending). */
+enum {
+    EV6_LCOD34         = 0,   /* Arkhan2 hint, once */
+    EV6_LCOD35         = 1,   /* Arkhan2 hint, once */
+    EV6_LCOD36         = 2,   /* Arkhan3 hint, once */
+    EV6_LCOD37         = 3,   /* Arkhan3 hint, once */
+    EV6_SC21_ENDING    = 4,   /* Arkhan3: ending cinematic SC21 */
+};
+
 /* Divers(op, a, b) / DiversEmpile(op, a, b) — sub_446E19 cases. */
 enum {
     DV_DESC_POS        = 1,   /* persona a: position/heading from descriptor */
@@ -169,6 +301,10 @@ enum {
 #define ST_SPECIAL_MODE   0x198   /* dword_505DD8: Tab walk-set toggle */
 #define ST_PLAYER_WEAPON  0x19C   /* dword_505DDC: player desc[0x97] */
 #define ST_LOCKED_CAMERA  0xF90   /* dword_506BD0 */
+#define ST_DEBUG_PRINT    0x960   /* "testos printos" debug overlay switch */
+/* The designers' start point of each level: trigger 0 seeds the story state
+ * for start n (1..) and clears it. A new game sets level 1's to 1. */
+#define ST_START_POINT(level)  (0x960 + (level) * 4)
 
 #include "lieu_vars.h"
 

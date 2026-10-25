@@ -60,7 +60,7 @@ static void tick_body(void) {
                 CB->pos_perso(ST(ST_HERO), -1878, -716, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 8, 0);
                 CB->pos_perso(P_KALHI33, -1856, -815, 0x85CB, 1, "P33ARR01", 5, 0);
                 CB->divers_empile(DV_SCREEN, 3, 0);
-                CB->evenement(0x23, 0x7D0);
+                CB->evenement(0x23, 2000);
                 CB->select_pile(0, 1);
             } else {
                 ST(0xE0) = 0;
@@ -95,7 +95,7 @@ static void tick_body(void) {
         if (CB->divers(DV_PERSONA_PRESENT, P_ARKHAN3, 0)) {
             CB->divers(DV_HP, P_ARKHAN3, 0);
         }
-        CB->evenement(0x2C, 0xBB8);
+        CB->evenement(EV_END_GAME, 3000);
         return;
     }
     /* 0x88E7 */
@@ -407,7 +407,7 @@ static i32 init(i32 reload_flag) {
 static void tick(void) {
     if (ST(V_PENDING_EVENT) != 0) {
         CB->select_pile(2, 1);
-        CB->evenement(ST(V_PENDING_EVENT) + 0x59, 1000);
+        CB->evenement(ST(V_PENDING_EVENT) + EV_PENDING_BASE, 1000);
         ST(V_PENDING_EVENT) = 0;
         CB->select_pile(0, 1);
     }

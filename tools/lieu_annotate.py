@@ -64,6 +64,7 @@ COMMON = {
     (1, 0x100193CC): 'pre90_scene', (2, 0x1001A24C): 'pre90_scene',
     (1, 0x100194DC): 'lieu_pre_scene', (2, 0x1001A35C): 'lieu_pre_scene',
     (1, 0x10019B00): 'sprintf', (2, 0x1001A980): 'sprintf',
+    (1, 0x10019B70): 'abs', (2, 0x1001A9F0): 'abs',
 }
 
 
@@ -119,6 +120,8 @@ class PE:
             return None
         b = self.read(va, 200) or b''
         t = b.split(b'\0')[0]
+        if len(t) == 0 and s[0] == '.data' and va % 4 == 0:
+            return ''          # empty string ("" arguments, e.g. pos_perso)
         if len(t) < 2 or not all(32 <= c < 127 for c in t):
             return None
         return t.decode()
@@ -185,6 +188,11 @@ def analyze(path):
         if m:
             funcs.add(thunk.get(int(m.group(1), 16), int(m.group(1), 16)))
     funcs.add(entry)
+    # prologues after padding / ret: functions only reached through tables
+    for k in range(1, len(ins) - 1):
+        if ins[k][1] == 'push ebp' and ins[k + 1][1] == 'mov ebp, esp' and \
+                (ins[k - 1][1] in ('int3', 'ret', 'nop') or ins[k - 1][1].startswith(('ret ', 'jmp '))):
+            funcs.add(ins[k][0])
 
     # pointer tables referenced as [4*reg + T]
     tables = {}
@@ -267,6 +275,8 @@ def signature(info, f):
             break
         if a in info['skip']:
             continue
+        if t == 'int3':
+            break
         def rep(m):
             v = int(m.group(1), 16)
             if v in info['slot']:
@@ -355,15 +365,40 @@ def main():
     print('; pointer tables:')
     for T, (kind, ents) in sorted(tables.items()):
         print(';   0x%08X (%s, %d entries): %s' % (T, kind, len(ents), ' '.join('%X' % e for e in ents)))
+    # functions to port: not identical to a ported level, below the shared
+    # library code (which starts at action_register in every DLL seen)
+    lib = min([f for f, n in common.items() if n == 'lieu_action_register'] or [1 << 32])
+    order = info['sorted']
+    callers = {}
+    for a, t in ins:
+        m = re.match(r'call 0x([0-9a-f]+)$', t)
+        if m:
+            v = int(m.group(1), 16)
+            callers.setdefault(thunk.get(v, v), 0)
+            callers[thunk.get(v, v)] += 1
+    print('; functions to port (level-specific; size in bytes, calls from code), plus the entry\'s INIT tail:')
+    for i, f in enumerate(order):
+        if f in same or f >= lib or f == entry:
+            continue
+        end = order[i + 1] if i + 1 < len(order) else f
+        if end - f < 8:
+            continue           # jump target inside a shared function
+        print(';   %-24s %6d bytes  %d calls' % (fname(f), end - f, callers.get(f, 0)))
     if same:
         print('; functions identical to an already-ported level (reuse the C port):')
+        rest = 0
         for f in sorted(same):
+            if f >= lib and f not in common:
+                rest += 1
+                continue
             first = {}
             for lv, ra, n in same[f]:
                 first.setdefault(lv, (ra, n))
             hits = ', '.join('L%02d %s%s' % (lv, n, (' = ' + pn[(lv, ra)] + '()') if (lv, ra) in pn else '')
-                             for lv, (ra, n) in sorted(first.items()))
+                             for lv, (ra, n) in sorted(first.items())[:1])
             print(';   %s == %s' % (fname(f), hits))
+        if rest:
+            print(';   + %d library functions (C runtime: sprintf, abs, ...) from 0x%08X' % (rest, lib))
     if trig_base:
         print('; trigger table 0x%08X (op 3: call [4*arg + table], filled by INIT):' % trig_base)
         for v, ks in sorted(trig.items(), key=lambda x: x[1][0]):
@@ -373,7 +408,7 @@ def main():
 
     regs = {}   # register -> 'S' when it holds the state pointer
     for a, t in ins:
-        if a in skip:
+        if a in skip or t == 'int3':
             continue
         if a in funcs:
             print('\n%s:%s' % (fname(a), ('    ; == ' + ', '.join(sorted({'L%02d %s' % (lv, n) for lv, _, n in same[a]})[:2])) if a in same else ''))
@@ -417,10 +452,10 @@ def main():
         if t.startswith(('jmp', 'ret')):
             pass
         # strings, negative immediates, tables
-        for h in re.findall(r'0x([0-9a-f]{8})\b', t):
+        for h in re.findall(r'0x([0-9a-f]{8})\b', re.sub(r'\[[^\]]*\]', '', t)):
             v = int(h, 16)
             s = pe.cstr(v)
-            if s is not None and 'ptr [0x' not in t:
+            if s is not None:
                 c.append('"%s"' % s)
             elif v >= 0xFFFF0000:
                 c.append(str(v - (1 << 32)))

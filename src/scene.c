@@ -3025,7 +3025,17 @@ i32 scene_render(system_t *sys) {
         if (next < 0 && getenv("DKE_GOTO")) {         /* test hook: force a room change */
             static i32 fired = 0;
             static i32 frames = 0;
-            if (!fired && ++frames > 60) { next = atoi(getenv("DKE_GOTO")); fired = 1; }
+            if (!fired && ++frames > 60) {
+                /* "room[:from]": INIT of `room` sees ST_LEVEL = from, as if
+                 * the player came in from that room. */
+                const c8 *g = getenv("DKE_GOTO");
+                const c8 *colon = strchr(g, ':');
+                next = atoi(g);
+                if (colon) *lieu_state_slot(ST_LEVEL) = atoi(colon + 1);
+                /* DKE_START=n: the room's designer start point n. */
+                if (getenv("DKE_START")) *lieu_state_slot(ST_START_POINT(next)) = atoi(getenv("DKE_START"));
+                fired = 1;
+            }
         }
         if (next >= 0 && next != g_scene_bg_level) {
             print("scene: CHANGEPIECE -> load level %d (entry %d)\n", next, entry);

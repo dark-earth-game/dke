@@ -62,7 +62,7 @@ static void trig_noop(void) {
 /* trigger 00 — sub_100073F0 — level setup: entry presets, state reset, zones, objects, actor placement */
 void l03_trig00(void) {
     /* 0x7402 */
-    if (ST(0x96C) == 1) {
+    if (ST(ST_START_POINT(3)) == 1) {
         ST(ST_LEVEL) = 4;
         ST(ST_HERO) = P_ARKHAN2;
         ST(0xB40) = 3;
@@ -70,7 +70,7 @@ void l03_trig00(void) {
         ST(ST_VIE(P_KALHI13)) = 1;
     }
     /* 0x745C */
-    if (ST(0x96C) == 2) {
+    if (ST(ST_START_POINT(3)) == 2) {
         ST(ST_LEVEL) = 4;
         ST(ST_HERO) = P_ARKHAN2;
         ST(0xB40) = 3;
@@ -78,14 +78,14 @@ void l03_trig00(void) {
         ST(ST_VIE(P_KALHI33)) = 1;
     }
     /* 0x74B6 */
-    if (ST(0x96C) == 3) {
+    if (ST(ST_START_POINT(3)) == 3) {
         ST(ST_LEVEL) = 2;
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_DELIA_PHASE) = 8;
         ST(V_KALHI_ROUTE) = 1;
     }
     /* 0x7501 */
-    if (ST(0x96C) == 4) {
+    if (ST(ST_START_POINT(3)) == 4) {
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(ST_LEVEL) = 2;
         ST(ST_HERO) = P_ARKHAN2;
@@ -249,7 +249,7 @@ void l03_trig00(void) {
         ST(0x338) = 1;
         ST(0x348) = 1;
     }
-    ST(0x96C) = 0;
+    ST(ST_START_POINT(3)) = 0;
     /* 0x801A */
     if (ST(V_GUARD_FIGHT_DONE) == 0) {
         CB->load_anim("203EAU01", 0);
