@@ -194,7 +194,7 @@ void l20_trig00(void) {
         CB->ajoute_zone(18, 5747, -4560, 20, 20, 0);
     }
     /* 0x7ADE */
-    if ((ST(0xAF8) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(0x32C) == 1 && ST(0x330) == 1) || ST(0xB28) == 2) {
+    if ((ST(0xAF8) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && (ST(0x32C) == 1 || ST(0x330) == 1)) || ST(0xB28) == 2) {
         CB->etat_objet("OB03B", 3970, -330, -4480, 0x6600, 0xE800, 0x4800, 0, 6);
     }
     /* 0x7B62 */
