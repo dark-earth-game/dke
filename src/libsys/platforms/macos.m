@@ -211,6 +211,9 @@ static void handle_events(system_t *system, i32 type, i32 key) {
         case 0x7C:
             system->actions[39] = type;
             break;
+        // Tab (0x30) → VK_TAB: special mode; c (0x08) → 'C': draw / sheathe
+        case 0x30: system->actions[9] = type; break;
+        case 0x08: system->actions[0x43] = type; break;
         // i (keyCode 0x22) → actions[105]: inventory
         case 0x22: system->actions[105] = type; break;
         // Backspace (keyCode 0x33) → actions[8] (VK_BACK)
@@ -331,6 +334,15 @@ static void handle_mouse_events(system_t *system, i32 type, i32 x, i32 y) {
 
 - (void)keyUp:(NSEvent *)event {
     handle_events(system, 0, [event keyCode]);
+}
+
+/* Modifier keys arrive as flag changes: Shift / Control / Option ->
+ * VK_SHIFT / VK_CONTROL / VK_MENU (run, attack, alt fire). */
+- (void)flagsChanged:(NSEvent *)event {
+    NSEventModifierFlags f = [event modifierFlags];
+    system->actions[0x10] = (f & NSEventModifierFlagShift) ? 1 : 0;
+    system->actions[0x11] = (f & NSEventModifierFlagControl) ? 1 : 0;
+    system->actions[0x12] = (f & NSEventModifierFlagOption) ? 1 : 0;
 }
 
 - (void)mouseDown:(NSEvent *)event {

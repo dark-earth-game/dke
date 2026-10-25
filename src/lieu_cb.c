@@ -411,7 +411,10 @@ static void zone_clear(i32 i) {
 
 
 static i32 g_last_zone = 0;          /* dword_50725C */
-static i32 g_cam_lock = 0;           /* dword_4FF0A0 */
+i32 g_cam_lock = 0;                  /* dword_4FF0A0: script holds the camera */
+i32 g_combat_flags = 0;              /* debug_flags: COMBAT mode (bit 0 hold, bit 1 unhurt) */
+extern i32 g_hero_autofight;         /* dword_4B219C (combat_ai.c) */
+extern i32 g_enemy_hits;             /* dword_506520 */
 static i32 g_game_exit_code = 0;     /* game_exit_code */
 static u8  g_movie_seen[8];          /* byte_507350 */
 
@@ -1241,7 +1244,7 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
     /* op 21 @ 0x447E94 — cinematic_mode = a; debug_flags = b. */
     case 21:
         g_cinematic_mode = a;
-        /* TODO debug_flags = b; */
+        g_combat_flags = b;                    /* debug_flags */
         return 0;
 
     /* op 22 @ 0x447EAC — menu_gametime_5072C8 = now; sub_42E0E0(500);
@@ -1672,7 +1675,7 @@ static void combat_set(i32 id, i32 mode) {
         E32(p, 0xD60) = 1;                         /* dword_505C50 = 1 */
         E32(p, 0xCEC) = 0; E32(p, 0xCF0) = 1; E32(p, 0xCF8) = 0; E32(p, 0xCF4) = 0;
         E32(p, 0xD04) = 0; E32(p, 0xD00) = 0;
-        /* dword_4B219C = 1 */
+        g_hero_autofight = 1;                      /* dword_4B219C */
         return;
     }
     entity_t *e = actor_find(id);                  /* dword_4DF5D0[id*0x220] */
@@ -1683,14 +1686,14 @@ static void combat_set(i32 id, i32 mode) {
         if (id < ENT_MAX) g_ents[id].combat_ready = 0;
         return;
     }
-    /* debug_flags = mode (global really used as the combat mode) */
+    g_combat_flags = mode;                         /* debug_flags */
     if (E32(e, 0xD60)) return;                     /* already fighting */
     E32(e, 0xD14) = 0; E32(e, 0xCBC) = 0; E32(e, 0xCB4) = 0;   /* drop walk / join */
     E32(e, 0xD60) = 1;
     if (E32(e, 0xB0) != 0x5C) {
         E32(e, 0xD08) = 0; E32(e, 0xD04) = 0; E32(e, 0xCEC) = 0; E32(e, 0xCF0) = 1;
     }
-    /* dword_506520 = damage_counter = 0 */
+    g_enemy_hits = 0;                              /* dword_506520 */
     E32(e, 0xC64) = 0x10000;
     E32(e, 0xC68) = 0x4000;
     E32(e, 0xD14) = (mode & 1) ? 1 : 0;
@@ -2150,7 +2153,8 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
             E32(g_player_entity, 0xCEC) = 0; E32(g_player_entity, 0xCF0) = 1;
             E32(g_player_entity, 0xCF4) = 0; E32(g_player_entity, 0xCF8) = 0;
         }
-        /* dword_4FF0A0 (camera lock) = p60 != 0 — camera follow not ported. */
+        g_cam_lock = (n->p60 != 0);            /* dword_4FF0A0 */
+        if (getenv("DKE_AIDBG")) print("lieu_act: BLOQUE %d cam=%d move=%d\n", n->num5C, g_cam_lock, n->p64 != 0);
         g_player_blocked = (n->p64 != 0);
         if (n->num5C == 0 && g_player_entity &&
             (E32(g_player_entity, 0xD58) == -5 || E32(g_player_entity, 0xD58) == 0x3B))
@@ -2196,6 +2200,9 @@ void lieu_new_game(void) {
 
 /* sub_4640BC @ 0x464306: POSPERSO records a persona's life mode in
  * dword_505DD0[id] (script ST(0x190 + id*4)); death sets it to 2. */
+/* game_death_state (ST 0x194): the hero, or 4 once the player is dead. */
+void lieu_set_death_state(i32 v) { LIEU_ST(g_lieu_state, 0x194) = v; }
+
 void lieu_set_persona_vie(i32 id, i32 vie) {
     if (id >= 4 && id < (i32)((sizeof(g_lieu_state) - 0x190) / 4))
         LIEU_ST(g_lieu_state, 0x190 + id * 4) = vie;
@@ -2335,3 +2342,16 @@ void lieu_pending_event(i32 v, i32 phase) { /* op 5: event5(v, phase)      */
 /* Read/write the live state buffer (so the engine can populate the fields
  * handler guards read: 0xC, 0x18, 0x194 submode, 0x964 phase, ...). */
 i32 *lieu_state_slot(i32 off) { return &LIEU_ST(g_lieu_state, off); }
+
+/* Debug: place persona `id` next to the player and start a fight (the
+ * script's POSPERSO + COMBAT), the hero on autofight (dword_4B219C). */
+void lieu_debug_fight(i32 id, const c8 *clip) {
+    entity_t *p = g_player_entity;
+    if (!p || !EROOT(p)) return;
+    i32 x = EROOT(p)->pos[0], z = EROOT(p)->pos[2] + 50000;   /* world units, open floor */
+    actor_pos_perso(id, x, z, 0x4000, 1, clip, -1, 0);
+    combat_set(id, 0);
+    combat_set(0, 0);
+    print("debug: fight with persona %d at (%d,%d)\n", id, x, z);
+
+}

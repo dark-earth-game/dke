@@ -171,6 +171,8 @@ i32 lieu_poll_level_change(i32 *entry);
 i32 lieu_poll_camera_change(i32 *mode);
 void lieu_new_game(void);
 void lieu_set_persona_vie(i32 id, i32 vie);
+/* game_death_state (ST 0x194): hero id, 4 = the player died. */
+void lieu_set_death_state(i32 v);
 
 
 void lieu_zone_debug(void);

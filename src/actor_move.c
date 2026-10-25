@@ -33,6 +33,7 @@
 #include "anim2d.h"
 #include "object.h"
 #include "sfx.h"
+#include "combat.h"
 #include "nav_grid.h"
 #include "lieu_action.h"
 #include "world.h"
@@ -505,9 +506,11 @@ static void anim_messages(entity_t *e, i32 tick) {
             for (i32 o = 0xC80; o <= 0xCA8; o += 4) E32(e, o) = 0;
             sample_at_message(e, mt);
         }
-        /* 0x11 / 0x15 strikes, 0x16 / 0x1E / 0x21 / 0x22 / 0x23 object
-         * exchanges, 0x19 parry sparks, 0x24 counter:
-         * combat and inventory, not ported. */
+        /* 0x11 / 0x15 shots, 0x19 parry sparks, 0x24 weapon wear
+         * (combat_damage.c); 0x16 / 0x1E / 0x21..0x23 object exchanges are
+         * not ported. */
+        if (type == 0x11 || type == 0x15 || type == 0x19 || type == 0x24)
+            combat_anim_message(e, type, p);
         if (type == 0x1A) {                                  /* 0x41C781 */
             c8 an[16];
             snprintf(an, sizeof(an), "L%02dA%02d", (state ? state->current_level_id : 1), p);
@@ -541,7 +544,7 @@ static void anim_messages(entity_t *e, i32 tick) {
  * sub_41CCB7 resets E94 to 0xFFFF right before its one call, so in practice
  * any valid target is accepted.
  */
-static i32 actor_head_track(entity_t *self, entity_t *tgt) {
+i32 actor_head_track(entity_t *self, entity_t *tgt) {
     if (!tgt) return 0;                                     /* 0x450DFF */
     const u8 *td = EDESC(tgt);
     if (!td || *(const i32 *)(td + 0x84) <= 0) return 0;    /* target health > 0 (0x450E08) */
@@ -681,9 +684,7 @@ void actor_update(entity_t *e) {
         anim_sample(ANIM(e), pose, t);
         actor_blend_pose(e, pose, E32(e, 0xC34) - E32(e, 0xC2C));
     }
-    /* Player head tilt toward the nearest companion and the +0x168 bone
-     * reset depend on combat state (dword_505DDC, combat_ability_table);
-     * not ported. */
+    combat_aim_pose(e);                                   /* 0x41D3D8 */
 
     /* Root motion: the planted foot stays put, the root moves instead. */
     foot = (obc_node_t *)EPTR(e, 0xF0);
@@ -1330,7 +1331,7 @@ void actor_walk_update(entity_t *e) {                        /* sub_469222 */
 
 static void companion_tick(entity_t *c) {
     if (!c || !EDESC(c) || EDESC(c)[0x96]) return;
-    /* +0xD60 combat AI (sub_4701E0) not ported. */
+    if (E32(c, 0xD60)) combat_ai_tick(c);                 /* sub_4701E0 */
     actor_update(c);
     /* sub_435A65(c, floor): effect anchor, not ported. */
     actor_control(c);
@@ -1342,7 +1343,14 @@ static void companion_tick(entity_t *c) {
 static void player_tick(void) {
     entity_t *p = g_player_entity;
     if (!p) return;
+    combat_ai_cinematic();                                /* 0x466446 */
     if (E32(p, 0xCBC) != 0) { actor_walk_update(p); return; }
+    if (!g_player_movement_locked) {
+        /* sub_451BF9 / sub_4342C7. The headless autopilots (scene.c) drive
+         * +0xCEC / +0xCF4 themselves. */
+        if (!getenv("DKE_AUTOTURN") && !getenv("DKE_AUTOWALK") && !getenv("DKE_AUTOPATH"))
+            player_input_tick();
+    }
     if (g_player_movement_locked) {
         E32(p, 0xCEC) = 0;
         E32(p, 0xCF4) = 0;
@@ -1397,6 +1405,7 @@ void actor_frame(u32 now) {
     player_tick();
     lieu_action_run(now);                         /* sub_44CDB8 */
     object_tick(now);                             /* sub_412B94 */
+    combat_regen_tick();                          /* update_game_progression */
     if (g_player_entity) actor_control(g_player_entity);
 }
 

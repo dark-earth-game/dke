@@ -159,4 +159,7 @@ void actor_scale_bone(entity_t *e, i32 bone, f64 s, i32 mode);
 void actor_scale_body(entity_t *e, f64 s);
 extern f64 g_character_scale_factor;
 
+/* sub_462BCC: reload the hero move set for weapon object id (0 = bare). */
+i32 actor_desc_reload(entity_t *e, i32 weapon);
+
 #endif /* DKE_ACTOR_H */

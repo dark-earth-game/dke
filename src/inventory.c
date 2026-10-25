@@ -35,6 +35,7 @@
 #include "sfx.h"
 #include "screen_fx.h"
 #include "inventory.h"
+#include "combat.h"
 #include "dialogue.h"
 
 i32 g_ui_state = 1;               /* dword_4DD9B4: 1 in game, 2 redraw, 10 back from a screen */
@@ -827,16 +828,18 @@ i32 inventory_screen_frame(const inv_input_t *in, u32 now_ms) {
  * Engine hooks (sub_47398A / sub_473DBC / world copies)
  * ====================================================================== */
 
-void inv_equip(const c8 *obj_name) {               /* sub_47398A */
+void inv_equip(const c8 *obj_name) {               /* sub_47398A(sub_475BB6(e)) */
     inv_set_equipped(obj_name, 1);
-    /* TODO: drop the previous held object, attach the item to the hand
-     * bone (sub_473756), desc[0x97] = id, weapon stance (sub_462BCC). */
+    if (!weapon_take(object_get(obj_name))) inv_set_equipped(obj_name, 0);
     g_ui_state = 2;
 }
 
 void inv_holster(const c8 *obj_name, i32 mode) {   /* sub_473DBC */
-    inv_set_equipped(obj_name, 0);
-    if (!(mode & 2)) object_world_remove(obj_name);
+    game_object_t *o = object_get(obj_name);
+    if (!o || !weapon_holster(o, mode)) {
+        inv_set_equipped(obj_name, 0);
+        if (!(mode & 2)) object_world_remove(obj_name);
+    }
 }
 
 i32 player_in_anim(void) {                         /* is_entity_in_animation */
@@ -1157,3 +1160,5 @@ void inventory_screen_run(void) {
     memcpy(state->graphic.front_buffer, game_view, (size_t)fw * fh * sizeof(u32));
     free(game_view);
 }
+
+u8 objets_flags(i32 id) { const obj_record_t *r = obj_rec(id); return r ? r->flags : 0; }

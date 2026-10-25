@@ -17,6 +17,8 @@ extern i32 g_used_variant;    /* dword_505C34 */
 /* sub_4723C0: OBJETS.CTX object table. */
 i32  objets_ctx_load(const c8 *path);
 
+/* OBJETS.CTX flags of object id (combat_ability_table[id*20]). */
+u8   objets_flags(i32 id);
 /* sub_42639A: add qty (pending = picked up, shown by the next screen). */
 i32  inv_add(const c8 *obj_name, i32 qty, i32 pending);
 

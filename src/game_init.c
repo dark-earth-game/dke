@@ -1862,3 +1862,9 @@ void *game_init_get_index_buffer(void) {
     return g_index_buffer;
 }
 
+
+/* GINETTE (enemy energy bar art) and the two per-slot bar copies. */
+bmap_t *game_init_get_ginette(void) { return (bmap_t *)g_ginette_bmap; }
+bmap_t *game_init_get_health_bmap(i32 slot) {
+    return (bmap_t *)(slot ? g_health_bmap_b : g_health_bmap_a);
+}

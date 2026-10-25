@@ -584,4 +584,7 @@ void sfx_tick(void) {
 b8 sfx_voice_busy(void) { return g_inst_used[SFX_INST_VOICE]; }
 
 /* A sound from wav>anims> (e.g. "trans" for sub_42E0E0). */
+/* play_entity_sound with a name from the sound-effect dir. */
+void sfx_entity_named(const entity_t *e, const c8 *name) { sfx_play_entity(e, sfx_get_id(name, g_dir_sfx)); }
+
 void sfx_play_anims(const c8 *name) { sfx_play_entity(NULL, sfx_get_id(name, g_dir_anims)); }

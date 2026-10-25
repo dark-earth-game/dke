@@ -66,6 +66,9 @@ void object_tick(u32 now_ms);
 /* ColObjet (case 7): box [x +- w/2] x [z +- d/2]; all zero clears it. */
 void object_colobjet(const c8 *name, i32 x, i32 z, i32 w, i32 d);
 
+/* sub_475BB6: find or load an object by name. */
+game_object_t *object_get(const c8 *name);
+
 /* sub_472B47: take an item instance (name's letter) out of the world. */
 void object_world_remove(const c8 *name);
 

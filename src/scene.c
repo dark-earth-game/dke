@@ -67,6 +67,7 @@
 #include "screen_fx.h"
 #include "music.h"
 #include "inventory.h"
+#include "combat.h"
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
@@ -1584,6 +1585,14 @@ indicator_done:
 /* update_player_interface @ 0x45D1F6 — HUD overlay controller.
  * Composites INTFANI3 health bar + mode indicator sprites onto game_context.
  * ECX=game_context bmap, EDX=mode (2=full init). */
+static void update_player_interface(void *ctx, i32 mode);
+
+/* Combat hooks: update_player_interface(game_context, 1) and the darkness
+ * meter (score_counter, 0..0x3FF). */
+void scene_hud_refresh(void) { update_player_interface(game_init_get_game_context(), 1); }
+i32  scene_score_get(void)   { return g_score_counter; }
+void scene_score_set(i32 v)  { g_score_counter = v < 0 ? 0 : v > 0x3FF ? 0x3FF : v; }
+
 static void update_player_interface(void *ctx, i32 mode) {
     /* update_player_interface @ 0x45D1F6 */
     bmap_t *intfani3 = game_init_get_intfani3();
@@ -2802,6 +2811,10 @@ static i32 scene_actor_zval(i32 x, i32 y, i32 z) {
     return zt[i];
 }
 
+/* sub_473756: the weapon an actor holds (bone slot 0x1F) and its materials. */
+static obc_node_t       *g_held_node = NULL;
+static const ome_matr_t *g_held_matr = NULL;
+
 /* Collect an object tree's atoms (actors and objects share this): one depth
  * value `zv` for the whole tree, lit from the camera side with the light
  * map read under (root x, ground_y, root z). */
@@ -2842,6 +2855,8 @@ static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, 
 
     fmat_t stack_m[16];
     obc_node_t *stack_n[16];
+    const ome_matr_t *stack_mt[16];
+    const ome_matr_t *mt = matr;
     i32 sp = 0;
     fmat_t cur;
     for (i32 k = 0; k < 9; k++) cur.m[k] = g_proj_R[k];
@@ -2849,7 +2864,7 @@ static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, 
     obc_node_t *n = root;
     for (;;) {
         while (n) {
-            if (n->next && n != root && sp < 16) { stack_n[sp] = n->next; stack_m[sp] = cur; sp++; }
+            if (n->next && n != root && sp < 16) { stack_n[sp] = n->next; stack_m[sp] = cur; stack_mt[sp] = mt; sp++; }
             fmat_t rot, pos;
             i32 rest = getenv("DKE_RESTPOSE") && n != root;
             fmat_rotation(&rot, rest ? 0 : n->rot[0], rest ? 0 : n->rot[1], rest ? 0 : n->rot[2]);
@@ -2863,7 +2878,9 @@ static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, 
             }
             fmat_premul_rotation(&rot, &cur);
             cur.t[0] += pos.t[0]; cur.t[1] += pos.t[1]; cur.t[2] += pos.t[2];
-            const model_t *m = n->atom[0] ? model_from_atm_atom(n->atom[0], matr) : NULL;
+            /* A held weapon's atoms use the weapon object's materials. */
+            if (n == g_held_node && g_held_matr) mt = g_held_matr;
+            const model_t *m = n->atom[0] ? model_from_atm_atom(n->atom[0], mt) : NULL;
             if (m && n_items < max_items) {
                 model_draw_t *it = &items[n_items++];
                 it->m = m;
@@ -2876,7 +2893,7 @@ static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, 
             n = n->child;
         }
         if (sp == 0) break;
-        sp--; n = stack_n[sp]; cur = stack_m[sp];
+        sp--; n = stack_n[sp]; cur = stack_m[sp]; mt = stack_mt[sp];
     }
     return n_items;
 }
@@ -2884,9 +2901,15 @@ static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, 
 static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i32 max_items) {
     if (!e || !EROOT(e)) return n_items;
     i32 zv = scene_actor_zval(EROOT(e)->pos[0], EROOT(e)->pos[1], EROOT(e)->pos[2]);
-    return scene_collect_tree(EROOT(e), actor_matr(E32(e, 0xB0)), zv, E32(e, 0x8C),
-                              items, n_items, max_items,
-                              E32(e, 0xE94) != 0xFFFF, E32(e, 0xE98));
+    game_object_t *held = (game_object_t *)EPTR(e, 0xD64);
+    g_held_node = held ? EBONE(e, 0x1F) : NULL;
+    g_held_matr = held ? &held->matr : NULL;
+    i32 n = scene_collect_tree(EROOT(e), actor_matr(E32(e, 0xB0)), zv, E32(e, 0x8C),
+                               items, n_items, max_items,
+                               E32(e, 0xE94) != 0xFFFF, E32(e, 0xE98));
+    g_held_node = NULL;
+    g_held_matr = NULL;
+    return n;
 }
 
 /*
@@ -2943,6 +2966,23 @@ i32 scene_render(system_t *sys) {
         if (ik && !s_i_prev && !g_player_movement_locked && g_ui_state == 1)
             inventory_screen_open();
         s_i_prev = ik;
+    }
+    combat_keys_latch(sys);                        /* process_input_command / _event */
+    {
+        /* Headless: DKE_FIGHT=<persona hex>[:<frame>] starts a fight. */
+        static i32 s_ff = 0;
+        if (getenv("DKE_FIGHT")) {
+            c8 *colon = strchr(getenv("DKE_FIGHT"), ':');
+            i32 at = colon ? atoi(colon + 1) : 1500;
+            if (s_ff > at) g_cam_lock = 0;          /* test: keep script locks off */
+            if (++s_ff == at) {
+                extern void lieu_debug_fight(i32 id, const c8 *clip);
+                i32 id = (i32)strtol(getenv("DKE_FIGHT"), NULL, 16);
+                c8 clip[16];
+                snprintf(clip, sizeof(clip), "P%02dGAR01", id);
+                lieu_debug_fight(id, clip);
+            }
+        }
     }
     actor_frame((u32)system_get_gametime());
     sfx_tick();                                    /* sub_44968B sound part */
@@ -3166,7 +3206,8 @@ i32 scene_render(system_t *sys) {
             g_player_moving = 0;
         }
         s_was_locked = g_player_movement_locked;
-        if (pe && !g_player_movement_locked && E32(pe, 0xCBC) == 0) {
+        if (pe && !g_player_movement_locked && E32(pe, 0xCBC) == 0 &&
+            (getenv("DKE_AUTOTURN") || getenv("DKE_AUTOWALK") || getenv("DKE_AUTOPATH"))) {
             player_input_t pin = {0};
             player_input_update(&pin, sys);
             i32 mode = 0;
@@ -3330,6 +3371,10 @@ i32 scene_render(system_t *sys) {
             for (i32 oi = 0; oi < OBJ_SLOTS && !getenv("DKE_NOOBJ"); oi++) {
                 game_object_t *o = object_slot(oi);
                 if (!o || !o->root || (o->flags & OBJ_F_FREE)) continue;
+                /* Held by an actor: drawn with that actor. */
+                if ((g_player_entity && EPTR(g_player_entity, 0xD64) == o) ||
+                    (g_companion_entity && EPTR(g_companion_entity, 0xD64) == o) ||
+                    (g_secondary_companion_entity && EPTR(g_secondary_companion_entity, 0xD64) == o)) continue;
                 i32 live = object_animating(o);
                 for (i32 v = 0; v < (o->is_prop ? 1 : OBJ_VARIANTS); v++) {
                     if (!o->is_prop) {
@@ -3371,6 +3416,7 @@ i32 scene_render(system_t *sys) {
                                g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
                                lcx, lcy, lcz);
+            combat_enemy_bar_fb(fb, fb_w, fb_h);       /* enemy energy bars */
             scene_draw_zone_overlay();
         }
         if (getenv("DKE_PERFDBG")) {

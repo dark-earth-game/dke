@@ -30,6 +30,7 @@
 #include "state.h"
 #include "actor.h"
 #include "game_init.h"
+#include "inventory.h"
 #include "world.h"
 #include "lieu_cb.h"
 
@@ -96,14 +97,14 @@ entity_t *actor_find(i32 id) {                        /* sub_44411D */
  *            family; only the matching block is kept, the rest are skipped
  *   others:  one 0x189-byte block    -> persona record +0x97
  *   i32 n, n bytes                   -> entity+0xD2 (default weapon name)
- *   i32 ai flag (dword_4ECA28); when set five AI tuning dwords follow
+ *   i32 lip-sync flag (dword_4ECA28); when set six dwords follow
  *   five dwords                      -> entity+0xC50, C54, C5C, C60, C58
  *   i32 energy                       -> record+0x84 (persona, if unset)
  * ========================================================================= */
 
 static i32 read_i32(FILE *f, i32 *out) { return fread(out, 4, 1, f) == 1; }
 
-static i32 g_ai_flag, g_ai_param[5];   /* dword_4ECA28, 4ECD40, 4EC828, 4EC82C, 4DF5B8.. */
+static i32 g_ai_flag, g_ai_param[6];   /* dword_4ECA28 + lip-sync coefs (coefbouche, gauche, droite, haut g, haut d, bas) */
 
 static i32 actor_desc_load(const c8 *dir_name, i32 id, i32 weapon, entity_t *e) {
     c8 vpath[64], host[512];
@@ -125,8 +126,11 @@ static i32 actor_desc_load(const c8 *dir_name, i32 id, i32 weapon, entity_t *e) 
          * weapon families tested by is_character_type_a/b/c, sub_47271C,
          * sub_472746, sub_472770 against combat_ability_table. Weapons are
          * not wired yet, so only block 0 can match. */
-        for (i32 k = 0; k < 7; k++) {
-            if (k == 0 && weapon == 0) {
+        u8 fl = (weapon > 0 && weapon < 100) ? objets_flags(weapon) : 0;
+        const i32 want[7] = { weapon == 0, fl & 0x04, fl & 0x08, fl & 0x10,
+                              fl & 0x20, fl & 0x40, fl & 0x80 };
+        for (i32 k = 0; k < 7; k++) {   /* 0x462EFA: the last matching class wins */
+            if (want[k]) {
                 if (fread(&g_hero_desc[0][0x98], 1, (size_t)size, f) != (size_t)size) goto done;
             } else {
                 fseek(f, size, SEEK_CUR);
@@ -145,7 +149,7 @@ static i32 actor_desc_load(const c8 *dir_name, i32 id, i32 weapon, entity_t *e) 
     if (!ok) goto done;
 
     if (read_i32(f, &g_ai_flag) && g_ai_flag)
-        for (i32 k = 0; k < 5; k++) read_i32(f, &g_ai_param[k]);
+        for (i32 k = 0; k < 6; k++) read_i32(f, &g_ai_param[k]);   /* sub_462C9E: six */
     {
         static const i32 offs[5] = { 0xC50, 0xC54, 0xC5C, 0xC60, 0xC58 };
         for (i32 k = 0; k < 5; k++) read_i32(f, &E32(e, offs[k]));
@@ -914,3 +918,11 @@ void actor_scale_body(entity_t *e, f64 s) {
     }
 }
 
+
+/* sub_462BCC: reload the hero's move set for the held weapon's class. */
+i32 actor_desc_reload(entity_t *e, i32 weapon) {
+    c8 name[16];
+    i32 hero = actor_hero_id();
+    snprintf(name, sizeof(name), "P%02d", hero);
+    return actor_desc_load(name, hero, weapon, e);
+}

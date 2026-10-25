@@ -303,3 +303,6 @@ void object_world_remove(const c8 *name) {                     /* sub_472B47 */
     i32 v = name[4] ? name[4] - 'A' : 0;
     if (v >= 0 && v < OBJ_VARIANTS) o->var_on[v] = 0;
 }
+
+/* sub_475BB6: find or load an object by name (the held-weapon path). */
+game_object_t *object_get(const c8 *name) { return name ? obj_get(name[0] == 'S' ? name + 1 : name) : NULL; }
