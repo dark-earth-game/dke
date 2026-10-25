@@ -11,7 +11,8 @@
 static void trig00(void); static void trig01(void); static void trig02(void);
 static void trig03(void); static void trig04(void); static void trig05(void);
 static void trig07(void); static void trig08(void); static void trig09(void);
-static void trig11(void); static void trig15(void); static void trig17(void);
+static void trig10(void); static void trig11(void); static void trig15(void);
+static void trig16(void); static void trig17(void);
 static void trig18(void); static void trig21(void); static void trig23(void);
 static void trig24(void); static void trig25(void); static void trig26(void);
 static void trig27(void); static void trig28(void); static void trig29(void);
@@ -22,8 +23,8 @@ static void trig_noop(void);   /* the 15 stub slots */
 /* dword_1002C880[42] — populated at INIT in the original; static here. */
 static void (*const g_trigger[42])(void) = {
     trig00, trig01, trig02, trig03, trig04, trig05, trig_noop, trig07,
-    trig08, trig09, trig_noop, trig11, trig_noop, trig_noop, trig_noop,
-    trig15, trig_noop, trig17, trig18, trig_noop, trig_noop, trig21,
+    trig08, trig09, trig10, trig11, trig_noop, trig_noop, trig_noop,
+    trig15, trig16, trig17, trig18, trig_noop, trig_noop, trig21,
     trig_noop, trig23, trig24, trig25, trig26, trig27, trig28, trig29,
     trig30, trig31, trig32, trig_noop, trig_noop, trig_noop, trig_noop,
     trig_noop, trig_noop, trig_noop, trig_noop, trig41,
@@ -125,7 +126,7 @@ static void trig32(void) { e_trig_spawn_act(0x20); }
 
 /* -------------------------------------------------------------------------
  * Trigger handlers (opcode 3), ported from asm via parallel agents.
- * All 25 triggers complete. No stubs remain.
+ * All 27 triggers complete. No stubs remain.
  * ---------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------
  * Trigger handlers (opcode 3), ported from asm via parallel agents.
@@ -1794,7 +1795,6 @@ L_1014C:
 L_10205:
     if (ST(ST_VIE(P_KABAK)) != VIE_DEAD) goto L_10227;
     CB->fouille(P_KABAK);
-    CB->fouille(P_KABAK);
     goto done;
 
     /* ---- @0x10010227 : end-of-level / return sequence ---- */
@@ -1858,6 +1858,16 @@ L_10413:
 
 done:
     return;
+}
+
+static void trig10(void) {   /* sub_100104D3 — zone 10 */
+    if (ST(V_EVENT_0) == 0) {
+        CB->evenement(0, -1);
+        CB->evenement(0, 5000);
+    }
+    CB->retire_zone(10);
+    CB->bruitage("L01B01", 515, -2115);
+    CB->evenement(34, 1000);
 }
 
 static void trig11(void) {   /* sub_1001053A */
@@ -1992,6 +2002,19 @@ static void trig15(void) {   /* sub_10010A95 */
 
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
+}
+
+static void trig16(void) {   /* sub_10010F90 — zone 16 */
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && CB->direction_spec(0)) {
+        ST(V_KABAK_DOOR_ZONE) = 2;
+        CB->retire_zone(16);
+        ST(ST_SCRIPT_BUSY) = 1;
+        CB->bloque(BLOQUE_ALL);
+        CB->animation("SG00PRE07");
+        CB->etat_objet("OB95", -1, -1, -1, -1, -1, -1, -3, 0);
+        CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
+        CB->bloque(BLOQUE_NONE);
+    }
 }
 
 static void trig17(void) {   /* sub_10011041 */

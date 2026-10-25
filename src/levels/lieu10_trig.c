@@ -602,7 +602,7 @@ static void trig01(void) {
             CB->bloque(BLOQUE_ALL);
             ST(V_SAVED_HERO) = ST(ST_HERO);
             ST(0xF0) = 1;
-            CB->print_msg("", 0, 0xF0);
+            CB->print_msg("test3 passe \340 100 ln2167", 0, 0xF0);
             ST(0x6C) = 100;
             /* 0xEC8C */
             if (ST(ST_VIE(P_KALHI13)) == 1 && CB->distance(10, 31) < 1000) {
@@ -663,7 +663,7 @@ static void trig02(void) {
             CB->bloque(BLOQUE_ALL);
             ST(V_SAVED_HERO) = ST(ST_HERO);
             ST(0xF0) = 1;
-            CB->print_msg("", 0, 0xF0);
+            CB->print_msg("test3 passe \340 100 ln 2232", 0, 0xF0);
             ST(0x6C) = 100;
             /* 0xF01A */
             if (ST(ST_VIE(P_KALHI13)) == 1 && CB->distance(10, 31) < 1000) {
@@ -1354,7 +1354,7 @@ static void trig14(void) {
                         CB->link_objet(ST(ST_HERO), "OB40", 0x1B, 0);
                         CB->modify_var(&ST(ST_PLAYER_WEAPON), 0);
                         CB->evenement(11, 6000);
-                        CB->print_msg("", 0, 0xF0);
+                        CB->print_msg("evenement11 lanc\351", 0, 0xF0);
                     }
                 }
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1909,7 +1909,7 @@ static void trig31(void) {
             /* 0x12A21 */
             if (ST(ST_VIE(P_KALHI13)) == 1) {
                 CB->bloque(BLOQUE_ALL);
-                CB->print_msg("", 0, 0xF0);
+                CB->print_msg("test3 passe \340 100 ln 3538", 0, 0xF0);
                 ST(0x6C) = 100;
                 ST(0x74) = 2;
                 ST(ST_SCRIPT_BUSY) = 1;
@@ -2182,7 +2182,7 @@ static void trig32(void) {
             /* 0x138C0 */
             if (ST(ST_VIE(P_KALHI33)) == 1) {
                 CB->bloque(BLOQUE_ALL);
-                CB->print_msg("", 0, 0xF0);
+                CB->print_msg("test3 passe \340 100 ln 3810", 0, 0xF0);
                 ST(0x6C) = 100;
                 ST(0x74) = 2;
                 ST(ST_SCRIPT_BUSY) = 1;

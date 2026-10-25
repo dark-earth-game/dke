@@ -260,6 +260,9 @@ static void tick_body(void) {
     }
     /* 0x9652 — imp X (0x58) appearance */
     if (CB->divers(DV_WAS_HIT, P_GUARDIAN23, 0) && ST(ST_VIE(P_GUARDIAN23)) != VIE_DEAD && ST(0x94) == 0) {
+        CB->select_pile(2, 2);
+        CB->divers(DV_CUT_SPEECH, 0, 0);
+        CB->divers_empile(DV_WAS_HIT, P_GUARDIAN23, 1);
         ST(0xE0)  = 1;
         ST(ST_SCRIPT_BUSY)  = 0;
         ST(V_ENGAGED_PERSONA)  = 0x57;

@@ -801,7 +801,7 @@ static void tick_body(void) {
             }
             /* 0xC966 */
             if (ST(ST_VIE(P_KALHI13)) == 1) {
-                CB->print_msg("", 0, 0xF0);
+                CB->print_msg("test3 passe \340 100 ln 1533", 0, 0xF0);
                 ST(0x6C) = 100;
                 CB->bloque(BLOQUE_ALL);
                 CB->stop_joindre(-P_KALHI13);

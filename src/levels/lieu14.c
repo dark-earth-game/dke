@@ -31,7 +31,7 @@ static c8 g_txt[256];
 static void tick_body(void) {
     i32 t1 = CB->divers(DV_IN_ZONE, P_SORDOS, 15);
     snprintf(g_txt, sizeof(g_txt), "test:%d", t1);
-    CB->print_msg("", 0, 0xF0);
+    CB->print_msg(g_txt, 0, 0xF0);
     /* 0x91B1 */
     if (ST(0xC44) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 6 && ST(V_ENGAGED_PERSONA) == 35 && ST(ST_VIE(35)) != VIE_DEAD && ST(0x58) == 0) {
         CB->select_pile(1, 2);

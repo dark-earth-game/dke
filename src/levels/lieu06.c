@@ -384,7 +384,7 @@ static void tick_body(void) {
         /* 0x9386 */
         if (ST(0x84) == 0) {
             CB->bloque(BLOQUE_ALL);
-            CB->print_msg("", 0, 240);
+            CB->print_msg("phedoria alert\351e", 0, 240);
             ST(0x84) = 1;
             CB->combat(P_DHORKAN11, -1);
             CB->stop_joindre(-P_PHEDORIA);
