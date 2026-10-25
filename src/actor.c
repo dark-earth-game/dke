@@ -926,3 +926,21 @@ i32 actor_desc_reload(entity_t *e, i32 weapon) {
     snprintf(name, sizeof(name), "P%02d", hero);
     return actor_desc_load(name, hero, weapon, e);
 }
+
+/* sub_46E4A8 (room release): the two companion slots are emptied; the
+ * next room's script places its own cast. */
+void actor_release_companions(void) {
+    entity_t **slots[2] = { &g_companion_entity, &g_secondary_companion_entity };
+    for (i32 i = 0; i < 2; i++) {
+        entity_t *e = *slots[i];
+        if (!e) continue;
+        i32 id = E32(e, 0xB0);
+        lieu_zone_detach(e);
+        if (id >= 0 && id < PERSONA_COUNT) {
+            g_persona_desc[id].entity = NULL;
+            g_persona_desc[id].raw[0x95] = 0;
+        }
+        *slots[i] = NULL;
+        actor_free(e);
+    }
+}

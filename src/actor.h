@@ -57,6 +57,9 @@ void actor_free(entity_t *e);
 /* game_state @ 0x4B70E8: the hero being played (0..3). */
 i32 actor_hero_id(void);
 
+/* sub_46E4A8: free the companion slots on a room change. */
+void actor_release_companions(void);
+
 /* sub_44411D @ 0x44411D — actor for persona id (heroes map to the player). */
 entity_t *actor_find(i32 id);
 

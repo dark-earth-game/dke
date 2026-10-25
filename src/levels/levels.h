@@ -41,5 +41,6 @@ lieu_entry_t lieu_level_entry(i32 level);
 extern i32 g_lieu_trace;
 
 i32 lieu01_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
+i32 lieu02_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 
 #endif /* DKE_LEVELS_H */

@@ -3013,6 +3013,7 @@ i32 scene_render(system_t *sys) {
             print("scene: CHANGEPIECE -> load level %d (entry %d)\n", next, entry);
             if (!g_screen_keep_black) screen_dissolve(500);   /* sub_44A58B loc_44BA83 */
             lieu_exit();
+            actor_release_companions();            /* sub_46E4A8 */
             g_player_seeded = 0;
             /* Release the old room's world data (the engine's teardown
              * sub_46E4A8 @ 0x46E4A8 does this before loading the target).

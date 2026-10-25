@@ -112,7 +112,9 @@ typedef struct {
     i32 (*query_940)(i32 ecx);                             /* C940 */
     /* i=30 0x78 sub_446A05 — state_toggle(mode, layer). */
     void (*state_toggle)(i32 mode, i32 layer);             /* C464 */
-    void *cb_968;   /* i=31 0x7C sub_446B54  [?]                       */
+    /* i=31 0x7C sub_446B54 — OnJoindre(actor): -1 no actor, 5 permanent
+     * join, else the walk-in-flight flag (+0xCBC). Immediate. */
+    i32 (*cb_968)(i32 actor);                              /* C968 (L02: C988) */
     /* i=32 0x80 sub_446BE9 — object attach/toggle (ecx=zone, edx=name, +2 stack). */
     void (*attach_99C)(i32 zone, const c8 *name, i32 a, i32 b); /* C99C */
     void *cb_948;   /* i=33 0x84 sub_446CBC  [?]                       */

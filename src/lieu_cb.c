@@ -1532,6 +1532,15 @@ static void cb_op_9c(i32 op, i32 a, i32 arg) {
     n->z = arg;
 }
 
+/* slot 31 sub_446B54 "OnJoindre"(a) — immediate query: -1 when the actor
+ * is not loaded, 5 for a permanent join (+0xCB4), else +0xCBC (walking). */
+static i32 cb_onjoindre(i32 a) {
+    entity_t *e = actor_find(a < 0 ? -a : a);
+    if (!e) return -1;
+    if (E32(e, 0xCB4)) return 5;
+    return E32(e, 0xCBC);
+}
+
 /* Concrete vtable. Unlisted (void*) slots stay NULL — the ported handlers
  * never call them. */
 static const lieu_cb_t g_lieu_cb_impl = {
@@ -1553,6 +1562,7 @@ static const lieu_cb_t g_lieu_cb_impl = {
     .query_998        = cb_query_998,
     .query_990        = cb_query_990,
     .cb_98C           = cb_cb_98C,
+    .cb_968           = cb_onjoindre,
     .group            = cb_group,
     .cb_454           = cb_cb_454,
     .select_468       = cb_select_468,
@@ -2202,6 +2212,9 @@ static void lieu_run_init(void) {
 /* sub_43A63D @ 0x43A79B: a new game clears the script variables. */
 void lieu_new_game(void) {
     memset(g_lieu_state, 0, sizeof(g_lieu_state));
+    /* L01 trig00's entry phase: 1 = the opening of a new game (L01 INIT
+     * clears it, so later visits take the persisted path). */
+    LIEU_ST(g_lieu_state, 0x964) = 1;
 }
 
 /* sub_4640BC @ 0x464306: POSPERSO records a persona's life mode in
@@ -2238,11 +2251,10 @@ void lieu_enter(i32 level_id) {
      * the value 4. ST(0x964) = 1 selects trig00's fresh-entry setup.
      * TODO: take both from the engine's game state once hero swaps exist. */
     LIEU_ST(g_lieu_state, 0x194) = actor_hero_id();
-    if (level_id == 1) LIEU_ST(g_lieu_state, 0x964) = 1;   /* L01 trig00 entry phase */
     /* +0x0C is dword_505C4C, the per-frame action-key flag sub_449F9F
      * writes (see lieu_detect_zone); it is not a constant. */
 
-    print("lieu: LIEU01 native scripting — running INIT\n");
+    print("lieu: LIEU%02d native scripting — running INIT\n", level_id);
     lieu_run_init();
 }
 
