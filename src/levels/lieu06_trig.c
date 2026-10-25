@@ -484,22 +484,6 @@ static void trig02(void) {
             }
         }
     }
-/* WARN stack nonempty at label 1000ade2: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000ae0a: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000ae32: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000ae77: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000aebf: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000aefb: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000af18: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000af2a: [V(imm,-1)] */
-/* WARN stack nonempty at label 1000afb4: [V(imm,-1), V(imm,-1)] */
-/* WARN stack nonempty at label 1000afea: [V(imm,-1), V(imm,-1)] */
-/* WARN stack nonempty at label 1000b023: [V(imm,-1), V(imm,-1)] */
-/* WARN stack nonempty at label 1000b040: [V(imm,-1), V(imm,-1)] */
-/* WARN stack nonempty at label 1000b061: [V(imm,-1), V(imm,-1)] */
-/* WARN stack nonempty at label 1000b082: [V(imm,-1), V(imm,-1)] */
-/* WARN stack nonempty at label 1000b10c: [V(imm,-1), V(imm,-1), V(imm,-1)] */
-/* WARN leftover stack [V(imm,-1), V(imm,-1), V(imm,-1)] */
 }
 
 /* trigger 03 — sub_1000B111 — zone 17: walk to the exit (event 53 chain) */
