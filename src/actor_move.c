@@ -531,6 +531,56 @@ static void anim_messages(entity_t *e, i32 tick) {
     }
 }
 
+/*
+ * sub_450DE8 @ 0x450DE8 (ecx = self, edx = target).
+ *
+ * Writes self+0xE94 = signed yaw delta (target bearing - body heading),
+ *        self+0xE98 = absolute head yaw (BAM), clamped to heading +- 0x2EE0.
+ * Returns 1 when it accepted the target. The |E94| test picks the target
+ * that needs the smallest turn when it is called more than once per frame;
+ * sub_41CCB7 resets E94 to 0xFFFF right before its one call, so in practice
+ * any valid target is accepted.
+ */
+static i32 actor_head_track(entity_t *self, entity_t *tgt) {
+    if (!tgt) return 0;                                     /* 0x450DFF */
+    const u8 *td = EDESC(tgt);
+    if (!td || *(const i32 *)(td + 0x84) <= 0) return 0;    /* target health > 0 (0x450E08) */
+    obc_node_t *sr = EROOT(self), *tr = EROOT(tgt);
+    if (!sr || !tr) return 0;
+
+    f64 dx = (f64)(sr->pos[0] - tr->pos[0]);                /* self - target */
+    f64 dz = (f64)(sr->pos[2] - tr->pos[2]);
+    if (dz * dz + dx * dx > 8.1e11) return 0;               /* dbl_4B06A0: 900000 units */
+
+    /* Body heading = gravit yaw minus the skeleton root's X angle. The
+     * original does not check for a NULL child. */
+    i32 heading = (sr->rot[2] - (sr->child ? sr->child->rot[0] : 0)) & 0xFFFF;
+
+    /* atan2(-dx, -dz) = bearing self -> target, in BAM, negated. */
+    i32 ang = -(i32)(atan2(-dx, -dz) * 65536.0 / 6.283185307179586);
+    ang &= 0xFFFF;
+
+    i32 diff = 0;                                           /* 0x450EE5..0x450F30 */
+    if (ang >= heading) {
+        diff = ang - heading;
+        if (diff > 0x8000) diff -= 0x10000;
+    }
+    if (ang < heading) {
+        diff = ang - heading;
+        if (diff < -0x8000) diff = 0x8000 - (-0x8000 - diff);   /* = diff + 0x10000 */
+    }
+
+    if (abs(E32(self, 0xE94)) <= abs(diff)) return 0;       /* 0x450F6D */
+
+    if (abs(diff) > 0x2EE0) {                               /* +-12000 BAM ~ 65.9 deg */
+        if (diff < 0) ang -= diff + 0x2EE0;                 /* -> heading - 0x2EE0 */
+        else          ang -= diff - 0x2EE0;                 /* -> heading + 0x2EE0 */
+    }
+    E32(self, 0xE94) = diff;                                /* unclamped delta */
+    E32(self, 0xE98) = ang;                                 /* not re-masked */
+    return 1;
+}
+
 /* =========================================================================
  * Per-actor update — sub_41CCB7 @ 0x41CCB7
  * ========================================================================= */
@@ -540,8 +590,12 @@ void actor_update(entity_t *e) {
     const u8 *d = EDESC(e);
     if (d && d[0x96]) return;
     if (!ANIM(e)) return;
-    /* sub_450DE8 head look-at (E94/E98) is not ported. */
-    E32(e, 0xE94) = 0xFFFF;
+    E32(e, 0xE94) = 0xFFFF;                               /* sub_450DE8 look-at */
+    if (e != g_player_entity) {
+        if (E32(e, 0xC4C)) actor_head_track(e, g_player_entity);     /* DIVERS 12 */
+    } else if (E32(e, 0xC4C)) {
+        actor_head_track(e, actor_find(E32(e, 0xC4C) - 1));         /* DIVERS 34 */
+    }
 
     i32 T = CAN_DURATION(ANIM(e));
     if (T == 0) return;

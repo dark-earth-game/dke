@@ -152,4 +152,11 @@ i32 actor_floor_height(i32 x, i32 z, const entity_t *e);
 /* Same, also returning the floor zone hit (NULL = world controller). */
 i32 actor_floor_zone(i32 x, i32 z, const entity_t *e, void **zone);
 
+/* sub_433490: scale one bone's node position (unless mode & 2) and mesh;
+ * mode & 1 also scales its child's position. sub_433610: whole body
+ * (bones 1..0x21 except 0x1F / 0x20), and character_scale_factor. */
+void actor_scale_bone(entity_t *e, i32 bone, f64 s, i32 mode);
+void actor_scale_body(entity_t *e, f64 s);
+extern f64 g_character_scale_factor;
+
 #endif /* DKE_ACTOR_H */

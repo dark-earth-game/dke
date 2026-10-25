@@ -855,3 +855,62 @@ entity_t *actor_pos_perso(i32 id, i32 x, i32 z, i32 facing, i32 vie,
     }
     return e;
 }
+
+/* --- mesh scaling: sub_433490 / sub_433610 (DIVERS 38 / 37) ----------
+ * Scales this actor's own tree in place (permanent, cumulative); the
+ * atom render caches are dropped so the next draw rebuilds them. */
+f64 g_character_scale_factor = 1.0;            /* character_scale_factor */
+
+static void atom_invalidate_render(atm_atom_t *a) {
+    if (a->render) {
+        if (atm_render_free) atm_render_free(a->render);
+        a->render = NULL;
+    }
+}
+
+static void atom_scale_verts(atm_atom_t *a, f64 s) {
+    /* a->raw_18 = (i32)((f64)(u32)a->raw_18 * s);  -- +0x18, add the field if wanted */
+    for (i32 i = 0; i < a->vert_count; i++) {
+        i32 *v = a->verts + (size_t)i * ATM_VERT_STRIDE;
+        v[ATM_VERT_X] = (i32)((f64)v[ATM_VERT_X] * s);
+        v[ATM_VERT_Y] = (i32)((f64)v[ATM_VERT_Y] * s);
+        v[ATM_VERT_Z] = (i32)((f64)v[ATM_VERT_Z] * s);
+    }
+    atom_invalidate_render(a);
+}
+
+/* sub_433490 @ 0x433490 (ecx = entity, edx = bone, stack: double s, int mode) */
+void actor_scale_bone(entity_t *e, i32 bone, f64 s, i32 mode) {
+    if (!e || bone < 0 || bone >= ENTITY_BONE_SLOTS) return;   /* original: no bound */
+    obc_node_t *n = EBONE(e, bone);
+    if (!n) return;
+    if (!(mode & 2)) {
+        n->pos[0] = (i32)((f64)n->pos[0] * s);
+        n->pos[1] = (i32)((f64)n->pos[1] * s);
+        n->pos[2] = (i32)((f64)n->pos[2] * s);
+    }
+    if (n->atom[0]) {
+        n->raw_14 = (i32)((f64)(u32)n->raw_14 * s);
+        atom_scale_verts(n->atom[0], s);
+    }
+    if (n->atom[1]) atom_scale_verts(n->atom[1], s);
+    if ((mode & 1) && n->child) {
+        obc_node_t *c = n->child;
+        c->pos[0] = (i32)((f64)c->pos[0] * s);
+        c->pos[1] = (i32)((f64)c->pos[1] * s);
+        c->pos[2] = (i32)((f64)c->pos[2] * s);
+    }
+}
+
+/* sub_433610 @ 0x433610: bones 1..0x21 except 0x1F (arme) / 0x20 (armea),
+ * mode 0. Slot 0 (tree) is skipped, so the root offset to gravit is not
+ * scaled. */
+void actor_scale_body(entity_t *e, f64 s) {
+    if (!e) return;
+    g_character_scale_factor *= s;
+    for (i32 i = 0; i < 0x22; i++) {
+        if (i == 0 || i == 0x1F || i == 0x20 || i == 0x22) continue;
+        if (EBONE(e, i)) actor_scale_bone(e, i, s, 0);
+    }
+}
+

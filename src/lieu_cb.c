@@ -39,6 +39,7 @@
 #include "anim2d.h"
 #include "object.h"
 #include "sfx.h"
+#include "screen_fx.h"
 #include "lieu_action.h"
 #include "lieu01.h"
 #include "player.h"
@@ -1119,13 +1120,23 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
      * transition effect sub_42E0E0(a ms, plays "trans"), ls_delay(b ms),
      * then put the frame back (16-bit: draw_image; 8-bit:
      * render_loading_transition(bmap, 1000)). Display mode 0xD. */
-    case 10:
-        /* TODO transition effect (sub_42E0E0) + blocking delay */
+    case 10: {                                 /* 0x447923: dissolve, hold, restore */
+        if (!state || !state->graphic.front_buffer) return 0;
+        size_t np = (size_t)state->graphic.width * state->graphic.height;
+        u32 *save = (u32 *)malloc(np * sizeof(u32));
+        if (save) memcpy(save, state->graphic.front_buffer, np * sizeof(u32));
+        screen_dissolve(a);
+        if (!getenv("DKE_NOTRANS")) ls_delay((u32)b);
+        if (save) {
+            if (!g_screen_keep_black) {
+                memcpy(state->graphic.front_buffer, save, np * sizeof(u32));
+                fx_present();
+            }
+            free(save);
+        }
         return 0;
+    }
 
-    /* op 11 @ 0x4479D5 — player idle time. a==0: return 0 if the player
-     * moves/turns/plays a scripted state (CEC|CF4|D04 != 0), else
-     * now - player+0xC30. a!=0: player+0xC30 = now. */
     case 11:
         e = g_player_entity;
         if (a == 0) {
@@ -1168,13 +1179,20 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
      * 3 dword_4B69BC=0 + same as 2; 4 sub_42E0E0(500);
      * 5 dword_4B69BC=1 + sub_42E0E0(500);
      * 6 sub_46F7B5 (full redraw incl. companions) + HUD + blit. */
-    case 16:
-        /* TODO renderer/HUD hooks */
+    case 16:                                   /* 0x447AF4: screen control */
+        switch (a) {
+        case 0: if (state && state->graphic.front_buffer)
+                    memset(state->graphic.front_buffer, 0,
+                           (size_t)state->graphic.width * state->graphic.height * 4);
+                break;
+        case 1: g_screen_keep_black = 1; break;
+        case 3: g_screen_keep_black = 0; break;
+        case 4: screen_dissolve(500); break;
+        case 5: g_screen_keep_black = 1; screen_dissolve(500); break;
+        default: break;                        /* 2 / 6: redraws, done every frame */
+        }
         return 0;
 
-    /* op 17 @ 0x447C8F — play full-screen anim "%sBIGANIMS>ANIM%02d.CJR"(a)
-     * if select_language_version finds it: dword_4FB1D8 = dword_4FB1AC = a,
-     * sub_454810("%sBIGANIMS>ANIM%02d", 3, 0). */
     case 17:
         /* TODO CJR player */
         return 0;
@@ -1226,13 +1244,11 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
 
     /* op 22 @ 0x447EAC — menu_gametime_5072C8 = now; sub_42E0E0(500);
      * sub_43E038(0,0) (native screen); update_display_state. Mode 0xE. */
-    case 22:
-        /* TODO */
+    case 22:                                   /* 0x447EAC */
+        screen_dissolve(500);
+        /* TODO sub_43E038(0, 0): the save / load file screen. */
         return 0;
 
-    /* op 23 @ 0x447EF2 — player combat stance: player+0xD60 = a,
-     * dword_505C50 = a; if CEC != 3: CEC=0, CF0=1, CF8=0, CF4=0;
-     * then D04=0, D00=0; update_player_interface(ctx, 1). */
     case 23:
         e = g_player_entity;
         E32(e, 0xD60) = a;
@@ -1370,23 +1386,17 @@ static i32 cb_layer_op(i32 op, i32 a, i32 b) {
 
     /* op 37 @ 0x448AE9 — sub_433610(player, a/100.0): character_scale_factor
      * *= s; for bones 1..0x21 except 0x1F, 0x20: sub_433490(e, i, s, 0). */
-    case 37:
-        /* TODO body scale (see op 38) */
+    case 37:                                   /* 0x448AE9: sub_433610 */
+        actor_scale_body(g_player_entity, (f64)a / 100.0);
         return 0;
 
-    /* op 38 @ 0x448B17 — sub_433490(player, bone, a/100.0, mode):
-     * |b| & 0x10000 set: bone = |b| & 0xFFFF, mode = 2 + (b <= 0);
-     * else bone = |b|, mode = (b <= 0).
-     * sub_433490 @ 0x433490: node = e+0xFC[bone]; unless mode&2 scale
-     * node->pos; scale node+0x14 and every vertex of atom[0]/atom[1]
-     * (+0x18 radius, +0x38 verts stride 0x20, +0x1C count) by s;
-     * mode&1: also scale node->child->pos. */
-    case 38:
-        /* TODO mesh scaling on EBONE(g_player_entity, bone) */
+    case 38: {                                 /* 0x448B17: sub_433490 */
+        i32 ab = abs(b);
+        if (ab & 0x10000) actor_scale_bone(g_player_entity, ab & 0xFFFF, (f64)a / 100.0, 2 + (b <= 0));
+        else              actor_scale_bone(g_player_entity, ab,          (f64)a / 100.0,     (b <= 0));
         return 0;
+    }
 
-    /* op 39 @ 0x448BC2 — persona 0x28's actor timer:
-     * a==0 -> return +0xD70; else b ? (D70 = b, D74 = now) : (D70 = 0). */
     case 39:
         e = actor_find(0x28);
         if (!e) return 0;

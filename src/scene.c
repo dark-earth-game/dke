@@ -64,6 +64,7 @@
 #include "anim2d.h"
 #include "object.h"
 #include "sfx.h"
+#include "screen_fx.h"
 #include "can.h"
 #include "model.h"
 #include "model_ome.h"
@@ -2531,6 +2532,7 @@ i32 scene_load_level(i32 level_id) {
     scene_load_camera_regions(g_scene_bg_level);
 
     object_reset();                                /* objects load lazily per room */
+    g_character_scale_factor = 1.0;                /* sub_42BE0E */
     {
         /* sub_46D305: wav>reverb> when the level .DAT says "reverb : 1". */
         const c8 *gp = (state && state->game_path) ? state->game_path : ".";
@@ -2795,7 +2797,8 @@ static i32 scene_actor_zval(i32 x, i32 y, i32 z) {
  * value `zv` for the whole tree, lit from the camera side with the light
  * map read under (root x, ground_y, root z). */
 static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, i32 ground_y,
-                              model_draw_t *items, i32 n_items, i32 max_items) {
+                              model_draw_t *items, i32 n_items, i32 max_items,
+                              i32 head_on, i32 head_yaw) {
     if (!root || !g_proj_valid) return n_items;
 
     /* sub_4358D3: the light comes from the camera side, horizontally toward
@@ -2843,6 +2846,12 @@ static i32 scene_collect_tree(obc_node_t *root, const ome_matr_t *matr, i32 zv, 
             fmat_rotation(&rot, rest ? 0 : n->rot[0], rest ? 0 : n->rot[1], rest ? 0 : n->rot[2]);
             fmat_position(&pos, n->pos[0], n->pos[1], n->pos[2]);
             fmat_rotate_translation(&cur, &pos);
+            /* sub_420D80 @ 0x420FF7: a looking actor's head ("te...") takes an
+             * absolute yaw with fixed pitch / roll from the camera matrix. */
+            if (head_on && n->name[0] == 't' && n->name[1] == 'e' && (n->child || n->atom[0])) {
+                for (i32 k = 0; k < 9; k++) cur.m[k] = g_proj_R[k];
+                fmat_rotation(&rot, 0x4000, 0xC000, head_yaw);
+            }
             fmat_premul_rotation(&rot, &cur);
             cur.t[0] += pos.t[0]; cur.t[1] += pos.t[1]; cur.t[2] += pos.t[2];
             const model_t *m = n->atom[0] ? model_from_atm_atom(n->atom[0], matr) : NULL;
@@ -2867,7 +2876,8 @@ static i32 scene_collect_actor(entity_t *e, model_draw_t *items, i32 n_items, i3
     if (!e || !EROOT(e)) return n_items;
     i32 zv = scene_actor_zval(EROOT(e)->pos[0], EROOT(e)->pos[1], EROOT(e)->pos[2]);
     return scene_collect_tree(EROOT(e), actor_matr(E32(e, 0xB0)), zv, E32(e, 0x8C),
-                              items, n_items, max_items);
+                              items, n_items, max_items,
+                              E32(e, 0xE94) != 0xFFFF, E32(e, 0xE98));
 }
 
 /*
@@ -2938,6 +2948,7 @@ i32 scene_render(system_t *sys) {
         }
         if (next >= 0 && next != g_scene_bg_level) {
             print("scene: CHANGEPIECE -> load level %d (entry %d)\n", next, entry);
+            if (!g_screen_keep_black) screen_dissolve(500);   /* sub_44A58B loc_44BA83 */
             lieu_exit();
             g_player_seeded = 0;
             /* Release the old room's world data (the engine's teardown
@@ -3311,7 +3322,7 @@ i32 scene_render(system_t *sys) {
                     if (zv < 1) zv = 1;
                     i32 ground = actor_floor_height(o->root->pos[0], o->root->pos[2], NULL);   /* +0x8C */
                     i32 n_o = scene_collect_tree(o->root, &o->matr, live ? -1 : zv, ground,
-                                                 oitems, 0, 64);
+                                                 oitems, 0, 64, 0, 0);
                     /* Z mode: a7 <= 2 -> a7, else a7 - 4; -1 never occludes,
                      * 1 always in front, otherwise the object's depth. */
                     i32 zmode = o->mode <= 2 ? o->mode : o->mode - 4;
@@ -3438,6 +3449,11 @@ i32 scene_render(system_t *sys) {
     /* Headless verification: dump the composed frame to a PPM at frame
      * DKE_SHOT so the scene (backdrop + rasterized characters) can be
      * inspected without a display. */
+    /* dword_4B69BC: the logic above still ran, but nothing reaches the
+     * screen while "keep black" is set. */
+    if (g_screen_keep_black)
+        for (i32 k = 0; k < fb_w * fb_h; k++) fb[k] = 0xFF000000u;
+
     if (getenv("DKE_SHOT") && state && state->graphic.front_buffer) {
         static i32 s_frame = 0;
         /* DKE_SHOT=<frame> one shot; DKE_SHOT=<first>+<step> one every step
