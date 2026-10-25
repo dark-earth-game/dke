@@ -3,13 +3,12 @@
  */
 
 #include "lieu_level.h"
+#include "levels_table.h"
 
 lieu_state_t *g_lvl_S;
 
 lieu_entry_t lieu_level_entry(i32 level) {
-    switch (level) {
-    case 1:  return lieu01_fonction_editor;
-    case 2:  return lieu02_fonction_editor;
-    default: return NULL;
-    }
+    if (level < 0 || level >= (i32)(sizeof(k_level_entry) / sizeof(k_level_entry[0])))
+        return NULL;
+    return k_level_entry[level];
 }
