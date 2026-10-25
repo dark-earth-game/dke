@@ -61,7 +61,9 @@ typedef struct {
      * +7 stack a1..a7, a1 = last pushed). e.g. "SOB86", "OB21A". */
     void (*etat_objet)(const c8 *name, i32 p, i32 a1, i32 a2, i32 a3,
                          i32 a4, i32 a5, i32 a6, i32 a7);  /* C988 */
-    void *col_objet;   /* i=7  0x1C sub_4452CD  [?]                       */
+    /* i=7  0x1C sub_4452CD — ColObjet(name, x, z, w, d): collision box of an
+     * object, script tiles (all zero clears it). */
+    void (*col_objet)(const c8 *name, i32 x, i32 z, i32 w, i32 d);
     /* i=8  0x20 sub_4453E1 — place actor at position.
      * (ecx=zone, edx=facing, a2, a3, a4). */
     void (*joindre)(i32 zone, i32 facing, i32 a2, i32 a3, i32 a4); /* C934 */
@@ -101,10 +103,13 @@ typedef struct {
     void (*stop_joindre)(i32 ecx);                           /* C468 */
     /* i=23 0x5C sub_44660D — flag/state set (ecx, edx). */
     void (*vire_col)(i32 ecx, i32 edx);                      /* C964 */
-    void *simult;   /* i=24 0x60 sub_446685  [?]                       */
+    /* i=24 0x60 sub_446685 — Simult(n): the next animation does not wait. */
+    void (*simult)(i32 n);
     /* i=25 0x64 sub_4466E9 — debug/subtitle text (ecx=str, edx, len). */
     void (*print_msg)(const c8 *text, i32 edx, i32 len);  /* C474 */
-    void *joindre_obj;   /* i=26 0x68 sub_446763  [?]                       */
+    /* i=26 0x68 sub_446763 — JoindreObj(name, dist): walk the player to
+     * `dist` tiles from the object, facing it. */
+    void (*joindre_obj)(const c8 *name, i32 dist);
     /* i=27 0x6C sub_446808 — commit/flush dialogue group (ecx=zone, edx=submode). */
     void (*joindre_perm)(i32 zone, i32 submode);              /* C958 */
     /* i=28 0x70 sub_4468E1 — set state slot (ecx=&state[off], edx=val). */
@@ -118,15 +123,21 @@ typedef struct {
     i32 (*on_joindre)(i32 actor);                              /* C968 (L02: C988) */
     /* i=32 0x80 sub_446BE9 — object attach/toggle (ecx=zone, edx=name, +2 stack). */
     void (*link_objet)(i32 zone, const c8 *name, i32 a, i32 b); /* C99C */
-    void *place_animal;   /* i=33 0x84 sub_446CBC  [?]                       */
+    /* i=33 0x84 sub_446CBC — PlaceAnimal(id, x, y, z, a, b): ambient
+     * creature (engine side not ported yet: logged and skipped). */
+    void (*place_animal)(i32 id, i32 x, i32 y, i32 z, i32 a, i32 b);
     /* i=34 0x88 sub_446E19 — layer_op(op, layer, arg). Returns bool. */
     i32 (*divers)(i32 op, i32 layer, i32 arg);           /* C994 */
-    void *load_anim;   /* i=35 0x8C sub_4430B0  [?]                       */
+    /* i=35 0x8C sub_4430B0 — LoadAnim(name, n): anim2D name.ANI into named
+     * slot n (2D slot 10 + n), stopped on frame 0. */
+    void (*load_anim)(const c8 *name, i32 n);
     /* i=36 0x90 sub_443273 — seen (1). */
     void (*free_anim)(i32 ecx);                               /* C950 */
     /* i=37 0x94 sub_44356F — seen (2, 0). */
     void (*play_anim)(i32 ecx, i32 edx);                      /* C97C */
-    void *pause_anim;   /* i=38 0x98 sub_443643  [?]                       */
+    /* i=38 0x98 sub_443643 — PauseAnim(n, frame, mode): hold 2D slot
+     * 10 + n on `frame` (mode -1 hides it). */
+    void (*pause_anim)(i32 n, i32 frame, i32 mode);
     /* i=39 0x9C sub_446D84 — op_9c(op, a, arg). INIT: (16,1,0)(27,0,0). */
     void (*divers_empile)(i32 op, i32 a, i32 arg);                 /* C45C */
 } lieu_cb_t;

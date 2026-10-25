@@ -188,6 +188,17 @@ i32 anim2d_register_named(i32 level, const c8 *name) {
     return k;
 }
 
+/* sub_44313F: byte_505AA0[n] = name, then name.ANI into slot 10 + n,
+ * frame 0, mode 0, not shown (+0x91C / +0x934 / +0x93C = 0). */
+void anim2d_load_named(i32 level, i32 n, const c8 *name) {
+    if (n < 0 || n >= 20 || 10 + n >= ANIM2D_SLOTS || !name) return;
+    snprintf(g_named[n], sizeof(g_named[0]), "%s", name);
+    if (n >= g_named_n) g_named_n = n + 1;
+    if (!anim2d_load_slot(10 + n, level, name, 0)) return;
+    g_slots[10 + n].frame = 0;
+    g_slots[10 + n].enabled = 0;
+}
+
 i32 anim2d_load_slot(i32 slot, i32 level, const c8 *name, i32 mode) {
     if (slot < 0 || slot >= ANIM2D_SLOTS || !name) return 0;
     c8 vpath[96];

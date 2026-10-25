@@ -135,8 +135,8 @@ void l03_trig00(void) {
     CB->bruitage("L03AMB1", -1, -1);
     CB->etat_objet("IM02", -1925, 12, -2060, 0xC000, 0x4000, 0x8000, 0, 3);
     CB->etat_objet("IM67", -1794, 12, -481, 0xC000, 0x4000, 0, 0, 3);
-    l03_place_animal(1, -1897, 12, -2017, 0xC350, 0x800);
-    l03_place_animal(1, -1641, 12, -1176, 0x61A8, 0x800);
+    CB->place_animal(1, -1897, 12, -2017, 0xC350, 0x800);
+    CB->place_animal(1, -1641, 12, -1176, 0x61A8, 0x800);
     /* 0x78C7 */
     if (ST(ST_LEVEL) == 45) {
         CB->pos_perso(ST(ST_HERO), -1859, -567, 0x7C9E, 1, "ar", 8, 0);
@@ -252,11 +252,11 @@ void l03_trig00(void) {
     ST(0x96C) = 0;
     /* 0x801A */
     if (ST(V_GUARD_FIGHT_DONE) == 0) {
-        l03_load_anim("203EAU01", 0);
+        CB->load_anim("203EAU01", 0);
     }
     /* 0x8039 */
     if (ST(V_GUARD_FIGHT_DONE) == 2) {
-        l03_load_anim("203EAU02", 0);
+        CB->load_anim("203EAU02", 0);
     }
 }
 

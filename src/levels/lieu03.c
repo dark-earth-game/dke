@@ -21,27 +21,6 @@
 #include "lieu03_int.h"
 
 /* -------------------------------------------------------------------------
- * Engine slots with no typed member in lieu_cb_t yet.
- *   slot 33 (dword_1001DFD8, engine sub_446CBC): PlaceAnimal
- *   slot 35 (dword_1001E004, engine sub_4430B0): LoadAnim
- * Both are void* in lieu_cb_t and NULL in the bridge vtable, so a call is
- * skipped until the engine provides them. The argument lists are the raw
- * __fastcall arguments (ecx, edx, then the stack, last push first).
- * ---------------------------------------------------------------------- */
-typedef void (*place_animal_fn)(i32 a, i32 b, i32 c, i32 d, i32 e, i32 f);
-typedef void (*load_anim_fn)(const c8 *name, i32 a);
-
-void l03_place_animal(i32 a, i32 b, i32 c, i32 d, i32 e, i32 f) {
-    if (CB->place_animal)
-        ((place_animal_fn)CB->place_animal)(a, b, c, d, e, f);
-}
-
-void l03_load_anim(const c8 *name, i32 a) {
-    if (CB->load_anim)
-        ((load_anim_fn)CB->load_anim)(name, a);
-}
-
-/* -------------------------------------------------------------------------
  * Per-frame body — sub_100083AD (thunk 0x100010B9), level-3 specific.
  * Ported faithfully from disassembly (labels in comments = original
  * addresses). `return` == original `jmp` to the epilogue.

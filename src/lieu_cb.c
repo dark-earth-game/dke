@@ -1501,6 +1501,61 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
 
 /* slot 36 sub_443273 @ 0x443273 "FreeAnim" — release a 2D anim slot.
  * asm: type 0x27 (FREEANIM), node+0x48 = slot. */
+/* slot 7 sub_4452CD "ColObjet": queue type 7; name upper-cased at +0x30,
+ * +0x14 = x, +0x1C = z, +0x20 = w, +0x28 = d (all tiles x 600). */
+static void cb_col_objet(const c8 *name, i32 x, i32 z, i32 w, i32 d) {
+    lieu_action_t *n = lieu_action_push(LA_COLOBJET);
+    if (name) {
+        snprintf(n->name, sizeof(n->name), "%s", name);
+        for (c8 *q = n->name; *q; q++) if (*q >= 'a' && *q <= 'z') *q -= 32;
+    }
+    n->x   = x * LIEU_ZONE_SCALE;
+    n->z   = z * LIEU_ZONE_SCALE;
+    n->p20 = w * LIEU_ZONE_SCALE;
+    n->p28 = d * LIEU_ZONE_SCALE;
+}
+
+/* slot 24 sub_446685 "Simult": queue type 24, +0x6C = n. */
+static void cb_simult(i32 v) {
+    lieu_action_t *n = lieu_action_push(LA_SIMULT);
+    n->p6C = v;
+}
+
+/* slot 26 sub_446763 "Joindre obj": queue type 26, name at +0x30,
+ * +0x14 = dist x 600. */
+static void cb_joindre_obj(const c8 *name, i32 dist) {
+    lieu_action_t *n = lieu_action_push(LA_JOINOBJ);
+    if (name) snprintf(n->name, sizeof(n->name), "%s", name);
+    n->x = dist * LIEU_ZONE_SCALE;
+}
+
+/* slot 33 sub_446CBC "PlaceAnimal": queue type 33, +0x0C = id, +0x14 = x,
+ * +0x18 = y, +0x1C = z, +0x28 = a, +0x4C = b (unscaled). */
+static void cb_place_animal(i32 id, i32 x, i32 y, i32 z, i32 a, i32 b) {
+    lieu_action_t *n = lieu_action_push(LA_PLACEANIMAL);
+    n->actor = id; n->x = x; n->y = y; n->z = z; n->p28 = a; n->p4C = b;
+}
+
+/* slot 35 sub_4430B0 "LoadAnim": queue type 38, name at +0x30, +0x48 = n. */
+static void cb_load_anim(const c8 *name, i32 slot) {
+    lieu_action_t *n = lieu_action_push(LA_LOADANIM);
+    if (name) snprintf(n->name, sizeof(n->name), "%s", name);
+    n->id48 = slot;
+}
+
+/* slot 38 sub_443643 "PauseAnim": slots >= 20 are rejected; queue type 36,
+ * +0x48 = n, +0x6C = frame, +0x70 = mode. */
+static void cb_pause_anim(i32 slot, i32 frame, i32 mode) {
+    if (slot >= 20) {
+        print("lieu_cb: Plantage! animation invalid (slot %d)\n", slot);
+        return;
+    }
+    lieu_action_t *n = lieu_action_push(LA_PAUSEANIM);
+    n->id48   = slot;
+    n->p6C    = frame;
+    n->flag70 = mode;
+}
+
 static void cb_free_anim(i32 slot) {
     lieu_action_t *n = lieu_action_push(LA_FREEANIM);
     n->id48 = slot;
@@ -1574,6 +1629,12 @@ static const lieu_cb_t g_lieu_cb_impl = {
     .link_objet       = cb_link_objet,
     .divers         = cb_divers,
     .free_anim           = cb_free_anim,
+    .col_objet           = cb_col_objet,
+    .simult              = cb_simult,
+    .joindre_obj         = cb_joindre_obj,
+    .place_animal        = cb_place_animal,
+    .load_anim           = cb_load_anim,
+    .pause_anim          = cb_pause_anim,
     .play_anim           = cb_play_anim,
     .divers_empile            = cb_divers_empile,
 };
@@ -2146,9 +2207,9 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         anim2d_set_frame(n->id48 + 10, n->p6C, n->flag70);   /* 0 hold, -1 off */
         return 1;
 
-    case LA_LOADANIM:                          /* case 0x26 */
+    case LA_LOADANIM:                          /* case 0x26 -> sub_44313F */
         if (n->id48 >= 0 && n->id48 < LIEU_ANIM_SLOTS) g_anim_slot[n->id48] = 1;
-        print("lieu_act: LOADANIM slot=%d\n", n->id48);
+        anim2d_load_named(g_lieu_level, n->id48, n->name);
         return 1;
 
     case LA_FREEANIM:                          /* case 0x27 */

@@ -63,6 +63,9 @@ i32  anim2d_load_slot(i32 slot, i32 level, const c8 *name, i32 mode);
  * shown at once in slot 30, frozen on frame 0. Returns the list index. */
 i32  anim2d_register_named(i32 level, const c8 *name);
 
+/* LoadAnim (sub_44313F): named slot n <- name.ANI, loaded but not shown. */
+void anim2d_load_named(i32 level, i32 n, const c8 *name);
+
 /* Script control (sub_44A58B cases 35 / 36). */
 void anim2d_start(i32 slot, i32 loop);
 void anim2d_set_frame(i32 slot, i32 frame, i32 hold);

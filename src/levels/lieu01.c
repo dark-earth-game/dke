@@ -754,9 +754,9 @@ static void tick_body(void) {
  * Callback ingestion is skipped: g_lieu_cb is provided by the bridge.
  *   arg = reload flag (non-zero => skip arming).
  * ---------------------------------------------------------------------- */
-static void init(i32 reload_flag) {
+static i32 init(i32 reload_flag) {
     if (reload_flag)
-        return;
+        return 0;
 
     CB->select_pile(2, 2);
     CB->select_pile(1, 2);
@@ -788,7 +788,9 @@ static void init(i32 reload_flag) {
         else
             CB->cinematique("SC23_500");
         CB->divers_empile(DV_END_GAME, 0, 0);
+        return 1;   /* the death ending returns 0, not state[0] */
     }
+    return 0;
 }
 
 /* -------------------------------------------------------------------------
@@ -815,7 +817,10 @@ i32 lieu01_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
         print("lieu01: op=%d arg=%d arg2=%d\n", op, arg, arg2);
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
-    case LIEU_OP_INIT:   init(arg);                    break;
+    case LIEU_OP_INIT:
+        if (init(arg))
+            return 0;
+        break;
     case LIEU_OP_EVENT:  l01_trigger(arg); break;
     case LIEU_OP_CALL4:  lieu_event4(arg);                  break;
     case LIEU_OP_CALL5:  lieu_event5(arg, arg2);            break;
