@@ -127,26 +127,64 @@ class PE:
         return t.decode()
 
 
-def disasm(path):
+def disasm(path, tables_text=()):
     od = os.environ.get('OBJDUMP')
     if not od:
         try:
             od = subprocess.check_output(['brew', '--prefix', 'llvm'], text=True).strip() + '/bin/llvm-objdump'
         except Exception:
             od = 'llvm-objdump'
-    out = subprocess.check_output([od, '-d', '--no-show-raw-insn', '--x86-asm-syntax=intel', path], text=True)
-    ins = []
-    for ln in out.splitlines():
-        m = re.match(r'^([0-9a-f]{8}):\s+(.*)$', ln)
-        if m:
-            t = re.sub(r'\s*<[^>]*>', '', m.group(2)).replace('\t', ' ').strip()
-            ins.append((int(m.group(1), 16), t))
+    def run(*extra):
+        out = subprocess.check_output([od, '-d', '--no-show-raw-insn', '--x86-asm-syntax=intel',
+                                       *extra, path], text=True)
+        res = []
+        for ln in out.splitlines():
+            m = re.match(r'^([0-9a-f]{8}):\s+(.*)$', ln)
+            if m:
+                t = re.sub(r'\s*<[^>]*>', '', m.group(2)).replace('\t', ' ').strip()
+                res.append((int(m.group(1), 16), t))
+        return res
+
+    ins = run()
+    # Linear sweep decodes a switch table inside .text as code and can
+    # swallow the start of the code after it. Re-disassemble from branch
+    # targets that land shortly after a table and are not instruction starts.
+    for T in sorted(tables_text):
+        starts = {a for a, _ in ins}
+        targets = sorted({int(m.group(1), 16) for _, t in ins
+                          for m in [re.match(r'j[a-z]+ 0x([0-9a-f]+)$', t)] if m
+                          and T < int(m.group(1), 16) < T + 512
+                          and int(m.group(1), 16) not in starts})
+        for v in targets:
+            if v in {a for a, _ in ins}:
+                continue
+            new = run('--start-address=0x%x' % v, '--stop-address=0x%x' % (v + 128))
+            have = {a for a, _ in ins}
+            keep = []
+            for a, t in new:
+                if a in have and keep:
+                    break
+                keep.append((a, t))
+            if not keep:
+                continue
+            end = keep[-1][0] + 1
+            prev = max((a for a in have if a < v), default=None)
+            ins = [x for x in ins if not (v <= x[0] < end or x[0] == prev)] + keep
+            ins.sort()
     return ins
 
 
-def analyze(path):
+def analyze(path, _tables=None):
     pe = PE(path)
     ins = disasm(path)
+    ttab = set()
+    for _, t in ins:
+        for m in re.finditer(r'(?:\[4\*e[a-z]{2} \+ |byte ptr \[e[a-z]{2} \+ )0x([0-9a-f]{8})\]', t):
+            v = int(m.group(1), 16)
+            if pe.sec(v) and pe.sec(v)[0] == '.text':
+                ttab.add(v)
+    if ttab:
+        ins = disasm(path, ttab)
     idx = {a: i for i, (a, _) in enumerate(ins)}
     stnames = load_names()
 
