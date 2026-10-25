@@ -2254,6 +2254,7 @@ void lieu_enter(i32 level_id) {
      * writes (see lieu_detect_zone); it is not a constant. */
 
     print("lieu: LIEU%02d native scripting — running INIT\n", level_id);
+    lieu_common_reset();   /* the DLL is loaded afresh for every room */
     lieu_run_init();
 }
 

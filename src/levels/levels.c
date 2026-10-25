@@ -2,7 +2,9 @@
  * levels.c — level number -> native LIEU script entry.
  */
 
-#include "levels.h"
+#include "lieu_level.h"
+
+lieu_state_t *g_lvl_S;
 
 lieu_entry_t lieu_level_entry(i32 level) {
     switch (level) {

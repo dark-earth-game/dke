@@ -37,6 +37,9 @@ typedef i32 (*lieu_entry_t)(i32 op, lieu_state_t *state, i32 arg, i32 arg2);
 /* The level's entry, or NULL when the level has no native port yet. */
 lieu_entry_t lieu_level_entry(i32 level);
 
+/* lieu_common.c: initial values of the shared DLL globals (room load). */
+void lieu_common_reset(void);
+
 /* Runtime dispatch trace (LIEU_TRACE=1). */
 extern i32 g_lieu_trace;
 

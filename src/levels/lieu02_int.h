@@ -7,28 +7,12 @@
  * zone trigger handlers).
  */
 
-#include "libsys/common.h"
-#include "lieu_cb.h"
-#include "levels.h"
-#include "lieu_names.h"
+#include "lieu_level.h"
 
-/* The state buffer of the call in flight (the DLL's dword_1002C98C). */
-extern lieu_state_t *g_l02_S;
-
-#define ST(off)   LIEU_ST(g_l02_S, (off))
-#define CB        (g_lieu_cb)
+/* ST() reads g_lvl_S, the DLL's dword_1002C98C. */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu02_trig.c). */
 void l02_trigger(i32 idx);
-
-/* DLL helper functions used from both files are declared here with an
- * l02_ prefix and defined in lieu02.c. */
-
-/* sub_1001A1AC (thunk sub_1000100A) — same body as LIEU01's
- * action_register (sub_1001932C): __fastcall(ecx=name, edx=count) +
- * stack (arg0 = [ebp+8], arg4 = [ebp+0Ch]). Defined in lieu02.c. */
-void l02_action_register(const c8 *name, i32 count,
-                         const c8 *arg0, const c8 *arg4);
 
 /* Trigger handlers the core also calls directly (defined in
  * lieu02_trig.c):

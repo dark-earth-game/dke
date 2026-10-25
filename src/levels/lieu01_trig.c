@@ -42,8 +42,8 @@ static void trig41(void) {
     if (ST(ST_HERO) == P_ARKHAN0 && ST(0x74) == 1) {
         ST(0x68) = 1;
         ST(0x88) = 0x29A;
-        l01_action_register("L01D17A", 0x0C, "SP12ARR03", "SP12ARR03_10");
-        l01_action_register("L01D17B", 0x0C, "SP12ATT06", "SP12ARR03_10");
+        lieu_action_register("L01D17A", 0x0C, "SP12ARR03", "SP12ARR03_10");
+        lieu_action_register("L01D17B", 0x0C, "SP12ATT06", "SP12ARR03_10");
         CB->change_camera(6, CAM_AUTO);
         CB->bloque(BLOQUE_NONE);
         CB->modify_var(&ST(V_EVENT_1), 1);
@@ -67,16 +67,16 @@ static void trig25(void) {
         l01_spawn_ar();
         ST(V_DLG_RANDOM) = CB->random(2);
         if (ST(V_DLG_RANDOM) == 0) {
-            if (ST(ST_HERO) == P_ARKHAN0) l01_action_register("LCOD06", 0, "SG00PRE02", NULL);
-            if (ST(ST_HERO) == P_ARKHAN1) l01_action_register("LCOD06", 1, "SG00PRE02", NULL);
-            if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("LCOD07", 2, "SG00PRE02", NULL);
-            if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("LCOD08", 3, "SG00PRE02", NULL);
+            if (ST(ST_HERO) == P_ARKHAN0) lieu_action_register("LCOD06", 0, "SG00PRE02", NULL);
+            if (ST(ST_HERO) == P_ARKHAN1) lieu_action_register("LCOD06", 1, "SG00PRE02", NULL);
+            if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("LCOD07", 2, "SG00PRE02", NULL);
+            if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("LCOD08", 3, "SG00PRE02", NULL);
         }
         if (ST(V_DLG_RANDOM) == 1) {
-            if (ST(ST_HERO) == P_ARKHAN0) l01_action_register("LCOD09", 0, "SG00PRE03", NULL);
-            if (ST(ST_HERO) == P_ARKHAN1) l01_action_register("LCOD09", 1, "SG00PRE03", NULL);
-            if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("LCOD10", 2, "SG00PRE03", NULL);
-            if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("LCOD11", 3, "SG00PRE03", NULL);
+            if (ST(ST_HERO) == P_ARKHAN0) lieu_action_register("LCOD09", 0, "SG00PRE03", NULL);
+            if (ST(ST_HERO) == P_ARKHAN1) lieu_action_register("LCOD09", 1, "SG00PRE03", NULL);
+            if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("LCOD10", 2, "SG00PRE03", NULL);
+            if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("LCOD11", 3, "SG00PRE03", NULL);
         }
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
@@ -551,7 +551,7 @@ static void trig03(void) {   /* sub_1000BDC7 */
         CB->animation("P00_65535");
         CB->anim_objet("IM01", 3, -60, 1500, 0);
         CB->change_camera(6, CAM_LOCKED);                          /* edx=2; ecx=6 ; C458         */
-        l01_action_register("L01D32", 0xC, "SP12DIA59", "SP12ARR03_10");
+        lieu_action_register("L01D32", 0xC, "SP12DIA59", "SP12ARR03_10");
         ST(ST_LEVEL) = 1;
         CB->divers_empile(DV_MUSIC, 1, 4);                     /* push4; edx=1; ecx=18h; C45C */
         CB->change_piece(2, 0);                          /* edx=0; ecx=2 ; C984         */
@@ -559,7 +559,7 @@ static void trig03(void) {   /* sub_1000BDC7 */
     }
 
     if (ST(ST_HERO) == P_ARKHAN0 && ST(V_FRONT_DOOR_STAGE) == 1) {    /* loc_BEF7 */
-        l01_action_register("L01D33", 0, "SG00OUV00", NULL);
+        lieu_action_register("L01D33", 0, "SG00OUV00", NULL);
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);                  /* ecx=state+30h; edx=0 ; C46C */
         CB->bloque(BLOQUE_NONE);                              /* ecx=0 ; C938                */
         CB->select_pile(0, 1);                    /* edx=1; ecx=0 ; C464         */
@@ -584,7 +584,7 @@ static void trig03(void) {   /* sub_1000BDC7 */
             CB->dialogue("L01D34A", P_ARKHAN1);    /* C470 */
             CB->dialogue("L01D34B", P_ARKHAN1);
             CB->change_camera(6, CAM_LOCKED);
-            l01_action_register("L01D36", 0xC, "SP12DIA56", "SP12ARR03_10");
+            lieu_action_register("L01D36", 0xC, "SP12DIA56", "SP12ARR03_10");
             CB->change_camera(4, CAM_AUTO);                      /* edx=1; ecx=4 ; C458         */
             CB->animation("SG01OUV03");
         }
@@ -594,7 +594,7 @@ static void trig03(void) {   /* sub_1000BDC7 */
             CB->dialogue("L01D35B", P_ARKHAN1);
             CB->dialogue("L01D35C", P_ARKHAN1);
             CB->change_camera(6, CAM_LOCKED);
-            l01_action_register("L01D37", 0xC, "SP12DIA59", "SP12ARR03_10");
+            lieu_action_register("L01D37", 0xC, "SP12DIA59", "SP12ARR03_10");
             CB->change_camera(4, CAM_AUTO);
             CB->animation("G01OUV03");
         }
@@ -633,12 +633,12 @@ static void trig04(void) {                                  /* sub_1000C171 */
         if (ST(0x68) == 0) {
             ST(0x68) = 1;
             CB->animation("P12ARR01_100");
-            l01_action_register("L01D41", 0x0C, "SP12ATT02", "SP12LEV01");
+            lieu_action_register("L01D41", 0x0C, "SP12ATT02", "SP12LEV01");
             CB->animation("P12ARR03_10");
             CB->divers_empile(DV_LOOK_AT_PLAYER, P_KALHI12, 1);
         } else {
             CB->animation("P12ARR03_100");
-            l01_action_register("L01D41", 0x0C, "SP12ATT05", "SP12ARR03_10");
+            lieu_action_register("L01D41", 0x0C, "SP12ATT05", "SP12ARR03_10");
         }
         CB->modify_var(&ST(0x88), 0x29A);
         CB->animation("Sar_10");
@@ -665,7 +665,7 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     ST(V_EVENT_0) = 1;
                     ST(V_KALHI12_TALK_NIGHT) = 1;
                     CB->evenement(0, -1);
-                    l01_action_register("L01D02", 0, "SG00DIA05", NULL);
+                    lieu_action_register("L01D02", 0, "SG00DIA05", NULL);
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     return;
                 }
@@ -684,10 +684,10 @@ static void trig04(void) {                                  /* sub_1000C171 */
                 if (ST(V_ZED_BRIEFING) == 0) {
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         if (ST(V_KALHI12_TALK_NIGHT) == 1) {
-                            l01_action_register("L01D04A", 0, "SG00DIA07", NULL);
-                            l01_action_register("L01D05A", 0x0C, "P12DIA50", "SP12ARR03_10");
-                            l01_action_register("L01D04B", 0, "SG00DIA06", NULL);
-                            l01_action_register("L01D05B", 0x0C, "SP12DIA56", "SP12ARR03_10");
+                            lieu_action_register("L01D04A", 0, "SG00DIA07", NULL);
+                            lieu_action_register("L01D05A", 0x0C, "P12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D04B", 0, "SG00DIA06", NULL);
+                            lieu_action_register("L01D05B", 0x0C, "SP12DIA56", "SP12ARR03_10");
                             CB->dialogue("L01D05C", P_KALHI12);
                             CB->dialogue("L01D05D", P_KALHI12);
                             ST(V_KALHI12_TALK_NIGHT) = 2;
@@ -697,12 +697,12 @@ static void trig04(void) {                                  /* sub_1000C171 */
                         }
                         if (ST(V_KALHI12_TALK_NIGHT) == 2) {
                             ST(V_KALHI12_TALK_NIGHT) = 3;
-                            l01_action_register("L01D06A", 0, "SG00DIA06", NULL);
-                            l01_action_register("L01D06B", 0, "SG00DIA02", NULL);
+                            lieu_action_register("L01D06A", 0, "SG00DIA06", NULL);
+                            lieu_action_register("L01D06B", 0, "SG00DIA02", NULL);
                             CB->dialogue("L01D07", P_KALHI12);
-                            l01_action_register("L01D08A", 0, "SG00DIA01", NULL);
-                            l01_action_register("L01D08B", 0, "SG00DIA07", NULL);
-                            l01_action_register("L01D09A", 0x0C, "SP12DIA59", "SP12ARR03_10");
+                            lieu_action_register("L01D08A", 0, "SG00DIA01", NULL);
+                            lieu_action_register("L01D08B", 0, "SG00DIA07", NULL);
+                            lieu_action_register("L01D09A", 0x0C, "SP12DIA59", "SP12ARR03_10");
                             CB->dialogue("L01D09Z", P_KALHI12);
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                             CB->bloque(BLOQUE_NONE);
@@ -710,8 +710,8 @@ static void trig04(void) {                                  /* sub_1000C171 */
                         }
                         if ((i32)ST(V_KALHI12_TALK_NIGHT) >= 3) {
                             ST(V_KALHI12_TALK_NIGHT) = 4;
-                            l01_action_register("L01D10", 0, "SG00DIA03", NULL);
-                            l01_action_register("L01D11", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D10", 0, "SG00DIA03", NULL);
+                            lieu_action_register("L01D11", 0x0C, "SP12DIA50", "SP12ARR03_10");
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                             CB->bloque(BLOQUE_NONE);
                             return;
@@ -721,27 +721,27 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     /* loc_1000C709 */
                     if (ST(ST_SPECIAL_MODE) == 0) {
                         if (ST(V_KALHI12_TALK_NIGHT) == 1) {
-                            l01_action_register("L01D13A", 0, "SG00DIA03", NULL);
-                            l01_action_register("L01D14", 0x0C, "P12DIA59", "SP12ARR03_10");
-                            l01_action_register("L01D13B", 0, "SG00DIA07", NULL);
+                            lieu_action_register("L01D13A", 0, "SG00DIA03", NULL);
+                            lieu_action_register("L01D14", 0x0C, "P12DIA59", "SP12ARR03_10");
+                            lieu_action_register("L01D13B", 0, "SG00DIA07", NULL);
                             ST(V_KALHI12_TALK_NIGHT) = 2;
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                             CB->bloque(BLOQUE_NONE);
                             return;
                         }
                         if (ST(V_KALHI12_TALK_NIGHT) == 2) {
-                            l01_action_register("L01D15", 0, "SG00DIA01", "sar_1000");
-                            l01_action_register("L01D16", 0, "SG00DIA06", NULL);
-                            l01_action_register("L01D09A", 0x0C, "SP12DIA50", "SP12ARR03_10");
-                            l01_action_register("L01D09B", 0x0C, "SP12DIA59", "SP12ARR03_10");
+                            lieu_action_register("L01D15", 0, "SG00DIA01", "sar_1000");
+                            lieu_action_register("L01D16", 0, "SG00DIA06", NULL);
+                            lieu_action_register("L01D09A", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D09B", 0x0C, "SP12DIA59", "SP12ARR03_10");
                             ST(V_KALHI12_TALK_NIGHT) = 3;
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                             CB->bloque(BLOQUE_NONE);
                             return;
                         }
                         if ((i32)ST(V_KALHI12_TALK_NIGHT) >= 3) {
-                            l01_action_register("L01D18", 1, "SG01DIA05", "Sar_10");
-                            l01_action_register("L01D19", 0x0C, "SP12DIA59", "SP12ARR03_10");
+                            lieu_action_register("L01D18", 1, "SG01DIA05", "Sar_10");
+                            lieu_action_register("L01D19", 0x0C, "SP12DIA59", "SP12ARR03_10");
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                             CB->bloque(BLOQUE_NONE);
                             return;
@@ -754,15 +754,15 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     if (ST(V_KALHI12_TALK_BRIEF) == 0) {
                         ST(V_KALHI12_TALK_BRIEF) = 1;
                         if (ST(ST_SPECIAL_MODE) == 1) {
-                            l01_action_register("L01D46A", 0, "SG00DIA04", NULL);
-                            l01_action_register("L01D20A", 0x0C, "SP12DIA50", "SP12ARR03_10");
-                            l01_action_register("L01D46B", 0, "SG00DIA03", "sar_750");
-                            l01_action_register("L01D46C", 0, "G00DIA05", NULL);
-                            l01_action_register("L01D20B", 0x0C, "SP12DIA59", "SP12ARR03_10");
+                            lieu_action_register("L01D46A", 0, "SG00DIA04", NULL);
+                            lieu_action_register("L01D20A", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D46B", 0, "SG00DIA03", "sar_750");
+                            lieu_action_register("L01D46C", 0, "G00DIA05", NULL);
+                            lieu_action_register("L01D20B", 0x0C, "SP12DIA59", "SP12ARR03_10");
                         }
                         if (ST(ST_SPECIAL_MODE) == 0) {
-                            l01_action_register("L01D47", 0, "SG00DIA03", NULL);
-                            l01_action_register("L01D26A", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D47", 0, "SG00DIA03", NULL);
+                            lieu_action_register("L01D26A", 0x0C, "SP12DIA50", "SP12ARR03_10");
                             CB->dialogue("L01D26B", P_KALHI12);
                         }
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -771,12 +771,12 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     }
                     if (ST(V_KALHI12_TALK_BRIEF) == 1) {
                         if (ST(ST_SPECIAL_MODE) == 1) {
-                            l01_action_register("L01D88A", 0, "SG00DIA02", NULL);
+                            lieu_action_register("L01D88A", 0, "SG00DIA02", NULL);
                             CB->dialogue("L01D89A", P_KALHI12);
                         }
                         if (ST(ST_SPECIAL_MODE) == 0) {
-                            l01_action_register("L01D88B", 0, "SG00DIA09", NULL);
-                            l01_action_register("L01D89B", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D88B", 0, "SG00DIA09", NULL);
+                            lieu_action_register("L01D89B", 0x0C, "SP12DIA50", "SP12ARR03_10");
                         }
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
@@ -789,29 +789,29 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     if (ST(V_KALHI12_TALK_POST) == 0) {
                         ST(V_KALHI12_TALK_POST) = 1;
                         if (ST(ST_SPECIAL_MODE) == 1) {
-                            l01_action_register("L01D24A", 1, "SG00DIA07", NULL);
-                            l01_action_register("L01D25A", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D24A", 1, "SG00DIA07", NULL);
+                            lieu_action_register("L01D25A", 0x0C, "SP12DIA50", "SP12ARR03_10");
                         }
                         if (ST(ST_SPECIAL_MODE) == 0) {
-                            l01_action_register("L01D83", 1, "SG00DIA07", NULL);
-                            l01_action_register("L01D84A", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D83", 1, "SG00DIA07", NULL);
+                            lieu_action_register("L01D84A", 0x0C, "SP12DIA50", "SP12ARR03_10");
                         }
                         CB->dialogue("L01D25B", P_KALHI12);
-                        l01_action_register("L01D24B", 1, "SG00DIA06", NULL);
-                        l01_action_register("L01D25C", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                        lieu_action_register("L01D24B", 1, "SG00DIA06", NULL);
+                        lieu_action_register("L01D25C", 0x0C, "SP12DIA50", "SP12ARR03_10");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
                         return;
                     }
                     if (ST(V_KALHI12_TALK_POST) == 1) {
                         if (ST(ST_SPECIAL_MODE) == 1) {
-                            l01_action_register("L01D27A", 1, "SG00DIA04", NULL);
-                            l01_action_register("L01D28", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D27A", 1, "SG00DIA04", NULL);
+                            lieu_action_register("L01D28", 0x0C, "SP12DIA50", "SP12ARR03_10");
                         }
                         if (ST(ST_SPECIAL_MODE) == 0) {
-                            l01_action_register("L01D85A", 1, "SG00DIA02", NULL);
-                            l01_action_register("L01D28", 0x0C, "SP12DIA50", "SP12ARR03_10");
-                            l01_action_register("L01D85B", 1, "SG00DIA06", NULL);
+                            lieu_action_register("L01D85A", 1, "SG00DIA02", NULL);
+                            lieu_action_register("L01D28", 0x0C, "SP12DIA50", "SP12ARR03_10");
+                            lieu_action_register("L01D85B", 1, "SG00DIA06", NULL);
                         }
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
@@ -839,7 +839,7 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     /* loc_1000CDA9 */
                     if (CB->divers(DV_CAN_FIGHT, 0, 0) == 0) {
                         if (ST(0x68) == 1)
-                            l01_action_register("L01D42", 0x0C, "P12ATT05", "SP12ARR03_10");
+                            lieu_action_register("L01D42", 0x0C, "P12ATT05", "SP12ARR03_10");
                         CB->animation("Sar_10");
                         CB->bloque(BLOQUE_NONE);
                         return;
@@ -851,8 +851,8 @@ static void trig04(void) {                                  /* sub_1000C171 */
                         ST(0x88)  = 0x3E8;
                         ST(V_EVENT_1) = 0;
                         if (ST(0x68) == 0)
-                            l01_action_register("L01D43A", 0x0C, "SP12ATT02", "SP12ATT03_100");
-                        l01_action_register("L01D98", 0, "SP00ATA08", NULL);
+                            lieu_action_register("L01D43A", 0x0C, "SP12ATT02", "SP12ATT03_100");
+                        lieu_action_register("L01D98", 0, "SP00ATA08", NULL);
                         CB->dialogue("L01D43B", P_KALHI12);
                         CB->modify_var(&ST(0x78), 1);
                         CB->select_pile(1, 1);
@@ -865,11 +865,11 @@ static void trig04(void) {                                  /* sub_1000C171 */
                     /* loc_1000CCFC */
                     if (ST(0x68) == 0) {
                         ST(0x68) = 1;
-                        l01_action_register("L01D41", 0x0C, "SP12ATT02", "SP12LEV01");
+                        lieu_action_register("L01D41", 0x0C, "SP12ATT02", "SP12LEV01");
                         CB->animation("P12ARR03_10");
                         CB->divers_empile(DV_LOOK_AT_PLAYER, P_KALHI12, 1);
                     } else {
-                        l01_action_register("L01D41", 0x0C, "SP12ATT05", "SP12ARR03_10");
+                        lieu_action_register("L01D41", 0x0C, "SP12ATT05", "SP12ARR03_10");
                     }
                     CB->modify_var(&ST(0x88), 0x29A);
                     CB->animation("Sar_10");
@@ -998,7 +998,7 @@ static void trig07(void) {   /* sub_1000D319 */
     ST(V_EVENT_0) = 1;
     ST(V_KALHI12_TALK_NIGHT) = 1;
     CB->evenement(0, -1);                  /* ecx=0, edx=-1 */
-    l01_action_register("L01D02", 0, "SG00DIA05", NULL);
+    lieu_action_register("L01D02", 0, "SG00DIA05", NULL);
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     goto L_E631;
 
@@ -1016,10 +1016,10 @@ L_D4C8:
     if (ST(V_ZED_BRIEFING) != 0) goto L_D85E;
     if (ST(ST_SPECIAL_MODE) != 1) goto L_D6D2;
     if (ST(V_KALHI12_TALK_NIGHT) != 1) goto L_D5A3;
-    l01_action_register("L01D04A", 0, "SG00DIA07", NULL);
-    l01_action_register("L01D05A", 0xC, "P12DIA50", "SP12ARR03_10");
-    l01_action_register("L01D04B", 0, "SG00DIA06", NULL);
-    l01_action_register("L01D05B", 0xC, "SP12DIA56", "SP12ARR03_10");
+    lieu_action_register("L01D04A", 0, "SG00DIA07", NULL);
+    lieu_action_register("L01D05A", 0xC, "P12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D04B", 0, "SG00DIA06", NULL);
+    lieu_action_register("L01D05B", 0xC, "SP12DIA56", "SP12ARR03_10");
     CB->dialogue("L01D05C", P_KALHI12);
     CB->dialogue("L01D05D", P_KALHI12);
     ST(V_KALHI12_TALK_NIGHT) = 2;
@@ -1030,12 +1030,12 @@ L_D4C8:
 L_D5A3:
     if (ST(V_KALHI12_TALK_NIGHT) != 2) goto L_D667;
     ST(V_KALHI12_TALK_NIGHT) = 3;
-    l01_action_register("L01D06A", 0, "SG00DIA06", NULL);
-    l01_action_register("L01D06B", 0, "SG00DIA02", NULL);
+    lieu_action_register("L01D06A", 0, "SG00DIA06", NULL);
+    lieu_action_register("L01D06B", 0, "SG00DIA02", NULL);
     CB->dialogue("L01D07", P_KALHI12);
-    l01_action_register("L01D08A", 0, "SG00DIA01", NULL);
-    l01_action_register("L01D08B", 0, "SG00DIA07", NULL);
-    l01_action_register("L01D09A", 0xC, "SP12DIA59", "SP12ARR03_10");
+    lieu_action_register("L01D08A", 0, "SG00DIA01", NULL);
+    lieu_action_register("L01D08B", 0, "SG00DIA07", NULL);
+    lieu_action_register("L01D09A", 0xC, "SP12DIA59", "SP12ARR03_10");
     CB->dialogue("L01D09Z", P_KALHI12);
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1044,8 +1044,8 @@ L_D5A3:
 L_D667:
     if ((i32)ST(V_KALHI12_TALK_NIGHT) < 3) goto L_D6D2;
     ST(V_KALHI12_TALK_NIGHT) = 4;
-    l01_action_register("L01D10", 0, "SG00DIA03", NULL);
-    l01_action_register("L01D11", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D10", 0, "SG00DIA03", NULL);
+    lieu_action_register("L01D11", 0xC, "SP12DIA50", "SP12ARR03_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     goto L_E631;
@@ -1053,9 +1053,9 @@ L_D667:
 L_D6D2:
     if (ST(ST_SPECIAL_MODE) != 0) goto L_D85E;
     if (ST(V_KALHI12_TALK_NIGHT) != 1) goto L_D762;
-    l01_action_register("L01D13A", 0, "SG00DIA03", NULL);
-    l01_action_register("L01D14", 0xC, "P12DIA59", "SP12ARR03_10");
-    l01_action_register("L01D13B", 0, "SG00DIA07", NULL);
+    lieu_action_register("L01D13A", 0, "SG00DIA03", NULL);
+    lieu_action_register("L01D14", 0xC, "P12DIA59", "SP12ARR03_10");
+    lieu_action_register("L01D13B", 0, "SG00DIA07", NULL);
     ST(V_KALHI12_TALK_NIGHT) = 2;
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1063,10 +1063,10 @@ L_D6D2:
 
 L_D762:
     if (ST(V_KALHI12_TALK_NIGHT) != 2) goto L_D7FC;
-    l01_action_register("L01D15", 0, "SG00DIA01", "sar_1000");
-    l01_action_register("L01D16", 0, "SG00DIA06", NULL);
-    l01_action_register("L01D09A", 0xC, "SP12DIA50", "SP12ARR03_10");
-    l01_action_register("L01D09B", 0xC, "SP12DIA59", "SP12ARR03_10");
+    lieu_action_register("L01D15", 0, "SG00DIA01", "sar_1000");
+    lieu_action_register("L01D16", 0, "SG00DIA06", NULL);
+    lieu_action_register("L01D09A", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D09B", 0xC, "SP12DIA59", "SP12ARR03_10");
     ST(V_KALHI12_TALK_NIGHT) = 3;
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1074,8 +1074,8 @@ L_D762:
 
 L_D7FC:
     if ((i32)ST(V_KALHI12_TALK_NIGHT) < 3) goto L_D85E;
-    l01_action_register("L01D18", 1, "SG01DIA05", "Sar_10");
-    l01_action_register("L01D19", 0xC, "SP12DIA59", "SP12ARR03_10");
+    lieu_action_register("L01D18", 1, "SG01DIA05", "Sar_10");
+    lieu_action_register("L01D19", 0xC, "SP12DIA59", "SP12ARR03_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     goto L_E631;
@@ -1085,16 +1085,16 @@ L_D85E:
     if (ST(V_KALHI12_TALK_BRIEF) != 0) goto L_D97D;
     ST(V_KALHI12_TALK_BRIEF) = 1;
     if (ST(ST_SPECIAL_MODE) != 1) goto L_D911;
-    l01_action_register("L01D46A", 0, "SG00DIA04", NULL);
-    l01_action_register("L01D20A", 0xC, "SP12DIA50", "SP12ARR03_10");
-    l01_action_register("L01D46B", 0, "SG00DIA03", "sar_750");
-    l01_action_register("L01D46C", 0, "G00DIA05", NULL);
-    l01_action_register("L01D20B", 0xC, "SP12DIA59", "SP12ARR03_10");
+    lieu_action_register("L01D46A", 0, "SG00DIA04", NULL);
+    lieu_action_register("L01D20A", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D46B", 0, "SG00DIA03", "sar_750");
+    lieu_action_register("L01D46C", 0, "G00DIA05", NULL);
+    lieu_action_register("L01D20B", 0xC, "SP12DIA59", "SP12ARR03_10");
 
 L_D911:
     if (ST(ST_SPECIAL_MODE) != 0) goto L_D95F;
-    l01_action_register("L01D47", 0, "SG00DIA03", NULL);
-    l01_action_register("L01D26A", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D47", 0, "SG00DIA03", NULL);
+    lieu_action_register("L01D26A", 0xC, "SP12DIA50", "SP12ARR03_10");
     CB->dialogue("L01D26B", P_KALHI12);
 
 L_D95F:
@@ -1105,13 +1105,13 @@ L_D95F:
 L_D97D:
     if (ST(V_KALHI12_TALK_BRIEF) != 1) goto L_DA20;
     if (ST(ST_SPECIAL_MODE) != 1) goto L_D9C4;
-    l01_action_register("L01D88A", 0, "SG00DIA02", NULL);
+    lieu_action_register("L01D88A", 0, "SG00DIA02", NULL);
     CB->dialogue("L01D89A", P_KALHI12);
 
 L_D9C4:
     if (ST(ST_SPECIAL_MODE) != 0) goto L_DA02;
-    l01_action_register("L01D88B", 0, "SG00DIA09", NULL);
-    l01_action_register("L01D89B", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D88B", 0, "SG00DIA09", NULL);
+    lieu_action_register("L01D89B", 0xC, "SP12DIA50", "SP12ARR03_10");
 
 L_DA02:
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1123,18 +1123,18 @@ L_DA20:
     if (ST(V_KALHI12_TALK_POST) != 0) goto L_DB32;
     ST(V_KALHI12_TALK_POST) = 1;
     if (ST(ST_SPECIAL_MODE) != 1) goto L_DA94;
-    l01_action_register("L01D24A", 1, "SG00DIA07", NULL);
-    l01_action_register("L01D25A", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D24A", 1, "SG00DIA07", NULL);
+    lieu_action_register("L01D25A", 0xC, "SP12DIA50", "SP12ARR03_10");
 
 L_DA94:
     if (ST(ST_SPECIAL_MODE) != 0) goto L_DAD5;
-    l01_action_register("L01D83", 1, "SG00DIA07", NULL);
-    l01_action_register("L01D84A", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D83", 1, "SG00DIA07", NULL);
+    lieu_action_register("L01D84A", 0xC, "SP12DIA50", "SP12ARR03_10");
 
 L_DAD5:
     CB->dialogue("L01D25B", P_KALHI12);
-    l01_action_register("L01D24B", 1, "SG00DIA06", NULL);
-    l01_action_register("L01D25C", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D24B", 1, "SG00DIA06", NULL);
+    lieu_action_register("L01D25C", 0xC, "SP12DIA50", "SP12ARR03_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     goto L_E631;
@@ -1142,14 +1142,14 @@ L_DAD5:
 L_DB32:
     if (ST(V_KALHI12_TALK_POST) != 1) goto L_DBFA;
     if (ST(ST_SPECIAL_MODE) != 1) goto L_DB85;
-    l01_action_register("L01D27A", 1, "SG00DIA04", NULL);
-    l01_action_register("L01D28", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D27A", 1, "SG00DIA04", NULL);
+    lieu_action_register("L01D28", 0xC, "SP12DIA50", "SP12ARR03_10");
 
 L_DB85:
     if (ST(ST_SPECIAL_MODE) != 0) goto L_DBDC;
-    l01_action_register("L01D85A", 1, "SG00DIA02", NULL);
-    l01_action_register("L01D28", 0xC, "SP12DIA50", "SP12ARR03_10");
-    l01_action_register("L01D85B", 1, "SG00DIA06", NULL);
+    lieu_action_register("L01D85A", 1, "SG00DIA02", NULL);
+    lieu_action_register("L01D28", 0xC, "SP12DIA50", "SP12ARR03_10");
+    lieu_action_register("L01D85B", 1, "SG00DIA06", NULL);
 
 L_DBDC:
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1173,12 +1173,12 @@ L_DC83:
     if (ST(0x714) == 1) goto L_DD5F;
     if (ST(0x68) != 0) goto L_DD08;
     ST(0x68) = 1;
-    l01_action_register("L01D41", 0xC, "SP12ATT01", "SP12LEV01");
+    lieu_action_register("L01D41", 0xC, "SP12ATT01", "SP12LEV01");
     CB->animation("P12ARR03_10");
     CB->divers_empile(DV_LOOK_AT_PLAYER, P_KALHI12, 1);
     goto L_DD21;
 L_DD08:
-    l01_action_register("L01D41", 0xC, "SP12ATT05", "SP12ARR03_10");
+    lieu_action_register("L01D41", 0xC, "SP12ATT05", "SP12ARR03_10");
 L_DD21:
     CB->modify_var(&ST(0x88), 0x29A);
     CB->animation("Sar_10");
@@ -1190,7 +1190,7 @@ L_DD5F:
     if (ST(0x714) != 1) goto L_DEB6;
     if (CB->divers(DV_CAN_FIGHT, 0, 0) != 0) goto L_DDC8;
     if (ST(0x68) != 1) goto L_DDB0;
-    l01_action_register("L01D42", 0xC, "SP12ATT05", "SP12ARR03_10");
+    lieu_action_register("L01D42", 0xC, "SP12ATT05", "SP12ARR03_10");
 L_DDB0:
     CB->animation("Sar_10");
     CB->bloque(BLOQUE_NONE);
@@ -1204,9 +1204,9 @@ L_DDC8:
     ST(0x88) = 0x3E8;
     ST(V_EVENT_1) = 0;
     if (ST(0x68) != 0) goto L_DE52;
-    l01_action_register("L01D43A", 0xC, "SP12ATT02", "SP12ATT03_100");
+    lieu_action_register("L01D43A", 0xC, "SP12ATT02", "SP12ATT03_100");
 L_DE52:
-    l01_action_register("L01D98", 0, "SP00ATA08", NULL);
+    lieu_action_register("L01D98", 0, "SP00ATA08", NULL);
     CB->dialogue("L01D43B", P_KALHI12);
     CB->modify_var(&ST(0x78), 1);
     CB->select_pile(1, 1);
@@ -1385,8 +1385,8 @@ static void trig08(void) {   /* sub_1000E636 */
         if (ST(ST_HERO) == P_ARKHAN1) CB->animation("SP01ACT24");
         if (ST(ST_HERO) == P_ARKHAN2) CB->animation("SP02ACT24");
         if (ST(ST_HERO) == P_ARKHAN3) CB->animation("SP03ACT24");
-        if (ST(ST_HERO) == P_ARKHAN0) l01_action_register("L01D23A", 0, "G00DIA04", NULL);
-        if (ST(ST_HERO) == P_ARKHAN1) l01_action_register("L01D23A", 1, "G00DIA04", NULL);
+        if (ST(ST_HERO) == P_ARKHAN0) lieu_action_register("L01D23A", 0, "G00DIA04", NULL);
+        if (ST(ST_HERO) == P_ARKHAN1) lieu_action_register("L01D23A", 1, "G00DIA04", NULL);
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->animation("P00_65535");
             CB->animation("ar_10");
@@ -1425,11 +1425,11 @@ static void trig09(void) {   /* sub_1000E991 */
     if (CB->direction_perso(P_KABAK) != 0) goto L_EABD;
     CB->bloque(BLOQUE_ALL);
     if ((i32)ST(ST_HERO) <= 1)
-        l01_action_register("LCOD52", 1, "SG00SAV01", "Sar_10");
+        lieu_action_register("LCOD52", 1, "SG00SAV01", "Sar_10");
     if (ST(ST_HERO) == P_ARKHAN2)
-        l01_action_register("LCOD53", 2, "SG00SAV01", "Sar_10");
+        lieu_action_register("LCOD53", 2, "SG00SAV01", "Sar_10");
     if (ST(ST_HERO) == P_ARKHAN3)
-        l01_action_register("LCOD54", 3, "SG00SAV01", "Sar_10");
+        lieu_action_register("LCOD54", 3, "SG00SAV01", "Sar_10");
     CB->animation("P00_65535");
     CB->divers_empile(DV_SAVE_SCREEN, 0, 0);
     CB->bloque(BLOQUE_NONE);
@@ -1484,21 +1484,21 @@ L_ECA1:
     if (ST(V_KABAK_TALK_H1) != 0) goto L_EF2E;
     ST(V_KABAK_TALK_H1) = 1;
     if (ST(ST_SPECIAL_MODE) == 1) {
-        l01_action_register("L01D48",  1,    "SP01ATT70", NULL);
-        l01_action_register("L01D49A", 0x57, "SP87DIA56", "SP87ARR01");
-        l01_action_register("L01D49B", 0x57, "SP87DIA53", "SP87ARR01");
-        l01_action_register("L01D50",  1,    "SG01DIA02", NULL);
-        l01_action_register("L01D51A", 0x57, "SP87DIA55", "SP87ARR01_10");
-        l01_action_register("L01D51B", 0x57, "SP87DIA50", "SP87ARR01_10");
-        l01_action_register("L01D51C", 0x57, "SP87DIA60", "SP87ARR01_10");
+        lieu_action_register("L01D48",  1,    "SP01ATT70", NULL);
+        lieu_action_register("L01D49A", 0x57, "SP87DIA56", "SP87ARR01");
+        lieu_action_register("L01D49B", 0x57, "SP87DIA53", "SP87ARR01");
+        lieu_action_register("L01D50",  1,    "SG01DIA02", NULL);
+        lieu_action_register("L01D51A", 0x57, "SP87DIA55", "SP87ARR01_10");
+        lieu_action_register("L01D51B", 0x57, "SP87DIA50", "SP87ARR01_10");
+        lieu_action_register("L01D51C", 0x57, "SP87DIA60", "SP87ARR01_10");
     }
     if (ST(ST_SPECIAL_MODE) == 0) {
-        l01_action_register("L01D52",  1,    "SG01DIA03", NULL);
-        l01_action_register("L01D49A", 0x57, "SP87DIA56", "SP87ARR01");
-        l01_action_register("L01D49B", 0x57, "SP87DIA53", "SP87ARR01");
-        l01_action_register("L01D53",  1,    "SG01DIA08", NULL);
-        l01_action_register("L01D54A", 0x57, "SP87DIA62", "SP87ARR01_10");
-        l01_action_register("L01D54B", 0x57, "SP87DIA59", "SP87ARR01_10");
+        lieu_action_register("L01D52",  1,    "SG01DIA03", NULL);
+        lieu_action_register("L01D49A", 0x57, "SP87DIA56", "SP87ARR01");
+        lieu_action_register("L01D49B", 0x57, "SP87DIA53", "SP87ARR01");
+        lieu_action_register("L01D53",  1,    "SG01DIA08", NULL);
+        lieu_action_register("L01D54A", 0x57, "SP87DIA62", "SP87ARR01_10");
+        lieu_action_register("L01D54B", 0x57, "SP87DIA59", "SP87ARR01_10");
     }
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1508,9 +1508,9 @@ L_ECA1:
 L_EF2E:
     if (ST(V_KABAK_TALK_H1) != 1) goto L_EFCB;
     ST(V_KABAK_TALK_H1) = 2;
-    l01_action_register("L01D128",  1,    "SG01DIA06", NULL);
-    l01_action_register("L01D129A", 0x57, "SP87DIA63", "SP87ARR01_10");
-    l01_action_register("L01D129B", 0x57, "SP87DIA64", "SP87ARR01_10");
+    lieu_action_register("L01D128",  1,    "SG01DIA06", NULL);
+    lieu_action_register("L01D129A", 0x57, "SP87DIA63", "SP87ARR01_10");
+    lieu_action_register("L01D129B", 0x57, "SP87DIA64", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1519,9 +1519,9 @@ L_EF2E:
 L_EFCB:
     if (ST(V_KABAK_TALK_H1) != 2) goto L_F068;
     ST(V_KABAK_TALK_H1) = 3;
-    l01_action_register("L01D130",  1,    "SG01DIA03", NULL);
-    l01_action_register("L01D131A", 0x57, "SP87DIA63", "SP87ARR01_10");
-    l01_action_register("L01D131B", 0x57, "SP87DIA65", "SP87ARR01_10");
+    lieu_action_register("L01D130",  1,    "SG01DIA03", NULL);
+    lieu_action_register("L01D131A", 0x57, "SP87DIA63", "SP87ARR01_10");
+    lieu_action_register("L01D131B", 0x57, "SP87DIA65", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1530,12 +1530,12 @@ L_EFCB:
 L_F068:
     if (ST(V_KABAK_TALK_H1) != 3) goto L_F130;
     if (ST(ST_SPECIAL_MODE) == 1) {
-        l01_action_register("L01D132", 1,    "SG01DIA01", NULL);
-        l01_action_register("L01D133", 0x57, "SP87DIA54", "SP87ARR01_10");
+        lieu_action_register("L01D132", 1,    "SG01DIA01", NULL);
+        lieu_action_register("L01D133", 0x57, "SP87DIA54", "SP87ARR01_10");
     }
     if (ST(ST_SPECIAL_MODE) == 0) {
-        l01_action_register("L01D134", 1,    "SG01DIA01", NULL);
-        l01_action_register("L01D135", 0x57, "SP87DIA54", "SP87ARR01_10");
+        lieu_action_register("L01D134", 1,    "SG01DIA01", NULL);
+        lieu_action_register("L01D135", 0x57, "SP87DIA54", "SP87ARR01_10");
     }
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1552,23 +1552,23 @@ L_F130:
     ST(V_KABAK_TALK_H23) = 2;
     if (ST(ST_HERO) == P_ARKHAN2) {
         if (ST(ST_SPECIAL_MODE) == 1) {
-            l01_action_register("L01D55A", 2, "SG02DIA07", NULL);
-            l01_action_register("L01D55B", 2, "SG02DIA07", NULL);
-            l01_action_register("L01D55C", 2, "SG02DIA07", NULL);
+            lieu_action_register("L01D55A", 2, "SG02DIA07", NULL);
+            lieu_action_register("L01D55B", 2, "SG02DIA07", NULL);
+            lieu_action_register("L01D55C", 2, "SG02DIA07", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
-            l01_action_register("L01D56A", 2, "SG02DIA07", NULL);
-            l01_action_register("L01D56B", 2, "SG02DIA07", NULL);
-            l01_action_register("L01D56C", 2, "SG02DIA07", NULL);
+            lieu_action_register("L01D56A", 2, "SG02DIA07", NULL);
+            lieu_action_register("L01D56B", 2, "SG02DIA07", NULL);
+            lieu_action_register("L01D56C", 2, "SG02DIA07", NULL);
         }
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
-        l01_action_register("L01D57A", 3, "SG03DIA07", NULL);
-        l01_action_register("L01D57B", 3, "SG03DIA07", NULL);
+        lieu_action_register("L01D57A", 3, "SG03DIA07", NULL);
+        lieu_action_register("L01D57B", 3, "SG03DIA07", NULL);
     }
-    l01_action_register("L01D59A", 0x57, "SP87DIA50", "SP87ARR01_10");
-    l01_action_register("L01D59B", 0x57, "SP87DIA64", "SP87ARR01_10");
-    l01_action_register("L01D59C", 0x57, "SP87DIA62", "SP87ARR01_10");
+    lieu_action_register("L01D59A", 0x57, "SP87DIA50", "SP87ARR01_10");
+    lieu_action_register("L01D59B", 0x57, "SP87DIA64", "SP87ARR01_10");
+    lieu_action_register("L01D59C", 0x57, "SP87DIA62", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1577,13 +1577,13 @@ L_F130:
 L_F2FE:
     if (ST(V_KABAK_TALK_H23) != 2) goto L_F420;
     ST(V_KABAK_TALK_H23) = 3;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D62A", 2, "SG02DIA01", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D62B", 3, "SG03DIA01", NULL);
-    l01_action_register("L01D63A", 0x57, "SP87DIA50", "SP87ARR01_10");
-    l01_action_register("L01D63B", 0x57, "SP87DIA51", "SP87ARR01_10");
-    l01_action_register("L01D63C", 0x57, "SP87DIA56", "SP87ARR01_10");
-    l01_action_register("L01D63D", 0x57, "SP87DIA53", "SP87ARR01_10");
-    l01_action_register("L01D63E", 0x57, "SP87DIA54", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D62A", 2, "SG02DIA01", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D62B", 3, "SG03DIA01", NULL);
+    lieu_action_register("L01D63A", 0x57, "SP87DIA50", "SP87ARR01_10");
+    lieu_action_register("L01D63B", 0x57, "SP87DIA51", "SP87ARR01_10");
+    lieu_action_register("L01D63C", 0x57, "SP87DIA56", "SP87ARR01_10");
+    lieu_action_register("L01D63D", 0x57, "SP87DIA53", "SP87ARR01_10");
+    lieu_action_register("L01D63E", 0x57, "SP87DIA54", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1591,12 +1591,12 @@ L_F2FE:
 
 L_F420:
     if ((i32)ST(V_KABAK_TALK_H23) < 3) goto L_F522;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D64A", 2, "SG02DIA04", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D64B", 3, "SG03DIA04", NULL);
-    l01_action_register("L01D65A", 0x57, "SP87DIA55", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D64A", 2, "SG02DIA04", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D64B", 3, "SG03DIA04", NULL);
+    lieu_action_register("L01D65A", 0x57, "SP87DIA55", "SP87ARR01_10");
     if (ST(V_KABAK_TALK_H23) == 3) {
-        l01_action_register("L01D65B", 0x57, "SP87DIA56", "SP87ARR01_10");
-        l01_action_register("L01D65C", 0x57, "SP87DIA57", "SP87ARR01_10");
+        lieu_action_register("L01D65B", 0x57, "SP87DIA56", "SP87ARR01_10");
+        lieu_action_register("L01D65C", 0x57, "SP87DIA57", "SP87ARR01_10");
         ST(V_KABAK_TALK_H23) = 4;
     }
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1610,19 +1610,19 @@ L_F522:
     if (ST(V_KABAK_TALK_B88) != 0) goto L_F6B2;
     ST(V_KABAK_TALK_B88) = 1;
     if (ST(ST_HERO) == P_ARKHAN2) {
-        l01_action_register("L01D55A",  2, "SG02DIA07", NULL);
-        l01_action_register("L01D173A", 2, "SG02DIA07", NULL);
-        l01_action_register("L01D173B", 2, "SG02DIA07", NULL);
+        lieu_action_register("L01D55A",  2, "SG02DIA07", NULL);
+        lieu_action_register("L01D173A", 2, "SG02DIA07", NULL);
+        lieu_action_register("L01D173B", 2, "SG02DIA07", NULL);
     }
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D174", 3, "SG03DIA01", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D174", 3, "SG03DIA01", NULL);
     if ((i32)ST(V_KABAK_TALK_H23) < 3) {
-        l01_action_register("L01D63C", 0x57, "SP87DIA60", "SP87ARR01_10");
-        l01_action_register("L01D63D", 0x57, "SP87DIA61", "SP87ARR01_10");
-        l01_action_register("L01D63E", 0x57, "SP87DIA62", "SP87ARR01_10");
+        lieu_action_register("L01D63C", 0x57, "SP87DIA60", "SP87ARR01_10");
+        lieu_action_register("L01D63D", 0x57, "SP87DIA61", "SP87ARR01_10");
+        lieu_action_register("L01D63E", 0x57, "SP87DIA62", "SP87ARR01_10");
     } else {
-        l01_action_register("L01D175A", 0x57, "SP87DIA56", "SP87ARR01_10");
-        l01_action_register("L01D175B", 0x57, "SP87DIA57", "SP87ARR01_10");
-        l01_action_register("L01D175C", 0x57, "SP87DIA59", "SP87ARR01_10");
+        lieu_action_register("L01D175A", 0x57, "SP87DIA56", "SP87ARR01_10");
+        lieu_action_register("L01D175B", 0x57, "SP87DIA57", "SP87ARR01_10");
+        lieu_action_register("L01D175C", 0x57, "SP87DIA59", "SP87ARR01_10");
     }
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1631,12 +1631,12 @@ L_F522:
 
 L_F6B2:
     if ((i32)ST(V_KABAK_TALK_B88) < 1) goto L_F7B4;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D64A", 2, "SG02DIA04", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D64B", 3, "SG03DIA04", NULL);
-    l01_action_register("L01D65A", 0x57, "SP87DIA53", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D64A", 2, "SG02DIA04", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D64B", 3, "SG03DIA04", NULL);
+    lieu_action_register("L01D65A", 0x57, "SP87DIA53", "SP87ARR01_10");
     if (ST(V_KABAK_TALK_B88) == 1) {
-        l01_action_register("L01D65B", 0x57, "SP87DIA63", "SP87ARR01_10");
-        l01_action_register("L01D65C", 0x57, "SP87DIA64", "SP87ARR01_10");
+        lieu_action_register("L01D65B", 0x57, "SP87DIA63", "SP87ARR01_10");
+        lieu_action_register("L01D65C", 0x57, "SP87DIA64", "SP87ARR01_10");
         ST(V_KABAK_TALK_B88) = 2;
     }
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1650,15 +1650,15 @@ L_F7B4:
     if (ST(V_KABAK_TALK_G23) != 0) goto L_F911;
     ST(V_KABAK_TALK_G23) = 1;
     if (ST(ST_HERO) == P_ARKHAN2) {
-        if (ST(ST_SPECIAL_MODE) == 1) l01_action_register("L01D68", 2, "SG02DIA04", NULL);
-        if (ST(ST_SPECIAL_MODE) == 0) l01_action_register("L01D69", 2, "SG03DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 1) lieu_action_register("L01D68", 2, "SG02DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 0) lieu_action_register("L01D69", 2, "SG03DIA04", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
-        if (ST(ST_SPECIAL_MODE) == 1) l01_action_register("L01D70", 3, "SG03DIA04", NULL);
-        if (ST(ST_SPECIAL_MODE) == 0) l01_action_register("L01D71", 3, "SG03DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 1) lieu_action_register("L01D70", 3, "SG03DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 0) lieu_action_register("L01D71", 3, "SG03DIA04", NULL);
     }
-    l01_action_register("L01D72A", 0x57, "SP87DIA53", "SP87ARR01_10");
-    l01_action_register("L01D72B", 0x57, "SP87ATT50", "SP87ARR01_10");
+    lieu_action_register("L01D72A", 0x57, "SP87DIA53", "SP87ARR01_10");
+    lieu_action_register("L01D72B", 0x57, "SP87ATT50", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1667,10 +1667,10 @@ L_F7B4:
 L_F911:
     if (ST(V_KABAK_TALK_G23) != 1) goto L_F9E8;
     ST(V_KABAK_TALK_G23) = 2;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D73", 2, "SG02DIA04", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D74", 3, "SG03DIA04", NULL);
-    l01_action_register("L01D75A", 0x57, "SP87DIA50", "SP87ARR01_10");
-    l01_action_register("L01D75B", 0x57, "SP87DIA53", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D73", 2, "SG02DIA04", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D74", 3, "SG03DIA04", NULL);
+    lieu_action_register("L01D75A", 0x57, "SP87DIA50", "SP87ARR01_10");
+    lieu_action_register("L01D75B", 0x57, "SP87DIA53", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1680,14 +1680,14 @@ L_F9E8:
     if (ST(V_KABAK_TALK_G23) != 2) goto L_FB1A;
     ST(V_KABAK_TALK_G23) = 3;
     if (ST(ST_HERO) == P_ARKHAN2) {
-        if (ST(ST_SPECIAL_MODE) == 1) l01_action_register("L01D76", 2, "SG00DIA04", NULL);
-        if (ST(ST_SPECIAL_MODE) == 0) l01_action_register("L01D77", 2, "SG00DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 1) lieu_action_register("L01D76", 2, "SG00DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 0) lieu_action_register("L01D77", 2, "SG00DIA04", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
-        if (ST(ST_SPECIAL_MODE) == 1) l01_action_register("L01D78", 2, "SG00DIA04", NULL);
-        if (ST(ST_SPECIAL_MODE) == 0) l01_action_register("L01D79", 2, "SG00DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 1) lieu_action_register("L01D78", 2, "SG00DIA04", NULL);
+        if (ST(ST_SPECIAL_MODE) == 0) lieu_action_register("L01D79", 2, "SG00DIA04", NULL);
     }
-    l01_action_register("L01D146", 0x57, "SP87ATT70", "SP87ARR01_10");
+    lieu_action_register("L01D146", 0x57, "SP87ATT70", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1698,11 +1698,11 @@ L_FB1A:
     if (ST(V_GUARD_WAVE) != 2) goto L_FCC1;
     if (ST(V_KABAK_TALK_G24) != 0) goto L_FC1C;
     ST(V_KABAK_TALK_G24) = 1;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D108", 2, "SG02DIA04", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D109", 3, "SG03DIA04", NULL);
-    l01_action_register("L01D110A", 0x57, "SP87ATT70", "SP87ARR01_10");
-    l01_action_register("L01D110B", 0x57, "SP87DIA60", "SP87ARR01_10");
-    l01_action_register("L01D110C", 0x57, "SP87DIA62", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D108", 2, "SG02DIA04", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D109", 3, "SG03DIA04", NULL);
+    lieu_action_register("L01D110A", 0x57, "SP87ATT70", "SP87ARR01_10");
+    lieu_action_register("L01D110B", 0x57, "SP87DIA60", "SP87ARR01_10");
+    lieu_action_register("L01D110C", 0x57, "SP87DIA62", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1711,8 +1711,8 @@ L_FB1A:
 L_FC1C:
     if (ST(V_KABAK_TALK_G24) != 1) goto L_FCC1;
     ST(V_KABAK_TALK_G24) = 2;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D111", 2, "SG02DIA04", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D112", 3, "SG03DIA04", NULL);
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D111", 2, "SG02DIA04", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D112", 3, "SG03DIA04", NULL);
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1725,10 +1725,10 @@ L_FCC1:
 L_FCE5:
     if (ST(V_KABAK_TALK_END) != 0) goto L_FDBC;
     ST(V_KABAK_TALK_END) = 1;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D200", 2, "SG02DIA01", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D201", 3, "SG03DIA01", NULL);
-    l01_action_register("L01D202A", 0x57, "SP87DIA53", "SP87ARR01_10");
-    l01_action_register("L01D202B", 0x57, "SP87DIA56", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D200", 2, "SG02DIA01", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D201", 3, "SG03DIA01", NULL);
+    lieu_action_register("L01D202A", 0x57, "SP87DIA53", "SP87ARR01_10");
+    lieu_action_register("L01D202B", 0x57, "SP87DIA56", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1737,9 +1737,9 @@ L_FCE5:
 L_FDBC:
     if (ST(V_KABAK_TALK_END) != 1) goto L_FE7A;
     ST(V_KABAK_TALK_END) = 2;
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D203", 2, "SG02DIA05", NULL);
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D204", 3, "SG03DIA05", NULL);
-    l01_action_register("L01D205", 0x57, "SP87DIA55", "SP87ARR01_10");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D203", 2, "SG02DIA05", NULL);
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D204", 3, "SG03DIA05", NULL);
+    lieu_action_register("L01D205", 0x57, "SP87DIA55", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1748,14 +1748,14 @@ L_FDBC:
 L_FE7A:
     if (ST(V_KABAK_TALK_END) != 2) goto L_FF9D;
     if (ST(ST_HERO) == P_ARKHAN2) {
-        if (ST(ST_SPECIAL_MODE) == 1) l01_action_register("L01D206", 2, "SG02DIA05", NULL);
-        if (ST(ST_SPECIAL_MODE) == 0) l01_action_register("L01D207", 2, "SG02DIA05", NULL);
+        if (ST(ST_SPECIAL_MODE) == 1) lieu_action_register("L01D206", 2, "SG02DIA05", NULL);
+        if (ST(ST_SPECIAL_MODE) == 0) lieu_action_register("L01D207", 2, "SG02DIA05", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
-        if (ST(ST_SPECIAL_MODE) == 1) l01_action_register("L01D208", 3, "SG03DIA05", NULL);
-        if (ST(ST_SPECIAL_MODE) == 0) l01_action_register("L01D209", 3, "SG03DIA05", NULL);
+        if (ST(ST_SPECIAL_MODE) == 1) lieu_action_register("L01D208", 3, "SG03DIA05", NULL);
+        if (ST(ST_SPECIAL_MODE) == 0) lieu_action_register("L01D209", 3, "SG03DIA05", NULL);
     }
-    l01_action_register("L01D210", 0x57, "SP87DIA54", "SP87ARR01_10");
+    lieu_action_register("L01D210", 0x57, "SP87DIA54", "SP87ARR01_10");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
     CB->joindre_perm(0x57, ST(ST_HERO));
@@ -1767,13 +1767,13 @@ L_FF9D:
     if (CB->divers(DV_CAN_FIGHT, 0, 2) != 0) goto L_1014C;
     if (ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON)) goto L_1014C;
     ST(V_LAST_WEAPON) = ST(ST_PLAYER_WEAPON);
-    if (ST(ST_HERO) == P_ARKHAN1) l01_action_register("L01D105", 1, "SG00PRE80", "SG00PRE81");
-    if (ST(ST_HERO) == P_ARKHAN2) l01_action_register("L01D106", 2, "SG00PRE80", "SG00PRE81");
-    if (ST(ST_HERO) == P_ARKHAN3) l01_action_register("L01D107", 3, "SG00PRE80", "SG00PRE81");
+    if (ST(ST_HERO) == P_ARKHAN1) lieu_action_register("L01D105", 1, "SG00PRE80", "SG00PRE81");
+    if (ST(ST_HERO) == P_ARKHAN2) lieu_action_register("L01D106", 2, "SG00PRE80", "SG00PRE81");
+    if (ST(ST_HERO) == P_ARKHAN3) lieu_action_register("L01D107", 3, "SG00PRE80", "SG00PRE81");
     ST(V_DLG_RANDOM) = CB->random(3);
-    if (ST(V_DLG_RANDOM) == 0) l01_action_register("L01D92A", 0x57, "SP87ATT60", "SP87ARR01_10");
-    if (ST(V_DLG_RANDOM) == 1) l01_action_register("L01D92B", 0x57, "SP87ATT61", "SP87ARR01_10");
-    if (ST(V_DLG_RANDOM) == 2) l01_action_register("L01D92C", 0x57, "SP87ATT62", "SP87ARR01_10");
+    if (ST(V_DLG_RANDOM) == 0) lieu_action_register("L01D92A", 0x57, "SP87ATT60", "SP87ARR01_10");
+    if (ST(V_DLG_RANDOM) == 1) lieu_action_register("L01D92B", 0x57, "SP87ATT61", "SP87ARR01_10");
+    if (ST(V_DLG_RANDOM) == 2) lieu_action_register("L01D92C", 0x57, "SP87ATT62", "SP87ARR01_10");
     CB->animation("G00PRE82");
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
     CB->bloque(BLOQUE_NONE);
@@ -1943,50 +1943,50 @@ static void trig15(void) {   /* sub_10010A95 */
     if (ST(ST_HERO) == P_ARKHAN0) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD06", 0, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 0, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD09", 0, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD06", 0, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 0, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD09", 0, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
-            l01_action_register("L01D176", 0, "SP00ACT86", NULL);
+            lieu_action_register("L01D176", 0, "SP00ACT86", NULL);
         }
     }
 
     if (ST(ST_HERO) == P_ARKHAN1) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD06", 1, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 1, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD09", 1, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD06", 1, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 1, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD09", 1, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
-            l01_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
+            lieu_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
         }
     }
 
     if (ST(ST_HERO) == P_ARKHAN2) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD07", 2, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD76", 2, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD10", 2, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD07", 2, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD76", 2, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD10", 2, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
-            if (CB->divers(DV_CAN_FIGHT, 7, 2) != 0) l01_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
-            if (CB->divers(DV_CAN_FIGHT, 7, 2) == 0) l01_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
+            if (CB->divers(DV_CAN_FIGHT, 7, 2) != 0) lieu_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
+            if (CB->divers(DV_CAN_FIGHT, 7, 2) == 0) lieu_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
         }
     }
 
     if (ST(ST_HERO) == P_ARKHAN3) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD08", 3, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD77", 3, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD11", 3, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD08", 3, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD77", 3, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD11", 3, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
-            if (CB->divers(DV_CAN_FIGHT, 7, 2) != 0) l01_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
-            if (CB->divers(DV_CAN_FIGHT, 7, 2) == 0) l01_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
+            if (CB->divers(DV_CAN_FIGHT, 7, 2) != 0) lieu_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
+            if (CB->divers(DV_CAN_FIGHT, 7, 2) == 0) lieu_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
         }
     }
 
@@ -2002,11 +2002,11 @@ static void trig17(void) {   /* sub_10011041 */
         && !CB->direction_perso(P_GUARDIAN23)) {
         CB->bloque(BLOQUE_ALL);
         if ((i32)ST(ST_HERO) <= 1)
-            l01_action_register("LCOD52", 1, "SG00SAV01", "Sar_10");
+            lieu_action_register("LCOD52", 1, "SG00SAV01", "Sar_10");
         if (ST(ST_HERO) == P_ARKHAN2)
-            l01_action_register("LCOD53", 2, "SG00SAV01", "Sar_10");
+            lieu_action_register("LCOD53", 2, "SG00SAV01", "Sar_10");
         if (ST(ST_HERO) == P_ARKHAN3)
-            l01_action_register("LCOD54", 3, "SG00SAV01", "Sar_10");
+            lieu_action_register("LCOD54", 3, "SG00SAV01", "Sar_10");
         CB->animation("P00_65535");
         CB->divers_empile(DV_SAVE_SCREEN, 0, 0);
         CB->bloque(BLOQUE_NONE);
@@ -2028,16 +2028,16 @@ static void trig17(void) {   /* sub_10011041 */
                 if (ST(V_G23_TALK) == 0) {
                     ST(V_G23_TALK) = 1;
                     if (ST(ST_HERO) == P_ARKHAN2)
-                        l01_action_register("L01D159", 2, "SG00DIA01", NULL);
+                        lieu_action_register("L01D159", 2, "SG00DIA01", NULL);
                     if (ST(ST_HERO) == P_ARKHAN3)
-                        l01_action_register("L01D160", 2, "SG00DIA01", NULL);
+                        lieu_action_register("L01D160", 2, "SG00DIA01", NULL);
                     if (ST(0x94) == 0) {
                         ST(0x94) = 1;
-                        l01_action_register("L01D97A", 0x58, "SP88LEV01", "SP88ARR01_10");
+                        lieu_action_register("L01D97A", 0x58, "SP88LEV01", "SP88ARR01_10");
                     } else {
-                        l01_action_register("L01D97A", 0x58, "SP88DIA59", "SP88ARR01_10");
+                        lieu_action_register("L01D97A", 0x58, "SP88DIA59", "SP88ARR01_10");
                     }
-                    l01_action_register("L01D97B", 0x58, "SP88DIA59", "SP88ARR01_10");
+                    lieu_action_register("L01D97B", 0x58, "SP88DIA59", "SP88ARR01_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->joindre_perm(0x58, ST(ST_HERO));
                     CB->bloque(BLOQUE_NONE);
@@ -2049,39 +2049,39 @@ static void trig17(void) {   /* sub_10011041 */
                     CB->joindre(P_GUARDIAN23, 0, 0, 0, ST(ST_HERO));
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         if (ST(ST_SPECIAL_MODE) == 1)
-                            l01_action_register("L01D161", 2, "SG00DIA04", NULL);
+                            lieu_action_register("L01D161", 2, "SG00DIA04", NULL);
                         if (ST(ST_SPECIAL_MODE) == 0)
-                            l01_action_register("L01D162", 2, "SG00DIA03", NULL);
+                            lieu_action_register("L01D162", 2, "SG00DIA03", NULL);
                     }
                     if (ST(ST_HERO) == P_ARKHAN3) {
                         if (ST(ST_SPECIAL_MODE) == 1)
-                            l01_action_register("L01D163", 3, "SG00DIA04", NULL);
+                            lieu_action_register("L01D163", 3, "SG00DIA04", NULL);
                         if (ST(ST_SPECIAL_MODE) == 0)
-                            l01_action_register("L01D164", 3, "SG00DIA03", NULL);
+                            lieu_action_register("L01D164", 3, "SG00DIA03", NULL);
                     }
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         ST(V_G23_TALK) = 2;
-                        l01_action_register("L01D165A", 0x58, "SP88DIA55", "SP88ARR01");
-                        l01_action_register("L01D165B", 0x58, "SP88DIA62", "SP88ARR01");
-                        l01_action_register("L01D165C", 0x58, "SP88DIA62", "SP88ARR01");
-                        l01_action_register("L01D165D", 0x58, "SP88DIA62", "SP88ARR01");
-                        l01_action_register("L01D165E", 0x58, "SP88DIA60", "SP88ARR01_10");
+                        lieu_action_register("L01D165A", 0x58, "SP88DIA55", "SP88ARR01");
+                        lieu_action_register("L01D165B", 0x58, "SP88DIA62", "SP88ARR01");
+                        lieu_action_register("L01D165C", 0x58, "SP88DIA62", "SP88ARR01");
+                        lieu_action_register("L01D165D", 0x58, "SP88DIA62", "SP88ARR01");
+                        lieu_action_register("L01D165E", 0x58, "SP88DIA60", "SP88ARR01_10");
                     }
                     if (ST(ST_SPECIAL_MODE) == 0) {
                         CB->joindre(-P_KABAK, 0, 0, 0, 0x58);
-                        l01_action_register("L01D166", 0x58, "SP88DIA60", "SP88ARR01_500");
+                        lieu_action_register("L01D166", 0x58, "SP88DIA60", "SP88ARR01_500");
                         ST(V_G23_TALK) = 2;
                         if (ST(0xD4) == 0) {
                             CB->pos_perso(P_KABAK, 320, -2530, 0x8CA0, 1, "P87ARR01", 9, 1);
                             CB->change_camera(2, CAM_LOCKED);
                             if (ST(0x80) == 0)
-                                l01_action_register("L01D167", 0x57, "SP87DIA54", "SP87ARR01_10");
+                                lieu_action_register("L01D167", 0x57, "SP87DIA54", "SP87ARR01_10");
                             if (ST(0x80) != 0) {
                                 ST(0x80) = 0;
                                 CB->stop_joindre(-P_KABAK);
                                 CB->animation("SP87GAR27");
                                 CB->animation("P87ARR01_200");
-                                l01_action_register("L01D167", 0x57, "P87DIA57", "SP87ARR01_10");
+                                lieu_action_register("L01D167", 0x57, "P87DIA57", "SP87ARR01_10");
                             }
                             CB->modify_var(&ST(0xD4), 1);
                             CB->change_camera(6, CAM_LOCKED);
@@ -2100,9 +2100,9 @@ static void trig17(void) {   /* sub_10011041 */
                     CB->stop_joindre(-P_GUARDIAN23);
                     CB->joindre(P_GUARDIAN23, 0, 0, 0, ST(ST_HERO));
                     if (ST(ST_HERO) == P_ARKHAN2)
-                        l01_action_register("L01D168", 2, "SG00DIA07", NULL);
+                        lieu_action_register("L01D168", 2, "SG00DIA07", NULL);
                     if (ST(ST_HERO) == P_ARKHAN3)
-                        l01_action_register("L01D169", 3, "SG00DIA07", NULL);
+                        lieu_action_register("L01D169", 3, "SG00DIA07", NULL);
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->joindre_perm(0x58, ST(ST_HERO));
                     CB->bloque(BLOQUE_NONE);
@@ -2114,10 +2114,10 @@ static void trig17(void) {   /* sub_10011041 */
             if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) != ST(V_LAST_WEAPON)) {
                 ST(V_LAST_WEAPON) = ST(ST_PLAYER_WEAPON);
                 if (ST(ST_HERO) == P_ARKHAN2)
-                    l01_action_register("L01D106", 2, "SG00PRE80", "SG00PRE81");
+                    lieu_action_register("L01D106", 2, "SG00PRE80", "SG00PRE81");
                 if (ST(ST_HERO) == P_ARKHAN3)
-                    l01_action_register("L01D107", 3, "SG00PRE80", "SG00PRE81");
-                l01_action_register("L01D170", 0x58, "SP88ARR02", "SP88ARR02_10");
+                    lieu_action_register("L01D107", 3, "SG00PRE80", "SG00PRE81");
+                lieu_action_register("L01D170", 0x58, "SP88ARR02", "SP88ARR02_10");
                 CB->animation("G00PRE82");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->joindre_perm(0x58, ST(ST_HERO));
@@ -2136,13 +2136,13 @@ static void trig17(void) {   /* sub_10011041 */
         && ST(ST_VIE(P_GUARDIAN23)) != VIE_DEAD && CB->direction_perso(P_GUARDIAN23)) {
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->bloque(BLOQUE_ALL);
-            l01_action_register("LCOD20", 2, "SP02ATT51", NULL);
+            lieu_action_register("LCOD20", 2, "SP02ATT51", NULL);
             CB->bloque(BLOQUE_NONE);
             return;
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
             CB->bloque(BLOQUE_ALL);
-            l01_action_register("LCOD21", 3, "SP03ATT51", NULL);
+            lieu_action_register("LCOD21", 3, "SP03ATT51", NULL);
             CB->bloque(BLOQUE_NONE);
             return;
         }
@@ -2164,7 +2164,7 @@ static void trig17(void) {   /* sub_10011041 */
     CB->stop_joindre(-P_GUARDIAN23);
     CB->animation("SP88ESM05");
     CB->animation("P88_65535");
-    l01_action_register("L01D147", 0x58, "P88DIA60", "SP88GAR01_10");
+    lieu_action_register("L01D147", 0x58, "P88DIA60", "SP88GAR01_10");
     if (ST(ST_VIE(P_KABAK)) == 1) {
         ST(V_KABAK_FIGHT_ON) = 1;
         CB->dialogue("L01D148", P_KABAK);
@@ -2187,11 +2187,11 @@ static void trig18(void) {   /* sub_10011AF3 */
                     ST(V_G24_TALK) = 1;
                     CB->animation("SP89LEV01");
                     if (ST(ST_HERO) == P_ARKHAN2)
-                        l01_action_register("L01D150", 2, "SG00DIA01", NULL);
+                        lieu_action_register("L01D150", 2, "SG00DIA01", NULL);
                     if (ST(ST_HERO) == P_ARKHAN3)
-                        l01_action_register("L01D151", 3, "SG00DIA01", NULL);
-                    l01_action_register("L01D152A", 0x59, "P89DIA01", "SP89DIA01");
-                    l01_action_register("L01D152B", 0x59, "SP89DIA01", "SP89LEV02");
+                        lieu_action_register("L01D151", 3, "SG00DIA01", NULL);
+                    lieu_action_register("L01D152A", 0x59, "P89DIA01", "SP89DIA01");
+                    lieu_action_register("L01D152B", 0x59, "SP89DIA01", "SP89LEV02");
                     CB->animation("P89ARR01");
                     CB->animation("Sar_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -2202,12 +2202,12 @@ static void trig18(void) {   /* sub_10011AF3 */
                     ST(V_G24_TALK) = 2;
                     CB->animation("SP89LEV01");
                     if (ST(ST_HERO) == P_ARKHAN2)
-                        l01_action_register("L01D153", 2, "SG00DIA01", NULL);
+                        lieu_action_register("L01D153", 2, "SG00DIA01", NULL);
                     if (ST(ST_HERO) == P_ARKHAN3)
-                        l01_action_register("L01D154", 3, "SG00DIA01", NULL);
-                    l01_action_register("L01D155A", 0x59, "P89DIA01", "SP89DIA01");
-                    l01_action_register("L01D155B", 0x59, "SP89DIA01", "SP89DIA01");
-                    l01_action_register("L01D155C", 0x59, "SP89LEV02", "SP89ARR01");
+                        lieu_action_register("L01D154", 3, "SG00DIA01", NULL);
+                    lieu_action_register("L01D155A", 0x59, "P89DIA01", "SP89DIA01");
+                    lieu_action_register("L01D155B", 0x59, "SP89DIA01", "SP89DIA01");
+                    lieu_action_register("L01D155C", 0x59, "SP89LEV02", "SP89ARR01");
                     CB->animation("Sar_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
@@ -2215,9 +2215,9 @@ static void trig18(void) {   /* sub_10011AF3 */
                 }
                 if (ST(V_G24_TALK) == 2) {
                     if (ST(ST_HERO) == P_ARKHAN2)
-                        l01_action_register("L01D156", 2, "SG00DIA01", NULL);
+                        lieu_action_register("L01D156", 2, "SG00DIA01", NULL);
                     if (ST(ST_HERO) == P_ARKHAN3)
-                        l01_action_register("L01D157", 3, "SG00DIA01", NULL);
+                        lieu_action_register("L01D157", 3, "SG00DIA01", NULL);
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     return;
@@ -2227,9 +2227,9 @@ static void trig18(void) {   /* sub_10011AF3 */
             if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) != ST(V_LAST_WEAPON)) {
                 ST(V_LAST_WEAPON) = ST(ST_PLAYER_WEAPON);
                 if (ST(ST_HERO) == P_ARKHAN2)
-                    l01_action_register("L01D117", 2, "SG00PRE80", "SG00PRE81");
+                    lieu_action_register("L01D117", 2, "SG00PRE80", "SG00PRE81");
                 if (ST(ST_HERO) == P_ARKHAN3)
-                    l01_action_register("L01D118", 3, "SG00PRE80", "SG00PRE81");
+                    lieu_action_register("L01D118", 3, "SG00PRE80", "SG00PRE81");
                 CB->dialogue("L01D149", P_GUARDIAN24);
                 CB->animation("G00PRE82");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -2308,27 +2308,27 @@ static void trig21(void) {   /* sub_1001222A */
 
     if (ST(ST_HERO) == P_ARKHAN0) {
         ST(V_DLG_RANDOM) = CB->random(3);
-        if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 0, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 0, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 0, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 0, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 0, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 0, "SG00PRE02", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN1) {
         ST(V_DLG_RANDOM) = CB->random(3);
-        if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 1, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 1, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 1, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 1, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 1, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 1, "SG00PRE02", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN2) {
         ST(V_DLG_RANDOM) = CB->random(3);
-        if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD10", 2, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD76", 2, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD07", 2, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD10", 2, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD76", 2, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD07", 2, "SG00PRE02", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
         ST(V_DLG_RANDOM) = CB->random(3);
-        if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD11", 3, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD77", 3, "SG00PRE02", NULL);
-        if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD08", 3, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD11", 3, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD77", 3, "SG00PRE02", NULL);
+        if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD08", 3, "SG00PRE02", NULL);
     }
 
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -2350,52 +2350,52 @@ static void trig23(void) {   /* sub_100125A8 */
     if (ST(ST_HERO) == P_ARKHAN0) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 0, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 0, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 0, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 0, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 0, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 0, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0)
-            l01_action_register("L01D176", 0, "SP00ACT86", "Sar_10");
+            lieu_action_register("L01D176", 0, "SP00ACT86", "Sar_10");
     }
 
     if (ST(ST_HERO) == P_ARKHAN1) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 1, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 1, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 1, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 1, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 1, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 1, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0)
-            l01_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
+            lieu_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
     }
 
     if (ST(ST_HERO) == P_ARKHAN2) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD10", 2, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD76", 2, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD07", 2, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD10", 2, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD76", 2, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD07", 2, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
             if (CB->divers(DV_CAN_FIGHT, 7, 2))
-                l01_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
+                lieu_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
             if (!CB->divers(DV_CAN_FIGHT, 7, 2))
-                l01_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
+                lieu_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
         }
     }
 
     if (ST(ST_HERO) == P_ARKHAN3) {
         if (ST(ST_SPECIAL_MODE) == 1) {
             ST(V_DLG_RANDOM) = CB->random(3);
-            if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD11", 3, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD77", 3, "SG00ATT01", NULL);
-            if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD08", 3, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD11", 3, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD77", 3, "SG00ATT01", NULL);
+            if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD08", 3, "SG00ATT01", NULL);
         }
         if (ST(ST_SPECIAL_MODE) == 0) {
             if (CB->divers(DV_CAN_FIGHT, 7, 2))
-                l01_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
+                lieu_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
             if (!CB->divers(DV_CAN_FIGHT, 7, 2))
-                l01_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
+                lieu_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
         }
     }
 
@@ -2416,34 +2416,34 @@ static void trig24(void) {   /* sub_10012AA6 */
     if (ST(ST_HERO) == P_ARKHAN0) {
         ST(V_DLG_RANDOM) = CB->random(2);
         if (ST(V_DLG_RANDOM) == 0)
-            l01_action_register("LCOD75", 0, "SG00ATT01", NULL);
+            lieu_action_register("LCOD75", 0, "SG00ATT01", NULL);
         if (ST(V_DLG_RANDOM) == 1)
-            l01_action_register("LCOD06", 0, "SG00ATT01", NULL);
+            lieu_action_register("LCOD06", 0, "SG00ATT01", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN1) {
         ST(V_DLG_RANDOM) = CB->random(2);
         if (ST(V_DLG_RANDOM) == 0)
-            l01_action_register("LCOD75", 1, "SG00ATT01", NULL);
+            lieu_action_register("LCOD75", 1, "SG00ATT01", NULL);
         if (ST(V_DLG_RANDOM) == 1)
-            l01_action_register("LCOD06", 1, "SG00ATT01", NULL);
+            lieu_action_register("LCOD06", 1, "SG00ATT01", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN2) {
         ST(V_DLG_RANDOM) = CB->random(3);
         if (ST(V_DLG_RANDOM) == 0)
-            l01_action_register("LCOD10", 2, "SG00ATT01", NULL);
+            lieu_action_register("LCOD10", 2, "SG00ATT01", NULL);
         if (ST(V_DLG_RANDOM) == 1)
-            l01_action_register("LCOD76", 2, "SG00ATT01", NULL);
+            lieu_action_register("LCOD76", 2, "SG00ATT01", NULL);
         if (ST(V_DLG_RANDOM) == 2)
-            l01_action_register("LCOD07", 2, "SG00ATT01", NULL);
+            lieu_action_register("LCOD07", 2, "SG00ATT01", NULL);
     }
     if (ST(ST_HERO) == P_ARKHAN3) {
         ST(V_DLG_RANDOM) = CB->random(3);
         if (ST(V_DLG_RANDOM) == 0)
-            l01_action_register("LCOD11", 3, "SG00ATT01", NULL);
+            lieu_action_register("LCOD11", 3, "SG00ATT01", NULL);
         if (ST(V_DLG_RANDOM) == 1)
-            l01_action_register("LCOD77", 3, "SG00ATT01", NULL);
+            lieu_action_register("LCOD77", 3, "SG00ATT01", NULL);
         if (ST(V_DLG_RANDOM) == 2)
-            l01_action_register("LCOD08", 3, "SG00ATT01", NULL);
+            lieu_action_register("LCOD08", 3, "SG00ATT01", NULL);
     }
 
     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -2460,47 +2460,47 @@ static void trig26(void) {   /* sub_10012FFD */
         if (ST(ST_HERO) == P_ARKHAN0) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 0, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 0, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 0, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 0, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 0, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 0, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                l01_action_register("L01D176", 0, "SP00ACT86", "Sar_10");
+                lieu_action_register("L01D176", 0, "SP00ACT86", "Sar_10");
             }
         }
         if (ST(ST_HERO) == P_ARKHAN1) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 1, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 1, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 1, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 1, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 1, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 1, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                l01_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
+                lieu_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
             }
         }
         if (ST(ST_HERO) == P_ARKHAN2) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD10", 2, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD76", 2, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD07", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD10", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD76", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD07", 2, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                if (CB->divers(DV_CAN_FIGHT, 7, 2)) l01_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
-                if (!CB->divers(DV_CAN_FIGHT, 7, 2)) l01_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
+                if (CB->divers(DV_CAN_FIGHT, 7, 2)) lieu_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
+                if (!CB->divers(DV_CAN_FIGHT, 7, 2)) lieu_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
             }
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD11", 3, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD77", 3, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD08", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD11", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD77", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD08", 3, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                if (CB->divers(DV_CAN_FIGHT, 7, 2)) l01_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
-                if (!CB->divers(DV_CAN_FIGHT, 7, 2)) l01_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
+                if (CB->divers(DV_CAN_FIGHT, 7, 2)) lieu_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
+                if (!CB->divers(DV_CAN_FIGHT, 7, 2)) lieu_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
             }
         }
 
@@ -2517,46 +2517,46 @@ static void trig26(void) {   /* sub_10012FFD */
 
         if (ST(ST_HERO) == P_ARKHAN0) {
             if (ST(ST_SPECIAL_MODE) == 1) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) l01_action_register("LCOD25", 0, "SG00ATT01", NULL);
-                else                         l01_action_register("LCOD25", 0, "SG00ATT03", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) lieu_action_register("LCOD25", 0, "SG00ATT01", NULL);
+                else                         lieu_action_register("LCOD25", 0, "SG00ATT03", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) l01_action_register("LCOD25", 0, "SG00ATT02", NULL);
-                else                         l01_action_register("LCOD25", 0, "SG00ATT04", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) lieu_action_register("LCOD25", 0, "SG00ATT02", NULL);
+                else                         lieu_action_register("LCOD25", 0, "SG00ATT04", NULL);
             }
         }
         if (ST(ST_HERO) == P_ARKHAN1) {
             if (ST(ST_SPECIAL_MODE) == 1) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) l01_action_register("LCOD25", 1, "SG01ATT01", NULL);
-                else                         l01_action_register("LCOD25", 1, "SG01ATT03", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) lieu_action_register("LCOD25", 1, "SG01ATT01", NULL);
+                else                         lieu_action_register("LCOD25", 1, "SG01ATT03", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) l01_action_register("LCOD25", 1, "SG01ATT02", NULL);
-                else                         l01_action_register("LCOD25", 1, "SG01ATT04", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0) lieu_action_register("LCOD25", 1, "SG01ATT02", NULL);
+                else                         lieu_action_register("LCOD25", 1, "SG01ATT04", NULL);
             }
         }
         if (ST(ST_HERO) == P_ARKHAN2) {
             if (ST(ST_SPECIAL_MODE) == 1) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      l01_action_register("LCOD26", 2, "SG02ATT01", NULL);
-                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) l01_action_register("LCOD26", 2, "SG02ATT03", NULL);
-                else                              l01_action_register("LCOD26", 2, "SG02ATT05", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      lieu_action_register("LCOD26", 2, "SG02ATT01", NULL);
+                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) lieu_action_register("LCOD26", 2, "SG02ATT03", NULL);
+                else                              lieu_action_register("LCOD26", 2, "SG02ATT05", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      l01_action_register("LCOD26", 2, "SG02ATT02", NULL);
-                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) l01_action_register("LCOD26", 2, "SG02ATT04", NULL);
-                else                              l01_action_register("LCOD26", 2, "SG02ATT06", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      lieu_action_register("LCOD26", 2, "SG02ATT02", NULL);
+                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) lieu_action_register("LCOD26", 2, "SG02ATT04", NULL);
+                else                              lieu_action_register("LCOD26", 2, "SG02ATT06", NULL);
             }
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
             if (ST(ST_SPECIAL_MODE) == 1) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      l01_action_register("LCOD27", 3, "SG03ATT01", NULL);
-                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) l01_action_register("LCOD27", 3, "SG03ATT03", NULL);
-                else                              l01_action_register("LCOD27", 3, "SG03ATT05", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      lieu_action_register("LCOD27", 3, "SG03ATT01", NULL);
+                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) lieu_action_register("LCOD27", 3, "SG03ATT03", NULL);
+                else                              lieu_action_register("LCOD27", 3, "SG03ATT05", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
-                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      l01_action_register("LCOD27", 3, "SG03ATT02", NULL);
-                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) l01_action_register("LCOD27", 3, "SG03ATT04", NULL);
-                else                              l01_action_register("LCOD27", 3, "SG03ATT06", NULL);
+                if (CB->divers(DV_CAN_FIGHT, 0, 2) == 0)      lieu_action_register("LCOD27", 3, "SG03ATT02", NULL);
+                else if (CB->divers(DV_CAN_FIGHT, 9, 2) == 0) lieu_action_register("LCOD27", 3, "SG03ATT04", NULL);
+                else                              lieu_action_register("LCOD27", 3, "SG03ATT06", NULL);
             }
         }
 
@@ -2594,7 +2594,7 @@ static void trig27(void) {   /* sub_100139C8 */
                 if (ST(V_DLG_RANDOM) == 2) CB->dialogue("LCOD06", 0);
             }
             if (ST(ST_SPECIAL_MODE) == 0)
-                l01_action_register("L01D176", 0, "SP00ACT86", NULL);
+                lieu_action_register("L01D176", 0, "SP00ACT86", NULL);
             CB->animation("Sar_50");
         }
 
@@ -2608,37 +2608,37 @@ static void trig27(void) {   /* sub_100139C8 */
                 if (ST(V_DLG_RANDOM) == 2) CB->dialogue("LCOD06", P_ARKHAN1);
             }
             if (ST(ST_SPECIAL_MODE) == 0)
-                l01_action_register("L01D176", 1, "SP01ACT86", NULL);
+                lieu_action_register("L01D176", 1, "SP01ACT86", NULL);
             CB->animation("Sar_50");
         }
 
         if (ST(ST_HERO) == P_ARKHAN2) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD10", 2, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD76", 2, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD07", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD10", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD76", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD07", 2, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
                 if (CB->divers(DV_CAN_FIGHT, 7, 2))
-                    l01_action_register("L01D177", 2, "SP02ACT85", NULL);
+                    lieu_action_register("L01D177", 2, "SP02ACT85", NULL);
                 if (!CB->divers(DV_CAN_FIGHT, 7, 2))
-                    l01_action_register("L01D177", 2, "SP02ACT86", NULL);
+                    lieu_action_register("L01D177", 2, "SP02ACT86", NULL);
             }
         }
 
         if (ST(ST_HERO) == P_ARKHAN3) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD11", 3, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD77", 3, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD08", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD11", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD77", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD08", 3, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
                 if (CB->divers(DV_CAN_FIGHT, 7, 2))
-                    l01_action_register("L01D178", 3, "SP03ACT85", NULL);
+                    lieu_action_register("L01D178", 3, "SP03ACT85", NULL);
                 if (!CB->divers(DV_CAN_FIGHT, 7, 2))
-                    l01_action_register("L01D178", 3, "SP03ACT86", NULL);
+                    lieu_action_register("L01D178", 3, "SP03ACT86", NULL);
             }
         }
 
@@ -2705,52 +2705,52 @@ static void trig28(void) {   /* sub_1001427D */
         if (ST(ST_HERO) == P_ARKHAN0) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 0, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 0, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 0, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 0, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 0, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 0, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0)
-                l01_action_register("L01D176", 0, "SP00ACT86", "Sar_10");
+                lieu_action_register("L01D176", 0, "SP00ACT86", "Sar_10");
         }
 
         if (ST(ST_HERO) == P_ARKHAN1) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD09", 1, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD75", 1, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD06", 1, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD09", 1, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD75", 1, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD06", 1, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0)
-                l01_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
+                lieu_action_register("L01D176", 1, "SP01ACT86", "Sar_10");
         }
 
         if (ST(ST_HERO) == P_ARKHAN2) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD10", 2, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD76", 2, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD07", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD10", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD76", 2, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD07", 2, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
                 if (CB->divers(DV_CAN_FIGHT, 7, 2) != 0)
-                    l01_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
+                    lieu_action_register("L01D177", 2, "SP02ACT85", "Sar_10");
                 if (CB->divers(DV_CAN_FIGHT, 7, 2) == 0)
-                    l01_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
+                    lieu_action_register("L01D177", 2, "SP02ACT86", "Sar_10");
             }
         }
 
         if (ST(ST_HERO) == P_ARKHAN3) {
             if (ST(ST_SPECIAL_MODE) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(3);
-                if (ST(V_DLG_RANDOM) == 0) l01_action_register("LCOD11", 3, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 1) l01_action_register("LCOD77", 3, "SG00ATT01", NULL);
-                if (ST(V_DLG_RANDOM) == 2) l01_action_register("LCOD08", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 0) lieu_action_register("LCOD11", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 1) lieu_action_register("LCOD77", 3, "SG00ATT01", NULL);
+                if (ST(V_DLG_RANDOM) == 2) lieu_action_register("LCOD08", 3, "SG00ATT01", NULL);
             }
             if (ST(ST_SPECIAL_MODE) == 0) {
                 if (CB->divers(DV_CAN_FIGHT, 7, 2) != 0)
-                    l01_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
+                    lieu_action_register("L01D178", 3, "SP03ACT85", "Sar_10");
                 if (CB->divers(DV_CAN_FIGHT, 7, 2) == 0)
-                    l01_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
+                    lieu_action_register("L01D178", 3, "SP03ACT86", "Sar_10");
             }
         }
 
@@ -2762,11 +2762,11 @@ static void trig28(void) {   /* sub_1001427D */
     if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0xBB80)) {
         CB->bloque(BLOQUE_ALL);
         if ((i32)ST(ST_HERO) <= 1)
-            l01_action_register("LCOD52", 1, "SG00SAV01", "Sar_10");
+            lieu_action_register("LCOD52", 1, "SG00SAV01", "Sar_10");
         if (ST(ST_HERO) == P_ARKHAN2)
-            l01_action_register("LCOD53", 2, "SG00SAV01", "Sar_10");
+            lieu_action_register("LCOD53", 2, "SG00SAV01", "Sar_10");
         if (ST(ST_HERO) == P_ARKHAN3)
-            l01_action_register("LCOD54", 3, "SG00SAV01", "Sar_10");
+            lieu_action_register("LCOD54", 3, "SG00SAV01", "Sar_10");
         CB->animation("P00_65535");
         CB->divers_empile(DV_SAVE_SCREEN, 0, 0);
         CB->bloque(BLOQUE_NONE);
