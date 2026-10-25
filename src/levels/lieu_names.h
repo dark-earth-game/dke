@@ -170,5 +170,7 @@ enum {
 #define ST_PLAYER_WEAPON  0x19C   /* dword_505DDC: player desc[0x97] */
 #define ST_LOCKED_CAMERA  0xF90   /* dword_506BD0 */
 
+#include "lieu_vars.h"
+
 /* ST_VIE values: the engine writes VIE_DEAD when the persona is killed. */
 #define VIE_DEAD          2
