@@ -23,6 +23,13 @@
 /* dword_10020C90 - ST(0x8D4) as of the last tick (initially 0). */
 i32 l36_prev_8d4;
 
+/* The DLL is loaded afresh for every room: its globals restart
+ * (dword_10020C90). Called by INIT, and by tools/lieu_difftest_harness.c
+ * before every case. */
+void l36_reset_dll_globals(void) {
+    l36_prev_8d4 = 0;
+}
+
 /* dword_100204E0 / 100204D8 / 100204DC - hero position, written by tick only. */
 static i32 g_hero_pos[3];
 
@@ -620,15 +627,9 @@ i32 lieu36_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
         print("lieu36: op=%d arg=%d arg2=%d\n", op, arg, arg2);
     switch (op) {
     case LIEU_OP_TICK:
-#ifdef LEVEL_ENTRY
-        /* tools/lieu_difftest.py only: it runs many cases in one process,
-         * while the DLL's .data (dword_10020C90) starts fresh for each. */
-        l36_prev_8d4 = 0;
-#endif
         tick();                                        break;  /* op -1 */
     case LIEU_OP_INIT:
-        /* DLL .data restarts on every room load */
-        l36_prev_8d4 = 0;
+        l36_reset_dll_globals();
         if (init(arg))
             return 0;
         break;

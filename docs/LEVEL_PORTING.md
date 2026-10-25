@@ -240,13 +240,32 @@ get wrong:
      differently. Their results still steer both sides, so a wrong query
      changes the other calls. Cases that differ only in these are counted in
      the summary.
-   - `lieu_common.c` is not linked. `lieu_action_register`, `lieu_pre_scene`,
-     `lieu_anim_name` and the event handlers are traced stubs, so the shared
-     code is not checked. Ops 2, 4, 5 and 6 are not run.
+   - For ops -1, 1 and 3, `lieu_common.c` is not linked:
+     `lieu_action_register`, `lieu_pre_scene`, `lieu_anim_name` and the
+     event handlers are traced stubs. Ops 2 (teardown) is not run.
+   - Ops 4, 5 and 6 are the targets `ev4`, `ev5` and `ev6`. They use a
+     second harness build that links the real `lieu_common.c` (no stubs),
+     and the emulator runs the DLL's own copy of the handlers, of
+     `action_register` and of `pre_scene` too. Each target sweeps every
+     argument value the DLL's switch handles (read from its byte and jump
+     tables) plus unhandled ones, and for `ev5` several phase values. The
+     float accumulators of event4 persist across calls inside one case, so
+     some cases repeat an event up to 100 times. `ev4:90` or `ev5:24:1`
+     runs a single value. Levels with their own copies of the handlers
+     (for example 33) are checked the same way, through their own code.
+   - The one x87 form the emulator knows is the float accumulator code
+     (`fld`, `fmul`, `fcomp`, `fnstsw`, `fstp`).
    - Branch coverage is below 100% where a condition depends on something
      the code computed or wrote earlier (not a plain state slot or callback
      result). Look at `-v` before trusting a function with low coverage.
    - Integer code only, and only the state block and the callback calls are
      compared, not other DLL globals.
+   DLL globals kept as C statics: the DLL is loaded again for every room, so
+   its `.data` starts from the initial values each time. A level with such
+   globals defines `void lNN_reset_dll_globals(void)` (for example
+   `l36_reset_dll_globals`) that sets them to those values, and its entry
+   calls it in the `LIEU_OP_INIT` case. `lieu_difftest.py` detects the
+   function in the level's sources and the harness calls it before every
+   case. `lieu_common.c` has the same hook, `lieu_common_reset`.
 4. Review the port against the listing, function by function: every
    callback call, every state write, and every branch.

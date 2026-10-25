@@ -33,6 +33,18 @@ i32 g_l43_cur_left;    /* dword_10015A48 */
 i32 g_l43_cur_right;   /* dword_10015A4C */
 i32 g_l43_flag[10];    /* dword_10015A50..A74 */
 
+/* The DLL is loaded afresh for every room: its globals restart. Called by
+ * INIT, and by tools/lieu_difftest_harness.c before every case. */
+void l43_reset_dll_globals(void) {
+    g_l43_hits = 0;
+    g_l43_left_pos = g_l43_right_pos = 666;
+    g_l43_left_init = g_l43_right_init = 0;
+    g_l43_cur_left = g_l43_cur_right = 0;
+    for (i32 i = 0; i < 10; i++)
+        g_l43_flag[i] = 0;
+    g_l43_txt[0] = '\0';
+}
+
 /* -------------------------------------------------------------------------
  * Per-frame body — sub_10001521 (thunk 0x100010B9), level-43 specific.
  * `return` == original `jmp` to the epilogue (0x100021B2).
@@ -438,14 +450,7 @@ i32 lieu43_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
     case LIEU_OP_INIT:
-        /* The DLL is loaded afresh for every room: its globals restart. */
-        g_l43_hits = 0;
-        g_l43_left_pos = g_l43_right_pos = 666;
-        g_l43_left_init = g_l43_right_init = 0;
-        g_l43_cur_left = g_l43_cur_right = 0;
-        for (i32 i = 0; i < 10; i++)
-            g_l43_flag[i] = 0;
-        g_l43_txt[0] = '\0';
+        l43_reset_dll_globals();
         if (init(arg))
             return 0;
         break;

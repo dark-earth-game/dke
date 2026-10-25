@@ -22,6 +22,12 @@
 
 i32 g_dest_room;   /* dword_1001AB34 */
 
+/* The DLL is loaded afresh for every room: its globals restart. Called by
+ * INIT, and by tools/lieu_difftest_harness.c before every case. */
+void l27_reset_dll_globals(void) {
+    g_dest_room = 0;
+}
+
 /* -------------------------------------------------------------------------
  * Trigger 0 - sub_100073F0 (thunk sub_10001073): INIT default, seeds the
  * story state per start point and places the room.
@@ -596,7 +602,7 @@ static void tick_body(void) {
  * every other path returns state[0].
  * ---------------------------------------------------------------------- */
 static i32 init(i32 reload_flag) {
-    g_dest_room = 0;   /* DLL .data restarts on every room load */
+    l27_reset_dll_globals();
 
     if (reload_flag)
         return 0;

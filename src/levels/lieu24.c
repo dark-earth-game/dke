@@ -23,6 +23,13 @@
 i32 g_l24_heisgoing;           /* dword_1001DB34 */
 static c8 g_txt[256];          /* debug sprintf buffer, dword_100219B0 */
 
+/* The DLL is loaded afresh for every room: its globals restart. Called by
+ * INIT, and by tools/lieu_difftest_harness.c before every case. */
+void l24_reset_dll_globals(void) {
+    g_l24_heisgoing = 0;
+    g_txt[0] = '\0';
+}
+
 /* -------------------------------------------------------------------------
  * Per-frame body - sub_1000880D (thunk 0x100010B9), level-24 specific.
  * Ported faithfully from disassembly (labels in comments = original
@@ -952,9 +959,7 @@ i32 lieu24_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
     case LIEU_OP_INIT:
-        /* The DLL is loaded afresh for every room: its globals restart. */
-        g_l24_heisgoing = 0;
-        g_txt[0] = '\0';
+        l24_reset_dll_globals();
         if (init(arg))
             return 0;
         break;

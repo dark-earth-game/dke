@@ -33,6 +33,15 @@ static float g_float_accum[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 static c8 g_ob24[32];
 static c8 g_ob77[32];
 
+/* The DLL is loaded afresh for every room: its globals restart. Called by
+ * INIT, and by tools/lieu_difftest_harness.c before every case. */
+void l33_reset_dll_globals(void) {
+    for (i32 i = 0; i < 4; i++)
+        g_float_accum[i] = 1.0f;
+    g_ob24[0] = '\0';
+    g_ob77[0] = '\0';
+}
+
 /* -------------------------------------------------------------------------
  * sub_10005E80 (thunk 0x1000103C) - Rylsadhar/Lory pre-scene: __fastcall
  * (ecx = a, edx = b); the caller also pushes 3 stack args (callee `ret 0xC`)
@@ -237,9 +246,10 @@ static void event4(i32 arg) {        /* sub_10001200 */
         if (ST(V_EVENT_30) == 1) {
             ST(V_EVENT_30) = 0;
             ST(0xBF4) = 1;
+            break;
         }
-        break;
-
+        /* 0x100017C4: the jne lands on case 31's code (no jmp to the exit) */
+        /* fall through */
     case 31: if (ST(V_EVENT_31) == 0) ST(V_EVENT_31) = 1; break;
     case 33: ST(V_EVENT_33) = 1; break;
     case 34: ST(V_EVENT_34) = 1; break;
@@ -963,8 +973,10 @@ static void event5(i32 arg, i32 phase) {
             CB->animation("SG01ATT01");
             CB->animation("ar_50");
             CB->bloque(BLOQUE_NONE);
+            break;
         }
-        break;
+        /* 0x3612/0x375F: the jne lands on the next case's code (no jmp to the exit) */
+        /* fall through */
 
     /* 0x380B */
     case OB_FULL_GOURD:
@@ -1873,7 +1885,7 @@ static void tick_body(void) {
                 CB->change_camera(3, CAM_LOCKED);
             }
             CB->pos_perso(P_GUARDIAN15, CB->divers(DV_DESC_POS, P_GUARDIAN15, 0), 310, CB->divers(DV_DESC_POS, P_GUARDIAN15, 2), 2, "P55cad", 0x21, 0);
-            CB->print_msg("", 0, 240);
+            CB->print_msg("j'ai tu\xe9 le garde", 0, 240);   /* debug text in the DLL .data */
             /* 0x8C6B */
             if (ST(ST_VIE(P_KALHI13)) == 1) {
                 CB->joindre(-ST(ST_HERO), 0, 0, 0, P_KALHI13);
@@ -2971,11 +2983,7 @@ i32 lieu33_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
     case LIEU_OP_INIT:
-        /* DLL .data restarts on every room load */
-        for (i32 i = 0; i < 4; i++)
-            g_float_accum[i] = 1.0f;
-        g_ob24[0] = '\0';
-        g_ob77[0] = '\0';
+        l33_reset_dll_globals();
         init(arg);
         break;
     case LIEU_OP_EVENT:  l33_trigger(arg);             break;  /* dword_10025930[arg]() */

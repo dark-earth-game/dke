@@ -29,6 +29,13 @@ i32 g_dat_26B34;
 i32 g_dat_26B38;
 i32 g_dat_26B3C;
 
+/* The DLL is loaded afresh for every room: its globals restart. Called by
+ * INIT, and by tools/lieu_difftest_harness.c before every case. */
+void l15_reset_dll_globals(void) {
+    g_dat_26B34 = g_dat_26B38 = g_dat_26B3C = 0;
+    g_l15_txt[0] = '\0';
+}
+
 /* -------------------------------------------------------------------------
  * sub_10007400 (thunk 0x1000109B) — Danrys' pre-scene variant, called
  * as (hero, 9, item, 6, 2); only hero (ecx) and persona (edx) are used,
@@ -1333,9 +1340,7 @@ i32 lieu15_fonction_editor(i32 op, lieu_state_t *state, i32 arg, i32 arg2) {
     switch (op) {
     case LIEU_OP_TICK:   tick();                       break;  /* op -1 */
     case LIEU_OP_INIT:
-        /* The DLL is loaded afresh for every room: its globals restart. */
-        g_dat_26B34 = g_dat_26B38 = g_dat_26B3C = 0;
-        g_l15_txt[0] = '\0';
+        l15_reset_dll_globals();
         if (init(arg))
             return 0;
         break;

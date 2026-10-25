@@ -22,11 +22,13 @@ result is set so that the other way is taken.
 
 How the two sides are made comparable
   * No engine: the C port is linked against tools/lieu_difftest_harness.c,
-    which mocks lieu_cb_t (tracing each call). lieu_common.c is NOT linked:
-    lieu_action_register, lieu_pre_scene and event4/5/6 are traced stubs, and
-    the emulator treats calls to the DLL's copies of them the same way. The
-    shared code is therefore not checked here (levels 1/2 and the common
-    port are the reference), and ops 4/5/6 are not run.
+    which mocks lieu_cb_t (tracing each call). For ops -1/1/3 lieu_common.c
+    is NOT linked: lieu_action_register, lieu_pre_scene and event4/5/6 are
+    traced stubs, and the emulator treats calls to the DLL's copies of them
+    the same way. For ops 4/5/6 (targets ev4/ev5/ev6) a second harness links
+    the real lieu_common.c and the emulator runs the DLL's own handlers, each
+    case in a forked child so the DLL globals start fresh. A level's own
+    lNN_reset_dll_globals() (if it defines one) runs before every case.
   * Callbacks that return a value draw it from a per-case pool, indexed by
     hash(call text) + count of identical earlier calls. The result depends
     on what was called, not on when, so the order of independent calls does
@@ -37,8 +39,7 @@ How the two sides are made comparable
     ...) in its own order, which the C port is free to change.
   * strings built with sprintf are formatted by the emulator (%d %c %s).
 
-Limits: integer code only (no FPU, no byte string ops); op 4/5/6 and
-teardown are not run; DLL globals other than the state pointer are not
+Limits: integer code only (plus the x87 forms of the float accumulators); teardown is not run; DLL globals other than the state pointer are not
 compared; branches whose condition is computed (not a plain compare of a
 state slot or callback result) are only reached by chance.
 
@@ -122,9 +123,9 @@ def gen_cb_c(cbs):
     ct = {'i': 'i32', 's': 'const c8 *', 'p': 'i32 *'}
     for name, (kinds, rt) in cbs.items():
         params = ', '.join('%s a%d' % (ct[k], i) for i, k in enumerate(kinds)) or 'void'
-        fmt = ','.join({'i': '%d', 's': '%s', 'p': '&ST(%d)'}[k] for k in kinds)
+        fmt = ','.join({'i': '%d', 's': '%s', 'p': '%s'}[k] for k in kinds)
         vals = ''.join(', ' + {'i': 'a%d', 's': 'S_(a%d)',
-                               'p': '(int)((lieu_state_t *)a%d - g_stbuf)'}[k] % i
+                               'p': 'P_(a%d)'}[k] % i
                        for i, k in enumerate(kinds))
         body = '    KEY("%s(%s)"%s); OUT("%%s", kb);\n' % (name, fmt, vals)
         if name == 'modify_var':
@@ -134,6 +135,8 @@ def gen_cb_c(cbs):
             rtype = 'i32'
             if name == 'random':
                 body += '    { u32 n = (u32)a0; i32 v = draw(kb); return n ? (i32)((u32)v % n) : 0; }\n'
+            elif name == 'divers':
+                body += '    { i32 v = draw(kb); g_last_divers = v; return v; }\n'
             else:
                 body += '    return draw(kb);\n'
         out.append('static %s cb_%s(%s) {\n%s}\n' % (rtype, name, params, body))
@@ -155,6 +158,7 @@ class Listing:
         self.slots = {}          # callback global -> name
         self.trig = {}           # trigger index -> function address
         self.trig_base = None
+        self.tables = {}         # jump table address -> [target addresses]
         self.state_g = None
         self.entry = None
         order = []
@@ -168,6 +172,9 @@ class Listing:
                 m = re.match(r';\s+\[0x([0-9A-Fa-f]+)\] slot\s+\d+\s+CB->(\w+)', ln)
                 if m:
                     self.slots[int(m.group(1), 16)] = m.group(2)
+                m = re.match(r';\s+0x([0-9A-Fa-f]+) \(jmp, \d+ entries\):\s*(.*)$', ln)
+                if m:
+                    self.tables[int(m.group(1), 16)] = [int(x, 16) for x in m.group(2).split()]
                 m = re.match(r'; trigger table 0x([0-9A-Fa-f]+)', ln)
                 if m:
                     self.trig_base = int(m.group(1), 16)
@@ -218,19 +225,19 @@ class Listing:
                 break
         return addr
 
-    def callees(self, f):
+    def callees(self, f, ev=False):
         out = set()
         for a in range(f, self.func_end(f)):
             if a not in self.ins:
                 continue
             ins, cmt = self.ins[a]
             if ins.startswith('call 0x'):
-                if cmt in SHARED or cmt in ('sprintf', 'abs') or cmt.startswith('lieu_'):
+                if cmt in ('sprintf', 'abs') or (not ev and (cmt in SHARED or cmt.startswith('lieu_'))):
                     continue
                 out.add(self.resolve(int(ins.split()[1], 16)))
         return out
 
-    def closure(self, f):
+    def closure(self, f, ev=False):
         seen = set()
         todo = [f]
         while todo:
@@ -238,7 +245,7 @@ class Listing:
             if x in seen or x not in self.ins:
                 continue
             seen.add(x)
-            todo.extend(self.callees(x))
+            todo.extend(self.callees(x, ev))
         return seen
 
 
@@ -267,7 +274,8 @@ def cond(mn, a, b):
 class Ctx:
     """Static per-DLL data shared by all emulations."""
 
-    def __init__(self, L, cbs):
+    def __init__(self, L, cbs, ev=False):
+        self.ev = ev             # run the DLL's shared code instead of stubbing it
         self.L = L
         self.cbs = cbs
         self.code = {}
@@ -424,6 +432,8 @@ class Emu:
         self.funcs = set()
         self.steps = 0
         self.op, self.arg, self.arg2 = op, arg, arg2
+        self.fpu = []          # x87 stack, top last (Python floats)
+        self.fsw = 0
 
     # memory
     def rd(self, a):
@@ -488,7 +498,9 @@ class Emu:
         if k == 'i':
             return str(s32(v))
         if k == 'p':
-            return '&ST(%d)' % ((v & M32) - BASE)
+            if BASE <= (v & M32) < BASE + NST:
+                return '&ST(%d)' % ((v & M32) - BASE)
+            return '&DLL-global'       # a pointer to the DLL's own .data
         s = self.strval(v)
         return '(null)' if s is None else '"%s"' % s
 
@@ -577,7 +589,21 @@ class Emu:
 def decode(ctx, pc):
     L = ctx.L
     if pc not in L.ins:
-        raise EmuError('jump to %08x outside the listing' % pc)
+        # the listing leaves out the shared epilogue the switch cases jump to
+        # (event4/5: pop edi/esi/ebx; leave; ret, between data tables)
+        b = L.pe.read(pc, 8) or b''
+        m = re.match(rb'^(?:[\x5f\x5e\x5b])*\xc9(?:\xc3|\xc2(..))', b, re.S)
+        if not m:
+            raise EmuError('jump to %08x outside the listing' % pc)
+        n = struct.unpack('<H', m.group(1))[0] if m.group(1) else 0
+        def f(e):
+            e.r[4] = e.r[5]
+            e.r[5] = e.rd(e.r[4])
+            e.rt[5] = None
+            ret = e.rd(e.r[4] + 4) & M32
+            e.r[4] = s32(e.r[4] + 8 + n)
+            return ret
+        return f
     ins, cmt = L.ins[pc]
     nxt = L.next.get(pc, pc)
     parts = ins.split(None, 1)
@@ -816,7 +842,7 @@ def decode(ctx, pc):
             kinds, rt = cbs[name]
             rets = rt == 'i'
             return lambda e: (e.do_cb(name, kinds, rets, pc), nxt)[1]
-        if cmt in SHARED:
+        if cmt in SHARED and not ctx.ev:
             kinds = SHARED[cmt]
             return lambda e: (e.do_cb(cmt, kinds, False, pc), nxt)[1]
         if cmt == 'sprintf':
@@ -830,7 +856,7 @@ def decode(ctx, pc):
         if direct:
             tgt = int(ops[0], 16)
             tfun = L.func_of(L.resolve(tgt))
-            if cmt.startswith('lieu_event') or cmt in ('reset_floats', 'pre90_scene'):
+            if not ctx.ev and (cmt.startswith('lieu_event') or cmt in ('reset_floats', 'pre90_scene')):
                 raise EmuError('%08x: call to shared %s not supported' % (pc, cmt))
         else:
             a = O(0)
@@ -844,34 +870,84 @@ def decode(ctx, pc):
             e.funcs.add(tfun if direct else L.func_of(L.resolve(t)))
             return t
         return f
+    if mn in ('fld', 'fcomp', 'fmul', 'fstp', 'fld1', 'fldz', 'fnstsw'):
+        # the few x87 forms the shared event code uses (float accumulators)
+        if mn in ('fld1', 'fldz'):
+            c = 1.0 if mn == 'fld1' else 0.0
+            def f(e):
+                e.fpu.append(c)
+                return nxt
+            return f
+        if mn == 'fnstsw':
+            if ops[0] != 'ax':
+                bad()
+            def f(e):
+                e.r[0] = s32((e.r[0] & ~0xFFFF) | e.fsw)
+                e.rt[0] = None
+                return nxt
+            return f
+        if not ops[0].startswith(('dword ptr', 'qword ptr')):
+            bad()
+        wide = ops[0].startswith('qword')
+        ea = parse_ea(ops[0], ctx)
+        def ldf(e):
+            a = ea(e)
+            if wide:
+                return struct.unpack('<d', struct.pack('<II', e.rd(a) & M32, e.rd(a + 4) & M32))[0]
+            return struct.unpack('<f', struct.pack('<I', e.rd(a) & M32))[0]
+        if mn == 'fld':
+            def f(e):
+                e.fpu.append(ldf(e))
+                return nxt
+        elif mn == 'fmul':
+            def f(e):
+                e.fpu[-1] = e.fpu[-1] * ldf(e)
+                return nxt
+        elif mn == 'fcomp':
+            def f(e):
+                x, y = e.fpu.pop(), ldf(e)
+                e.fsw = 0x100 if x < y else (0x4000 if x == y else (0 if x > y else 0x4500))
+                return nxt
+        else:       # fstp
+            if wide:
+                bad()
+            def f(e):
+                v = struct.unpack('<I', struct.pack('<f', e.fpu.pop()))[0]
+                e.wr(ea(e), v)
+                return nxt
+        return f
     bad()
 
 
 class Case:
-    __slots__ = ('st', 'pool', 'arg', 'arg2')
+    # `more`: further (arg, arg2) calls made after the first one on the same
+    # state and DLL globals (ops 4/5/6: the float accumulators persist)
+    __slots__ = ('st', 'pool', 'arg', 'arg2', 'more')
 
-    def __init__(self, st, pool, arg=0, arg2=0):
-        self.st, self.pool, self.arg, self.arg2 = st, pool, arg, arg2
+    def __init__(self, st, pool, arg=0, arg2=0, more=()):
+        self.st, self.pool, self.arg, self.arg2, self.more = st, pool, arg, arg2, tuple(more)
 
 
 def emulate(ctx, case, op):
     L = ctx.L
     e = Emu(ctx, case, op, case.arg, case.arg2)
-    e.r[4] = STACK
-    e.r[5] = 0
-    e.r[1] = op
-    e.r[2] = BASE
-    arg2 = case.arg2 if op != 1 else CBTAB
-    # stack at entry: [esp] = return, [esp+4] = arg2, [esp+8] = arg
-    e.r[4] = STACK - 12
-    e.mem[STACK - 12] = SENT
-    e.mem[STACK - 8] = arg2
-    e.mem[STACK - 4] = case.arg
     e.mem[L.state_g] = BASE
     if L.trig_base is not None:
         for k, fa in L.trig.items():
             e.mem[L.trig_base + 4 * k] = fa
-    e.run(L.entry)
+    for arg, arg2 in ((case.arg, case.arg2),) + case.more:
+        e.r[4] = STACK
+        e.r[5] = 0
+        e.r[1] = op
+        e.r[2] = BASE
+        if op == 1:
+            arg2 = CBTAB
+        # stack at entry: [esp] = return, [esp+4] = arg2, [esp+8] = arg
+        e.r[4] = STACK - 12
+        e.mem[STACK - 12] = SENT
+        e.mem[STACK - 8] = arg2
+        e.mem[STACK - 4] = arg
+        e.run(L.entry)
     return e
 
 
@@ -902,14 +978,18 @@ def static_values(L, funcs):
     return sorted(vals), slots
 
 
-def make_case(rng, vals, slots, arg=0, arg2=0):
+SEQ = []     # ops 4/5/6: args whose handler touches DLL globals (set per target)
+
+
+def make_case(rng, vals, slots, ac=0):
+    arg, arg2 = ac if isinstance(ac, tuple) else (ac, 0)
     st = [0] * (NST // 4)
     pm = rng.choice((0.2, 0.5, 0.8, 0.95))
     for o in range(0, NST, 4):
         p = slots.get(o)
         if p is None:
             if rng.random() < 0.3:
-                st[o >> 2] = rng.choice((0, 0, 1, 2, 3))
+                st[o >> 2] = rng.choice((0, 0, 1, 2, 3, -1))
         elif rng.random() < pm:
             ks = sorted(p)
             st[o >> 2] = rng.choices(ks, weights=[p[k] for k in ks])[0]
@@ -917,7 +997,13 @@ def make_case(rng, vals, slots, arg=0, arg2=0):
             st[o >> 2] = rng.choice(sorted(p) + [0, 1])
     zp = rng.choice((0.1, 0.3, 0.5))
     pool = [0 if rng.random() < zp else rng.choice(vals) for _ in range(POOL_N)]
-    return Case(st, pool, arg, arg2)
+    more = ()
+    if SEQ and rng.random() < 0.4:
+        # a run of calls on the same globals: maybe a toggle first, then one
+        # event repeated (the accumulators need ~40-60 calls to hit a limit)
+        more = ([(rng.choice(SEQ), 0)] if rng.random() < 0.5 else []) + \
+               [(rng.choice(SEQ), 0)] * rng.choice((1, 1, 2, 40, 60, 100))
+    return Case(st, pool, arg, arg2, more)
 
 
 def flip_candidates(mn, fl, taken):
@@ -942,10 +1028,10 @@ def apply_flip(case, kind, key, src):
     if kind == 'st':
         st = list(case.st)
         st[key >> 2] = src
-        return Case(st, case.pool, case.arg, case.arg2)
+        return Case(st, case.pool, case.arg, case.arg2, case.more)
     pool = list(case.pool)
     pool[key] = src
-    return Case(case.st, pool, case.arg, case.arg2)
+    return Case(case.st, pool, case.arg, case.arg2, case.more)
 
 
 def mutate(rng, c, reads, used, vals, slots):
@@ -958,7 +1044,7 @@ def mutate(rng, c, reads, used, vals, slots):
             st[o >> 2] = rng.choice(sorted(slots[o]) + [0, 1, 2]) if o in slots and rng.random() < 0.7 else rng.choice(vals)
         elif used:
             pool[rng.choice(used)] = rng.choice(vals)
-    return Case(st, pool, c.arg, c.arg2)
+    return Case(st, pool, c.arg, c.arg2, c.more)
 
 
 def explore(ctx, op, vals, slots, argchoices, budget, seed):
@@ -968,8 +1054,9 @@ def explore(ctx, op, vals, slots, argchoices, budget, seed):
     info = []
     queue = collections.deque()
     tried = collections.Counter()
-    for _ in range(120):
-        queue.append(make_case(rng, vals, slots, rng.choice(argchoices)))
+    n0 = max(120, 3 * len(argchoices))
+    for i in range(n0):         # every argument value at least a few times
+        queue.append(make_case(rng, vals, slots, argchoices[i % len(argchoices)] if i < 3 * len(argchoices) else rng.choice(argchoices)))
     n = 0
     while n < budget:
         if not queue:
@@ -1022,9 +1109,10 @@ def run_c(harness, op, cases, tmo=120):
     while i < len(cases):
         inp = []
         for c in cases[i:]:
-            inp.append('CASE %d %d %d %d\n%s\n%s\n' % (op, c.arg, c.arg2, len(c.pool),
-                                                    ' '.join(map(str, c.pool)),
-                                                    ' '.join(map(str, c.st))))
+            inp.append('CASE %d %d %d %d %d\n%s\n%s\n%s\n' % (op, c.arg, c.arg2, len(c.pool), len(c.more),
+                                                           ' '.join(map(str, c.pool)),
+                                                           ' '.join(map(str, c.st)),
+                                                           ' '.join('%d %d' % m for m in c.more)))
         try:
             r = subprocess.run([harness], input=''.join(inp), capture_output=True, text=True, encoding="latin-1", timeout=tmo)
             out, rc = r.stdout, r.returncode
@@ -1142,24 +1230,125 @@ def c_name_for(addr, cfuncs, texts):
 
 
 # ---------------------------------------------------------------------------
+# ops 4/5/6: the shared event handlers
+
+def find_event_fn(L, op):
+    """Address of the function the entry calls for op 4, 5 or 6 (event4/5/6),
+    found through the entry's own jump table (index op + 1)."""
+    for a in range(L.entry, L.func_end(L.entry)):
+        ins = L.ins.get(a)
+        if ins and ins[0].startswith('jmp dword ptr [4*eax + 0x'):
+            m = re.search(r'\+ (0x[0-9a-f]+)\]', ins[0])
+            tb = L.tables.get(int(m.group(1), 16))
+            if tb and len(tb) == 8:
+                a = tb[op + 1]
+                for _ in range(8):
+                    if L.ins[a][0].startswith('call 0x'):
+                        return L.func_of(L.resolve(int(L.ins[a][0].split()[1], 16)))
+                    a = L.next[a]
+    return None
+
+
+def event_dispatch(L, f):
+    """Parse the switch at the top of an event handler: the first direct jmp
+    leads to `[dec/inc arg;] cmp arg, N; ja default; [mov cl, byte [B + arg];]
+    jmp [4*reg + T]`. Returns None, or dict(off, n, default, byte, table):
+    switch value = arg - off."""
+    a = f
+    for _ in range(40):
+        ins = L.ins[a][0]
+        if ins.startswith('jmp 0x'):
+            break
+        a = L.next[a]
+    else:
+        return None
+    a = int(L.ins[a][0].split()[1], 16)
+    d = dict(off=0, n=None, default=None, byte=None, table=None)
+    for _ in range(14):
+        if a not in L.ins:
+            return None
+        ins = L.ins[a][0]
+        if ins.startswith(('dec dword ptr [ebp', 'inc dword ptr [ebp')):
+            d['off'] = 1 if ins.startswith('dec') else -1
+        m = re.match(r'cmp dword ptr \[ebp - 0x[0-9a-f]+\], (0x[0-9a-f]+)$', ins)
+        if m and d['n'] is None:
+            d['n'] = int(m.group(1), 16)
+        if ins.startswith('ja 0x'):
+            d['default'] = int(ins.split()[1], 16)
+        m = re.search(r'byte ptr \[eax \+ (0x[0-9a-f]+)\]', ins)
+        if m:
+            d['byte'] = int(m.group(1), 16)
+        m = re.match(r'jmp dword ptr \[4\*e.. \+ (0x[0-9a-f]+)\]', ins)
+        if m:
+            d['table'] = int(m.group(1), 16)
+            break
+        a = L.next[a]
+    if d['n'] is None or d['default'] is None or d['table'] not in L.tables:
+        return None
+    return d
+
+
+def event_args(L, f, op):
+    """(handled args, unhandled args to try, args whose handler touches DLL
+    globals) of an event handler."""
+    d = event_dispatch(L, f)
+    if d is None:
+        hi = {4: 0x70, 5: 0x70, 6: 8}[op]
+        return list(range(0, hi)), [-1, hi, 0x1000], []
+    tab = L.tables[d['table']]
+
+    def dest(v):
+        idx = v
+        if d['byte'] is not None:
+            b = L.pe.read(d['byte'] + v, 1)
+            idx = b[0] if b else 0
+        return tab[idx] if idx < len(tab) else d['default']
+
+    def is_default(t):
+        return t == d['default'] or L.ins.get(t, ('',))[0] == 'jmp 0x%x' % d['default']
+    handled, unhandled, seq = [], [], []
+    for v in range(d['n'] + 1):
+        t = dest(v)
+        arg = v + d['off']
+        if is_default(t):
+            unhandled.append(arg)
+            continue
+        handled.append(arg)
+        a = t
+        for _ in range(400):
+            ins, cmt = L.ins.get(a, ('', ''))
+            m = re.search(r'\[(0x[0-9a-f]+)\]', ins)
+            if m and not ins.startswith('call') and int(m.group(1), 16) not in L.slots \
+                    and int(m.group(1), 16) != L.state_g and ' S' not in ' ' + ins:
+                seq.append(arg)
+                break
+            if ins.startswith('jmp 0x') and (int(ins.split()[1], 16) == d['default'] or not (f <= int(ins.split()[1], 16) < L.func_end(f))):
+                break
+            a = L.next.get(a, a + 1)
+    extra = [d['n'] + d['off'] + 1, d['n'] + d['off'] + 2, 0x1000, -1, d['off'] - 1]
+    return handled, unhandled[:6] + extra, seq
+
 
 LEVEL_FILES = []
 G = {}      # shared with the worker processes (fork)
 
 
 def run_target(t):
-    """t = (label, op, argchoices, funcaddr, budget, extra)"""
-    label, op, argchoices, faddr, budget, extra = t
-    ctx, L, harness, seed = G['ctx'], G['L'], G['harness'], G['seed']
+    """t = (label, op, argchoices, funcaddr, budget, extra, ev)"""
+    global SEQ
+    label, op, argchoices, faddr, budget, extra, ev = t
+    L, seed = G['L'], G['seed']
+    ctx, harness = (G['ctx_ev'], G['harness_ev']) if ev else (G['ctx'], G['harness'])
+    SEQ = G['seq'].get(label, [])
     t0 = time.time()
-    closure = L.closure(faddr) if faddr else L.closure(L.entry)
+    closure = L.closure(faddr, ev) if faddr else L.closure(L.entry)
     vals, slots = static_values(L, closure | {L.entry})
     corpus = explore(ctx, op, vals, slots, argchoices, budget, seed + op)
     rng = random.Random(seed + 1000 + op)
     cases = list(corpus)
     for c in corpus:                     # mutants of the interesting cases
         for _ in range(3):
-            m = Case(list(c.st), list(c.pool), c.arg, c.arg2)
+            m = Case(list(c.st), list(c.pool), c.arg, c.arg2, c.more)
             for _ in range(rng.choice((1, 2, 4))):
                 if rng.random() < 0.5 and slots:
                     o = rng.choice(sorted(slots))
@@ -1167,12 +1356,17 @@ def run_target(t):
                 else:
                     m.pool[rng.randrange(POOL_N)] = rng.choice(vals)
             cases.append(m)
+    if ev:                               # every argument value, whatever its coverage
+        for ac in argchoices:
+            cases.append(make_case(rng, vals, slots, ac))
     for _ in range(extra):
         cases.append(make_case(rng, vals, slots, rng.choice(argchoices)))
     res = run_c(harness, op, cases)
     cov = set()
     funcs = set()
     ran = bad = err = pure = 0
+    argsseen = set()
+    badargs = collections.Counter()
     mism = []
     errs = []
     for c, cr in zip(cases, res):
@@ -1184,6 +1378,7 @@ def run_target(t):
                 errs.append(repr(ex))
             continue
         ran += 1
+        argsseen.update([c.arg] + [m[0] for m in c.more])
         cov |= e.cov
         funcs |= {f for f in e.funcs if f}
         d = compare(e, cr, c)
@@ -1191,6 +1386,7 @@ def run_target(t):
             pure += 1
         elif d:
             bad += 1
+            badargs[c.arg] += 1
             if len(mism) < 2:
                 reads = ', '.join('0x%X=%d' % (o, v) for o, v in sorted(e.stread.items()) if v)[:300]
                 mism.append((d, reads, c))
@@ -1208,13 +1404,14 @@ def run_target(t):
     oneway = [(a, (a, True) in cov) for a in jcc if ((a, True) in cov) != ((a, False) in cov)]
     never = [a for a in jcc if (a, True) not in cov and (a, False) not in cov]
     return dict(label=label, cases=ran, bad=bad, pure=pure, err=err, errs=errs, mism=mism, jcc=len(jcc), both=both,
-                oneway=oneway, never=never, funcs=funcs, secs=time.time() - t0)
+                oneway=oneway, never=never, funcs=funcs, secs=time.time() - t0, argsseen=argsseen, badargs=badargs)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('level', type=int)
-    ap.add_argument('target', nargs='*', help='init, tick, trigNN / NN, or a DLL function address')
+    ap.add_argument('target', nargs='*', help='init, tick, trigNN / NN, ev4 / ev5 / ev6 (ev4:ARG, ev5:ARG:PHASE '
+                    'for one value), or a DLL function address')
     ap.add_argument('-n', '--budget', type=int, default=1500, help='minimum emulator runs per target while exploring')
     ap.add_argument('--max-budget', type=int, default=15000, help='cap of the per-target budget (8 runs per branch)')
     ap.add_argument('-x', '--extra', type=int, default=300, help='additional random cases per target')
@@ -1250,29 +1447,71 @@ def main():
     open(os.path.join(work, 'cbmocks.inc'), 'w').write(gen_cb_c(cbs))
     harness = os.path.join(work, 'harness')
     cc = os.environ.get('CC', 'clang')
-    cmd = [cc, '-std=c99', '-O1', '-w', '-I' + os.path.join(ROOT, 'src'), '-I' + os.path.join(ROOT, 'src', 'libsys'),
+    reset = 'l%d_reset_dll_globals' % args.level
+    hasreset = any(re.search(r'\b%s\b' % reset, open(f).read()) for f in cfiles)
+    rflags = ['-DHAVE_LEVEL_RESET', '-DLEVEL_RESET=' + reset] if hasreset else []
+    cmd = [cc, '-std=c99', '-O1', '-w'] + rflags + ['-I' + os.path.join(ROOT, 'src'), '-I' + os.path.join(ROOT, 'src', 'libsys'),
            '-DLEVEL_ENTRY=lieu%s_fonction_editor' % nn, '-DCB_MOCKS_INC="%s"' % os.path.join(work, 'cbmocks.inc'),
            '-o', harness, os.path.join(HERE, 'lieu_difftest_harness.c')] + cfiles
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode:
         sys.exit('C build failed:\n' + r.stderr[:3000])
+    # ops 4/5/6 build: the real shared code (src/levels/lieu_common.c, with
+    # its own float accumulators) instead of the traced stubs
+    harness_ev = os.path.join(work, 'harness_ev')
+    cmd = [cc, '-std=c99', '-O1', '-w', '-DREAL_SHARED'] + rflags + ['-I' + os.path.join(ROOT, 'src'), '-I' + os.path.join(ROOT, 'src', 'libsys'),
+           '-DLEVEL_ENTRY=lieu%s_fonction_editor' % nn, '-DCB_MOCKS_INC="%s"' % os.path.join(work, 'cbmocks.inc'),
+           '-o', harness_ev, os.path.join(HERE, 'lieu_difftest_harness.c'),
+           os.path.join(ROOT, 'src', 'levels', 'lieu_common.c')] + cfiles
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    evmsg = ''
+    if r.returncode:
+        harness_ev = None
+        evmsg = 'C build with lieu_common.c failed, ops 4/5/6 not run:\n' + r.stderr[:2000]
+    ctx_ev = Ctx(L, cbs, ev=True)
 
     # targets
     cfuncs = c_functions()
     texts = {f: open(f).read().split('\n') for f in cfiles}
-    targets = [('init', 1, [0, 0, 0, 1], None, 'INIT tail of the entry'),
-               ('tick', -1, [0], None, 'per-frame body')]
+    targets = [('init', 1, [0, 0, 0, 1], None, 'INIT tail of the entry', False),
+               ('tick', -1, [0], None, 'per-frame body', False)]
     seen = {}
     for k in sorted(L.trig):
         fa = L.trig[k]
         if fa in seen:
             continue
         seen[fa] = k
-        targets.append(('trig%02d' % k, 3, [k], fa, None))
+        targets.append(('trig%02d' % k, 3, [k], fa, None, False))
+    # ops 4/5/6
+    seqargs = {}
+    evinfo = {}
+    for op in (4, 5, 6):
+        fa = find_event_fn(L, op)
+        if fa is None:
+            continue
+        handled, unhandled, seq = event_args(L, fa, op)
+        phases = (0, 1, 2, -1) if op == 5 else (0,)
+        if op == 6:
+            unhandled = [x for x in unhandled if abs(x) < 64]
+        evinfo['ev%d' % op] = (fa, len(handled), len(unhandled))
+        seqargs['ev%d' % op] = seq if op == 4 else []
+        targets.append(('ev%d' % op, op, [(a, ph) for a in handled + unhandled for ph in phases], fa, None, True))
     want = set(args.target)
+    single = []
+    for w in sorted(want):
+        m = re.match(r'^ev([456]):(-?\w+)(?::(-?\w+))?$', w)
+        if m:
+            op = int(m.group(1))
+            fa = find_event_fn(L, op)
+            if fa:
+                targets.append((w, op, [(int(m.group(2), 0), int(m.group(3) or '0', 0))], fa, None, True))
+                seqargs[w] = seqargs.get('ev%d' % op, [])
+                single.append(w)
     if want:
         def hit(t):
-            lab, op, ac, fa, _ = t
+            lab, op, ac, fa, _, ev = t
+            if lab in single:
+                return True
             return (lab in want or (lab.startswith('trig') and str(int(lab[4:])) in want)
                     or (fa and ('%08X' % fa in {w.upper().replace('0X', '').replace('SUB_', '') for w in want})))
         targets = [t for t in targets if hit(t)]
@@ -1283,15 +1522,21 @@ def main():
     for i, a in enumerate(L.addrs):
         if L.ins[a][0].startswith('jmp dword ptr [4*'):
             skip.update(L.addrs[max(0, i - 6):i])
-    G.update(ctx=ctx, L=L, harness=harness, seed=args.seed, skip=skip, full=args.full)
+    if harness_ev is None:
+        print(evmsg)
+        targets = [t for t in targets if not t[5]]
+    G.update(ctx=ctx, ctx_ev=ctx_ev, L=L, harness=harness, harness_ev=harness_ev, seed=args.seed, skip=skip,
+             full=args.full, seq=seqargs)
     jobs = []
-    for lab, op, ac, fa, _ in targets:
-        small = fa is not None and (L.func_end(fa) - fa) < 40
+    for lab, op, ac, fa, _, ev in targets:
+        small = fa is not None and (L.func_end(fa) - fa) < 40 and not ev
         # big handlers need more runs: about 8 per conditional jump
-        fs = L.closure(fa) if fa else L.closure(L.entry) - (L.closure(L.trig[0]) if lab == 'tick' and 0 in L.trig else set())
+        fs = L.closure(fa, ev) if fa else L.closure(L.entry) - (L.closure(L.trig[0]) if lab == 'tick' and 0 in L.trig else set())
         nj = sum(1 for f in fs for a in range(f, L.func_end(f)) if a in L.ins and L.ins[a][0].split()[0] in JCC)
         budget = max(args.budget, min(8 * nj, args.max_budget))
-        jobs.append((lab, op, ac, fa, 60 if small else budget, 20 if small else args.extra))
+        if lab in single:
+            budget, small = 200, False
+        jobs.append((lab, op, ac, fa, 60 if small else budget, 20 if small else args.extra, ev))
 
     print('LIEU%s: entry 0x%08X, %d callbacks, %d trigger slots; %d targets' %
           (nn, L.entry, len(L.slots), len(L.trig), len(jobs)))
@@ -1303,10 +1548,12 @@ def main():
     tot = dict(cases=0, bad=0, err=0, jcc=0, both=0, pure=0)
     failed = False
     print('%-7s %-28s %-24s %6s %9s %7s %s' % ('target', 'DLL function', 'C function', 'cases', 'branches', 'cov', 'result'))
-    for (lab, op, ac, fa, _), r in zip(targets, results):
+    for (lab, op, ac, fa, _, ev), r in zip(targets, results):
         if fa:
             dn = L.fstart.get(fa, 'sub_%08X' % fa)
             cn = c_name_for(fa, cfuncs, texts) or '?'
+            if dn.startswith('lieu_event'):
+                cn = 'common:' + dn
         else:
             subs = sorted(f for f in r['funcs'] if f != L.entry and L.fstart.get(f, '').startswith('sub_'))
             dn = ','.join('sub_%08X' % f for f in subs[:2]) or 'entry'
@@ -1316,7 +1563,19 @@ def main():
         if status == 'ok' and r['pure']:
             status += ' (%d cases differ only in pure queries)' % r['pure']
         print('%-7s %-28s %-24s %6d %4d/%-4d %6.1f%% %s' % (lab, dn[:28], cn[:24], r['cases'], r['both'], r['jcc'], pct, status))
+        if ev and lab in evinfo:
+            fa_, nh, nu = evinfo[lab]
+            hs = {a for a, _ph in ac}
+            print('    switch: %d handled + %d unhandled argument values, %d of %d exercised' %
+                  (nh, nu, len(r['argsseen'] & hs), len(hs)))
+            if hs - r['argsseen']:
+                print('    not exercised: %s' % ' '.join(str(x) for x in sorted(hs - r['argsseen'])))
+        if ev and r['badargs']:
+            print('    mismatching arguments: %s' % ' '.join('%d(x%d)' % kv for kv in sorted(r['badargs'].items())))
         for d, reads, c in r['mism']:
+            if ev:
+                print('    input: arg=%d arg2=%d, then %s' % (c.arg, c.arg2, ' '.join('%d' % m[0] for m in c.more[:6]) + (' ...' if len(c.more) > 6 else '')
+                                                                    if c.more else 'no further calls'))
             print('    ' + d.replace('\n', '\n    '))
             print('    state read (non-zero): %s' % reads)
         for ee in r['errs']:

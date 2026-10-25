@@ -783,7 +783,8 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         const c8 *ob;
         if      (phase == 0) ob = "OB21A";
         else if (phase == 1) ob = "OB21B";
-        else                 ob = "OB21C";
+        else if (phase >= 2) ob = "OB21C";
+        else { e5_reset(); CB->bloque(BLOQUE_NONE); break; }   /* 0x10003E3F: phase < 0 */
         e5_reset();
         if (ST(ST_SPECIAL_MODE) == 1) {
             if (ST(ST_HERO) == P_ARKHAN2) CB->animation("SP02ATT19");
@@ -842,8 +843,7 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
             CB->animation("SP01ACT98");
             CB->evenement(0x50, 2000);
         }
-        CB->bloque(BLOQUE_NONE);
-        break;
+        break;      /* 0x10004376/7B/80: straight to the epilogue, no bloque(0) */
     }
 
     case OB_POTION: {  /* 0x4385 — OB31 + layer 0x14 reduction */
@@ -969,6 +969,54 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
         }
     }
 
+    case OB_JERRYCAN: {  /* 0x5828 — SPxxATT04 health decrement, LCOD26/27 */
+        e5_reset();
+        if (ST(0x6FC) != 2) {
+            if (ST(ST_SPECIAL_MODE) == 0) {
+                if (ST(ST_HERO) == P_ARKHAN2) {
+                    if (CB->divers(DV_HP, P_ARKHAN2, -1) - 0x1E > 0x32)
+                        CB->divers(DV_HP, P_ARKHAN2, CB->divers(DV_HP, P_ARKHAN2, -1) - 0x1E);
+                    CB->animation("SP02ATT04");
+                    CB->animation("P02ATT08");
+                    CB->animation("ar_50");
+                }
+                if (ST(ST_HERO) == P_ARKHAN3) {
+                    if (CB->divers(DV_HP, P_ARKHAN3, -1) - 0x14 > 0x32)
+                        CB->divers(DV_HP, P_ARKHAN3, CB->divers(DV_HP, P_ARKHAN3, -1) - 0x14);
+                    CB->animation("SP03ATT04");
+                    CB->animation("P03ATT08");
+                    CB->animation("ar_50");
+                }
+            }
+            if (ST(ST_SPECIAL_MODE) == 1) {
+                if (ST(ST_HERO) == P_ARKHAN2) {
+                    CB->animation("SG00ATT01");
+                    CB->dialogue("LCOD26", P_ARKHAN2);
+                    CB->animation("ar_50");
+                }
+                if (ST(ST_HERO) == P_ARKHAN3) {
+                    CB->animation("SG00ATT01");
+                    CB->dialogue("LCOD27", P_ARKHAN3);
+                    CB->animation("ar_50");
+                }
+            }
+        }
+        if (ST(0x6FC) == 2) {
+            if (ST(ST_HERO) == P_ARKHAN2) {
+                CB->animation("SG00ATT01");
+                CB->dialogue("LCOD26", P_ARKHAN2);
+                CB->animation("ar_50");
+            }
+            if (ST(ST_HERO) == P_ARKHAN3) {
+                CB->animation("SG00ATT01");
+                CB->dialogue("LCOD27", P_ARKHAN3);
+                CB->animation("ar_50");
+            }
+        }
+        CB->bloque(BLOQUE_NONE);
+        break;
+    }
+
     case OB_TUBE: {  /* 0x54F1 — SPxxATT02 health decrement */
         e5_reset();
         if (ST(0x6D8) == 0) {
@@ -976,21 +1024,21 @@ void lieu_event5(i32 arg, i32 phase) { /* sub_100022B4(ecx=arg, edx=phase) */
                 ST(0x6D8) = 1;
                 if (ST(ST_HERO) == P_ARKHAN1) {
                     i32 v = CB->divers(DV_HP, P_ARKHAN1, -1);
-                    if (v - 0x32 > 0x64) CB->divers(DV_HP, P_ARKHAN1, v - 0x32);
+                    if (v - 0x32 > 0x64) CB->divers(DV_HP, P_ARKHAN1, CB->divers(DV_HP, P_ARKHAN1, -1) - 0x32);
                     CB->animation("SP01ATT02");
                     CB->animation("P01ATT03");
                     CB->animation("ar_50");
                 }
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     i32 v = CB->divers(DV_HP, P_ARKHAN2, -1);
-                    if (v - 0x1E > 0x32) CB->divers(DV_HP, P_ARKHAN2, v - 0x1E);
+                    if (v - 0x1E > 0x32) CB->divers(DV_HP, P_ARKHAN2, CB->divers(DV_HP, P_ARKHAN2, -1) - 0x1E);
                     CB->animation("SP02ATT02");
                     CB->animation("P02ATT03");
                     CB->animation("ar_50");
                 }
                 if (ST(ST_HERO) == P_ARKHAN3) {
                     i32 v = CB->divers(DV_HP, P_ARKHAN3, -1);
-                    if (v - 0x14 > 0x32) CB->divers(DV_HP, P_ARKHAN3, v - 0x14);
+                    if (v - 0x14 > 0x32) CB->divers(DV_HP, P_ARKHAN3, CB->divers(DV_HP, P_ARKHAN3, -1) - 0x14);
                     CB->animation("SP02ATT02");
                     CB->animation("P02ATT03");
                     CB->animation("ar_50");
