@@ -1451,6 +1451,9 @@ def main():
                     if re.match(r'lieu%s(_trig)?\.c$' % nn, f))
     if not cfiles:
         sys.exit('no port: src/levels/lieu%s.c' % nn)
+    # levels of the older script version share src/levels/lieu_common_v1.c
+    if any('lieu_v1_' in open(f).read() for f in cfiles):
+        cfiles.append(os.path.join(ROOT, 'src', 'levels', 'lieu_common_v1.c'))
     LEVEL_FILES[:] = cfiles
     work = os.path.join(args.work, nn)
     os.makedirs(work, exist_ok=True)

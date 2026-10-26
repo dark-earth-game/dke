@@ -18,8 +18,4 @@ void l33_trigger(i32 idx);
  *   l33_trig00 = trigger 0, sub_10005FB0 (thunk sub_10001073; INIT default) */
 void l33_trig00(void);
 
-/* Hero greets persona n (sub_10014896, thunk sub_100010AF): the LIEU33
- * variant of lieu_pre_scene (lieu33.c). */
-void l33_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);
-
 #endif /* DKE_LIEU33_INT_H */

@@ -487,7 +487,7 @@ static void trig02(void) {
                         }
                         lieu_action_register("L12D40", P_ARKHAN2, "SG02DIA03", NULL);
                         lieu_action_register("L12D43", P_BANDOR, "SP07DIA53", "SP07ARR01_10");
-                        l50_pre_scene(ST(ST_HERO), P_BANDOR, 70, 1, 2);
+                        lieu_v1_pre_scene(ST(ST_HERO), P_BANDOR, 70, 1, 2);
                         CB->link_objet(7, "OB70", 0x1B, 0);
                         CB->animation("Sar_10");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -506,7 +506,7 @@ static void trig02(void) {
                         }
                         lieu_action_register("L12D42", P_ARKHAN3, "SG03DIA07", NULL);
                         lieu_action_register("L12D43", P_BANDOR, "SP07DIA51", "SP07ARR01_10");
-                        l50_pre_scene(ST(ST_HERO), P_BANDOR, 70, 1, 2);
+                        lieu_v1_pre_scene(ST(ST_HERO), P_BANDOR, 70, 1, 2);
                         CB->link_objet(7, "OB70", 0x1B, 0);
                         CB->animation("Sar_10");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -746,7 +746,7 @@ static void trig02(void) {
                         }
                         CB->link_objet(7, "OB12", 0x1B, 1);
                         CB->joindre(P_BANDOR, 0, 0, 0, ST(ST_HERO));
-                        l50_pre_scene(P_ARKHAN2, P_BANDOR, 12, 1, 2);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_BANDOR, 12, 1, 2);
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L12D58", P_ARKHAN2, "SG02DIA06", NULL);
                         }
@@ -795,7 +795,7 @@ static void trig02(void) {
                             }
                         }
                         CB->joindre(P_BANDOR, 0, 0, 0, ST(ST_HERO));
-                        l50_pre_scene(P_ARKHAN3, P_BANDOR, 12, 1, 2);
+                        lieu_v1_pre_scene(P_ARKHAN3, P_BANDOR, 12, 1, 2);
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L12D60", P_ARKHAN3, "SG03DIA06", NULL);
                         }

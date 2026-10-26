@@ -31,3 +31,14 @@ const c8 *lieu_anim_name(i32 persona, i32 state);
 void lieu_event4(i32 arg);              /* sub_1000123A, op 4 */
 void lieu_event5(i32 arg, i32 phase);   /* sub_100022B4, op 5 */
 void lieu_event6(i32 arg);              /* sub_10005BEC, op 6 */
+
+/* lieu_common_v1.c: the older-version handlers of LIEU33, 47, 50, 53, 54.
+ * `newer` = 1 enables the two cases LIEU33 lacks (event4 EV_END_GAME,
+ * event5 OB_PARCHMENT level 28 test). */
+void lieu_v1_reset(void);               /* DLL .data restart (call from INIT) */
+void lieu_v1_event4(i32 arg, i32 newer);
+void lieu_v1_event5(i32 arg, i32 phase, i32 newer);
+void lieu_v1_event6(i32 arg);
+/* hero greets persona n (LIEU33 sub_10014896): lieu_pre_scene without the
+ * `n != 6` test on the Sp%02dMAR30 animation. */
+void lieu_v1_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);

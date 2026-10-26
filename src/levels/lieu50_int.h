@@ -18,8 +18,4 @@ void l50_trigger(i32 idx);
  *   l50_trig00 = trigger 0, sub_10001200 (thunk 0x1000106E; INIT default) */
 void l50_trig00(void);
 
-/* Hero greets persona n (sub_10010876, thunk 0x100010AA): the LIEU50
- * variant of lieu_pre_scene (lieu50.c). */
-void l50_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);
-
 #endif /* DKE_LIEU50_INT_H */

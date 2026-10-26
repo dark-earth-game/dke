@@ -18,8 +18,4 @@ void l54_trigger(i32 idx);
  *   l54_trig00 = trigger 0, sub_10001D60 (thunk sub_1000106E; INIT default) */
 void l54_trig00(void);
 
-/* Hero greets persona n (sub_10001856, thunk sub_100010AA): the LIEU54
- * variant of lieu_pre_scene (lieu54.c). */
-void l54_pre_scene(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);
-
 #endif /* DKE_LIEU54_INT_H */

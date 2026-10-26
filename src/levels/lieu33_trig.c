@@ -1793,7 +1793,7 @@ static void trig31(void) {
                         if (ST(ST_HERO) == P_ARKHAN3) {
                             CB->dialogue("L03D520", P_ARKHAN3);
                         }
-                        l33_pre_scene(ST(ST_HERO), P_KALHI13, 1, 6, 5);
+                        lieu_v1_pre_scene(ST(ST_HERO), P_KALHI13, 1, 6, 5);
                         CB->dialogue("L03D521", P_KALHI13);
                         CB->modify_var(&ST(0xF4), 1);
                         return;
@@ -1938,7 +1938,7 @@ static void trig32(void) {
                     if (ST(ST_HERO) == P_ARKHAN3) {
                         CB->dialogue("L10D131", P_ARKHAN3);
                     }
-                    l33_pre_scene(ST(ST_HERO), P_KALHI13, 1, 6, 5);
+                    lieu_v1_pre_scene(ST(ST_HERO), P_KALHI13, 1, 6, 5);
                     CB->dialogue("L10D132", P_KALHI13);
                     CB->modify_var(&ST(0xF4), 1);
                     return;

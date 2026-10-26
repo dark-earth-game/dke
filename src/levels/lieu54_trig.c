@@ -1237,7 +1237,7 @@ static void trig03(void) {
                         lieu_action_register("L14D152E", P_PROVIDER, "SP16DIA58", "SP16ARR01");
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA02", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 20, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 20, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x900E */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1265,7 +1265,7 @@ static void trig03(void) {
                         lieu_action_register("L14D83B", P_PROVIDER, "SP16DIA62", "SP16ARR01");
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA02", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 22, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 22, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x9163 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1292,7 +1292,7 @@ static void trig03(void) {
                         CB->link_objet(16, "OB43C", 27, 1);
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA02", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 42, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 42, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x929F */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1320,7 +1320,7 @@ static void trig03(void) {
                         lieu_action_register("L14D226B", P_PROVIDER, "SP16DIA57", "SP16ARR01");
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA07", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 95, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 95, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x93F4 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1348,7 +1348,7 @@ static void trig03(void) {
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA07", NULL);
                         lieu_action_register("L14D228B", P_PROVIDER, "SP16DIA57", "SP16ARR01");
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 4, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 4, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x9549 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1376,7 +1376,7 @@ static void trig03(void) {
                         lieu_action_register("L14D230B", P_PROVIDER, "SP16DIA58", "SP16ARR01");
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA07", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 94, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 94, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x969E */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1403,7 +1403,7 @@ static void trig03(void) {
                         CB->link_objet(16, "OB64C", 27, 1);
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA07", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 65, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 65, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x97DA */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1431,7 +1431,7 @@ static void trig03(void) {
                         CB->link_objet(16, "OB24F", 27, 1);
                         lieu_action_register("L14D76A", P_ARKHAN2, "SG00DIA07", NULL);
                         CB->divers(DV_FLAG_4B2B98, 1, 0);
-                        l54_pre_scene(P_ARKHAN2, P_PROVIDER, 31, 1, 3);
+                        lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 31, 1, 3);
                         CB->animation("SP16PRE73");
                         /* 0x9925 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1538,7 +1538,7 @@ static void trig03(void) {
                             CB->animation("ar");
                         }
                     }
-                    l54_pre_scene(P_ARKHAN2, P_PROVIDER, 99, 1, 3);
+                    lieu_v1_pre_scene(P_ARKHAN2, P_PROVIDER, 99, 1, 3);
                     lieu_action_register("L14D67B", P_PROVIDER, "SP16DIA57", "SP16ARR01");
                     lieu_action_register("L14D67C", P_PROVIDER, "SP16DIA64", "SP16ARR01");
                     lieu_action_register("L14D67D", P_PROVIDER, "SP16DIA62", "SP16ARR01");
@@ -2671,12 +2671,12 @@ static void trig24(void) {
                 if (ST(0xBEC) == 1) {
                     lieu_action_register("L14D144", P_ARKHAN2, "SG00DIA05", NULL);
                     lieu_action_register("L14D135", P_MALROT1, "SP61DIA59", "SP61ARR01_10");
-                    l54_pre_scene(P_ARKHAN2, P_MALROT1, 24, 1, 24);
+                    lieu_v1_pre_scene(P_ARKHAN2, P_MALROT1, 24, 1, 24);
                     CB->animation("P61ACT01");
                     CB->animation("P61ARR01");
                     CB->dialogue("L14D175A", P_MALROT1);
                     CB->dialogue("L14D175B", P_MALROT1);
-                    l54_pre_scene(P_ARKHAN2, P_MALROT1, 24, 1, 24);
+                    lieu_v1_pre_scene(P_ARKHAN2, P_MALROT1, 24, 1, 24);
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     ST(0xBEC) = 2;
