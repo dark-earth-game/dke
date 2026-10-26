@@ -110,6 +110,7 @@ static void voice_apply(sfx_voice_t *v) {
 static void voice_play(i32 vi, const wav_t *w, i32 freq, i32 count) {
     sfx_voice_t *v = &g_v[vi];
     if (!w || !w->samples || !w->num_samples) { v->active = 0; return; }
+    if (getenv("DKE_SFXDBG")) print("sfx: voice %d play %u samples @%d loop=%d t=%u\n", vi, w->num_samples, (i32)w->sample_rate, count == 0, ls_tick());
     v->w = w;
     v->pos = 0;
     v->rate = freq ? freq : (i32)w->sample_rate;
@@ -154,8 +155,23 @@ static void mix(i16 *out, u32 frames) {
 
 /* Called once per frame. Pushes only while something plays, so menu
  * sfx_play() and the movie decoder keep the queue to themselves otherwise. */
+static u32 g_lead = SFX_LEAD_FRAMES;   /* adaptive: frames queued ahead */
+static u32 g_last_pump;
+
 static void mixer_pump(u32 now) {
     if (!state || !state->audio_enabled) return;
+    /* The playback clock is the wall clock: the game clock stops while the
+     * inventory / a pause is up, which made the mixer resync and cut out. */
+    now = ls_tick();
+    /* Lead time follows the slowest recent frame so a hitch does not drain
+     * the queue (stutter); it decays back to ~93 ms when frames are quick. */
+    if (g_last_pump) {
+        u32 dt = now - g_last_pump;
+        u32 need = (u32)((u64)dt * 2 * SFX_RATE / 1000);
+        if (need > g_lead) g_lead = need > 16384 ? 16384 : need;
+        else if (g_lead > SFX_LEAD_FRAMES) g_lead -= (g_lead - SFX_LEAD_FRAMES) / 64 + 1;
+    }
+    g_last_pump = now;
     b8 any = 0;
     for (i32 i = 0; i < SFX_VOICES && !any; i++) any = g_v[i].active;
     any = any || music_is_playing();
@@ -163,7 +179,7 @@ static void mixer_pump(u32 now) {
     if (!g_streaming) { g_streaming = 1; g_clock_t0 = now; g_pushed = 0; }
     u32 played = (u32)((u64)(now - g_clock_t0) * SFX_RATE / 1000);
     if (g_pushed < played) g_pushed = played;              /* underrun: resync */
-    u32 want = played + SFX_LEAD_FRAMES;
+    u32 want = played + g_lead;
     while (g_pushed < want) {
         u32 n = want - g_pushed;
         if (n > SFX_MAX_CHUNK) n = SFX_MAX_CHUNK;
@@ -580,6 +596,9 @@ void sfx_tick(void) {
         inst_free(SFX_INST_VOICE);
     mixer_pump(now);
 }
+
+/* For loops that block the frame (the inventory screen): keep the mixer fed. */
+void sfx_pump(void) { mixer_pump(0); }
 
 b8 sfx_voice_busy(void) { return g_inst_used[SFX_INST_VOICE]; }
 

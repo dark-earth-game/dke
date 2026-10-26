@@ -16,6 +16,7 @@ void sfx_level_begin(const c8 *root, i32 level, i32 reverb);
 void sfx_level_end(void);
 /* sub_44968B: per-frame event slots, voice release and mixer pump. */
 void sfx_tick(void);
+void sfx_pump(void);          /* keep the mixer fed inside a blocking loop */
 /* sub_46E883 tail: re-place the ambience after a camera switch. */
 void sfx_camera_changed(void);
 void sfx_set_master(i32 v);

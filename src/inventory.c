@@ -1127,6 +1127,7 @@ void inventory_screen_run(void) {
     u32 opened = S.prev_ms;
     while (!sys->quit) {
         ls_update_events(sys);
+        sfx_pump();                                  /* music / voices keep playing */
         inv_input_t in = {0};
 #define EDGE(k) (sys->actions[k] && !prev[k])
         in.esc = EDGE(27); in.back = EDGE(8); in.key_i = EDGE(105); in.f1 = EDGE(112);
