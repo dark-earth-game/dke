@@ -63,3 +63,4 @@ bin/game/*
 *.nam
 *.til
 __pycache__/
+disassembly/
