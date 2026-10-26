@@ -477,6 +477,8 @@ static void blit_fallback_glyph(u32 *fb, i32 fb_width, i32 fb_height,
  * draw_text_at — draw string with explicit font / position / colour.
  * ====================================================================== */
 
+static i32 s_tint = 0;   /* draw_text_tinted: modulate the glyph palette by the colour */
+
 void draw_text_at(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb) {
     if (!text || !font) return;
     if (!state || !state->graphic.front_buffer) return;
@@ -525,6 +527,11 @@ void draw_text_at(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb) {
                                 u8 r = font->palette[idx * 3 + 0];
                                 u8 g = font->palette[idx * 3 + 1];
                                 u8 b = font->palette[idx * 3 + 2];
+                                if (s_tint) {
+                                    r = (u8)(r * ((color >> 16) & 0xFF) / 255);
+                                    g = (u8)(g * ((color >> 8) & 0xFF) / 255);
+                                    b = (u8)(b * (color & 0xFF) / 255);
+                                }
                                 dst[gx] = 0xFF000000u | ((u32)b << 16) | ((u32)g << 8) | (u32)r;
                             } else {
                                 dst[gx] = color;
@@ -615,4 +622,12 @@ i32 read_line_file(c8 *dst, FILE *fp) {
 
     strcpy(dst, buf);
     return 1;
+}
+
+/* The palette's glyph ramp (light) scaled by `color` (0xFFRRGGBB): dark text
+ * for pale panels. */
+void draw_text_tinted(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb) {
+    s_tint = 1;
+    draw_text_at(font, x, y, text, color_argb);
+    s_tint = 0;
 }

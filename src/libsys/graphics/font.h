@@ -129,6 +129,7 @@ void draw_text(const c8 *text);
  * Writes to state->graphic.front_buffer.
  */
 void draw_text_at(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb);
+void draw_text_tinted(font_t *font, i32 x, i32 y, const c8 *text, u32 color_argb);
 
 /*
  * read_line_file — read one '\n'-terminated line from a binary file (addr 430D09).

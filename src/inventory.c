@@ -492,6 +492,12 @@ void inv_auto_combine(i32 held_id);
 void inventory_screen_run(void);               /* the DLL, rebuilt below */
 
 void inventory_screen_open(void) {             /* sub_42701B */
+    /* Test: DKE_GIVE="OB01A,OB11A,..." puts those items in the inventory. */
+    if (getenv("DKE_GIVE")) {
+        c8 list[256]; snprintf(list, sizeof(list), "%s", getenv("DKE_GIVE"));
+        for (c8 *t = strtok(list, ","); t; t = strtok(NULL, ",")) inv_add(t, 1, getenv("DKE_GIVE_NEW") ? 1 : 0);
+        unsetenv("DKE_GIVE");
+    }
     /* dword_4B33F0 = 1; set_display_mode(0x19); sub_416C10(2); */
     inv_sort(NULL /* TODO player held name */);
     inv_auto_combine(0 /* TODO player desc[0x97] */);
@@ -1081,14 +1087,14 @@ static void inv_draw(const u32 *game_view) {
         if (k == S.sel) inv_frame_box(fb, fw, WIN_X[k], WIN_Y[k], 160, 160, 0xFF60E0FFu);   /* fb is 0xAABBGGRR */
     }
     /* Name list: every listable item, the 4 shown in windows highlighted. */
-    for (i32 r = 0; r < S.count && r < 20; r++) {
+    for (i32 r = 0; r < S.count && r < 20; r++) {   /* 12 px rows: the system font is ~11 px tall */
         i32 idx = inv_nth_listable(r);
         if (idx < 0) break;
         c8 nm[64];
         inv_text_rec(g_names_txt, inv_name_id(g_inv[idx].name), nm, (i32)sizeof(nm));
         if (!nm[0]) snprintf(nm, sizeof(nm), "%.4s", g_inv[idx].name);
-        u32 col = (r >= S.scroll && r < S.scroll + 4) ? 0xFFFFE060u : 0xFFC0C0C0u;
-        draw_text_at(font_handle, 49, 160 + r * 9, nm, col);
+        u32 col = (r >= S.scroll && r < S.scroll + 4) ? 0xFF000000u : 0xFF6A5A48u;   /* the list sits on a pale panel */
+        draw_text_tinted(font_handle, 48, 122 + r * 12, nm, col);
     }
     /* Description of the selection. */
     if (S.win[S.sel].inv_index >= 0) {
