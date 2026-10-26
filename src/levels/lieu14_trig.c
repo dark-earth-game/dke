@@ -70,7 +70,7 @@ void l14_trigger(i32 idx) {
 static void trig_noop(void) {
 }
 
-/* trigger 00 — trig00_100073F0 — level setup: start-point presets, state reset, zones, objects, actor placement per entry room */
+/* trigger 00 — trig00_100073F0 (patch) — level setup: start-point presets, state reset, zones, objects, actor placement per entry room */
 void l14_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(14)) == 1) {
@@ -454,33 +454,44 @@ void l14_trig00(void) {
     }
     /* 0x8A7B */
     if (ST(V_DELIA_PHASE) == 4) {
-        CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0x21, 0);
+        /* 0x8A8A (patch) */
+        if (ST(ST_LEVEL) == 19) {
+            CB->pos_perso(P_DELIA, 3756, 2073, 0x7BC3, 1, "P10ARR01", 0x21, 0);
+        }
+        /* 0x8ABE (patch) */
+        if (ST(ST_LEVEL) == 15) {
+            CB->pos_perso(P_DELIA, 5486, 1005, 0x3287, 1, "P10ARR01", 0x21, 0);
+        }
+        /* 0x8AF2 (patch) */
+        if (ST(ST_LEVEL) != 19 && ST(ST_LEVEL) != 15) {
+            CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0x21, 0);
+        }
     }
-    /* 0x8ADD */
+    /* 0x8B63 */
     if (ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(V_DELIA_KILLED) == 14 && ST(0xC44) == 0 && ST(0x170) == 1) {
         CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 2, "P10cad", 0x21, 0);
     }
-    /* 0x8B75 */
+    /* 0x8BFB */
     if (ST(0xEB8) == 2 && ST(0x538) == 0) {
         ST(0x538) = 1;
     }
-    /* 0x8BA8 */
+    /* 0x8C2E */
     if (ST(0xE24) == 2) {
         ST(0xE24) = 3;
     }
-    /* 0x8BC9 */
+    /* 0x8C4F */
     if (ST(0xEF8) == 2 || ST(0xEF8) == 3) {
         ST(0xEF8) = 10;
-        /* 0x8BFC */
+        /* 0x8C82 */
         if (ST(ST_VIE(29)) != VIE_DEAD) {
             ST(0xF24) = 5;
         }
     }
-    /* 0x8C1D */
+    /* 0x8CA3 */
     if (ST(0xB10) != 0 && ST(0xE74) == 0) {
         ST(0xE74) = 1;
     }
-    /* 0x8C50 */
+    /* 0x8CD6 */
     if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_VIE(29)) == VIE_DEAD && ST(0xF24) == 6) {
         ST(0xF24) = 3;
     }

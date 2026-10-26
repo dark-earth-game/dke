@@ -56,7 +56,7 @@ void l23_trigger(i32 idx) {
 static void trig_noop(void) {
 }
 
-/* trigger 00 — sub_100073F0 — level setup: start-point presets, state resets, zones, actor placement (INIT default) */
+/* trigger 00 — sub_100073F0 (patch) — level setup: start-point presets, state resets, zones, actor placement (INIT default) */
 void l23_trig00(void) {
     /* 29698 */
     if (ST(ST_START_POINT(23)) == 1) {
@@ -130,6 +130,7 @@ void l23_trig00(void) {
     if (ST(ST_START_POINT(23)) == 11) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 10;
+        ST(0xAF8) = 1;   /* (patch) */
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(0xBA8) = 6;
     }
@@ -149,6 +150,7 @@ void l23_trig00(void) {
     ST(0x98) = 0;
     ST(0xB8) = 0;
     ST(0xBC) = 0;
+    ST(0xD4) = 0;   /* (patch) */
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
     ST(V_EVENT_2) = 0;
@@ -171,37 +173,37 @@ void l23_trig00(void) {
     CB->ajoute_zone(17, 5745, -3144, 50, 50, 0);
     CB->ajoute_zone(3, 6070, -3896, 100, 90, 0);
     CB->vire_col(12, 0);
-    /* 31160 */
+    /* 31190 */
     if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(0xB4C) == 3 && ST(0xF30) == 0) {
         CB->etat_objet("OB51", 5810, -1551, -2852, 0, 0xA7F8, 0x11F8, -1, 0);
         CB->ajoute_zone(13, 5890, -2860, 230, 235, 0);
     }
     CB->bruitage("L23AMB1", -1, -1);
-    /* 31307 */
+    /* 31337 */
     if (ST(0xB10) != 0 && ST(0xE74) == 0) {
         ST(0xE74) = 1;
     }
-    /* 31358 */
+    /* 31388 */
     if (ST(0x338) == 0 && ST(0x348) == 0 && ST(0xAF8) == 0) {
-        /* 31412 */
+        /* 31442 */
         if (ST(0xB98) == 0) {
             ST(0xB98) = 2;
         } else if (ST(0xB98) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
             ST(0xB98) = 0;
         }
     }
-    /* 31501 */
+    /* 31531 */
     if (ST(0x338) == 0 && ST(0x348) == 0 && ST(0xAF8) == 1 && ST(0xB98) == 4) {
         ST(0x338) = 1;
         ST(0x348) = 1;
     }
-    /* 31600 */
+    /* 31630 */
     if (ST(ST_LEVEL) == 10) {
         CB->pos_perso(ST(ST_HERO), 5268, -2605, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
     }
-    /* 31678 */
+    /* 31708 */
     if (ST(ST_LEVEL) == 24) {
-        /* 31696 */
+        /* 31726 */
         if (ST(ST_HERO) >= 2 && ST(0xBB4) == 1) {
             ST(ST_SCRIPT_BUSY) = 1;
             CB->pos_perso(P_PHEDORIA, 6300, -3400, 0xCE4, 1, "P26ARR01", 5, 0);
@@ -210,10 +212,10 @@ void l23_trig00(void) {
             CB->pos_perso(ST(ST_HERO), 6142, -3821, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
         }
     }
-    /* 31886 */
+    /* 31916 */
     if (ST(ST_LEVEL) == 25) {
         CB->pos_perso(ST(ST_HERO), 6425, -3642, 0x2E12, 1, "ar", 6, 0);
-        /* 31947 */
+        /* 31977 */
         if (ST(0xBB4) == 1 && ST(ST_HERO) >= 2) {
             ST(ST_SCRIPT_BUSY) = 1;
             ST(0x84) = 1;
@@ -221,73 +223,73 @@ void l23_trig00(void) {
             CB->pos_perso(P_PHEDORIA, 6214, -2965, 0x7530, 1, "P26ARR01", 5, 0);
         }
     }
-    /* 32084 */
+    /* 32114 */
     if (ST(0xE78) == 1 && ST(ST_HERO) == P_ARKHAN1) {
         ST(0xE78) = 2;
         ST(0xE7C) = 3;
         CB->ajoute_zone(7, 6721, -3716, 100, 100, 1);
         CB->pos_perso(P_PHEDORIA, 5000, 3000, 0xC350, 1, "P26ARR03", 5, 0);
         ST(0x9C) = (ST(ST_GAME_TIME) - ST(0xA0));
-        /* 32252 */
+        /* 32282 */
         if (ST(0x9C) <= 5000) {
             CB->pos_perso(P_RYLSADHAR20, 6100, -3000, 0x9664, 1, "P20ARR01", 4, 0);
         }
-        /* 32310 */
+        /* 32340 */
         if (ST(0x9C) > 5000 && ST(0x9C) <= 10000) {
             CB->pos_perso(P_RYLSADHAR20, 6450, -3640, 0xC350, 1, "P20ARR01", 4, 0);
         }
-        /* 32389 */
+        /* 32419 */
         if (ST(0x9C) > 10000) {
             ST(0xE78) = 7;
         }
     }
-    /* 32422 */
+    /* 32452 */
     if (ST(0xE78) == 10 && ST(ST_HERO) == P_ARKHAN1) {
         CB->vire_col(13, 0);
         CB->retire_zone(2);
         CB->pos_perso(P_ZED84, 6306, -3774, 0xE4C5, 1, "P84ARR01", 7, 0);
         CB->link_objet(0x54, "OB68", 0x1D, 1);
     }
-    /* 32539 */
+    /* 32569 */
     if (ST(0xAF8) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->ajoute_zone(12, 6320, -3330, 250, 250, 0);
-        /* 32608 */
+        /* 32638 */
         if (ST(0x4EC) == 0) {
             CB->pos_perso(P_GUARDIAN13, 6327, -3493, 0xFAE6, 1, "P53GAR03", 0xA, 0);
             CB->pos_perso(P_GUARDIAN14, 6099, -3367, 0xC501, 1, "P54GAR02", 0xB, 0);
         }
-        /* 32700 */
+        /* 32730 */
         if (ST(0x4EC) == 1) {
             CB->pos_perso(P_GUARDIAN13, 6059, -3793, 0x37E, 1, "P53ARR03", 0xA, 0);
             CB->pos_perso(P_GUARDIAN14, 6393, -3605, 0x3A35, 1, "P54ARR02", 0xB, 0);
         }
-        /* 32792 */
+        /* 32822 */
         if (ST(0x4EC) == 2) {
-            /* 32810 */
+            /* 32840 */
             if (ST(ST_VIE(P_GUARDIAN13)) == VIE_DEAD) {
                 CB->pos_perso(P_GUARDIAN13, CB->divers(DV_DESC_POS, P_GUARDIAN13, 0), CB->divers(DV_DESC_POS, P_GUARDIAN13, 1), CB->divers(DV_DESC_POS, P_GUARDIAN13, 2), 2, "P53cad", 0xA, 0);
             } else {
                 CB->pos_perso(P_GUARDIAN13, 6059, -3793, 0x37E, 1, "P53GAR03", 0xA, 0);
             }
-            /* 32950 */
+            /* 32980 */
             if (ST(ST_VIE(P_GUARDIAN14)) == VIE_DEAD) {
                 CB->pos_perso(P_GUARDIAN14, CB->divers(DV_DESC_POS, P_GUARDIAN14, 0), CB->divers(DV_DESC_POS, P_GUARDIAN14, 1), CB->divers(DV_DESC_POS, P_GUARDIAN14, 2), 2, "P54cad", 0xB, 0);
             } else {
                 CB->pos_perso(P_GUARDIAN14, 6393, -3605, 0x3A35, 1, "P54GAR02", 0xB, 0);
             }
         }
-        /* 33090 */
+        /* 33120 */
         if (ST(0x4EC) == 3) {
             CB->pos_perso(P_GUARDIAN13, CB->divers(DV_DESC_POS, P_GUARDIAN13, 0), CB->divers(DV_DESC_POS, P_GUARDIAN13, 1), CB->divers(DV_DESC_POS, P_GUARDIAN13, 2), 2, "P53cad", 0xA, 0);
             CB->pos_perso(P_GUARDIAN14, CB->divers(DV_DESC_POS, P_GUARDIAN14, 0), CB->divers(DV_DESC_POS, P_GUARDIAN14, 1), CB->divers(DV_DESC_POS, P_GUARDIAN14, 2), 2, "P54cad", 0xB, 0);
         }
     }
-    /* 33268 */
+    /* 33298 */
     if (ST(V_GUARD_FIGHT_DONE) == 0) {
         CB->load_anim("223OUV02", 0);
         CB->load_anim("223OUV03", 1);
     }
-    /* 33315 */
+    /* 33345 */
     if (ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->load_anim("223OUV05", 0);
         CB->load_anim("223OUV06", 1);
@@ -295,14 +297,18 @@ void l23_trig00(void) {
     ST(ST_START_POINT(23)) = 0;
 }
 
-/* trigger 41 — sub_1000825A */
+/* trigger 41 — sub_10008278 (patch): one-shot 0xD4 marker, set when 0x4EC == 1; the arrival scene also bumps 0xD4 */
 static void trig41(void) {
-    /* 33388 */
+    /* 33418 (patch) */
+    if (ST(0x4EC) == 1 && ST(0xD4) == 0) {
+        ST(0xD4) = 1;
+    }
+    /* 33469 */
     if (ST(0xE78) == 2 && ST(ST_HERO) == P_ARKHAN1) {
         CB->joindre(-P_RYLSADHAR20, 6450, -3640, 0xC350, -1);
         CB->modify_var(&ST(0x64), 1);
     }
-    /* 33472 */
+    /* 33553 */
     if (ST(0xE78) == 10 && ST(ST_HERO) == P_ARKHAN1) {
         CB->bloque(BLOQUE_ALL);
         CB->joindre(-ST(ST_HERO), 6288, -3485, 0x2083, -1);
@@ -312,22 +318,22 @@ static void trig41(void) {
         CB->joindre(-ST(ST_HERO), 0, 0, 0, 84);
         CB->modify_var(&ST(0x68), 1);
     }
-    /* 33677 */
+    /* 33758 */
     if (ST(ST_HERO) >= 2 && ST(0xBB4) == 1) {
         CB->bloque(BLOQUE_ALL);
         CB->divers(DV_RUN, P_PHEDORIA, 1);
-        /* 33742 */
+        /* 33823 */
         if (ST(0x84) == 0) {
             CB->joindre(-P_PHEDORIA, 6200, -3570, 0x5AC8, -1);
         }
-        /* 33788 */
+        /* 33869 */
         if (ST(0x84) == 1) {
             CB->joindre(-ST(ST_HERO), 0, 0, 0, 26);
             CB->joindre(-P_PHEDORIA, 6266, -3267, 0x9088, -1);
         }
         CB->modify_var(&ST(0x78), 1);
     }
-    /* 33883 */
+    /* 33964 */
     if (ST(0x4EC) == 0 && ST(0xAF8) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->bloque(BLOQUE_ALL);
         CB->change_camera(2, CAM_LOCKED);
@@ -346,6 +352,7 @@ static void trig41(void) {
         CB->joindre(P_GUARDIAN13, 6393, -3605, 0x3A35, -1);
         CB->change_camera(0, CAM_LOCKED);
         CB->change_camera(99, CAM_AUTO);
+        CB->modify_var(&ST(0xD4), 1);   /* (patch) */
         CB->bloque(BLOQUE_NONE);
     }
 }

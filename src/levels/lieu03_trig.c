@@ -59,7 +59,7 @@ void l03_trigger(i32 idx) {
 static void trig_noop(void) {
 }
 
-/* trigger 00 — sub_100073F0 — level setup: entry presets, state reset, zones, objects, actor placement */
+/* trigger 00 — sub_100073F0 (patch) — level setup: entry presets, state reset, zones, objects, actor placement */
 void l03_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(3)) == 1) {
@@ -231,30 +231,34 @@ void l03_trig00(void) {
         if (ST(ST_LEVEL) == 2) {
             CB->pos_perso(P_DELIA, -1940, -1330, 0x4074, 1, "P10ARR01", 0xC, 0);
         }
-        /* 0x7E66 */
-        if (ST(ST_LEVEL) != 2) {
+        /* 0x7E66 (patch: also excludes level 4) */
+        if (ST(ST_LEVEL) != 2 && ST(ST_LEVEL) != 4) {
             CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0xC, 0);
         }
+        /* 0x7ED4 (patch) */
+        if (ST(ST_LEVEL) == 4) {
+            CB->pos_perso(P_DELIA, -1742, -1810, 0x3E6B, 1, "P10ARR01", 0xC, 0);
+        }
     }
-    /* 0x7EC8 */
+    /* 0x7F0B */
     if (ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(V_DELIA_KILLED) == 3) {
         CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 2, "P10cad", 0xC, 0);
     }
-    /* 0x7F3C */
+    /* 0x7F7F */
     if (ST(0x338) == 0 && ST(0x348) == 0 && ST(0xAF8) == 0 && ST(0xB98) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
         ST(0xB98) = 0;
     }
-    /* 0x7FA5 */
+    /* 0x7FE8 */
     if (ST(0x338) == 0 && ST(0x348) == 0 && ST(0xAF8) == 1 && ST(0xB98) == 4) {
         ST(0x338) = 1;
         ST(0x348) = 1;
     }
     ST(ST_START_POINT(3)) = 0;
-    /* 0x801A */
+    /* 0x805D */
     if (ST(V_GUARD_FIGHT_DONE) == 0) {
         CB->load_anim("203EAU01", 0);
     }
-    /* 0x8039 */
+    /* 0x807C */
     if (ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->load_anim("203EAU02", 0);
     }

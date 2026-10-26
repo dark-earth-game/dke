@@ -11,7 +11,7 @@
  *
  * event4 (sub_1000123A), event5 (sub_100022B4), event6 (sub_10005BEC),
  * lieu_action_register, lieu_pre_scene and sub_10001200 (float reset) are
- * the shared lieu_common.c. tick_body (sub_100085D5) is level-23 specific.
+ * the shared lieu_common.c. tick_body (sub_1000863D, patch) is level-23 specific.
  * The DLL has no .data globals of its own to reset on INIT.
  */
 
@@ -20,59 +20,59 @@
 #include "lieu23_int.h"
 
 /* -------------------------------------------------------------------------
- * Per-frame body — sub_100085D5 (thunk 0x100010B9), level-23 specific.
+ * Per-frame body — sub_1000863D (patch; thunk 0x100010B9), level-23 specific.
  * Ported faithfully from disassembly (labels in comments = original
  * addresses). `return` == original `jmp` to the epilogue (0x1000A55A).
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
-    /* 34279 */
+    /* 34383 */
     if (ST(ST_HERO) == 4 && ST(V_DEATH_EVENT_SENT) == 0) {
         ST(V_DEATH_EVENT_SENT) = 1;
         CB->evenement(44, 1500);
     }
-    /* 34346 */
+    /* 34450 */
     if (ST(V_END_GAME_REQ) == 1) {
         ST(V_END_GAME_REQ) = 0;
         CB->bloque(BLOQUE_ALL);
         ST(V_DEATH_EVENT_SENT) = 1;
-        /* 34410 */
+        /* 34514 */
         if (CB->divers(DV_PERSONA_PRESENT, P_ARKHAN0, 0)) {
             CB->divers(DV_HP, P_ARKHAN0, 0);
         }
-        /* 34451 */
+        /* 34555 */
         if (CB->divers(DV_PERSONA_PRESENT, P_ARKHAN1, 0)) {
             CB->divers(DV_HP, P_ARKHAN1, 0);
         }
-        /* 34495 */
+        /* 34599 */
         if (CB->divers(DV_PERSONA_PRESENT, P_ARKHAN2, 0)) {
             CB->divers(DV_HP, P_ARKHAN2, 0);
         }
-        /* 34539 */
+        /* 34643 */
         if (CB->divers(DV_PERSONA_PRESENT, P_ARKHAN3, 0)) {
             CB->divers(DV_HP, P_ARKHAN3, 0);
         }
-        /* 34575 */
+        /* 34679 */
         if (ST(V_GUARD_FIGHT_DONE) == 0) {
             CB->cinematique("SC22_500");
         }
-        /* 34604 */
+        /* 34708 */
         if (ST(V_GUARD_FIGHT_DONE) != 0) {
             CB->cinematique("SC23_500");
         }
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
-    /* 34656 */
+    /* 34760 */
     if (CB->divers(DV_WAS_HIT, P_GUARDIAN13, 0) && ST(ST_VIE(P_GUARDIAN13)) != VIE_DEAD && ST(0x4F0) != 0) {
         CB->select_pile(1, 2);
         CB->divers_empile(DV_WAS_HIT, P_GUARDIAN13, 1);
         CB->combat(P_GUARDIAN13, -1);
-        /* 34780 */
+        /* 34884 */
         if ((CB->divers(DV_HP, P_GUARDIAN13, -1) - ST(V_HIT_DAMAGE)) > 0) {
             CB->divers(DV_HP, P_GUARDIAN13, (CB->divers(DV_HP, P_GUARDIAN13, -1) - ST(V_HIT_DAMAGE)));
         } else {
             CB->divers(DV_HP, P_GUARDIAN13, 1);
         }
-        /* 34877 */
+        /* 34981 */
         if (CB->divers(DV_HP, P_GUARDIAN13, -1) <= 1) {
             ST(ST_VIE(P_GUARDIAN13)) = VIE_DEAD;
             CB->stop_joindre(-P_GUARDIAN13);
@@ -82,7 +82,7 @@ static void tick_body(void) {
             CB->animation("P53CAD");
             CB->pos_perso(P_GUARDIAN13, 0, 0, 0, 2, "P53CAD", 0xA, 0);
             CB->divers_empile(DV_SCREEN, 2, 0);
-            /* 35018 */
+            /* 35122 */
             if (ST(ST_VIE(P_GUARDIAN14)) != VIE_DEAD) {
                 ST(V_ENGAGED_PERSONA) = P_GUARDIAN14;
             } else {
@@ -101,18 +101,18 @@ static void tick_body(void) {
         }
         CB->select_pile(0, 1);
     }
-    /* 35207 */
+    /* 35311 */
     if (CB->divers(DV_WAS_HIT, P_GUARDIAN14, 0) && ST(ST_VIE(P_GUARDIAN14)) != VIE_DEAD && ST(0x4F0) != 0) {
         CB->select_pile(2, 2);
         CB->divers_empile(DV_WAS_HIT, P_GUARDIAN14, 1);
-        /* 35315 */
+        /* 35419 */
         if ((CB->divers(DV_HP, P_GUARDIAN14, -1) - ST(V_HIT_DAMAGE)) > 0) {
             CB->divers(DV_HP, P_GUARDIAN14, (CB->divers(DV_HP, P_GUARDIAN14, -1) - ST(V_HIT_DAMAGE)));
         } else {
             CB->divers(DV_HP, P_GUARDIAN14, 1);
         }
         CB->combat(P_GUARDIAN14, -1);
-        /* 35428 */
+        /* 35532 */
         if (CB->divers(DV_HP, P_GUARDIAN14, -1) <= 1) {
             ST(ST_VIE(P_GUARDIAN14)) = VIE_DEAD;
             CB->stop_joindre(-P_GUARDIAN14);
@@ -122,7 +122,7 @@ static void tick_body(void) {
             CB->animation("P54CAD");
             CB->pos_perso(P_GUARDIAN14, 0, 0, 0, 2, "P54CAD", 0xB, 0);
             CB->divers_empile(DV_SCREEN, 2, 0);
-            /* 35569 */
+            /* 35673 */
             if (ST(ST_VIE(P_GUARDIAN13)) != VIE_DEAD) {
                 ST(V_ENGAGED_PERSONA) = P_GUARDIAN13;
             } else {
@@ -141,7 +141,7 @@ static void tick_body(void) {
         }
         CB->select_pile(0, 1);
     }
-    /* 35750 */
+    /* 35854 */
     if (ST(V_EVENT_33) == 1) {
         ST(V_EVENT_33) = 0;
         CB->select_pile(2, 1);
@@ -150,7 +150,7 @@ static void tick_body(void) {
         CB->play_anim(0, 0);
         CB->select_pile(0, 1);
     }
-    /* 35859 */
+    /* 35963 */
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         CB->select_pile(2, 1);
@@ -159,7 +159,7 @@ static void tick_body(void) {
         CB->play_anim(1, 0);
         CB->select_pile(0, 1);
     }
-    /* 35968 */
+    /* 36072 */
     if (ST(0x64) == 1 && ST(0xE78) == 2 && ST(ST_HERO) == P_ARKHAN1 && CB->distance(4, 2) <= 150) {
         CB->bloque(BLOQUE_ALL);
         CB->stop_joindre(-P_RYLSADHAR20);
@@ -177,7 +177,7 @@ static void tick_body(void) {
         CB->animation("Sar_50");
         CB->modify_var(&ST(0x64), 4);
     }
-    /* 36297 */
+    /* 36401 */
     if (ST(0x64) == 4 && ST(ST_HERO) == P_ARKHAN1 && ST(0xAF8) == 0) {
         ST(0x64) = 5;
         CB->bruitage("L23BO1", 6464, -3652);
@@ -186,7 +186,7 @@ static void tick_body(void) {
         CB->free_anim(1);
         CB->bloque(BLOQUE_NONE);
     }
-    /* 36426 */
+    /* 36530 */
     if (ST(0x68) == 1 && ST(ST_HERO) == P_ARKHAN1) {
         ST(0x68) = 0;
         lieu_action_register("L23D19", P_ZED84, "SP84DIA59", "SP84ARR02_10");
@@ -194,9 +194,9 @@ static void tick_body(void) {
         CB->joindre(-ST(ST_HERO), 0, 0, 0, 84);
         CB->modify_var(&ST(0x68), 2);
     }
-    /* 36573 */
+    /* 36677 */
     if (ST(0x68) == 2 && ST(ST_HERO) == P_ARKHAN1 && !CB->on_joindre(P_ZED84)) {
-        /* 36635 */
+        /* 36739 */
         if (CB->distance(6, 9) <= 125) {
             ST(0x68) = 0;
             CB->stop_joindre(-P_ZED84);
@@ -205,11 +205,11 @@ static void tick_body(void) {
             CB->joindre(-ST(ST_HERO), 0, 0, 0, 84);
             CB->animation("SP84ACT03");
             CB->animation("Sar_800");
-            /* 36767 */
+            /* 36871 */
             if (ST(ST_PLAYER_WEAPON) == 0) {
                 CB->animation("P01IMP51");
             }
-            /* 36796 */
+            /* 36900 */
             if (ST(ST_PLAYER_WEAPON) != 0) {
                 CB->animation("P01IMP52");
             }
@@ -219,7 +219,7 @@ static void tick_body(void) {
             CB->dialogue("L23D20", P_ZED84);
             CB->modify_var(&ST(0x70), 1);
         }
-        /* 36925 */
+        /* 37029 */
         if (CB->distance(6, 9) > 125) {
             ST(0x68) = 0;
             CB->stop_joindre(-P_ZED84);
@@ -227,29 +227,29 @@ static void tick_body(void) {
             CB->joindre(-ST(ST_HERO), 0, 0, 0, 84);
             CB->joindre(-P_ZED84, 0, 0, 0, ST(ST_HERO));
             CB->animation("SP84ARR02_10");
-            /* 37046 */
+            /* 37150 */
             if (ST(ST_LOCKED_CAMERA) != 2) {
                 CB->change_camera(2, CAM_LOCKED);
             }
             CB->animation("SP84ACT01");
             CB->animation("Sar_800");
-            /* 37102 */
+            /* 37206 */
             if (ST(ST_PLAYER_WEAPON) == 0) {
                 CB->animation("P01IMP51");
             }
-            /* 37131 */
+            /* 37235 */
             if (ST(ST_PLAYER_WEAPON) != 0) {
                 CB->animation("P01IMP52");
             }
             CB->divers_empile(DV_BONE_SOUND, ST(ST_HERO), 0);
             CB->dialogue("L23D20", P_ZED84);
-            /* 37217 */
+            /* 37321 */
             if (CB->divers(DV_DESC_POS, ST(ST_HERO), 1) > -3081) {
-                /* 37252 */
+                /* 37356 */
                 if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 6000) {
                     CB->change_camera(1, CAM_LOCKED);
                 }
-                /* 37303 */
+                /* 37407 */
                 if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) <= 6000) {
                     CB->change_camera(0, CAM_LOCKED);
                 }
@@ -259,32 +259,32 @@ static void tick_body(void) {
             CB->modify_var(&ST(ST_HERO), 4);
         }
     }
-    /* 37394 */
+    /* 37498 */
     if (ST(0x70) == 1 && ST(ST_HERO) == P_ARKHAN1) {
         ST(0x70) = 2;
         CB->dialogue("L23D11", P_ZED84);
         CB->divers_empile(DV_HP, ST(ST_HERO), 0);
         CB->modify_var(&ST(ST_HERO), 4);
     }
-    /* 37502 */
+    /* 37606 */
     if (ST(0x78) == 1 && !CB->on_joindre(P_PHEDORIA) && ST(ST_HERO) >= 2 && ST(0x84) == 0) {
         ST(0x78) = 0;
         CB->divers(DV_RUN, P_PHEDORIA, 0);
         CB->animation("SP26GAR03_10");
-        /* 37616 */
+        /* 37720 */
         if (ST(ST_HERO) == P_ARKHAN2) {
-            /* 37634 */
+            /* 37738 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 CB->dialogue("L23D102A", P_ARKHAN2);
                 lieu_action_register("L23D102B", P_ARKHAN2, "SG02ARR17", "SG02ARR17");
             }
-            /* 37693 */
+            /* 37797 */
             if (ST(ST_SPECIAL_MODE) == 0) {
                 lieu_action_register("L23D21X", P_ARKHAN2, "SG02ARR17", "SG02ARR17");
             }
             CB->dialogue("L23D106", P_PHEDORIA);
         }
-        /* 37752 */
+        /* 37856 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             lieu_action_register("L23D44B", P_PHEDORIA, "SP26GAR03", "SP26GAR03");
         }
@@ -292,25 +292,25 @@ static void tick_body(void) {
         CB->evenement(2, 700);
         CB->animation("P26GAR03_10");
     }
-    /* 37833 */
+    /* 37937 */
     if (ST(V_EVENT_2) == 1) {
         CB->select_pile(1, 1);
         ST(V_EVENT_2) = 2;
         CB->divers_empile(DV_HP, ST(ST_HERO), 1);
         CB->divers_empile(DV_BONE_SOUND, ST(ST_HERO), 0);
-        /* 37930 */
+        /* 38034 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->animation("SG02ATT07");
         }
-        /* 37959 */
+        /* 38063 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             CB->animation("SG03ATT07");
         }
-        /* 37988 */
+        /* 38092 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->animation("P02_65535");
         }
-        /* 38017 */
+        /* 38121 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             CB->animation("P03_65535");
         }
@@ -319,26 +319,26 @@ static void tick_body(void) {
         CB->modify_var(&ST(0x6C), 1);
         CB->select_pile(0, 1);
     }
-    /* 38124 */
+    /* 38228 */
     if (ST(0x78) == 1 && !CB->on_joindre(P_PHEDORIA) && ST(ST_HERO) >= 2 && ST(0x84) == 1) {
         ST(0x78) = 0;
         CB->divers(DV_RUN, P_PHEDORIA, 0);
         CB->joindre(-P_PHEDORIA, 0, 0, 0, ST(ST_HERO));
-        /* 38256 */
+        /* 38360 */
         if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_SPECIAL_MODE) == 1) {
             lieu_action_register("L23D102A", P_ARKHAN2, "SG02ARR17", NULL);
             CB->dialogue("L23D102B", P_ARKHAN2);
         }
-        /* 38330 */
+        /* 38434 */
         if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_SPECIAL_MODE) == 0) {
             lieu_action_register("L23D103A", P_ARKHAN2, "SG02ARR17", NULL);
             CB->dialogue("L23D103B", P_ARKHAN2);
         }
-        /* 38404 */
+        /* 38508 */
         if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_SPECIAL_MODE) == 1) {
             lieu_action_register("L23D104", P_ARKHAN3, "SG03ARR17", NULL);
         }
-        /* 38462 */
+        /* 38566 */
         if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_SPECIAL_MODE) == 0) {
             lieu_action_register("L23D105", P_ARKHAN3, "SG03ARR17", NULL);
         }
@@ -348,25 +348,25 @@ static void tick_body(void) {
         CB->evenement(34, 700);
         CB->animation("P26GAR03_10");
     }
-    /* 38608 */
+    /* 38712 */
     if (ST(V_EVENT_34) == 1) {
         CB->select_pile(1, 1);
         ST(V_EVENT_34) = 2;
         CB->divers_empile(DV_HP, ST(ST_HERO), 1);
         CB->divers_empile(DV_BONE_SOUND, ST(ST_HERO), 0);
-        /* 38705 */
+        /* 38809 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->animation("G02ATT07");
         }
-        /* 38734 */
+        /* 38838 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             CB->animation("G03ATT07");
         }
-        /* 38763 */
+        /* 38867 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->animation("P02_65535");
         }
-        /* 38792 */
+        /* 38896 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             CB->animation("P03_65535");
         }
@@ -374,14 +374,14 @@ static void tick_body(void) {
         CB->modify_var(&ST(0x84), 4);
         CB->select_pile(0, 1);
     }
-    /* 38873 */
+    /* 38977 */
     if (ST(0x84) == 4 && ST(ST_HERO) >= 2) {
         ST(0x84) = 5;
         CB->divers(DV_RUN, P_KALHI13, 1);
         CB->joindre(-P_KALHI13, 6190, -3370, 0xA028, -1);
         CB->modify_var(&ST(0x84), 6);
     }
-    /* 38993 */
+    /* 39097 */
     if (ST(0x84) == 6 && !CB->on_joindre(P_KALHI13)) {
         ST(0x84) = 7;
         CB->divers(DV_RUN, P_KALHI13, 0);
@@ -399,22 +399,22 @@ static void tick_body(void) {
         CB->animation("SP13ARR01_50");
         CB->modify_var(&ST(ST_HERO), 4);
     }
-    /* 39321 */
+    /* 39425 */
     if (ST(0x4EC) != 0 && ST(0x4EC) != 3) {
-        /* 39357 */
+        /* 39461 */
         if (ST(ST_LOCKED_CAMERA) == 0) {
-            /* 39375 */
+            /* 39479 */
             if (ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) > -1300 && ST(V_ENGAGED_PERSONA) != 0 && ST(0xB8) == 0) {
                 ST(0xB8) = 1;
                 CB->select_pile(1, 1);
-                /* 39492 */
+                /* 39596 */
                 if (ST(ST_VIE(P_GUARDIAN13)) != VIE_DEAD) {
                     CB->combat(P_GUARDIAN13, -1);
                     CB->animation("SP53GAR03");
                     CB->joindre_perm(P_GUARDIAN13, ST(ST_HERO));
                 }
                 CB->select_pile(2, 1);
-                /* 39575 */
+                /* 39679 */
                 if (ST(ST_VIE(P_GUARDIAN14)) != VIE_DEAD) {
                     CB->combat(P_GUARDIAN14, -1);
                     CB->animation("SP54GAR02");
@@ -422,17 +422,17 @@ static void tick_body(void) {
                 }
                 CB->select_pile(0, 1);
             }
-            /* 39655 */
+            /* 39759 */
             if (ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) < -1400 && ST(V_ENGAGED_PERSONA) != 0 && ST(0xB8) == 1) {
                 ST(0xB8) = 0;
                 CB->select_pile(1, 1);
-                /* 39772 */
+                /* 39876 */
                 if (ST(ST_VIE(P_GUARDIAN13)) != VIE_DEAD) {
                     CB->stop_joindre(P_GUARDIAN13);
                     CB->combat(P_GUARDIAN13, 0);
                 }
                 CB->select_pile(2, 1);
-                /* 39830 */
+                /* 39934 */
                 if (ST(ST_VIE(P_GUARDIAN14)) != VIE_DEAD) {
                     CB->stop_joindre(P_GUARDIAN14);
                     CB->combat(P_GUARDIAN14, 0);
@@ -440,16 +440,16 @@ static void tick_body(void) {
                 CB->select_pile(0, 1);
             }
         }
-        /* 39885 */
+        /* 39989 */
         if (ST(0x4EC) == 1) {
-            /* 39903 */
-            if (ST(ST_LOCKED_CAMERA) == 0 && ST(0x4F0) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
-                /* 39951 */
+            /* 40007 */
+            if ((ST(ST_LOCKED_CAMERA) == 0 || ST(ST_LOCKED_CAMERA) == 2) && ST(0x4F0) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(0xD4) == 1) {   /* (patch) */
+                /* 40091 */
                 if (ST(ST_COMBAT_STANCE) == 1 && ST(V_PLAYER_STRIKE) != 0 && ST(0xBC) == 0) {
                     ST(0xBC) = 1;
-                    /* 40017 */
+                    /* 40157 */
                     if (ST(ST_PLAYER_WEAPON) != OB_THBOLT_BEF) {
-                        /* 40035 */
+                        /* 40175 */
                         if (ST(ST_PLAYER_WEAPON) != OB_F_THROWER) {
                             CB->evenement(38, 750);
                         } else {
@@ -459,7 +459,7 @@ static void tick_body(void) {
                         CB->evenement(38, 2000);
                     }
                 }
-                /* 40111 */
+                /* 40251 */
                 if (ST(V_EVENT_38) == 1) {
                     ST(V_EVENT_38) = 0;
                     ST(V_PLAYER_STRIKE) = -1;
@@ -468,7 +468,9 @@ static void tick_body(void) {
                     ST(0xB8) = 99;
                     CB->divers(DV_WAS_HIT, P_GUARDIAN13, 1);
                     CB->divers(DV_WAS_HIT, P_GUARDIAN14, 1);
-                    CB->change_camera(2, CAM_LOCKED);
+                    if (ST(ST_LOCKED_CAMERA) != 2) {   /* (patch) */
+                        CB->change_camera(2, CAM_LOCKED);
+                    }
                     CB->stop_joindre(-P_GUARDIAN13);
                     CB->stop_joindre(-P_GUARDIAN14);
                     CB->joindre(-P_GUARDIAN13, 0, 0, 0, ST(ST_HERO));
@@ -485,12 +487,14 @@ static void tick_body(void) {
                     CB->bloque(BLOQUE_NONE);
                 }
             }
-            /* 40485 */
-            if (ST(ST_LOCKED_CAMERA) == 1 && ST(0x4F0) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
+            /* 40643 */
+            if ((ST(ST_LOCKED_CAMERA) == 1 || ST(ST_LOCKED_CAMERA) == 2) && ST(0x4F0) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(0xD4) == 1) {   /* (patch) */
                 CB->bloque(BLOQUE_ALL);
                 ST(0x4F0) = 1;
                 ST(0xB8) = 99;
-                CB->change_camera(2, CAM_LOCKED);
+                if (ST(ST_LOCKED_CAMERA) != 2) {   /* (patch) */
+                    CB->change_camera(2, CAM_LOCKED);
+                }
                 CB->joindre(-P_GUARDIAN13, 0, 0, 0, ST(ST_HERO));
                 lieu_action_register("L23D33", P_GUARDIAN13, "SP53GAR26", "SP53GAR03_10");
                 CB->joindre(-P_GUARDIAN14, 0, 0, 0, ST(ST_HERO));
@@ -505,9 +509,9 @@ static void tick_body(void) {
                 CB->bloque(BLOQUE_NONE);
             }
         }
-        /* 40807 */
+        /* 41019 */
         if (ST(0x4EC) == 2 && ST(ST_LOCKED_CAMERA) == 0 && ST(0x4F0) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
-            /* 40876 */
+            /* 41088 */
             if (ST(ST_VIE(P_GUARDIAN13)) == 1 && ST(ST_VIE(P_GUARDIAN14)) == 1) {
                 CB->bloque(BLOQUE_ALL);
                 ST(0x4F0) = 1;
@@ -525,7 +529,7 @@ static void tick_body(void) {
                 CB->modify_var(&ST(0xB8), 0);
                 CB->bloque(BLOQUE_NONE);
             }
-            /* 41158 */
+            /* 41370 */
             if (ST(ST_VIE(P_GUARDIAN13)) == 1 && ST(ST_VIE(P_GUARDIAN14)) == VIE_DEAD) {
                 CB->bloque(BLOQUE_ALL);
                 ST(0x4F0) = 1;
@@ -541,7 +545,7 @@ static void tick_body(void) {
                 CB->modify_var(&ST(0xB8), 0);
                 CB->bloque(BLOQUE_NONE);
             }
-            /* 41398 */
+            /* 41610 */
             if (ST(ST_VIE(P_GUARDIAN13)) == VIE_DEAD && ST(ST_VIE(P_GUARDIAN14)) == 1) {
                 CB->bloque(BLOQUE_ALL);
                 ST(0x4F0) = 1;
@@ -558,26 +562,26 @@ static void tick_body(void) {
                 CB->bloque(BLOQUE_NONE);
             }
         }
-        /* 41635 */
+        /* 41847 */
         if (ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GUARDIAN13)) == VIE_DEAD && ST(ST_VIE(P_GUARDIAN14)) == VIE_DEAD) {
             ST(V_ENGAGED_PERSONA) = 0;
             ST(0x4EC) = 3;
             ST(0x4F0) = 0;
         }
     }
-    /* 41731 */
+    /* 41943 */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         CB->select_pile(2, 1);
-        /* 41780 */
+        /* 41992 */
         if (ST(0x90) == 0) {
             ST(0x90) = 1;
             CB->play_anim(0, 0);
-            /* 41823 */
+            /* 42035 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 CB->evenement(0, 1450);
             }
-            /* 41854 */
+            /* 42066 */
             if (ST(ST_SPECIAL_MODE) == 0) {
                 CB->evenement(0, 1800);
             }
@@ -589,23 +593,23 @@ static void tick_body(void) {
         }
         CB->select_pile(0, 1);
     }
-    /* 41946 */
+    /* 42158 */
     if (ST(V_EVENT_27) == 1) {
         ST(V_EVENT_27) = 0;
-        /* 41979 */
+        /* 42191 */
         if (ST(0x94) == 0) {
             ST(0x94) = 1;
             CB->select_pile(1, 1);
             CB->evenement(27, 1250);
-            /* 42044 */
+            /* 42256 */
             if (ST(0xB4C) == 2) {
                 CB->animation("223OUV07");
             } else {
-                /* 42078 */
+                /* 42290 */
                 if (ST(V_GUARD_FIGHT_DONE) < 2) {
                     CB->animation("223OUV01");
                 }
-                /* 42107 */
+                /* 42319 */
                 if (ST(V_GUARD_FIGHT_DONE) >= 2) {
                     CB->animation("223OUV04");
                 }
@@ -613,19 +617,19 @@ static void tick_body(void) {
             return;
         }
         ST(ST_LEVEL) = 23;
-        /* 42158 */
+        /* 42370 */
         if (ST(0xBA8) < 2) {
             CB->change_piece(24, 0);
         }
-        /* 42189 */
+        /* 42401 */
         if (ST(0xBA8) >= 2 && ST(0xBA8) < 5) {
             CB->change_piece(24, 0);
         }
-        /* 42238 */
+        /* 42450 */
         if (ST(0xBA8) >= 5 && ST(V_GUARD_FIGHT_DONE) < 2) {
             CB->change_piece(24, 1);
         }
-        /* 42290 */
+        /* 42502 */
         if (ST(0xBA8) >= 5 && ST(V_GUARD_FIGHT_DONE) >= 2) {
             CB->change_piece(24, 2);
         }

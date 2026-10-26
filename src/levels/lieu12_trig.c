@@ -62,7 +62,7 @@ void l12_trigger(i32 idx) {
 static void trig_noop(void) {
 }
 
-/* trigger 00 - sub_100073F0 - level setup: entry presets, zones, objects, actor placement */
+/* trigger 00 - sub_100073F0 (patch) - level setup: entry presets, zones, objects, actor placement */
 void l12_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(12)) == 1) {
@@ -156,7 +156,6 @@ void l12_trig00(void) {
     if (ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->load_anim("LEVIER", 1);
     }
-    CB->divers_empile(DV_SCREEN, 3, 0);
 }
 
 /* trigger 02 - sub_10008B48 - Bandor / Khorad: talk by stage (0xC1C), weapon reactions, loot, strikes */
@@ -2524,11 +2523,12 @@ static void trig30(void) {
     }
 }
 
-/* trigger 41 - sub_100079FC - start-up scene: Bandor and Khorad talk (variant by 0xC18) */
+/* trigger 41 - sub_100079EA (patch) - start-up scene: Bandor and Khorad talk (variant by 0xC18); the screen divers_empile(16,3,0) now lives here, not in trigger 0 */
 static void trig41(void) {
-    /* 0x7A0E */
+    /* 0x79FC */
     if (ST(0xC18) == 2 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
         CB->bloque(BLOQUE_ALL);
+        CB->divers_empile(DV_SCREEN, 3, 0);
         CB->divers(DV_LOOK_AT_PLAYER, P_BANDOR, 1);
         CB->divers(DV_LOOK_AT_PLAYER, P_KHORAD, 1);
         CB->joindre(P_BANDOR, 0, 0, 0, ST(ST_HERO));
@@ -2551,6 +2551,7 @@ static void trig41(void) {
     /* 0x7B41 */
     if (ST(0xC18) == 1) {
         CB->bloque(BLOQUE_ALL);
+        CB->divers_empile(DV_SCREEN, 3, 0);
         CB->divers(DV_LOOK_AT_PLAYER, P_BANDOR, 1);
         CB->divers(DV_LOOK_AT_PLAYER, P_KHORAD, 1);
         CB->joindre(P_BANDOR, 0, 0, 0, ST(ST_HERO));
@@ -2559,11 +2560,17 @@ static void trig41(void) {
         CB->bloque(BLOQUE_NONE);
         ST(0xC18) = 2;
     }
-    /* 0x7BE8 */
+    /* 0x7BFA (patch) */
+    if (ST(ST_VIE(P_BANDOR)) == VIE_DEAD && ST(ST_VIE(P_KHORAD)) == VIE_DEAD) {
+        CB->bloque(BLOQUE_ALL);
+        CB->divers_empile(DV_SCREEN, 3, 0);
+        CB->bloque(BLOQUE_NONE);
+    }
+    /* 0x7C43 */
     if (ST(0xEFC) != 1) {
         CB->divers(DV_MUSIC, 1, 1);
     }
-    /* 0x7C0C */
+    /* 0x7C67 */
     if (ST(0xEFC) == 1) {
         CB->divers(DV_MUSIC, 2, 1);
     }
