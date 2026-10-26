@@ -509,6 +509,12 @@ def main():
             continue           # jump target inside a shared function
         body = [t for a, t in ins[idx[f]:] if a < end]
         script = any(('dword ptr [0x%08x]' % g) in t for t in body for g in list(slot) + [state_g or 0])
+        for t in body:                     # a stub that only calls level code
+            mc = re.match(r'call 0x([0-9a-f]+)$', t)
+            if mc:
+                tv = thunk.get(int(mc.group(1), 16), int(mc.group(1), 16))
+                if tv in trig or fname(tv).startswith('lieu_') or tv == entry:
+                    script = True
         print(';   %-24s %6d bytes  %d calls%s' % (fname(f), end - f, callers.get(f, 0),
                                                  '' if script else '  (no CB/ST: C runtime, skip)'))
     if same:
