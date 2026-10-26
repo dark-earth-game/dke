@@ -976,4 +976,8 @@ void actor_release_companions(void) {
         *slots[i] = NULL;
         actor_free(e);
     }
+    /* The hero outlives the room, but his floor zone (+0xA8) points into the
+     * world data the caller frees right after this; the next frame's
+     * actor_update would read freed memory. */
+    if (g_player_entity) EPTR(g_player_entity, 0xA8) = NULL;
 }
