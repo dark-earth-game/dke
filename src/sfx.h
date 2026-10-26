@@ -15,6 +15,8 @@ void sfx_level_begin(const c8 *root, i32 level, i32 reverb);
 /* sub_449BAD: LIEU exit. */
 void sfx_level_end(void);
 /* sub_44968B: per-frame event slots, voice release and mixer pump. */
+void audio_lock(void);        /* sfx/music state is shared with the mixer thread */
+void audio_unlock(void);
 void sfx_tick(void);
 void sfx_pump(void);          /* keep the mixer fed inside a blocking loop */
 /* sub_46E883 tail: re-place the ambience after a camera switch. */

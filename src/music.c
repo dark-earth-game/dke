@@ -44,6 +44,7 @@ typedef int8_t i8; typedef int16_t i16; typedef int32_t i32; typedef int64_t i64
 #else
 #include "libsys/common.h"
 #include "music.h"
+#include "sfx.h"
 #endif
 
 #define MUS_RATE      22050      /* primary buffer format (ls_main: 22050/2/16) */
@@ -565,11 +566,24 @@ static void render_tick(void) {
  * ======================================================================== */
 i32 g_music_option = 0x40;                    /* dword_4B60B4 */
 
-void music_volume(i32 v) { M.master = (u8)(v < 0 ? 0 : v > 64 ? 64 : v); }   /* sub_48DFB0 */
-b8   music_is_playing(void) { return M.playing; }                            /* sub_48E070 */
+static void music_volume_impl(i32 v) { M.master = (u8)(v < 0 ? 0 : v > 64 ? 64 : v); }
+
+void music_volume(i32 v) {
+    audio_lock();
+    music_volume_impl(v);
+    audio_unlock();
+}   /* sub_48DFB0 */
+static b8   music_is_playing_impl(void) { return M.playing; }
+
+b8   music_is_playing(void) {
+    audio_lock();
+    b8   r = music_is_playing_impl();
+    audio_unlock();
+    return r;
+}                            /* sub_48E070 */
 
 /* sub_48DE30 */
-void music_stop(u32 fade_ms) {
+static void music_stop_impl(u32 fade_ms) {
     if (!M.playing) return;
     if (fade_ms) {
         M.fade_t0 = M.clock_ms; M.fade_dur = (i32)fade_ms;
@@ -578,13 +592,37 @@ void music_stop(u32 fade_ms) {
     }
     M.playing = 0;
 }
-void music_fade(u32 ms) { music_stop(ms); }
 
-void music_pause(void)  { if (M.playing && !M.paused) { M.playing = 0; M.paused = 1; } } /* sub_48DED0 */
-void music_resume(void) { if (M.paused) { M.playing = 1; M.paused = 0; } }               /* sub_48DF40 */
+void music_stop(u32 fade_ms) {
+    audio_lock();
+    music_stop_impl(fade_ms);
+    audio_unlock();
+}
+static void music_fade_impl(u32 ms) { music_stop(ms); }
+
+void music_fade(u32 ms) {
+    audio_lock();
+    music_fade_impl(ms);
+    audio_unlock();
+}
+
+static void music_pause_impl(void) { if (M.playing && !M.paused) { M.playing = 0; M.paused = 1; } }
+
+void music_pause(void) {
+    audio_lock();
+    music_pause_impl();
+    audio_unlock();
+} /* sub_48DED0 */
+static void music_resume_impl(void) { if (M.paused) { M.playing = 1; M.paused = 0; } }
+
+void music_resume(void) {
+    audio_lock();
+    music_resume_impl();
+    audio_unlock();
+}               /* sub_48DF40 */
 
 /* sub_48DA10 + lsys_play_cd(vol, fade_ms) */
-b8 music_play(i32 vol, u32 fade_ms) {
+static b8 music_play_impl(i32 vol, u32 fade_ms) {
     if (!M.loaded || M.playing) return 0;
     M.p = M.init;                               /* sub_48F0F5 snapshot */
     M.p.row = 0; M.p.pos = 0; M.p.pat = M.order[0];   /* sub_48E030(0) */
@@ -601,6 +639,13 @@ b8 music_play(i32 vol, u32 fade_ms) {
     return 1;
 }
 
+b8 music_play(i32 vol, u32 fade_ms) {
+    audio_lock();
+    b8 r = music_play_impl(vol, fade_ms);
+    audio_unlock();
+    return r;
+}
+
 /* sub_48E080 head: runs every 20 ms of output. */
 static void fade_step(void) {
     if (!M.fading) return;
@@ -614,7 +659,7 @@ static void fade_step(void) {
 }
 
 /* Writes frames of i16 stereo (silence when stopped). */
-void music_render(i16 *out, u32 frames) {
+static void music_render_impl(i16 *out, u32 frames) {
     while (frames) {
         if (!M.playing) { memset(out, 0, frames * 4); return; }
         if (M.out_pos >= M.out_len) render_tick();
@@ -628,6 +673,12 @@ void music_render(i16 *out, u32 frames) {
             fade_step();
         }
     }
+}
+
+void music_render(i16 *out, u32 frames) {
+    audio_lock();
+    music_render_impl(out, frames);
+    audio_unlock();
 }
 
 /* For sfx.c mix(): adds into the i32 accumulator before the clamp. */
@@ -644,12 +695,18 @@ void music_mix(i32 *acc, u32 frames) {
 /* ========================================================================
  * Loader (sub_48D940 / sub_48E2F8 / sub_48E3A8 / sub_48E4A9 / sub_48E516)
  * ======================================================================== */
-void music_free(void) {                                      /* sub_48DCA0 */
+static void music_free_impl(void) {                                      /* sub_48DCA0 */
     music_stop(0);
     free(M.cells); M.cells = NULL;
     for (i32 i = 0; i < 32; i++) { free(M.smp[i].data); }
     memset(M.smp, 0, sizeof M.smp);
     M.loaded = 0;
+}
+
+void music_free(void) {
+    audio_lock();
+    music_free_impl();
+    audio_unlock();
 }
 
 static i32 mod_channels(const u8 *t) {                       /* sub_48E2F8 */
@@ -661,7 +718,7 @@ static i32 mod_channels(const u8 *t) {                       /* sub_48E2F8 */
     return 0;
 }
 
-b8 music_load(const c8 *path) {
+static b8 music_load_impl(const c8 *path) {
     music_free();
     FILE *f = fopen(path, "rb");
     if (!f) return 0;
@@ -743,6 +800,13 @@ b8 music_load(const c8 *path) {
     }
     M.loaded = 1;
     return 1;
+}
+
+b8 music_load(const c8 *path) {
+    audio_lock();
+    b8 r = music_load_impl(path);
+    audio_unlock();
+    return r;
 }
 
 /* ========================================================================

@@ -39,6 +39,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <strings.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "libsys/common.h"
 #include "libsys/audio/audio.h"
@@ -155,23 +157,27 @@ static void mix(i16 *out, u32 frames) {
 
 /* Called once per frame. Pushes only while something plays, so menu
  * sfx_play() and the movie decoder keep the queue to themselves otherwise. */
-static u32 g_lead = SFX_LEAD_FRAMES;   /* adaptive: frames queued ahead */
-static u32 g_last_pump;
+/* All sfx/music state is shared with the mixer thread: every public entry
+ * point (sfx_* / music_*) takes this lock; the thread takes it per chunk. */
+static pthread_mutex_t g_audio_mx;
+static pthread_once_t  g_audio_once = PTHREAD_ONCE_INIT;
+static void audio_mx_init(void) {
+    pthread_mutexattr_t a;
+    pthread_mutexattr_init(&a);
+    pthread_mutexattr_settype(&a, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&g_audio_mx, &a);
+}
+void audio_lock(void)   { pthread_once(&g_audio_once, audio_mx_init); pthread_mutex_lock(&g_audio_mx); }
+void audio_unlock(void) { pthread_mutex_unlock(&g_audio_mx); }
 
+#define SFX_THREAD_LEAD  4096          /* ~186 ms queued ahead of the device */
+static u32 g_lead = SFX_THREAD_LEAD;
+
+/* One mixing step (mixer thread, lock held). The playback clock is the wall
+ * clock; the game clock stops while the inventory / a pause is up. */
 static void mixer_pump(u32 now) {
     if (!state || !state->audio_enabled) return;
-    /* The playback clock is the wall clock: the game clock stops while the
-     * inventory / a pause is up, which made the mixer resync and cut out. */
     now = ls_tick();
-    /* Lead time follows the slowest recent frame so a hitch does not drain
-     * the queue (stutter); it decays back to ~93 ms when frames are quick. */
-    if (g_last_pump) {
-        u32 dt = now - g_last_pump;
-        u32 need = (u32)((u64)dt * 2 * SFX_RATE / 1000);
-        if (need > g_lead) g_lead = need > 16384 ? 16384 : need;
-        else if (g_lead > SFX_LEAD_FRAMES) g_lead -= (g_lead - SFX_LEAD_FRAMES) / 64 + 1;
-    }
-    g_last_pump = now;
     b8 any = 0;
     for (i32 i = 0; i < SFX_VOICES && !any; i++) any = g_v[i].active;
     any = any || music_is_playing();
@@ -188,6 +194,26 @@ static void mixer_pump(u32 now) {
         if (ls_audio_push(&state->audio, buf, (i32)(n * 4)) <= 0) break;
         g_pushed += n;
     }
+}
+
+/* The mixer runs on its own thread so a slow frame, a room load or a
+ * blocking screen cannot starve the output queue. */
+static void *mixer_thread(void *arg) {
+    (void)arg;
+    for (;;) {
+        audio_lock();
+        mixer_pump(0);
+        audio_unlock();
+        usleep(6000);
+    }
+    return NULL;
+}
+static void mixer_thread_start(void) {
+    static b8 started = 0;
+    if (started) return;
+    started = 1;
+    pthread_t t;
+    if (pthread_create(&t, NULL, mixer_thread, NULL) == 0) pthread_detach(t);
 }
 
 /* ========================================================================
@@ -332,7 +358,7 @@ static const c8 *const k_lcod[13] = {          /* aLcod06, stride 13 */
 
 /* sub_44E57B(entity, name, x, z) — x, z in script units (world / 600).
  * Returns the voice length in ms for dialogue (0 otherwise), for dlg timers. */
-u32 sfx_voice_play(const entity_t *e, const c8 *name_in, i32 x, i32 z) {
+static u32 sfx_voice_play_impl(const entity_t *e, const c8 *name_in, i32 x, i32 z) {
     if (!state || !state->audio_enabled || !name_in) return 0;
     c8 name[64], path[512];
     snprintf(name, sizeof(name), "%s", name_in);
@@ -391,13 +417,26 @@ u32 sfx_voice_play(const entity_t *e, const c8 *name_in, i32 x, i32 z) {
     return 0;
 }
 
+u32 sfx_voice_play(const entity_t *e, const c8 *name_in, i32 x, i32 z) {
+    audio_lock();
+    u32 r = sfx_voice_play_impl(e, name_in, x, z);
+    audio_unlock();
+    return r;
+}
+
 /* Bruitage action (LIEU slot 11 sub_44569A -> dispatcher case 0x0B).
  * cb_place_95C(name, x, z): 'Z'-prefixed names go to sub_44D23D, whose body
  * is dead code (jmp to epilogue) — a no-op, and no action is queued.
  * Otherwise the action plays at once with entity = NULL and completes. */
-void sfx_bruitage(const c8 *name, i32 x, i32 z) {
+static void sfx_bruitage_impl(const c8 *name, i32 x, i32 z) {
     if (!name || name[0] == 'Z') return;
     sfx_voice_play(NULL, name, x, z);
+}
+
+void sfx_bruitage(const c8 *name, i32 x, i32 z) {
+    audio_lock();
+    sfx_bruitage_impl(name, x, z);
+    audio_unlock();
 }
 
 /* ========================================================================
@@ -419,7 +458,7 @@ static i32 ev_next(i32 timing) {
 }
 
 /* sub_446E19 case 3 (port layer_op(4, a, b)). */
-void sfx_divers_event(i32 a, i32 timing) {
+static void sfx_divers_event_impl(i32 a, i32 timing) {
     if (!state || !state->audio_enabled) return;
     i32 slot = a >> 16, ev = a & 0xFFFF;
     if (slot < 0 || slot >= SFX_EV_SLOTS) return;
@@ -432,6 +471,12 @@ void sfx_divers_event(i32 a, i32 timing) {
     } else if (timing == 0 && s->loaded) {
         voice_stop(VI_EV(slot));   /* only cuts the current playback; slot re-arms */
     }
+}
+
+void sfx_divers_event(i32 a, i32 timing) {
+    audio_lock();
+    sfx_divers_event_impl(a, timing);
+    audio_unlock();
 }
 
 /* ========================================================================
@@ -493,7 +538,7 @@ void sfx_breath(const entity_t *player, i32 health_state, b8 alt) {
 /* Hook for actor_move.c anim_messages(): call for type 1 and 0x13.
  * Returns 1 when the caller must `continue` (the original jumps straight to
  * the next message after an "A%03d" sound or a suppressed footstep). */
-i32 sfx_anim_message(const entity_t *e, i32 type, i32 p, i32 mtick) {
+static i32 sfx_anim_message_impl(const entity_t *e, i32 type, i32 p, i32 mtick) {
     if (type != 1 && type != 0x13) return 0;
     if (type == 0x13 && rnd(2) != 1) return 0;
     if (p == -1) return 0;
@@ -527,12 +572,19 @@ i32 sfx_anim_message(const entity_t *e, i32 type, i32 p, i32 mtick) {
     return 0;
 }
 
+i32 sfx_anim_message(const entity_t *e, i32 type, i32 p, i32 mtick) {
+    audio_lock();
+    i32 r = sfx_anim_message_impl(e, type, p, mtick);
+    audio_unlock();
+    return r;
+}
+
 /* ========================================================================
  * Lifecycle
  * ======================================================================== */
 
 /* sub_46D305 (dirs) + sub_448F4D (memset unk_4FF0B0) + sub_44D706 (cache). */
-void sfx_level_begin(const c8 *root, i32 level, i32 reverb) {
+static void sfx_level_begin_impl(const c8 *root, i32 level, i32 reverb) {
     snprintf(g_root, sizeof(g_root), "%s", root ? root : ".");
     g_level = level;
     snprintf(g_dir_sfx,   sizeof(g_dir_sfx),   "%s/wav/%s/", g_root, reverb ? "REVERB" : "NORMAL");
@@ -550,8 +602,14 @@ void sfx_level_begin(const c8 *root, i32 level, i32 reverb) {
     g_cut_time = now_ms();
 }
 
+void sfx_level_begin(const c8 *root, i32 level, i32 reverb) {
+    audio_lock();
+    sfx_level_begin_impl(root, level, reverb);
+    audio_unlock();
+}
+
 /* sub_449BAD: LIEU exit. */
-void sfx_level_end(void) {
+static void sfx_level_end_impl(void) {
     for (i32 i = 0; i < SFX_EV_SLOTS; i++) {
         voice_stop(VI_EV(i));
         if (g_ev[i].loaded) wav_free(&g_ev[i].w);
@@ -561,21 +619,46 @@ void sfx_level_end(void) {
     inst_free(SFX_INST_AMB);
 }
 
+void sfx_level_end(void) {
+    audio_lock();
+    sfx_level_end_impl();
+    audio_unlock();
+}
+
 /* sub_46E883 tail: camera switched. */
-void sfx_camera_changed(void) {
+static void sfx_camera_changed_impl(void) {
     g_cut_time = now_ms();
     amb_place();
 }
 
+void sfx_camera_changed(void) {
+    audio_lock();
+    sfx_camera_changed_impl();
+    audio_unlock();
+}
+
 /* Options slider (sub_440B92): 0..64, then re-place AMB. */
-void sfx_set_master(i32 v) {
+static void sfx_set_master_impl(i32 v) {
     g_master = v < 0 ? 0 : v > 0x40 ? 0x40 : v;
     amb_place();
 }
-void sfx_set_reverse_stereo(b8 on) { g_reverse = on; }
+
+void sfx_set_master(i32 v) {
+    audio_lock();
+    sfx_set_master_impl(v);
+    audio_unlock();
+}
+static void sfx_set_reverse_stereo_impl(b8 on) { g_reverse = on; }
+
+void sfx_set_reverse_stereo(b8 on) {
+    audio_lock();
+    sfx_set_reverse_stereo_impl(on);
+    audio_unlock();
+}
 
 /* sub_44968B: per-frame. */
 void sfx_tick(void) {
+    audio_lock();
     u32 now = now_ms();
     for (i32 i = 0; i < SFX_EV_SLOTS; i++) {
         sfx_ev_t *s = &g_ev[i];
@@ -594,16 +677,36 @@ void sfx_tick(void) {
     /* renderer_instance[0] finished -> release (unblocks Bruitage one-shots). */
     if (g_inst_used[SFX_INST_VOICE] && !voice_playing(VI_INST(SFX_INST_VOICE)))
         inst_free(SFX_INST_VOICE);
-    mixer_pump(now);
+    audio_unlock();
+    mixer_thread_start();
 }
 
-/* For loops that block the frame (the inventory screen): keep the mixer fed. */
-void sfx_pump(void) { mixer_pump(0); }
+/* Kept for loops that block the frame: the mixer thread feeds the device. */
+void sfx_pump(void) { }
 
-b8 sfx_voice_busy(void) { return g_inst_used[SFX_INST_VOICE]; }
+static b8 sfx_voice_busy_impl(void) { return g_inst_used[SFX_INST_VOICE]; }
+
+b8 sfx_voice_busy(void) {
+    audio_lock();
+    b8 r = sfx_voice_busy_impl();
+    audio_unlock();
+    return r;
+}
 
 /* A sound from wav>anims> (e.g. "trans" for sub_42E0E0). */
 /* play_entity_sound with a name from the sound-effect dir. */
-void sfx_entity_named(const entity_t *e, const c8 *name) { sfx_play_entity(e, sfx_get_id(name, g_dir_sfx)); }
+static void sfx_entity_named_impl(const entity_t *e, const c8 *name) { sfx_play_entity(e, sfx_get_id(name, g_dir_sfx)); }
 
-void sfx_play_anims(const c8 *name) { sfx_play_entity(NULL, sfx_get_id(name, g_dir_anims)); }
+void sfx_entity_named(const entity_t *e, const c8 *name) {
+    audio_lock();
+    sfx_entity_named_impl(e, name);
+    audio_unlock();
+}
+
+static void sfx_play_anims_impl(const c8 *name) { sfx_play_entity(NULL, sfx_get_id(name, g_dir_anims)); }
+
+void sfx_play_anims(const c8 *name) {
+    audio_lock();
+    sfx_play_anims_impl(name);
+    audio_unlock();
+}
