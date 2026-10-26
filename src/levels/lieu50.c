@@ -218,8 +218,10 @@ static void event4(i32 arg) {        /* sub_1000AE60 */
         if (ST(V_EVENT_30) == 1) {
             ST(V_EVENT_30) = 0;
             ST(0xBF4) = 1;
+            break;
         }
-        break;
+        /* the jne lands on case 31's code (no jmp to the exit) */
+        /* fall through */
 
     case 31: if (ST(V_EVENT_31) == 0) ST(V_EVENT_31) = 1; break;
     case 33: ST(V_EVENT_33) = 1; break;
@@ -837,8 +839,10 @@ static void event5(i32 arg, i32 phase) {
             CB->animation("SG01ATT01");
             CB->animation("ar_50");
             CB->bloque(BLOQUE_NONE);
+            break;
         }
-        break;
+        /* the jne lands on the next case's code (no jmp to the exit) */
+        /* fall through */
 
     case OB_FULL_GOURD:
         if (ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0) {
