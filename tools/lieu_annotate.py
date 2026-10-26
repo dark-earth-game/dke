@@ -327,7 +327,7 @@ def analyze(path, _tables=None):
     # mov dword ptr [TRIG + 4*k], imm
     trig_base, trig = None, {}
     for a, t in ins[idx[entry]:idx[entry] + 600]:
-        m = re.match(r'mov eax, dword ptr \[4\*eax \+ 0x([0-9a-f]+)\]$', t)
+        m = re.match(r'mov e[a-z]{2}, dword ptr \[4\*e[a-z]{2} \+ 0x([0-9a-f]+)\]$', t)
         if m:
             trig_base = int(m.group(1), 16)
     stores = {}
