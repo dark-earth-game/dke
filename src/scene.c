@@ -2541,6 +2541,11 @@ i32 scene_load_level(i32 level_id) {
     /* Per-camera active regions (for auto camera switching by player pos). */
     scene_load_camera_regions(g_scene_bg_level);
 
+    /* The hero's weapon tree hangs off his hand bone and belongs to the object
+     * slots object_reset frees: put it away first or the next frame walks
+     * freed nodes (scene_collect_tree crash after a room change). */
+    if (g_player_entity && EPTR(g_player_entity, 0xD64))
+        weapon_holster((game_object_t *)EPTR(g_player_entity, 0xD64), 2);
     object_reset();                                /* objects load lazily per room */
     {
         static i32 s_ctx = 0;                      /* sub_4723C0, once */
