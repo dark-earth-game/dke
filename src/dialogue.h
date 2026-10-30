@@ -14,7 +14,7 @@
 
 /* sub_46BC74: show + voice line `code` (e.g. "L01D02") now; returns the
  * display time in ms. Callers check dlg_is_active() first. */
-u32 dlg_start(const c8 *code, u32 now_ms);
+u32 dlg_start(const c8 *code, i32 speaker, u32 now_ms);
 
 /* Per-frame: record the level/root/lang context and close the line when its
  * timer runs out (advance = 1 cuts it short). root = game_path, lang "US". */

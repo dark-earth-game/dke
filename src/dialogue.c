@@ -18,6 +18,9 @@
 #include "libsys/audio/wav.h"
 #include "dialogue.h"
 #include "sfx.h"
+#include "actor.h"
+#include "entity.h"
+#include "obc.h"
 
 #define DLG_BUF     (96 * 1024)
 
@@ -104,7 +107,7 @@ void dlg_reset(void) {
 /* sub_46BC74 @ 0x46BC74: show line `code`, play its voice, and arm the
  * display timer (world_timer / dword_4FF098) for the voice length — or
  * 0xFA0 ms when the line has no voice. Returns the duration. */
-u32 dlg_start(const c8 *code, u32 now_ms) {
+u32 dlg_start(const c8 *code, i32 speaker, u32 now_ms) {
     if (!code || !code[0]) return 0;
     dlg_load(g_ctx_level, g_ctx_root, g_ctx_lang);
     c8 text[256];
@@ -113,8 +116,12 @@ u32 dlg_start(const c8 *code, u32 now_ms) {
     snprintf(g_active, sizeof(g_active), "%s", text);
 
     /* sub_44E57B voice slot 0 (shared with Bruitage one-shots, mixed by
-     * sfx.c); no voice file -> 0xFA0 ms. */
-    u32 dur = sfx_voice_play(NULL, code, 0, 0);
+     * sfx.c), placed at the speaker (sub_44411D -> entity+0x50 x/z / 600);
+     * no speaker -> (0, 0), unplaced. No voice file -> 0xFA0 ms. */
+    entity_t *e = actor_find(speaker);
+    i32 x = 0, z = 0;
+    if (e && EROOT(e)) { x = EROOT(e)->pos[0] / 600; z = EROOT(e)->pos[2] / 600; }
+    u32 dur = sfx_voice_play(e, code, x, z);
     if (!dur) dur = 0xFA0;
     g_start_ms    = now_ms;
     g_duration_ms = dur;

@@ -271,6 +271,10 @@ static void place(i32 x, i32 y, i32 z, i32 *vol, i32 *pan) {
     i32 front = sfx_hook_project(x, y, z, &sx);
     if (!front) sx = 640 - sx;
     *pan = sx * 2000 / 640 - 1000;
+    /* Port: an off-screen point (or one culled at the near plane) projects
+     * far outside 0..640; hold it at the screen edge. */
+    if (*pan < -1000) *pan = -1000;
+    if (*pan >  1000) *pan =  1000;
     if (v < -1000) v = -1000;
     *vol = v;
 }
@@ -341,6 +345,8 @@ static b8    g_inst_used[2];
 static b8    g_inst_dialog;     /* slot 0 holds a dialogue voice (not a one-shot) */
 static i32   g_amb_pos[3] = { POS_NONE, 0, POS_NONE };   /* dword_4FB34C/50/54 */
 static c8    g_amb_name[32];                             /* byte_4FC090 */
+static i32   g_vox_pos[3];      /* dialogue voice's speaker point (port) */
+static b8    g_vox_placed;
 
 static void inst_free(i32 i) {                           /* sub_44E46A */
     if (i == SFX_INST_VOICE) g_inst_dialog = 0;
@@ -366,6 +372,18 @@ static void amb_place(void) {
     place(g_amb_pos[0], g_amb_pos[1], g_amb_pos[2], &vol, &pan);
     voice_volume(VI_INST(SFX_INST_AMB), master_vol(vol));
     voice_pan(VI_INST(SFX_INST_AMB), pan);
+}
+
+/* Place the dialogue voice at its speaker. The original places it once at
+ * the line's start; the port also re-places it after a camera cut so the
+ * pan follows the new view. */
+static void vox_place(void) {
+    if (!g_inst_dialog || !g_inst_used[SFX_INST_VOICE]) return;
+    i32 vol = POS_NONE, pan = 0;                          /* -600: unplaced voice */
+    if (g_vox_placed) place(g_vox_pos[0], g_vox_pos[1], g_vox_pos[2], &vol, &pan);
+    voice_volume(VI_INST(SFX_INST_VOICE), master_vol(vol));
+    voice_pan(VI_INST(SFX_INST_VOICE), pan);
+    if (getenv("DKE_SFXDBG")) print("sfx: voice at (%d,%d,%d) vol=%d pan=%d\n", g_vox_pos[0], g_vox_pos[1], g_vox_pos[2], vol, pan);
 }
 
 static const c8 *const k_lcod[13] = {          /* aLcod06, stride 13 */
@@ -413,13 +431,15 @@ static u32 sfx_voice_play_impl(const entity_t *e, const c8 *name_in, i32 x, i32 
         if (!ls_exists(path) || !inst_load(SFX_INST_VOICE, path)) return 0;
         g_inst_dialog = 1;
         voice_play(VI_INST(SFX_INST_VOICE), &g_inst[SFX_INST_VOICE], 0, 1);
-        i32 vol, pan;
-        i32 fy = g_world.world_controller
-               ? *(const i32 *)((const u8 *)g_world.world_controller + 0x1E0) : 0;  /* default floor */
-        place(x * 600, fy, z * 600, &vol, &pan);
-        if (x == 0 && z == 0) vol = POS_NONE;          /* -600: unplaced voice */
-        voice_volume(VI_INST(SFX_INST_VOICE), master_vol(vol));
-        voice_pan(VI_INST(SFX_INST_VOICE), pan);
+        /* Original: y = world_controller+0x1E0 (default floor). The port's
+         * renderer draws an actor at its root node (entity+0x50) position,
+         * so the voice takes that node's y; the default floor is in another
+         * space and put every voice behind the camera. */
+        i32 fy = e && EROOT(e) ? EROOT(e)->pos[1]
+               : g_world.world_controller ? *(const i32 *)((const u8 *)g_world.world_controller + 0x1E0) : 0;
+        g_vox_pos[0] = x * 600; g_vox_pos[1] = fy; g_vox_pos[2] = z * 600;
+        g_vox_placed = (x != 0 || z != 0);
+        vox_place();
         (void)e;  /* original: entity+0xD90 = start time, +0xD8C/+0xD94 lip-sync */
         const wav_t *w = &g_inst[SFX_INST_VOICE];
         return w->sample_rate ? (u32)((u64)w->num_samples * 1000 / w->sample_rate) : 0;
@@ -648,6 +668,7 @@ void sfx_level_end(void) {
 static void sfx_camera_changed_impl(void) {
     g_cut_time = now_ms();
     amb_place();
+    vox_place();
 }
 
 void sfx_camera_changed(void) {

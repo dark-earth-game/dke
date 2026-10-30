@@ -1908,7 +1908,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         }
         /* sub_46A358 text setup + sub_44E57B voice; dword_4B2AB4 speaker
          * portrait (hero / companion / other) is not drawn. */
-        dlg_start(n->name, now_ms);
+        dlg_start(n->name, n->actor, now_ms);
         g_dlg_pile = lieu_selected_pile();      /* dword_4FF09C = dword_505C30 */
         return 1;
 
@@ -1995,7 +1995,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                 else if (hero == 3)     msg = g_special_mode_active ? "LCOD84" : "LCOD85";
                 if (msg) {                                 /* sub_46BC74(msg, game_state) */
                     menu_dial_log(msg, hero);
-                    dlg_start(msg, now_ms);
+                    dlg_start(msg, hero, now_ms);
                 }
                 n->duration = 10;
                 /* falls through to the "state != 8" wait below */
