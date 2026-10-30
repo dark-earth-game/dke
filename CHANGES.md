@@ -7,6 +7,7 @@
 Every commit since the project began, newest first, one line each.
 
 ### 2026-10-30
+- fix: level 7 stairs block, locks kept across rooms, debug HUD (390019c)
 - inventory: weapon hotkeys, item use, combinations, original screen art (bc1c87d)
 - fix: crash leaving a room while an actor holds a weapon (700327b)
 - menu: mixed INVENT2 clicks instead of queued INVENT1 (e1d4c3b)
