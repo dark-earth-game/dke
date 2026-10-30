@@ -55,6 +55,7 @@
 extern state_t *state;
 
 #include "sfx.h"
+#include "gamecfg.h"
 #include "music.h"
 
 /* ========================================================================
@@ -394,6 +395,7 @@ static u32 sfx_voice_play_impl(const entity_t *e, const c8 *name_in, i32 x, i32 
          * level has reverb) for "?C..." names, else DIALOG>%.3s>%s.WAV.
          * The port's dialog tree is <root>/dialog/Lnn/<code>.WAV. */
         snprintf(path, sizeof(path), "%s/dialog/%.3s/%s.WAV", g_root, name, name);
+        if (!g_gamecfg.voices) return 0;              /* byte_4B60B0 off: text only */
         if (!ls_exists(path) || !inst_load(SFX_INST_VOICE, path)) return 0;
         g_inst_dialog = 1;
         voice_play(VI_INST(SFX_INST_VOICE), &g_inst[SFX_INST_VOICE], 0, 1);
@@ -652,6 +654,8 @@ void sfx_set_master(i32 v) {
     audio_unlock();
 }
 static void sfx_set_reverse_stereo_impl(b8 on) { g_reverse = on; }
+i32 sfx_get_master(void)         { return g_master; }
+b8  sfx_get_reverse_stereo(void) { return g_reverse; }
 
 void sfx_set_reverse_stereo(b8 on) {
     audio_lock();

@@ -52,6 +52,7 @@
 #include "libsys/file_system.h"
 #include "libsys/movie.h"
 #include "dialogue.h"
+#include "gamecfg.h"
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/font.h"
 #include "libsys/graphics/shading.h"
@@ -3512,7 +3513,7 @@ i32 scene_render(system_t *sys) {
      * 0), then draw lines inset a few px. Held until the player advances. */
     {
         const c8 *sub = dlg_active_text();
-        if (sub && sub[0]) {
+        if (sub && sub[0] && g_gamecfg.subtitles) {     /* byte_4B60AC (sub_415CC0) */
             i32 fw = state ? state->graphic.width  : 640;
             i32 fh = state ? state->graphic.height : 480;
             const i32 lineh = 18;                 /* font cell height        */

@@ -24,6 +24,7 @@
 #include "game_detection.h"
 #include "game_init.h"
 #include "menu/menu.h"
+#include "gamecfg.h"
 #include "scene.h"
 #include "libsys/graphics/graphic.h"
 
@@ -210,6 +211,8 @@ i32 ls_main(system_t *system, c8 **argv) {
     state->game_path = ls_get_base_path();
     load_configuration(state);
     load_dke_config(state);
+    b8 first_run = !gamecfg_exists();
+    gamecfg_load();                            /* config_load_gamedke_cfg_45AE70 */
 
     // force colour mode to 16-bit
     state->colour_mode = true;
@@ -263,8 +266,17 @@ i32 ls_main(system_t *system, c8 **argv) {
      * publisher/title splash (EADKE) at boot so we exercise the CRH decoder
      * + CoreAudio streaming end-to-end. ls_play_movie skips gracefully if
      * the file is missing rather than crash. */
-    if (!getenv("DKE_NEWGAME"))   /* skip boot splash in headless test mode */
+    if (!getenv("DKE_NEWGAME")) {  /* skip the movies in headless test mode */
+        /* process_mainmenu_437EB7 0x43837C: EADKE (sub_437DDD) on every run;
+         * the first time (no DKEGAME.CFG) the gamma picker and then the
+         * SC01 intro follow. The gamma picker writes the cfg; the port has
+         * no picker yet, so the cfg is written right after SC01. */
         ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
+        if (first_run) {
+            ls_play_movie("HDISK:>EARTH>sc>SC01.CRH");
+            gamecfg_save();
+        }
+    }
 
     /* --- Slice B: main menu state machine ---
      * menu_init fetches the MENUGEN backdrop from game_init (same source as
@@ -375,6 +387,7 @@ i32 ls_main(system_t *system, c8 **argv) {
             ls_delay(1);
         }
     }
+    gamecfg_save();                            /* 0x46134A */
     ls_shut_movie();
     scene_release();
     menu_release();

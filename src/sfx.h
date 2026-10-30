@@ -23,6 +23,8 @@ void sfx_pump(void);          /* keep the mixer fed inside a blocking loop */
 void sfx_camera_changed(void);
 void sfx_set_master(i32 v);
 void sfx_set_reverse_stereo(b8 on);
+i32  sfx_get_master(void);
+b8   sfx_get_reverse_stereo(void);
 
 /* DIVERS op 4: event slot a = slot<<16 | ev, b = delay<<16 | jitter. */
 void sfx_divers_event(i32 a, i32 b);
