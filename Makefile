@@ -1,7 +1,7 @@
 BIN = ./bin/game
 INCLUDES = -I./src -I./src/libsys
 
-CFLAGS = -std=c99 -Wall -Wno-missing-braces -g -DDEBUG -DMEM_DEBUG -O3 -mavx2
+CFLAGS = -std=c99 -Wall -Wno-missing-braces -g -DDEBUG -DMEM_DEBUG -O3
 
 BASE_SRCS = src/libsys/*.c \
 			src/libsys/audio/*.c \
@@ -10,33 +10,50 @@ BASE_SRCS = src/libsys/*.c \
 			src/levels/*.c \
 			src/menu/*.c
 
-ifeq ($(shell uname),Darwin)
-	CC = $(shell brew --prefix llvm)/bin/clang
-	CFLAGS += -DPLATFORM_MACOS -fopenmp=libomp -mllvm -force-vector-width=8
-	LDFLAGS = -framework Cocoa -framework AudioToolbox
+# PLATFORM defaults to the host; `make PLATFORM=windows` cross-compiles with mingw.
+UNAME := $(shell uname)
+ifeq ($(UNAME),Darwin)
+	PLATFORM ?= macos
+else ifeq ($(UNAME),Linux)
+	PLATFORM ?= linux
+else
+	PLATFORM ?= windows
+endif
 
+# AVX2 only exists on x86-64 (Apple Silicon and other arm64 hosts skip it).
+ifeq ($(shell uname -m),x86_64)
+	ARCH_FLAGS = -mavx2
+endif
+
+TARGET = dke
+
+ifeq ($(PLATFORM),macos)
+	CC ?= clang
+	CFLAGS += -DPLATFORM_MACOS $(ARCH_FLAGS)
+	LDFLAGS = -framework Cocoa -framework AudioToolbox
 	SRCS = src/libsys/platforms/macos.m $(BASE_SRCS)
 endif
-ifeq ($(shell uname),Linux)
+ifeq ($(PLATFORM),linux)
 	CC = clang
-	CFLAGS += -DPLATFORM_LINUX -fopenmp=libomp -mllvm -force-vector-width=8
+	CFLAGS += -DPLATFORM_LINUX $(ARCH_FLAGS)
 	LDFLAGS = -lX11 -lpthread -lm -ldl
-
 	SRCS = src/libsys/platforms/linux.c $(BASE_SRCS)
 endif
-ifeq ($(shell uname),Windows)
+ifeq ($(PLATFORM),windows)
 	CC = x86_64-w64-mingw32-gcc
-	CFLAGS += -DPLATFORM_WINDOWS -mprefer-vector-width=128
-	LDFLAGS = -lmingw32 -mwindows
-
+	CFLAGS += -DPLATFORM_WINDOWS -mavx2
+	LDFLAGS = -lmingw32 -mwindows -lgdi32 -lwinmm
 	SRCS = src/libsys/platforms/windows.c $(BASE_SRCS)
+	TARGET = dke.exe
 endif
 
 dke:
-	$(CC) $(INCLUDES) $(CFLAGS) $(LDFLAGS) $(SRCS) -o $(BIN)/$@
+	$(CC) $(INCLUDES) $(CFLAGS) $(SRCS) $(LDFLAGS) -o $(BIN)/$(TARGET)
 
 run:
 	cd $(BIN) && ./dke
 
 clean:
-	rm -f $(BIN)/dke
+	rm -f $(BIN)/dke $(BIN)/dke.exe
+
+.PHONY: dke run clean

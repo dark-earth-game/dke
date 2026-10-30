@@ -1,0 +1,108 @@
+# Builds the engine for macOS, Linux and Windows on every push and pull
+# request. Pushing a tag such as v0.1.0 also publishes a GitHub release
+# with the binaries and that version's section of CHANGES.md.
+#
+# The packages hold the engine only. Players copy the files of their own
+# copy of Dark Earth next to the executable (see README.md).
+
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macos-arm64
+            os: macos-latest
+            make: make
+            binary: dke
+          - name: macos-x86_64
+            os: macos-15-intel
+            make: make
+            binary: dke
+          - name: linux-x86_64
+            os: ubuntu-24.04
+            setup: sudo apt-get update && sudo apt-get install -y clang libx11-dev
+            make: make PLATFORM=linux
+            binary: dke
+          - name: windows-x86_64
+            os: ubuntu-24.04
+            setup: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+            make: make PLATFORM=windows
+            binary: dke.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        if: matrix.setup
+        run: ${{ matrix.setup }}
+
+      - name: Build
+        run: |
+          mkdir -p bin/game
+          ${{ matrix.make }}
+
+      - name: Package
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME//\//-}"
+          [[ "$GITHUB_REF" == refs/tags/* ]] || version="${GITHUB_SHA::7}"
+          pkg="dke-${version}-${{ matrix.name }}"
+          mkdir -p "dist/$pkg"
+          cp "bin/game/${{ matrix.binary }}" README.md LICENSE CHANGES.md "dist/$pkg/"
+          cd dist
+          if [[ "${{ matrix.name }}" == windows-* ]]; then
+            zip -r "$pkg.zip" "$pkg"
+          else
+            tar -czf "$pkg.tar.gz" "$pkg"
+          fi
+          rm -rf "$pkg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dke-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Release notes from CHANGES.md
+        run: |
+          # The section whose heading starts with "## <version without v>".
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^## / { if (found) exit; if (index($0, "## " v) == 1) { found = 1; next } }
+            found { print }
+          ' CHANGES.md > notes.md
+          [ -s notes.md ] || echo "Dark Earth engine $GITHUB_REF_NAME" > notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: notes.md
+          files: dist/*
