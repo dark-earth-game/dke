@@ -17,7 +17,7 @@ typedef struct {
     i32 brightness;      /* rgb_brightness_slider_control (i8) */
     i32 contrast;        /* rgb_contrast_slider_control (i8) */
     i32 saturation;      /* rgb_saturation_slider_control (i8) */
-    i32 opt_4B7240;      /* dword_4B7240 */
+    i32 shadows;         /* dword_4B7240: 1 silhouette, 2 low-poly, 3 full mesh, 4 auto */
     i32 render_mode;     /* dword_4B721C: index into dword_4B7228 -> render_mode */
     i32 subtitles;       /* byte_4B60AC: show dialogue subtitles */
     i32 voices;          /* byte_4B60B0: play dialogue voices */
