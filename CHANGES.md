@@ -4,9 +4,12 @@
 
 ## Unreleased
 
+## 0.0.1 - 2026-10-30
+
 Every commit since the project began, newest first, one line each.
 
 ### 2026-10-30
+- docs: game metadata catalogues and their generator (373f958)
 - fix: level 7 stairs block, locks kept across rooms, debug HUD (390019c)
 - inventory: weapon hotkeys, item use, combinations, original screen art (bc1c87d)
 - fix: crash leaving a room while an actor holds a weapon (700327b)
