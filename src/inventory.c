@@ -37,6 +37,8 @@
 #include "inventory.h"
 #include "combat.h"
 #include "dialogue.h"
+#include "lieu_cb.h"
+#include "scene.h"
 
 i32 g_ui_state = 1;               /* dword_4DD9B4: 1 in game, 2 redraw, 10 back from a screen */
 i32 g_used_object = 0;            /* dword_507258 */
@@ -163,6 +165,15 @@ static void inv_clear_variant(inv_entry_t *e, c8 *obj_name_out) {
     e->variants &= (u8)~(1u << inv_variant(letter));
 }
 
+const c8 *inv_hotkey(i32 k) { return (k >= 0 && k < INV_HOTKEYS) ? g_inv_hotkey[k] : ""; }
+
+/* sub_4727C7: anything but a plain weapon (OBJETS flags 2 without 4 / 8). */
+i32 inv_fight_usable(const c8 *name) {
+    if (!name || !name[0]) return 0;
+    u8 f = objets_flags(inv_name_id(name));
+    return !(f & 2) || (f & 4) || (f & 8);
+}
+
 /* sub_4268C9: drop `name` from every hotkey slot (4-char, case-insensitive). */
 void inv_hotkey_forget(const c8 *name) {
     if (!name || !name[0]) return;
@@ -175,6 +186,55 @@ inv_entry_t *inv_find(const c8 *key4) {
     for (i32 i = 0; i < INV_SLOTS; i++)
         if (g_inv[i].name[0] && strncmp(g_inv[i].name, key4, 4) == 0) return &g_inv[i];
     return NULL;
+}
+
+void inv_holster(const c8 *obj_name, i32 mode);   /* sub_473DBC, below */
+
+/* The object in the player's hand (player+0xD64 -> +0xA8), or NULL. */
+static const c8 *inv_held_name(void) {
+    entity_t *p = g_player_entity;
+    game_object_t *o = p ? (game_object_t *)EPTR(p, 0xD64) : NULL;
+    return o ? o->name : NULL;
+}
+
+/* player desc[0x97]: id of the held object (kept by a mode-0 holster). */
+static i32 inv_held_id(void) {
+    entity_t *p = g_player_entity;
+    return (p && EDESC(p)) ? EDESC(p)[0x97] : 0;
+}
+
+/*
+ * sub_42614C: the instance (0..5) that leaves the entry when it is taken
+ * in hand. An equipped entry keeps its letter; OB24 picks the instance with
+ * the lowest positive script counter (dword_505D80[v], below 9); weapons
+ * the one with the most charges (resource_table[arme][v]); anything else
+ * the first instance held.
+ */
+static i32 inv_best_variant(const inv_entry_t *e) {
+    if (!e) return 0;
+    i32 id = inv_name_id(e->name);
+    if (e->equipped) return e->name[4] ? (e->name[4] & 7) - 1 : 0;
+    const obj_record_t *r = obj_rec(id);
+    i32 best = 0;
+    if (id == 24) {
+        i32 lo = 9;
+        for (i32 v = 0; v < 6; v++) {
+            if (!(e->variants & (1 << v))) continue;
+            i32 c = *lieu_state_slot(0x140 + v * 4);
+            if (c > 0 && c < lo) { best = v; lo = c; }
+        }
+        return best;
+    }
+    if (r && (r->flags & 2)) {
+        i32 hi = 0;
+        for (i32 v = 0; v < 6; v++) {
+            if (!(e->variants & (1 << v)) || r->arme >= OBJ_RES_ROWS) continue;
+            if (g_obj_res[r->arme][v] > hi) { best = v; hi = g_obj_res[r->arme][v]; }
+        }
+        return best;
+    }
+    for (i32 v = 0; v < 6; v++) if (e->variants & (1 << v)) return v;
+    return 0;
 }
 
 /*
@@ -294,7 +354,8 @@ i32 inv_set_equipped(const c8 *obj_name, i32 on) {
 /* sub_427816: put the held object (player+0xD64) first, regroup linked
  * objects (sub_426E41), then put the held object first again. */
 static void inv_regroup_linked(void);
-void inv_sort(const c8 *held_name /* player+0xD64 -> +0xA8, may be NULL */) {
+void inv_sort(void) {
+    const c8 *held_name = inv_held_name();
     if (held_name) inv_add(held_name, 0, 0);
     inv_regroup_linked();
     if (held_name) inv_add(held_name, 0, 0);
@@ -329,7 +390,7 @@ static void inv_regroup_linked(void) {
  * first (sub_473DBC(held,1)). NOTE: index 0 is never cleared (loop from 1),
  * kept for fidelity. */
 void inv_clear_all(void) {
-    /* TODO engine: if (player->held) holster(player->held, 1); */
+    if (inv_held_name()) inv_holster(inv_held_name(), 1);   /* sub_473DBC(held, 1) */
     g_inv_count = 0;
     for (i32 i = 1; i < INV_SLOTS; i++) {
         inv_entry_t *e = &g_inv[i];
@@ -344,7 +405,7 @@ void inv_clear_all(void) {
  * copy, removes every entry whose OBJETS flags&2, returns how many. */
 i32 inv_confiscate(void) {
     i32 n = 0;
-    /* TODO engine: if (player->held) holster(player->held, 1); */
+    if (inv_held_name()) inv_holster(inv_held_name(), 1);
     memcpy(g_inv_saved, g_inv, sizeof(g_inv));
     g_inv_saved_count = g_inv_count;
     for (i32 i = 1; i < INV_SLOTS; i++) {
@@ -405,8 +466,7 @@ void inv_restore(void) {
  *   add it first when `add` and missing (sub_42639A(obj, nbobj, 0)), then
  *   sub_47398A. Specials: OB24 / OB77 / OB86 / OB71 (0x47).
  */
-void inv_equip(const c8 *obj_name);            /* TODO engine: sub_47398A */
-void inv_holster(const c8 *obj_name, i32 mode);/* TODO engine: sub_473DBC */
+void inv_equip(const c8 *obj_name);            /* sub_47398A, below */
 
 /* ======================================================================
  * 4. EtatObjet item states (sub_44A58B case 6 @ 0x44B00F, inner switch
@@ -439,17 +499,17 @@ i32 etat_objet_item(etat_item_t *a, i32 had_s_prefix) {
         obj_world_drop(a->name);
         return 1;
     case -5:                                   /* give a7 pieces */
-        inv_sort(NULL /* TODO held */);
+        inv_sort();
         inv_add(a->name, a->a7, 1);
         return 1;
     case -4:                                   /* give nbobj pieces, take it out of the world */
-        inv_sort(NULL);
+        inv_sort();
         inv_add(a->name, nbobj, 1);
         obj_world_drop(a->name);
         return 1;
     case -3:                                   /* pickup, phase 1 */
         a->a6 = 3;
-        inv_sort(NULL);
+        inv_sort();
         inv_add(a->name, nbobj, 1);            /* pending -> screen opens in "new items" mode */
         obj_world_remove(a->name);
         g_ui_state = 2;                        /* full redraw without the object */
@@ -503,16 +563,16 @@ void inventory_screen_open(void) {             /* sub_42701B */
 #endif
     }
     /* dword_4B33F0 = 1; set_display_mode(0x19); sub_416C10(2); */
-    inv_sort(NULL /* TODO player held name */);
-    inv_auto_combine(0 /* TODO player desc[0x97] */);
+    inv_sort();
+    inv_auto_combine(inv_held_id());
     /* sub_44DEC9(player): stop the player's sounds */
     inventory_screen_run();                    /* __LIB@8(lib, &unk_4ED9C0) */
-    /* if (dword_507258) dword_505D68 = dword_505C34;  "used object" for the script */
+    if (g_used_object) *lieu_state_slot(0x128) = g_used_variant;   /* dword_505D68 */
     for (i32 i = 0; i < INV_SLOTS; i++) {      /* acknowledge new items */
         g_inv[i].qty += g_inv[i].pending;
         g_inv[i].pending = 0;
     }
-    inv_sort(NULL);
+    inv_sort();
     /* restore palette/theme; if player +0xD58 is 0 or >= 1000: set idle anim
      * (0x3B, -5 in special mode) and restart it; restore_display_mode(1,0x19) */
     g_ui_state = 10;                           /* -> 2 next frame: full redraw */
@@ -622,7 +682,9 @@ static i32 inv_item_hidden(i32 idx) {
     case INV_MODE_PICKUP:  hidden = (e->pending == 0); break;
     default:               hidden = 0; break;
     }
-    if (id == 0x56 /* && (world_state == 0x23 || player+0xC78) */) { /* TODO engine */ }
+    if (id == 0x56 && ((state && state->current_level_id == 0x23) ||
+                       (g_player_entity && E32(g_player_entity, 0xC78))))
+        hidden = 1;                            /* OB86 not in level 35 / while +0xC78 is set */
     if (e->qty == 0 && e->pending == 0) hidden = 1;
     if (!hidden && !e->equipped && special) {
         /* ammo is shown on its weapon's window instead when that weapon is held */
@@ -706,7 +768,7 @@ static void inv_toggle_equip(void) {
             const obj_record_t *r = obj_rec(inv_name_id(e->name));
             g_inv_category = (r && (r->flags & 2)) ? 1 : 0;
         } else {
-            v = 0;                             /* TODO engine: sub_42614C(e) best variant 0..5 */
+            v = inv_best_variant(e);           /* sub_42614C */
         }
         e->name[4] = (c8)('A' + v);
         e->equipped = 1;
@@ -724,26 +786,57 @@ static void inv_toggle_equip(void) {
 extern i32 g_used_object;                      /* dword_507258 */
 extern i32 g_used_variant;                     /* dword_505C34 */
 
+/* 0x100099F0: OBJETS flags & 0xF0 */
+static i32 inv_usable(i32 id) { const obj_record_t *r = obj_rec(id); return r && (r->flags & 0xF0); }
+
+/* 0x10008730, OB52: RYLIVRE<language>.GIF full screen until a key or a
+ * click (there is no RYLIVRE1, GB reads the US page). */
+static void inv_show_book(void) {
+    if (!state || !state->graphic.front_buffer) return;
+    i32 lang = state->language_id;
+    bmap_t *img = NULL;
+    for (i32 t = 0; t < 3 && !img; t++) {
+        c8 vp[64];
+        snprintf(vp, sizeof(vp), "DATAS>GLOBAL>IMAGES>RYLIVRE%01d.CIF", t == 0 ? lang : t == 1 ? 2 : 0);
+        img = game_init_load_cursor(vp);
+    }
+    if (!img) return;
+    system_t *sys = &state->system;
+    i32 fw = state->graphic.width, fh = state->graphic.height;
+    i32 prev[256];
+    memcpy(prev, sys->actions, sizeof(prev));
+    u32 t0 = ls_tick();
+    while (!sys->quit) {
+        ls_update_events(sys);
+        sfx_pump();
+        i32 hit = sys->mouse_left == 2;
+        for (i32 k = 0; k < 256 && !hit; k++) if (sys->actions[k] && !prev[k]) hit = 1;
+        memcpy(prev, sys->actions, sizeof(prev));
+        if ((getenv("DKE_INVAUTO") || getenv("DKE_FRAMES")) && ls_tick() - t0 > 1000) hit = 1;
+        blit_bmap_to_framebuffer(state->graphic.front_buffer, fw, fh, img, img->palette, 0, 0);
+        fx_present();
+        if (hit) break;
+        ls_delay(10);
+    }
+    ls_free_bmap(img);
+}
+
 /* 0x10008730: use the selected item on the world (script reads it). */
 static void inv_use(void) {
     inv_window_t *w = &S.win[S.sel];
     if (w->inv_index < 0) return;
     inv_entry_t *e = &g_inv[w->inv_index];
     i32 id = inv_name_id(e->name);
-    if (id == 52) {                            /* the book: RYLIVRE<language>.CIF full screen until a key/click */
-        /* TODO: show image, wait for input */
-        return;
-    }
+    if (id == 52) { inv_show_book(); return; } /* the book */
     g_used_object = id;
-    g_used_variant = e->pending ? (e->name[4] ? e->name[4] - 'A' : 0) : 0 /* TODO sub_42614C */;
+    g_used_variant = e->pending ? (e->name[4] ? e->name[4] - 'A' : 0) : inv_best_variant(e);
     /* player+0xD6 = e->name[4] */
-    if (!e->equipped && id != 0x47 /* && !(world_state==0x23 && usable(id)) */)
+    i32 lvl35 = state && state->current_level_id == 0x23;    /* world_state */
+    if (!e->equipped && id != 0x47 && !(lvl35 && inv_usable(id)))
         inv_toggle_equip();
     S.exit = 1;
 }
 
-/* 0x100099F0: OBJETS flags & 0xF0 */
-static i32 inv_usable(i32 id) { const obj_record_t *r = obj_rec(id); return r && (r->flags & 0xF0); }
 
 /* Input bits a host would supply each frame. */
 typedef struct {
@@ -796,7 +889,7 @@ i32 inventory_screen_frame(const inv_input_t *in, u32 now_ms) {
     }
     if (S.win[S.sel].inv_index >= 0) {
         i32 id = inv_name_id(g_inv[S.win[S.sel].inv_index].name);
-        i32 use_first = (id == 0x47) /* || (world_state == 0x23 && inv_usable(id)) */;
+        i32 use_first = (id == 0x47) || (state && state->current_level_id == 0x23 && inv_usable(id));
         if (in->space || (in->lclick && in_rect(in, 527, 77, 603, 189))) {
             /* sound INVENT2 (help_screen_context), button 1 highlight anim */
             if (use_first) inv_use(); else inv_toggle_equip();
@@ -810,7 +903,6 @@ i32 inventory_screen_frame(const inv_input_t *in, u32 now_ms) {
             snprintf(g_inv_hotkey[in->digit - 1], 8, "%s", nm);
             S.dirty |= 1 << S.sel;
         }
-        (void)inv_usable;
     }
     /* spin the selected window: 0x10008250, angle += axis * (dt << 3) */
     {
@@ -871,7 +963,68 @@ const c8 *player_held_id2(void) {                  /* player+0xD4 */
     return "--";
 }
 
-void inv_auto_combine(i32 held_id) { (void)held_id; }   /* sub_42784E: no level 1 combos */
+/* sub_42784E (see the note at inventory_screen_open). */
+void inv_auto_combine(i32 held_id) {
+    c8 nm[8];
+    for (i32 i = 0; i < INV_SLOTS; i++)
+        if (g_inv[i].name[0] && g_inv[i].pending) return;
+    if (held_id != 84 && inv_find("OB84") && held_id != 85 && inv_find("OB85") &&
+        held_id != 86 && inv_find("OB86")) {
+        snprintf(nm, sizeof(nm), "OB84"); inv_remove_one(nm);
+        snprintf(nm, sizeof(nm), "OB85"); inv_remove_one(nm);
+        inv_sort();
+        inv_add("OB71", 1, 1);
+        *lieu_state_slot(0xC14) = 3;           /* dword_506854 */
+    }
+    if (held_id != 2 && inv_find("OB02") && held_id != 12 && inv_find("OB12") &&
+        held_id != 18 && inv_find("OB18") && held_id != 19 && inv_find("OB19")) {
+        static const c8 *const parts[4] = { "OB02", "OB12", "OB18", "OB19" };
+        for (i32 k = 0; k < 4; k++) { snprintf(nm, sizeof(nm), "%s", parts[k]); inv_remove_one(nm); }
+        inv_sort();
+        inv_add("OB75", 1, 1);
+        *lieu_state_slot(0xB10) = 2;           /* dword_506750 */
+    }
+}
+
+/*
+ * sub_4654CE(name, add): take an item in hand by name (hotkeys, DIVERS 44).
+ * "OB00" or the held item's id puts nothing new in hand; any other id
+ * holsters the held one first (mode 1 only for "OB00"). add = 1 (scripts)
+ * also gives the item: refills its charges, resets the OB24 / OB77
+ * counters and puts nbobj pieces in the inventory.
+ */
+void inv_use_by_name(const c8 *name, i32 add) {
+    entity_t *p = g_player_entity;
+    c8 a, b, letter = 0, cur[8];
+    i32 id = -1;
+    if (!p || !EDESC(p) || !name || !name[0]) return;
+    if (sscanf(name, "%c%c%02d%c", &a, &b, &id, &letter) < 3 || id < 0 || id > 99) return;
+    i32 v = letter ? (letter & 7) - 1 : 0;
+    if (add) {
+        const obj_record_t *r = obj_rec(id);
+        if (r && (r->flags & 2) && r->arme < OBJ_RES_ROWS && v >= 0 && v < OBJ_RES_COLS)
+            g_obj_res[r->arme][v] = (i16)r->nbvie;    /* full charges */
+        if (id == 24 && v >= 0) *lieu_state_slot(0x140 + v * 4) = 3;
+        if (id == 77 && v >= 0) *lieu_state_slot(0x140 + v * 4) = 0;
+        if (id == 86) scene_set_combat_meter(0x124F80);   /* dword_506B9C */
+    }
+    snprintf(cur, sizeof(cur), "OB%02d", inv_held_id());
+    if (strncmp(name, cur, 4) != 0) {
+        game_object_t *held = (game_object_t *)EPTR(p, 0xD64);
+        if (held && strcmp(cur, "OB00") != 0) weapon_holster(held, id == 0);   /* sub_473DBC */
+        if (id != 0) {
+            game_object_t *o = object_get(name);       /* sub_475BB6 */
+            inv_entry_t *e = inv_find(name);
+            if (!e && id == 0x47) scene_set_combat_meter(0x124F80);
+            if (o && (!e || add)) {
+                const obj_record_t *r = obj_rec(id);
+                inv_add(o->name, r ? r->nbobj : 1, 0);
+            }
+            if (o && id != 0x47) weapon_take(o);         /* sub_47398A */
+        }
+    }
+    if (!add) g_ui_state = 1;
+}
 
 /* ======================================================================
  * Native screen: resources, drawing, loop
@@ -888,6 +1041,10 @@ static u8          g_grd[0x4000];                  /* PAL>INVENT.GRD */
 static i32         g_grd_ok;
 static c8         *g_names_txt, *g_descr_txt;      /* OBJNAME / OBJDESCR */
 static inv_model_t g_win_model[5];
+static bmap_t     *g_atlas;                       /* OBJETS1 */
+static i32     g_atlas_key = -1;                    /* the red key colour index */
+static u16    *g_mask;                              /* INVMASK.CTX */
+static i32     g_mask_n;
 
 static c8 *inv_read_text(const c8 *vpath) {
     c8 host[512];
@@ -933,9 +1090,9 @@ static const c8 *inv_lang_dir(void) {
 }
 
 static void inv_load_resources(void) {
-    if (!g_bg[0]) g_bg[0] = game_init_load_cursor("DATAS>GLOBAL>IMAGES>INVENT11.GIF");
-    if (!g_bg[1]) g_bg[1] = game_init_load_cursor("DATAS>GLOBAL>IMAGES>INVENT12.GIF");
-    if (!g_over)  g_over  = game_init_load_cursor("DATAS>GLOBAL>IMAGES>INVENT10.GIF");
+    if (!g_bg[0]) g_bg[0] = game_init_load_cursor("DATAS>GLOBAL>IMAGES>INVENT11.CIF");
+    if (!g_bg[1]) g_bg[1] = game_init_load_cursor("DATAS>GLOBAL>IMAGES>INVENT12.CIF");
+    if (!g_over)  g_over  = game_init_load_cursor("DATAS>GLOBAL>IMAGES>INVENT10.CIF");
     if (!g_grd_ok) {
         c8 host[512];
         const c8 *base = (state && state->game_path) ? state->game_path : ".";
@@ -950,6 +1107,34 @@ static void inv_load_resources(void) {
         g_names_txt = inv_read_text(vp);
         snprintf(vp, sizeof(vp), "DATAS>DIALOGUE>%s>OBJDESCR.TXT", inv_lang_dir());
         g_descr_txt = inv_read_text(vp);
+    }
+    if (!g_atlas) {
+        g_atlas = game_init_load_cursor("DATAS>GLOBAL>IMAGES>OBJETS1.CIF");
+        if (g_atlas) {                                  /* the key: the commonest index */
+            static i32 hist[256];
+            memset(hist, 0, sizeof(hist));
+            i32 st = g_atlas->stride > 0 ? g_atlas->stride : g_atlas->width;
+            for (i32 y = 0; y < g_atlas->height; y++)
+                for (i32 x = 0; x < g_atlas->width; x++) hist[g_atlas->pixels[y * st + x]]++;
+            g_atlas_key = 0;
+            for (i32 c = 1; c < 256; c++) if (hist[c] > hist[g_atlas_key]) g_atlas_key = c;
+        }
+    }
+    if (!g_mask) {
+        c8 h[512];
+        const c8 *b = (state && state->game_path) ? state->game_path : ".";
+        if (ls_resolve_path(b, "DATAS>GLOBAL>IMAGES>INVMASK.CTX", h, (i32)sizeof(h))) {
+            FILE *f = ls_open(h, "rb");
+            if (f) {
+                fseek(f, 0, SEEK_END);
+                long n = ftell(f);
+                fseek(f, 0, SEEK_SET);
+                g_mask = (u16 *)malloc((size_t)n);
+                if (g_mask && fread(g_mask, 1, (size_t)n, f) == (size_t)n) g_mask_n = (i32)(n / 2);
+                else { free(g_mask); g_mask = NULL; }
+                ls_close(f);
+            }
+        }
     }
     /* INVENT2.CTX (else INVENT.CTX): 200 / 100 doubles ratio, 100 x 3 i32
      * rest angles, 100 i8 spin axes. */
@@ -1052,52 +1237,220 @@ static void inv_draw_model(const inv_model_t *m, const inv_window_t *w, i32 k, i
     for (i32 c = 0; c < 3; c++) { r->pos[c] = save_pos[c]; r->rot[c] = save_rot[c]; }
 }
 
-static void inv_frame_box(u32 *fb, i32 fw, i32 x0, i32 y0, i32 w, i32 h, u32 col) {
-    for (i32 x = x0; x < x0 + w; x++) { fb[y0 * fw + x] = col; fb[(y0 + h - 1) * fw + x] = col; }
-    for (i32 y = y0; y < y0 + h; y++) { fb[y * fw + x0] = col; fb[y * fw + x0 + w - 1] = col; }
+/* ----------------------------------------------------------------------
+ * Screen art: OBJETS1 atlas (320x272, red = transparent, copied into rb2
+ * at (0,0) with sub-copies: tabs (173,167) -> rb2 (480,188), hotkey digits
+ * (63,237) -> (492,252), ammo icons (176,234) -> (480,264), quantity boxes
+ * (63,252) -> (480,293)). Coordinates below are atlas coordinates.
+ * ---------------------------------------------------------------------- */
+
+static u32 inv_pal_px(const u8 *pal, u8 idx) {
+    return 0xFF000000u | ((u32)pal[idx * 3 + 2] << 16) | ((u32)pal[idx * 3 + 1] << 8) | pal[idx * 3];
+}
+
+/* draw_image from the atlas: inclusive source rect, `keyed` skips red. */
+static void inv_atlas_blit(u32 *fb, i32 fw, i32 fh, i32 sx1, i32 sy1, i32 sx2, i32 sy2,
+                           i32 dx, i32 dy, i32 keyed) {
+    if (!g_atlas || !g_atlas->palette) return;
+    i32 st = g_atlas->stride > 0 ? g_atlas->stride : g_atlas->width;
+    for (i32 y = sy1; y <= sy2 && y < g_atlas->height; y++) {
+        i32 ty = dy + y - sy1;
+        if (ty < 0 || ty >= fh) continue;
+        for (i32 x = sx1; x <= sx2 && x < g_atlas->width; x++) {
+            i32 tx = dx + x - sx1;
+            if (tx < 0 || tx >= fw) continue;
+            u8 idx = g_atlas->pixels[y * st + x];
+            if (keyed && idx == g_atlas_key) continue;
+            fb[ty * fw + tx] = inv_pal_px(g_atlas->palette, idx);
+        }
+    }
+}
+
+/* INVENT.GRD level `lvl` (32 = unchanged) as a true-colour operation:
+ * out = in * a + b, fitted over the 256 palette entries. */
+typedef struct { f64 a, b[3]; i32 lvl; } inv_shade_t;
+
+static void inv_shade_fit(inv_shade_t *sh, i32 lvl, const u8 *pal) {
+    f64 sx = 0, sxx = 0, sy[3] = {0}, sxy[3] = {0};
+    sh->lvl = lvl; sh->a = lvl / 32.0; sh->b[0] = sh->b[1] = sh->b[2] = 0;
+    if (!pal || !g_grd_ok) return;
+    for (i32 c = 0; c < 256; c++) {
+        u8 d = g_grd[c * 64 + lvl];
+        for (i32 k = 0; k < 3; k++) {
+            f64 x = pal[c * 3 + k], y = pal[d * 3 + k];
+            sx += x; sxx += x * x; sy[k] += y; sxy[k] += x * y;
+        }
+    }
+    f64 n = 768, den = n * sxx - sx * sx;
+    f64 syt = sy[0] + sy[1] + sy[2], sxyt = sxy[0] + sxy[1] + sxy[2];
+    sh->a = den != 0 ? (n * sxyt - sx * syt) / den : lvl / 32.0;
+    for (i32 k = 0; k < 3; k++) sh->b[k] = (sy[k] - sh->a * sx / 3) / 256.0;
+}
+
+static u32 inv_shade_px(const inv_shade_t *sh, u32 p) {
+    i32 c[3] = { (i32)(p & 0xFF), (i32)((p >> 8) & 0xFF), (i32)((p >> 16) & 0xFF) };
+    for (i32 k = 0; k < 3; k++) {
+        i32 v = (i32)(c[k] * sh->a + sh->b[k]);
+        c[k] = v < 0 ? 0 : v > 255 ? 255 : v;
+    }
+    return 0xFF000000u | ((u32)c[2] << 16) | ((u32)c[1] << 8) | (u32)c[0];
+}
+
+/* Walk INVMASK: per row (skip, run) u16 pairs that sum to 640. Fills
+ * `in` (640x480 bytes, 1 inside the panel). */
+static void inv_mask_cover(u8 *in) {
+    memset(in, 0, 640 * 480);
+    if (!g_mask) return;
+    i32 i = 0;
+    for (i32 y = 0; y < 480 && i + 1 < g_mask_n; y++) {
+        i32 x = 0;
+        while (x < 640 && i + 1 < g_mask_n) {
+            x += g_mask[i];
+            i32 run = g_mask[i + 1];
+            i += 2;
+            for (i32 k = 0; k < run && x < 640; k++, x++) in[y * 640 + x] = 1;
+        }
+    }
+}
+
+/* 0x10008F70 mode 2: the frozen game view, shaded at GRD level 0x2E inside
+ * the panel shape (0x10001EF0), with an 8 px drop shadow at level 0x10
+ * (0x10002040). */
+static void inv_draw_pickup_bg(u32 *fb, i32 fw, i32 fh, const u32 *game_view) {
+    static u8 in[640 * 480];
+    const u8 *pal = g_bg[0] ? g_bg[0]->palette : NULL;
+    inv_shade_t fog, shadow;
+    inv_shade_fit(&fog, 0x2E, pal);
+    inv_shade_fit(&shadow, 0x10, pal);
+    inv_mask_cover(in);
+    for (i32 y = 0; y < fh; y++)
+        for (i32 x = 0; x < fw; x++) {
+            u32 p = game_view[y * fw + x];
+            if (x < 640 && y < 480) {
+                if (in[y * 640 + x]) p = inv_shade_px(&fog, p);
+                else if (x >= 8 && y >= 8 && in[(y - 8) * 640 + x - 8]) p = inv_shade_px(&shadow, p);
+            }
+            fb[y * fw + x] = p;
+        }
+}
+
+/* 0x10001210: shade a rectangle in place (tabs, level 15). */
+static void inv_shade_rect(u32 *fb, i32 fw, i32 x1, i32 y1, i32 x2, i32 y2, i32 lvl) {
+    inv_shade_t sh;
+    inv_shade_fit(&sh, lvl, g_bg[0] ? g_bg[0]->palette : NULL);
+    for (i32 y = y1; y <= y2; y++)
+        for (i32 x = x1; x <= x2; x++) fb[y * fw + x] = inv_shade_px(&sh, fb[y * fw + x]);
+}
+
+/* 0x10009760: the page tabs (objects icon atlas (173,167), weapons (237,167)). */
+static void inv_draw_tabs(u32 *fb, i32 fw, i32 fh) {
+    if (S.mode == 0) {
+        inv_atlas_blit(fb, fw, fh, 173, 167, 236, 228, 35, 386, 0);
+        inv_atlas_blit(fb, fw, fh, 237, 167, 300, 228, 60, 406, 0);
+        inv_shade_rect(fb, fw, 35, 386, 59, 450, 15);
+        inv_shade_rect(fb, fw, 60, 386, 99, 405, 15);
+    } else if (S.mode == 1) {
+        inv_atlas_blit(fb, fw, fh, 237, 167, 300, 228, 60, 406, 0);
+        inv_atlas_blit(fb, fw, fh, 173, 167, 236, 229, 35, 386, 0);
+        inv_shade_rect(fb, fw, 99, 406, 124, 470, 15);
+        inv_shade_rect(fb, fw, 60, 449, 98, 470, 15);
+    }
+}
+
+/* Font colour index 0x80 of the screen palette. */
+static u32 inv_text_col(void) {
+    const u8 *pal = g_bg[0] ? g_bg[0]->palette : NULL;
+    if (!pal) return 0xFFFFFFFFu;
+    return 0xFF000000u | ((u32)pal[0x80 * 3] << 16) | ((u32)pal[0x80 * 3 + 1] << 8) | pal[0x80 * 3 + 2];
+}
+
+/* 0x10003000 (part): equipped frame, quantity box, hotkey digit. */
+static void inv_draw_badges(u32 *fb, i32 fw, i32 fh, i32 k) {
+    inv_window_t *w = &S.win[k];
+    const inv_entry_t *e = &g_inv[w->inv_index];
+    i32 X = WIN_X[k], Y = WIN_Y[k], id = inv_name_id(e->name);
+    if (w->framed) inv_atlas_blit(fb, fw, fh, 160, 0, 319, 158, X, Y, 1);
+    if (e->name[0] != 'Q') {
+        i32 n = w->qty;
+        i32 ammo = (id == 6 || id == 7 || id == 8 || id == 0x27 || id == 0x48 || id == 0x49);
+        if (n > 1 || ammo) {
+            const obj_record_t *r = obj_rec(id);
+            if (r && r->linke == id) n--;
+            c8 t[16];
+            snprintf(t, sizeof(t), "%d", n);
+            if (n < 10)       { inv_atlas_blit(fb, fw, fh, 121, 252, 135, 266, X + 0x81, Y + 0x7F, 1); draw_text_tinted(font_handle, X + 0x84, Y + 0x7C, t, inv_text_col()); }
+            else if (n < 100) { inv_atlas_blit(fb, fw, fh,  96, 252, 118, 266, X + 0x79, Y + 0x7F, 1); draw_text_tinted(font_handle, X + 0x7C, Y + 0x7C, t, inv_text_col()); }
+            else              { inv_atlas_blit(fb, fw, fh,  63, 252,  93, 266, X + 0x71, Y + 0x7F, 1); draw_text_tinted(font_handle, X + 0x74, Y + 0x7C, t, inv_text_col()); }
+        }
+    }
+    for (i32 m = 1; m <= INV_HOTKEYS; m++)
+        if (g_inv_hotkey[m - 1][0] && !strncmp(g_inv_hotkey[m - 1], e->name, 4)) {
+            inv_atlas_blit(fb, fw, fh, 51 + 12 * m, 237, 62 + 12 * m, 248, X + 20, Y + 20, 1);
+            break;
+        }
+}
+
+/* 0x10003490: a weapon's ammunition in its window corner (when the ammo
+ * entry is not held itself). OB27 <- OB06, OB55 <- OB07 + OB08,
+ * OB23 <- OB72, OB32 <- OB39, OB35 <- OB73. */
+static void inv_draw_ammo(u32 *fb, i32 fw, i32 fh, i32 k) {
+    static const i32 icon_x[7] = { 0, 176, 281, 218, 239, 260, 197 };   /* atlas x, y 234..262 */
+    static const i32 ammo_id[7] = { 0, 6, 7, 0x48, 0x27, 0x49, 8 };
+    inv_window_t *w = &S.win[k];
+    i32 id = inv_name_id(g_inv[w->inv_index].name), t;
+    switch (id) {
+    case 27: t = 1; break;
+    case 55: t = 2; break;
+    case 23: t = 3; break;
+    case 32: t = 4; break;
+    case 35: t = 5; break;
+    default: return;
+    }
+    for (i32 row = 0; row < 2; row++) {
+        c8 nm[8], q[16], txt[16];
+        snprintf(nm, sizeof(nm), "OB%02d", ammo_id[t]);
+        const inv_entry_t *a = inv_find(nm);
+        if (a && !a->equipped) {
+            snprintf(q, sizeof(q), "%d", S.mode == INV_MODE_PICKUP ? a->pending : a->qty);
+            snprintf(txt, sizeof(txt), "%3s", q);
+            i32 X = WIN_X[k] + 0x78, Y = WIN_Y[k] + 0x14 + row * 0x28;
+            inv_atlas_blit(fb, fw, fh, icon_x[t], 234, icon_x[t] + 19, 262, X, Y, 1);
+            draw_text_tinted(font_handle, X + 2, Y + 0x14, txt, inv_text_col());
+        }
+        if (t != 2) break;
+        t = 6;                                         /* OB55 also shows OB08 */
+    }
 }
 
 static void inv_draw(const u32 *game_view) {
     u32 *fb = state->graphic.front_buffer;
     i32 fw = state->graphic.width, fh = state->graphic.height;
     if (S.mode == INV_MODE_PICKUP || !g_bg[0]) {
-        /* Mode 2: the frozen game view, darkened (INVMASK shade). */
-        for (i32 i = 0; i < fw * fh; i++) {
-            u32 p = game_view[i];
-            fb[i] = 0xFF000000u | ((p >> 2) & 0x3F3F3F);
-        }
+        inv_draw_pickup_bg(fb, fw, fh, game_view);
+        if (g_over) blit_bmap_masked_to_framebuffer(fb, fw, fh, g_over, g_over->palette, 0, 0, 0);
     } else {
         bmap_t *bg = g_bg[g_inv_category ? 1 : 0] ? g_bg[g_inv_category ? 1 : 0] : g_bg[0];
         blit_bmap_to_framebuffer(fb, fw, fh, bg, bg->palette, 0, 0);
         if (g_over) blit_bmap_masked_to_framebuffer(fb, fw, fh, g_over, g_over->palette, 0, 0, 0);
+        inv_draw_tabs(fb, fw, fh);
     }
     for (i32 k = 1; k <= 4; k++) {
         inv_window_t *w = &S.win[k];
         if (w->inv_index < 0) continue;
-        if (S.mode == INV_MODE_PICKUP)
-            inv_frame_box(fb, fw, WIN_X[k], WIN_Y[k], 160, 160, 0xFF806040u);
         inv_draw_model(&g_win_model[k], w, k, k == S.sel);
-        if (w->framed) inv_frame_box(fb, fw, WIN_X[k] + 2, WIN_Y[k] + 2, 156, 156, 0xFFFFC040u);
-        if (w->qty > 1) {
-            c8 q[16];
-            snprintf(q, sizeof(q), "%d", w->qty);
-            draw_text_at(font_handle, WIN_X[k] + 113, WIN_Y[k] + 127, q, 0xFFFFFFFFu);
-        }
-        for (i32 h = 0; h < INV_HOTKEYS; h++)
-            if (g_inv_hotkey[h][0] && !strncmp(g_inv_hotkey[h], g_inv[w->inv_index].name, 4)) {
-                c8 q[4] = { (c8)('1' + h), 0 };
-                draw_text_at(font_handle, WIN_X[k] + 20, WIN_Y[k] + 20, q, 0xFFFFE060u);
-            }
-        if (k == S.sel) inv_frame_box(fb, fw, WIN_X[k], WIN_Y[k], 160, 160, 0xFF60E0FFu);   /* fb is 0xAABBGGRR */
+        inv_draw_badges(fb, fw, fh, k);
+        inv_draw_ammo(fb, fw, fh, k);
     }
-    /* Name list: every listable item, the 4 shown in windows highlighted. */
+    /* 0x100039E0 Name list (every mode): every listable item, the 4 shown
+     * in windows darker, the selection darkest. */
     for (i32 r = 0; r < S.count && r < 20; r++) {   /* 12 px rows: the system font is ~11 px tall */
         i32 idx = inv_nth_listable(r);
         if (idx < 0) break;
         c8 nm[64];
         inv_text_rec(g_names_txt, inv_name_id(g_inv[idx].name), nm, (i32)sizeof(nm));
         if (!nm[0]) snprintf(nm, sizeof(nm), "%.4s", g_inv[idx].name);
-        u32 col = (r >= S.scroll && r < S.scroll + 4) ? 0xFF000000u : 0xFF6A5A48u;   /* the list sits on a pale panel */
+        u32 col = (r == S.scroll + S.sel - 1) ? 0xFF000000u
+                : (r >= S.scroll && r < S.scroll + 4) ? 0xFF3A3028u : 0xFF7A6A58u;   /* pale panel */
         draw_text_tinted(font_handle, 48, 122 + r * 12, nm, col);
     }
     /* Description of the selection. */

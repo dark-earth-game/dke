@@ -1070,8 +1070,9 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
      * else: return sub_427593() — save the inventory to byte_50A160 and
      *   strip items (confiscation). */
     case 7:
-        /* TODO inventory subsystem */
-        return 0;
+        if (a == 2) { inv_clear_all(); return 0; }   /* sub_4274C2 */
+        if (a == 0) { inv_restore(); return 0; }     /* sub_4276B6 */
+        return inv_confiscate();                     /* sub_427593 */
 
     /* op 8 @ 0x4475DF — |angle| between actor a's facing and the direction to
      * actor b, BAM 0..0x8000. -1 if either is missing.
@@ -1479,9 +1480,12 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
         return 0;
 
     /* op 44 @ 0x448D4B — sub_4654CE("OB%02d"(a), 1): player picks up item. */
-    case 44:
-        /* TODO inventory */
+    case 44: {
+        c8 nm[8];
+        snprintf(nm, sizeof(nm), "OB%02d", a);
+        inv_use_by_name(nm, 1);
         return 0;
+    }
 
     /* op 45 @ 0x448D78 — ls_wait_key() (blocking). */
     case 45:
@@ -2399,6 +2403,12 @@ void lieu_tick(u32 now_ms) {
     zones_follow();
     /* Per-frame: engine calls op -1 every frame (drain + tick_body). */
     lieu_call(LIEU_OP_TICK, 0, 0);   /* op -1 */
+    /* sub_44968B @ 0x449AF6: an item used on the inventory screen reaches
+     * the script as event 5 (object id, instance) once play resumes. */
+    if (g_used_object && g_ui_state == 1) {
+        lieu_pending_event(g_used_object, g_used_variant);
+        g_used_object = 0;
+    }
 
     (void)now_ms;   /* the piles are drained by actor_frame (sub_461468 order) */
 }

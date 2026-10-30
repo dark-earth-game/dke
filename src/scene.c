@@ -158,6 +158,7 @@ static i32 g_render_mode_flag = 0;     /* render_mode_flag @ 0x4B4528 */
 static i32 g_hud_active = 0;          /* dword_4B52DC @ 0x4B52DC — -1 = HUD disabled */
 static i32 g_combat_meter = 0;        /* dword_506B9C @ 0x506B9C — current meter value */
 static i32 g_combat_meter_max = 1;    /* dword_506B80 @ 0x506B80 — max meter value */
+void scene_set_combat_meter(i32 v) { g_combat_meter = v; }
 static i32 g_cached_meter = 0;        /* dword_4B6F60 @ 0x4B6F60 — dirty-check cache */
 static i32 g_cached_color_mode2 = -1; /* dword_4B6F68 @ 0x4B6F68 — cached color_mode for 45D0BA */
 static i32 g_cached_health = 0;       /* dword_4B6F5C @ 0x4B6F5C — cached descriptor health */
@@ -2986,10 +2987,33 @@ i32 scene_render(system_t *sys) {
         static i32 s_i_prev = 0;
         i32 ik = sys ? sys->actions[105] : 0;
         static i32 s_fr = 0;                       /* headless: DKE_AUTOI=<frame> */
-        if (getenv("DKE_AUTOI") && ++s_fr == atoi(getenv("DKE_AUTOI"))) ik = 1, s_i_prev = 0;
-        if (ik && !s_i_prev && !g_player_movement_locked && g_ui_state == 1)
+        i32 forced = getenv("DKE_AUTOI") && ++s_fr == atoi(getenv("DKE_AUTOI"));
+        if (forced) ik = 1, s_i_prev = 0;
+        if (ik && !s_i_prev && ((!g_player_movement_locked && g_ui_state == 1) || forced))
             inventory_screen_open();
         s_i_prev = ik;
+    }
+    /* process_menu @ 0x408E8F: 0 = bare hands, 1..9 = the item on that
+     * hotkey, when the player is free (no script lock, no anim mode / turn
+     * / scripted state). In level 35 only items allowed in a fight. */
+    if (sys && g_player_entity) {
+        static i32 s_dig_prev[10];
+        entity_t *p = g_player_entity;
+        i32 lvl = state ? state->current_level_id : 0;
+        i32 free_ = !g_cam_lock && !g_viewport_active && g_ui_state == 1 && !g_player_movement_locked &&
+                    E32(p, 0xCEC) == 0 && E32(p, 0xCF4) == 0 && E32(p, 0xD04) == 0;
+        for (i32 k = 0; k <= 9; k++) {
+            i32 down = sys->actions['0' + k] || sys->actions[0x60 + k];   /* digit row or keypad */
+            i32 press = down && !s_dig_prev[k];
+            s_dig_prev[k] = down;
+            if (!press || !free_) continue;
+            if (k == 0) { inv_sort(); inv_use_by_name("OB00", 0); continue; }
+            const c8 *nm = inv_hotkey(k - 1);
+            if (!nm[0] || (lvl == 0x23 && !inv_fight_usable(nm))) continue;
+            if (E32(p, 0xC78) && strcmp(nm, "OB86") == 0) continue;
+            if (strcmp(nm, "OB71") == 0) lieu_pending_event(0x47, 0);   /* sub_44A28C */
+            else { inv_use_by_name(nm, 0); inv_sort(); }
+        }
     }
     combat_keys_latch(sys);                        /* process_input_command / _event */
     {
