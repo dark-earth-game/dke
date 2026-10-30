@@ -178,9 +178,10 @@ void ls_shut_movie(void) {
  *   Frames smaller than display: copy top-left w×h region, rest unchanged.
  *   Frames larger than display: log and skip rendering (no crash).
  *
- * Audio: skipped (fseek past A_BYTES per frame). TODO: stream PCM.
+ * Audio: each frame's PCM block is pushed to the output queue as it is
+ *   decoded, MOVIE_LEAD frames ahead of the picture.
  *
- * Frame timing: ls_tick / ls_delay to maintain movie fps.
+ * Frame timing: absolute schedule from the first audio push.
  * Quit: ls_update_events; break on system->quit.
  *
  * Ported functions:
@@ -228,7 +229,6 @@ void ls_play_movie(const c8 *path) {
 
     /* Allocate decode buffers */
     u8  *rgb_buf  = (u8 *)malloc((size_t)(r.width * r.height * 3));
-    u32 *pix_buf  = (u32 *)malloc((size_t)(r.width * r.height) * sizeof(u32));
 
     /* Audio: raw CRH_A_BYTES block + decoded i16 PCM */
     b8   do_audio      = (state && state->audio_enabled);
@@ -247,9 +247,9 @@ void ls_play_movie(const c8 *path) {
         do_audio = false;
     }
 
-    if (!rgb_buf || !pix_buf) {
-        printf("ls_play_movie: out of memory (rgb=%p pix=%p)\n", (void*)rgb_buf, (void*)pix_buf);
-        free(rgb_buf); free(pix_buf); free(audio_raw); free(audio_pcm);
+    if (!rgb_buf) {
+        printf("ls_play_movie: out of memory\n");
+        free(audio_raw); free(audio_pcm);
         crh_close(&r);
         return;
     }
@@ -257,7 +257,6 @@ void ls_play_movie(const c8 *path) {
     system_t *sys      = state ? &state->system : NULL;
     graphic_t *graphic = state ? &state->graphic : NULL;
     audio_t   *audio   = state ? &state->audio   : NULL;
-    u32 frame_ms       = (r.fps > 0) ? (1000u / r.fps) : 66u;
 
     /* Clear letterbox bars once at start of playback. Scale loop overwrites
      * the fitted region every frame; the black bars stay untouched. */
@@ -266,23 +265,51 @@ void ls_play_movie(const c8 *path) {
                (size_t)graphic->width * graphic->height * sizeof(u32));
     }
 
-    while (crh_next_frame_ex(&r, rgb_buf, do_audio ? audio_raw : NULL)) {
-        /* Decode and push audio for this frame */
-        if (do_audio && audio && audio_raw && audio_pcm) {
-            i32 pcm_bytes = crh_decode_audio(audio_raw, CRH_A_BYTES, ach, audio_pcm);
-            if (pcm_bytes > 0) {
-                ls_audio_push(audio, audio_pcm, pcm_bytes);
+    /* Each CRH frame carries 1/fps s of PCM. Pushing it just as the video
+     * frame is shown leaves the output queue empty between pushes (a gap
+     * every frame). Instead decode MOVIE_LEAD frames ahead: their audio is
+     * queued right away, and each picture is shown on an absolute schedule
+     * from the moment the first audio block went out, so the queue always
+     * holds ~MOVIE_LEAD frames and video stays locked to the sound. */
+    enum { MOVIE_LEAD = 4 };
+    i32 n_pixels = r.width * r.height;
+    u32 *ring[MOVIE_LEAD + 1] = { 0 };
+    for (i32 k = 0; k <= MOVIE_LEAD; k++) {
+        ring[k] = (u32 *)malloc((size_t)n_pixels * sizeof(u32));
+        if (!ring[k]) {
+            for (i32 j = 0; j < k; j++) free(ring[j]);
+            free(rgb_buf); free(audio_raw); free(audio_pcm);
+            crh_close(&r);
+            return;
+        }
+    }
+    u32 decoded = 0, shown = 0, t0 = 0;
+    b8  eof = false;
+
+    for (;;) {
+        /* Keep the decoder MOVIE_LEAD frames ahead of the display. */
+        while (!eof && decoded < shown + MOVIE_LEAD + 1) {
+            if (!crh_next_frame_ex(&r, rgb_buf, do_audio ? audio_raw : NULL)) { eof = true; break; }
+            if (do_audio && audio && audio_raw && audio_pcm) {
+                i32 pcm_bytes = crh_decode_audio(audio_raw, CRH_A_BYTES, ach, audio_pcm);
+                if (pcm_bytes > 0) ls_audio_push(audio, audio_pcm, pcm_bytes);
             }
+            if (decoded == 0) t0 = ls_tick();
+            /* RGB triples -> u32 XRGB (NSBitmapImageRep wants byte[0]=R) */
+            u32 *dst = ring[decoded % (MOVIE_LEAD + 1)];
+            for (i32 i = 0; i < n_pixels; i++)
+                dst[i] = 0xFF000000u | ((u32)rgb_buf[i * 3 + 2] << 16)
+                       | ((u32)rgb_buf[i * 3 + 1] << 8) | (u32)rgb_buf[i * 3 + 0];
+            decoded++;
         }
-        /* Convert RGB triples to u32 XRGB */
-        i32 n_pixels = r.width * r.height;
-        for (i32 i = 0; i < n_pixels; i++) {
-            u8 rr = rgb_buf[i * 3 + 0];
-            u8 gg = rgb_buf[i * 3 + 1];
-            u8 bb = rgb_buf[i * 3 + 2];
-            /* NSBitmapImageRep expects byte[0]=R on little-endian */
-            pix_buf[i] = 0xFF000000u | ((u32)bb << 16) | ((u32)gg << 8) | (u32)rr;
-        }
+        if (shown >= decoded) break;
+
+        /* Present frame `shown` when its audio starts playing. */
+        u32 due = t0 + (u32)((u64)shown * 1000u / (r.fps ? r.fps : 15));
+        i32 wait = (i32)(due - ls_tick());
+        if (wait > 0) ls_delay((u32)wait);
+        u32 *pix = ring[shown % (MOVIE_LEAD + 1)];
+        shown++;
 
         /* Scale movie into front_buffer preserving aspect ratio.
          * Nearest-neighbour up/downscale, centred. For 320x200 in 640x480
@@ -311,7 +338,7 @@ void ls_play_movie(const c8 *path) {
             for (i32 dy = 0; dy < out_h; dy++) {
                 i32 sy = (dy * jstep) >> 16;
                 if (sy >= r.height) sy = r.height - 1;
-                u32 *src_row = pix_buf + sy * r.width;
+                u32 *src_row = pix + sy * r.width;
                 u32 *dst_row = graphic->front_buffer + (off_y + dy) * fb_w + off_x;
                 i32 sx_frac = 0;
                 for (i32 dx = 0; dx < out_w; dx++) {
@@ -330,23 +357,16 @@ void ls_play_movie(const c8 *path) {
             ls_update_events(sys);
             if (sys->quit) break;
             /* ESC skips the movie — consume the edge so the menu doesn't
-             * also see it as a QUIT. */
+             * also see it. */
             if (sys->actions[27] == 1) {
                 sys->actions[27] = 0;
                 printf("ls_play_movie: skipped by ESC at frame %u/%u\n",
-                       (u32)r.current_frame, (u32)r.frame_count);
+                       shown, (u32)r.frame_count);
                 break;
             }
         }
-
-        /* Frame timing */
-        u32 now = ls_tick();
-        static u32 frame_start = 0;
-        if (frame_start == 0) frame_start = now;
-        u32 elapsed = now - frame_start;
-        if (elapsed < frame_ms) ls_delay(frame_ms - elapsed);
-        frame_start = ls_tick();
     }
+    for (i32 k = 0; k <= MOVIE_LEAD; k++) free(ring[k]);
 
     /* cine_clear_movie_background: zero front_buffer after playback */
     if (graphic && graphic->front_buffer) {
@@ -355,9 +375,8 @@ void ls_play_movie(const c8 *path) {
     }
 
     free(rgb_buf);
-    free(pix_buf);
     free(audio_raw);
     free(audio_pcm);
     crh_close(&r);
-    printf("ls_play_movie: done (%u frames)\n", (u32)r.current_frame);
+    printf("ls_play_movie: done (%u frames)\n", (u32)r.frame_count);
 }
