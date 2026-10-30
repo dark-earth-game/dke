@@ -11,6 +11,7 @@ Living documentation for the Dark Earth (Kalisto Entertainment, 1997) reverse-en
 - [FUNCTION_MAP.md](FUNCTION_MAP.md) — canonical map: original address → asm name → C name → status.
 - [SUBSYSTEMS.md](SUBSYSTEMS.md) — subsystem summaries (memory, graphics, audio, movie, input, filesystem).
 - [functions/](functions/) — per-function conversion notes (asm excerpt + C notes + verification).
+- [metadata/](metadata/) — game content catalogues: rooms, characters, items, movies, dialogue, sounds, script variables.
 
 ## Source binary
 
