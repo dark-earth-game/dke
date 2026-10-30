@@ -15,4 +15,5 @@ i32  menu_files_run(void);      /* sub_43E038: save / load; 1 = a game was loade
 void menu_persos_run(void);     /* sub_43F8C7: characters */
 void menu_sound_run(void);      /* sub_440B92: volume */
 void menu_cine_run(void);       /* sub_441E43: replay seen movies */
-void menu_dial_run(void);       /* sub_46A4D5: replay seen dialogues */
+void menu_dial_run(void);       /* sub_46A4D5: log of the heard dialogue lines */
+void menu_dial_log(const c8 *code, i32 speaker);   /* sub_46A358: record a line */

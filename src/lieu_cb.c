@@ -47,6 +47,7 @@
 #include "levels/levels.h"
 #include "player.h"
 #include "dialogue.h"
+#include "menu/screens.h"
 #include "actor.h"
 #include "state.h"
 
@@ -1886,6 +1887,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
 
     case LA_DIALOGUE:                          /* case 1 -> sub_46BC74 */
         if (dlg_is_active()) return 0;         /* dword_4FF098: slot busy */
+        menu_dial_log(n->name, n->actor);      /* sub_46A358: the menu's dialogue log */
         {
             entity_t *e = actor_find(n->actor);
             if (e && EDESC(e) && EDESC(e)[0x96]) {
@@ -1980,7 +1982,10 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                 else if (hero == 1)     msg = "LCOD81";
                 else if (hero == 2)     msg = g_special_mode_active ? "LCOD82" : "LCOD83";
                 else if (hero == 3)     msg = g_special_mode_active ? "LCOD84" : "LCOD85";
-                if (msg) dlg_start(msg, now_ms);           /* sub_46BC74(msg, game_state) */
+                if (msg) {                                 /* sub_46BC74(msg, game_state) */
+                    menu_dial_log(msg, hero);
+                    dlg_start(msg, now_ms);
+                }
                 n->duration = 10;
                 /* falls through to the "state != 8" wait below */
             } else {                           /* 8: take the items */
