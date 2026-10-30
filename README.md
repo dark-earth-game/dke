@@ -31,6 +31,18 @@ The project tries to be cross-platform with minimal dependencies to facilitate t
 
 > make run
 
+## Windows (cross-compiled with mingw-w64)
+
+> make PLATFORM=windows
+
+## Releases
+
+GitHub Actions builds macOS (arm64, x86_64), Linux and Windows on every push. To publish a release, rename the `## Unreleased` heading in [CHANGES.md](CHANGES.md) to the version (for example `## 0.1.0 - 2026-11-01`), commit, then push a matching tag:
+
+> git tag v0.1.0 && git push origin v0.1.0
+
+The release holds the engine only; players add the files from their own copy of the game.
+
 ## Disassembly
 
 In the disassembly folder you will find the IDA Free v8.4 project files for the game. The executable used was the patched version of the game with no CD protection.
