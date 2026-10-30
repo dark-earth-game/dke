@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -385,6 +386,8 @@ void menu_init(menu_t *menu) {
     menu->quit_hover      = 1;
     menu->game_running    = 0;
     menu->pending         = MENU_ACTION_NONE;
+    /* Headless: DKE_MENU_ACTION=<menu_action_e> opens a sub-screen at once. */
+    if (getenv("DKE_MENU_ACTION")) menu->pending = atoi(getenv("DKE_MENU_ACTION"));
     menu->startup_frames_remaining = 30;  /* ignore Cocoa synth click ≈0.5s @60fps */
 
     /* Fetch backdrop loaded during game_init phase 3+7 */
