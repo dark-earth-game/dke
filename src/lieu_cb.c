@@ -2001,15 +2001,16 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                     E32(corpse, 0x178) = 0;
                     if (EDESC(corpse)) EDESC(corpse)[0x97] = 0;
                 }
-                g_ui_state = 2;                /* dword_4DD9B4: open the inventory screen */
+                g_ui_state = 2;                /* dword_4DD9B4: redraw without the corpse's items */
                 n->duration = 2;
                 return 0;
             }
         }
-        /* state 10 (after the line) or 2 (inventory open): wait for the game UI */
-        if (n->duration == 2 && g_ui_state == 2) { inventory_screen_open(); return 0; }
+        /* state 10 (after the line) or 2 (items taken): wait until the game
+         * loop has settled the redraw (0x44C336), then state 2 shows the new
+         * items once: sub_42701B opens the screen in pickup mode. */
         if (g_ui_state != 1) return 0;
-        /* if state == 2: sub_42701B() (inventory close bookkeeping) TODO */
+        if (n->duration == 2) inventory_screen_open();
         {
             c8 clip[16] = { 0 };
             actor_bake_root_yaw(p);
@@ -2021,8 +2022,6 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         g_player_blocked = 0;
         /* if (!g_lieu_loading) update_player_interface */
         return 1;
-        /* NOTE: with no inventory screen yet, g_ui_state stays 1, so state 2
-         * releases on the next frame (the items are just logged). */
     }
 
     case LA_SIMULT:                            /* case 24 @ 0x44C5D9 */
