@@ -3,6 +3,7 @@
 - List of all changes during public version releases
 
 ## Unreleased
+- c51f1a1 fix: dialogue voices play from the speaker's position (stereo pan and distance), re-placed on camera cuts
 
 ## 0.0.1 - 2026-10-30
 
