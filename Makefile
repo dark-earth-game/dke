@@ -35,14 +35,14 @@ ifeq ($(PLATFORM),macos)
 endif
 ifeq ($(PLATFORM),linux)
 	CC = clang
-	CFLAGS += -DPLATFORM_LINUX $(ARCH_FLAGS)
+	CFLAGS += -DPLATFORM_LINUX -D_DEFAULT_SOURCE $(ARCH_FLAGS)
 	LDFLAGS = -lX11 -lpthread -lm -ldl
 	SRCS = src/libsys/platforms/linux.c $(BASE_SRCS)
 endif
 ifeq ($(PLATFORM),windows)
 	CC = x86_64-w64-mingw32-gcc
 	CFLAGS += -DPLATFORM_WINDOWS -mavx2
-	LDFLAGS = -lmingw32 -mwindows -lgdi32 -lwinmm
+	LDFLAGS = -lmingw32 -mwindows -lgdi32 -lwinmm -static -lpthread
 	SRCS = src/libsys/platforms/windows.c $(BASE_SRCS)
 	TARGET = dke.exe
 endif

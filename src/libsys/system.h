@@ -7,7 +7,7 @@ typedef struct {
     u32 last_tick;
     u32 last_tick_fps;
     u32 frame_count;
-} timer_t;
+} ls_timer_t;
 
 typedef struct {
     b8 quit;
@@ -15,7 +15,7 @@ typedef struct {
     i32 height;
     i16 bpp;
     c8 *title;
-    timer_t timer;
+    ls_timer_t timer;
     i32 actions[256];
     i32 motion_x;
     i32 motion_y;
