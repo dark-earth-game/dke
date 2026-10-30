@@ -51,6 +51,7 @@
 #include "levels/levels.h"
 #include "player.h"
 #include "dialogue.h"
+#include "combat.h"
 #include "menu/screens.h"
 #include "actor.h"
 #include "state.h"
@@ -2004,8 +2005,10 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                     inv[i] = 0;
                 }
                 if (corpse) {                  /* strip the corpse's weapon */
-                    /* TODO objects: sub_474462(corpse, corpse+0xD68, 1);
-                     * sub_4735A2(corpse, 0); sub_472B47(corpse+0xD64). */
+                    /* TODO objects: sub_474462(corpse, corpse+0xD68, 1). */
+                    game_object_t *w = (game_object_t *)EPTR(corpse, 0xD64);
+                    weapon_detach(corpse, 0);  /* sub_4735A2: the weapon's nodes leave the hand */
+                    if (w) object_world_remove(w->name);   /* sub_472B47 */
                     EPTR(corpse, 0xD64) = NULL;
                     E32(corpse, 0x178) = 0;
                     if (EDESC(corpse)) EDESC(corpse)[0x97] = 0;

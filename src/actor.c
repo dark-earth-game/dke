@@ -33,6 +33,7 @@
 #include "inventory.h"
 #include "world.h"
 #include "lieu_cb.h"
+#include "combat.h"
 
 persona_desc_t g_persona_desc[PERSONA_COUNT];
 u8             g_hero_desc[HERO_COUNT][HERO_DESC_SIZE];
@@ -293,6 +294,11 @@ void actor_free(entity_t *e) {                        /* sub_4658D4 */
     for (i32 i = 0; i < PERSONA_COUNT; i++)
         if (g_persona_desc[i].entity == e) g_persona_desc[i].entity = NULL;
     lieu_zone_detach(e);
+    /* A held object's nodes hang off the hand bone but belong to the object
+     * slots (object_reset frees them): give them back before freeing the
+     * actor's tree, or a room change frees them twice. */
+    weapon_detach(e, 0);
+    weapon_detach(e, 1);
     if (e->gravit.child) obc_free(e->gravit.child);
     if (EPTR(e, 0x88)) mat_free((mat_lib_t *)EPTR(e, 0x88));
     if (g_companion_entity == e) g_companion_entity = NULL;
