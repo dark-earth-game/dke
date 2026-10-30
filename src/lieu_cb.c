@@ -1981,6 +1981,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                 else if (hero == 2)     msg = g_special_mode_active ? "LCOD82" : "LCOD83";
                 else if (hero == 3)     msg = g_special_mode_active ? "LCOD84" : "LCOD85";
                 if (msg) dlg_start(msg, now_ms);           /* sub_46BC74(msg, game_state) */
+                n->duration = 10;
                 /* falls through to the "state != 8" wait below */
             } else {                           /* 8: take the items */
                 for (i32 i = 0; inv && i < 8; i++) {
@@ -2005,7 +2006,7 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
                 return 0;
             }
         }
-        /* state 9 (after the line) or 2 (inventory open): wait for the game UI */
+        /* state 10 (after the line) or 2 (inventory open): wait for the game UI */
         if (n->duration == 2 && g_ui_state == 2) { inventory_screen_open(); return 0; }
         if (g_ui_state != 1) return 0;
         /* if state == 2: sub_42701B() (inventory close bookkeeping) TODO */

@@ -505,8 +505,27 @@ void ls_update_events(system_t *system) {
     pool = [[NSAutoreleasePool alloc] init];
 }
 
+static pthread_once_t tick_timebase_once = PTHREAD_ONCE_INIT;
+static mach_timebase_info_data_t tick_timebase;
+static b8 tick_timebase_valid;
+
+static void tick_timebase_init(void) {
+    kern_return_t result = mach_timebase_info(&tick_timebase);
+    if (result != KERN_SUCCESS || tick_timebase.denom == 0) {
+        printf("ls_tick: mach_timebase_info failed (%d)\n", (int)result);
+        return;
+    }
+    tick_timebase_valid = true;
+}
+
 inline u32 ls_tick() {
-    return mach_absolute_time() / 1000000;
+    pthread_once(&tick_timebase_once, tick_timebase_init);
+    if (!tick_timebase_valid) return 0;
+
+    u64 ticks = mach_absolute_time();
+    u64 ns = (ticks / tick_timebase.denom) * tick_timebase.numer
+           + ((ticks % tick_timebase.denom) * tick_timebase.numer) / tick_timebase.denom;
+    return (u32)(ns / 1000000);
 }
 
 inline void ls_delay(u32 delay) {

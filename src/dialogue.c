@@ -131,6 +131,8 @@ void dlg_tick(i32 level, const c8 *root, const c8 *lang, u32 now_ms, i32 advance
     if (!g_duration_ms) return;
     i32 elapsed = (i32)(now_ms - g_start_ms);
     if (elapsed > (i32)g_duration_ms || (advance && elapsed > 500)) {
+        if (advance && elapsed <= (i32)g_duration_ms)
+            sfx_voice_stop();
         g_active[0] = '\0';
         g_duration_ms = 0;
     }

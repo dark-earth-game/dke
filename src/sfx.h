@@ -31,6 +31,7 @@ void sfx_bruitage(const c8 *name, i32 x, i32 z);
 /* sub_44E57B: voice / one-shot / ambience; returns a voice's length (ms). */
 u32  sfx_voice_play(const entity_t *e, const c8 *name, i32 x, i32 z);
 b8   sfx_voice_busy(void);
+void sfx_voice_stop(void);
 void sfx_play_anims(const c8 *name);
 /* sub_41AED1 types 1 / 0x13; returns 1 when the caller skips to the next
  * message. */

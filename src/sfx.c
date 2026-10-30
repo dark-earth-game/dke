@@ -66,8 +66,9 @@ extern state_t *state;
 #define SFX_INST_VOICE    0       /* renderer_instance[0]  (dialogue / one-shot) */
 #define SFX_INST_AMB      1       /* renderer_instance[1] == dword_4FB334 (AMB loop) */
 #define SFX_VOICES        (SFX_CACHE + 2 + SFX_EV_SLOTS)
-#define SFX_LEAD_FRAMES   2048    /* ~93 ms queued ahead */
+#define SFX_LEAD_FRAMES   1536    /* ~70 ms queued ahead */
 #define SFX_MAX_CHUNK     4096
+#define SFX_MIN_CHUNK     256     /* ~12 ms minimum refill */
 
 #define DS_VOL_MIN        (-10000)  /* 0xFFFFD8F0 */
 #define POS_NONE          (-600)    /* 0xFFFFFDA8: x or z == -1 tile -> not placed */
@@ -77,7 +78,7 @@ extern state_t *state;
  * ======================================================================== */
 typedef struct {
     const wav_t *w;
-    u32  pos;        /* 16.16 source frame */
+    u64  pos;        /* 16.16 source frame; 32-bit wraps on long voice WAVs */
     u32  step;       /* 16.16 source frames per output frame */
     i32  gl, gr;     /* Q12 gains */
     i32  rate;       /* playback rate (Hz) */
@@ -135,10 +136,11 @@ static void mix(i16 *out, u32 frames) {
         if (!v->active) continue;
         const wav_t *w = v->w;
         for (u32 f = 0; f < frames; f++) {
-            u32 sf = v->pos >> 16;
+            u32 sf = (u32)(v->pos >> 16);
             if (sf >= w->num_samples) {
                 if (!v->loop) { v->active = 0; break; }
-                v->pos -= w->num_samples << 16; sf = v->pos >> 16;
+                v->pos -= (u64)w->num_samples << 16;
+                sf = (u32)(v->pos >> 16);
             }
             i32 l, r;
             if (w->channels == 2) { l = w->samples[sf * 2]; r = w->samples[sf * 2 + 1]; }
@@ -170,9 +172,6 @@ static void audio_mx_init(void) {
 void audio_lock(void)   { pthread_once(&g_audio_once, audio_mx_init); pthread_mutex_lock(&g_audio_mx); }
 void audio_unlock(void) { pthread_mutex_unlock(&g_audio_mx); }
 
-#define SFX_THREAD_LEAD  4096          /* ~186 ms queued ahead of the device */
-static u32 g_lead = SFX_THREAD_LEAD;
-
 /* One mixing step (mixer thread, lock held). The playback clock is the wall
  * clock; the game clock stops while the inventory / a pause is up. */
 static void mixer_pump(u32 now) {
@@ -185,9 +184,10 @@ static void mixer_pump(u32 now) {
     if (!g_streaming) { g_streaming = 1; g_clock_t0 = now; g_pushed = 0; }
     u32 played = (u32)((u64)(now - g_clock_t0) * SFX_RATE / 1000);
     if (g_pushed < played) g_pushed = played;              /* underrun: resync */
-    u32 want = played + g_lead;
+    u32 want = played + SFX_LEAD_FRAMES;
     while (g_pushed < want) {
         u32 n = want - g_pushed;
+        if (n < SFX_MIN_CHUNK) break;
         if (n > SFX_MAX_CHUNK) n = SFX_MAX_CHUNK;
         static i16 buf[SFX_MAX_CHUNK * 2];
         mix(buf, n);
@@ -323,10 +323,12 @@ static void sfx_play_entity(const entity_t *e, i32 id) {
 #define VI_INST(i)  (SFX_CACHE + (i))
 static wav_t g_inst[2];
 static b8    g_inst_used[2];
+static b8    g_inst_dialog;     /* slot 0 holds a dialogue voice (not a one-shot) */
 static i32   g_amb_pos[3] = { POS_NONE, 0, POS_NONE };   /* dword_4FB34C/50/54 */
 static c8    g_amb_name[32];                             /* byte_4FC090 */
 
 static void inst_free(i32 i) {                           /* sub_44E46A */
+    if (i == SFX_INST_VOICE) g_inst_dialog = 0;
     voice_stop(VI_INST(i));
     wav_free(&g_inst[i]);
     g_inst_used[i] = 0;
@@ -393,6 +395,7 @@ static u32 sfx_voice_play_impl(const entity_t *e, const c8 *name_in, i32 x, i32 
          * The port's dialog tree is <root>/dialog/Lnn/<code>.WAV. */
         snprintf(path, sizeof(path), "%s/dialog/%.3s/%s.WAV", g_root, name, name);
         if (!ls_exists(path) || !inst_load(SFX_INST_VOICE, path)) return 0;
+        g_inst_dialog = 1;
         voice_play(VI_INST(SFX_INST_VOICE), &g_inst[SFX_INST_VOICE], 0, 1);
         i32 vol, pan;
         i32 fy = g_world.world_controller
@@ -691,6 +694,13 @@ b8 sfx_voice_busy(void) {
     b8 r = sfx_voice_busy_impl();
     audio_unlock();
     return r;
+}
+
+/* Cut the dialogue line short; leaves a one-shot in slot 0 alone. */
+void sfx_voice_stop(void) {
+    audio_lock();
+    if (g_inst_dialog) inst_free(SFX_INST_VOICE);
+    audio_unlock();
 }
 
 /* A sound from wav>anims> (e.g. "trans" for sub_42E0E0). */
