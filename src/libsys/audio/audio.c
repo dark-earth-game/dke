@@ -43,6 +43,11 @@ i32 ls_audio_push(audio_t *audio, const i16 *pcm, i32 bytes) {
     return ls_platform_audio_push(pcm, bytes);
 }
 
+i32 ls_audio_queued(audio_t *audio) {
+    if (!audio) return -1;
+    return ls_platform_audio_queued();
+}
+
 void ls_audio_stop_stream(audio_t *audio) {
     if (!audio) return;
     ls_platform_audio_close();

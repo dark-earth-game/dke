@@ -110,4 +110,5 @@ void ls_release(system_t *system) {
 /* Audio platform stubs — ALSA not implemented */
 b8   ls_platform_audio_open(i32 sr, i32 ch, i32 bd)   { (void)sr; (void)ch; (void)bd; return true; }
 i32  ls_platform_audio_push(const i16 *p, i32 n)      { (void)p; return n; }
+i32  ls_platform_audio_queued(void)                   { return -1; }
 void ls_platform_audio_close(void)                    { }

@@ -67,9 +67,11 @@ extern state_t *state;
 #define SFX_INST_VOICE    0       /* renderer_instance[0]  (dialogue / one-shot) */
 #define SFX_INST_AMB      1       /* renderer_instance[1] == dword_4FB334 (AMB loop) */
 #define SFX_VOICES        (SFX_CACHE + 2 + SFX_EV_SLOTS)
-#define SFX_LEAD_FRAMES   1536    /* ~70 ms queued ahead */
+#define SFX_LEAD_FRAMES   2048    /* ~93 ms queued ahead of the device */
 #define SFX_MAX_CHUNK     4096
 #define SFX_MIN_CHUNK     256     /* ~12 ms minimum refill */
+#define SFX_PUSH_CHUNK    512     /* ~23 ms per device buffer: the lead spans
+                                   * several, so one finishing never empties it */
 
 #define DS_VOL_MIN        (-10000)  /* 0xFFFFD8F0 */
 #define POS_NONE          (-600)    /* 0xFFFFFDA8: x or z == -1 tile -> not placed */
@@ -173,8 +175,12 @@ static void audio_mx_init(void) {
 void audio_lock(void)   { pthread_once(&g_audio_once, audio_mx_init); pthread_mutex_lock(&g_audio_mx); }
 void audio_unlock(void) { pthread_mutex_unlock(&g_audio_mx); }
 
-/* One mixing step (mixer thread, lock held). The playback clock is the wall
- * clock; the game clock stops while the inventory / a pause is up. */
+/* One mixing step (mixer thread, lock held). Keeps SFX_LEAD_FRAMES queued
+ * ahead of the device. When the backend reports its queue, that is the
+ * measure: the sound card's clock drifts from ls_tick, and pacing by the
+ * wall clock alone slowly drained the queue (crackle) or overfilled it.
+ * Otherwise the wall clock stands in (the game clock stops while the
+ * inventory / a pause is up). */
 static void mixer_pump(u32 now) {
     if (!state || !state->audio_enabled) return;
     now = ls_tick();
@@ -184,12 +190,14 @@ static void mixer_pump(u32 now) {
     if (!any) { g_streaming = 0; return; }
     if (!g_streaming) { g_streaming = 1; g_clock_t0 = now; g_pushed = 0; }
     u32 played = (u32)((u64)(now - g_clock_t0) * SFX_RATE / 1000);
+    i32 queued = ls_audio_queued(&state->audio);
+    if (queued >= 0) played = g_pushed - (u32)queued / 4;  /* device position */
     if (g_pushed < played) g_pushed = played;              /* underrun: resync */
     u32 want = played + SFX_LEAD_FRAMES;
     while (g_pushed < want) {
         u32 n = want - g_pushed;
         if (n < SFX_MIN_CHUNK) break;
-        if (n > SFX_MAX_CHUNK) n = SFX_MAX_CHUNK;
+        if (n > SFX_PUSH_CHUNK) n = SFX_PUSH_CHUNK;
         static i16 buf[SFX_MAX_CHUNK * 2];
         mix(buf, n);
         if (ls_audio_push(&state->audio, buf, (i32)(n * 4)) <= 0) break;

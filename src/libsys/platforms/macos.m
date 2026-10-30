@@ -30,6 +30,9 @@ static b8 aq_open = false;
 /* Count of buffers currently enqueued (allocated on demand, freed here).
  * Bounds memory if a caller pushes faster than playback drains. */
 static i32                  aq_inflight = 0;
+/* Bytes enqueued and not yet handed back by the callback (the buffer being
+ * played counts in full). */
+static i32                  aq_queued_bytes = 0;
 #define AQ_MAX_INFLIGHT     64
 
 /* AudioQueue callback — called from CoreAudio's internal thread.
@@ -40,9 +43,12 @@ static void aq_callback(void *user_data,
                         AudioQueueBufferRef buf)
 {
     (void)user_data;
+    i32 bytes = (i32)buf->mAudioDataByteSize;
     AudioQueueFreeBuffer(queue, buf);
     pthread_mutex_lock(&aq_mutex);
     if (aq_inflight > 0) aq_inflight--;
+    aq_queued_bytes -= bytes;
+    if (aq_queued_bytes < 0) aq_queued_bytes = 0;
     pthread_mutex_unlock(&aq_mutex);
 }
 
@@ -116,13 +122,23 @@ i32 ls_platform_audio_push(const i16 *pcm, i32 bytes)
     memcpy(buf->mAudioData, pcm, (size_t)bytes);
     buf->mAudioDataByteSize = (UInt32)bytes;
 
+    pthread_mutex_lock(&aq_mutex); aq_queued_bytes += bytes; pthread_mutex_unlock(&aq_mutex);
     err = AudioQueueEnqueueBuffer(aq_queue, buf, 0, NULL);
     if (err != noErr) {
         AudioQueueFreeBuffer(aq_queue, buf);
-        pthread_mutex_lock(&aq_mutex); aq_inflight--; pthread_mutex_unlock(&aq_mutex);
+        pthread_mutex_lock(&aq_mutex); aq_inflight--; aq_queued_bytes -= bytes; pthread_mutex_unlock(&aq_mutex);
         return 0;
     }
     return bytes;
+}
+
+i32 ls_platform_audio_queued(void)
+{
+    if (!aq_open) return -1;
+    pthread_mutex_lock(&aq_mutex);
+    i32 q = aq_queued_bytes;
+    pthread_mutex_unlock(&aq_mutex);
+    return q;
 }
 
 void ls_platform_audio_close(void)
@@ -134,6 +150,7 @@ void ls_platform_audio_close(void)
     aq_open  = false;
     pthread_mutex_lock(&aq_mutex);
     aq_inflight = 0;
+    aq_queued_bytes = 0;
     pthread_mutex_unlock(&aq_mutex);
     printf("ls_platform_audio_close: CoreAudio queue stopped.\n");
 }
