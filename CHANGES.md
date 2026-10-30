@@ -7,6 +7,12 @@
 Every commit since the project began, newest first, one line each.
 
 ### 2026-10-30
+- inventory: weapon hotkeys, item use, combinations, original screen art (bc1c87d)
+- fix: crash leaving a room while an actor holds a weapon (700327b)
+- menu: mixed INVENT2 clicks instead of queued INVENT1 (e1d4c3b)
+- audio: fix silence when the game starts after a movie (80bf309)
+- audio: pace the mixer by the device queue, several buffers deep (68745f1)
+- build: fix Linux and Windows CI builds (8d9e4e0)
 - ci: build macOS, Linux and Windows; release on v* tags (5dc06b8)
 - menu: files screen, save and load (sub_43E038) (cd07b1b)
 - build: compile for Windows with mingw (argv, unsetenv, M_PI) (b5a28d4)
