@@ -2,7 +2,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "menu.h"
+#include "menu/menu.h"
 #include "state.h"
 #include "actor.h"
 #include "game_init.h"
@@ -14,6 +14,7 @@
 #include "libsys/movie.h"
 #include "libsys/file_system.h"
 #include "libsys/audio/wav.h"
+#include "menu/screens.h"
 
 /*
  * menu.c — Main menu skeleton (Slice B pass 1)
@@ -188,31 +189,39 @@ static void fade_scan_offsets(bmap_t *bmap, i32 *row_offsets,
  * full MENU_*.CIF image pipeline lands.
  * ------------------------------------------------------------------------- */
 
-/* Number of items in main menu. Matches var_4AE0[8] entries used by asm — we
- * expose the 6 primary buttons (idx 0..5). Entries 6/7 (CREDITS panel) are
- * TODO — they require sub-menu wiring. */
-#define MAIN_MENU_ITEM_COUNT 6
+#define MAIN_MENU_ITEM_COUNT 8
 
-/* Real hitboxes + GENICO sub-rects decoded from process_mainmenu_437EB7
- * prologue (asm 77770..77834). Each var_4AE0[N] stores:
- *   +0 src_x, +4 src_y, +8 w, +C h, +10 dst_x, +14 dst_y, +1C action
- * Blit dst equals hitbox origin; GENICO icon (76×77 for buttons 0..5) is drawn
- * on top of the MENU_<lang>.CIF backdrop button at the same position. */
+/* var_4AE0[8], set up in the process_mainmenu_437EB7 prologue. Each 40-byte
+ * entry: +0 src_x, +4 src_y, +8 w, +C h (GENICO sub-rect), +10 dst_x,
+ * +14 dst_y (hitbox origin), +1C value written to var_4C7C = var_C - 1.
+ * Labels are the port's names for what each button opens. */
 static const menu_item_t MAIN_MENU_ITEMS[MAIN_MENU_ITEM_COUNT] = {
-    /* label        x    y    w   h  sx   sy  action               */
-    { "NEW GAME",  111,  20,  76, 77,   0, 0, MENU_ACTION_NEW_GAME },
-    { "QUIT",      112, 137,  76, 77,  77, 0, MENU_ACTION_QUIT     },
-    { "LOAD",      111, 252,  76, 77, 154, 0, MENU_ACTION_LOAD     },
-    { "OPTIONS",   453,  20,  76, 77, 231, 0, MENU_ACTION_OPTIONS  },
-    { "SAVE",      453, 136,  76, 77, 308, 0, MENU_ACTION_SAVE     },
-    { "TRAILER",   452, 251,  76, 77, 385, 0, MENU_ACTION_TRAILER  },
+    /* label         x    y    w    h   sx   sy  action                */
+    { "NEW GAME",   111,  20,  76,  77,   0,  0, MENU_ACTION_NEW_GAME  },
+    { "FILES",      112, 137,  76,  77,  77,  0, MENU_ACTION_FILES     },
+    { "CHARACTERS", 111, 252,  76,  77, 154,  0, MENU_ACTION_PERSOS    },
+    { "SOUND",      453,  20,  76,  77, 231,  0, MENU_ACTION_SOUND     },
+    { "CINEMATICS", 453, 136,  76,  77, 308,  0, MENU_ACTION_CINEMA    },
+    { "DIALOGUES",  452, 251,  76,  77, 385,  0, MENU_ACTION_DIALOGUES },
+    { "RESUME",     243, 193, 153, 114, 531,  0, MENU_ACTION_RESUME    },
+    { "QUIT",       282, 388,  68,  59, 463,  0, MENU_ACTION_QUIT      },
 };
 
-/*
- * Default hovered item index (matches var_4AEC = 6 → zero-based idx 0 in
- * our simplified table; we map original idx 6 = QUIT → our idx 4).
- */
-#define MENU_DEFAULT_ITEM 0
+/* var_4B40[2]: the quit box buttons (GENICO sub-rects), drawn over
+ * DIAB_<lang>.CIF which sits at (163,184), 314x111. */
+static const menu_item_t QUIT_BOX_ITEMS[2] = {
+    { "NO",  193, 225, 32, 31, 685,  0, MENU_ACTION_NONE },
+    { "YES", 414, 221, 35, 37, 685, 32, MENU_ACTION_QUIT },
+};
+#define QUIT_BOX_X 163
+#define QUIT_BOX_Y 184
+#define QUIT_BOX_W 314
+#define QUIT_BOX_H 111
+
+static bmap_t *g_diab_bmap;   /* DIAB_<lang>.CIF, loaded when the quit box first opens */
+
+/* var_4AEC = 6: "resume" is highlighted when the menu opens. */
+#define MENU_DEFAULT_ITEM 6
 
 /* -------------------------------------------------------------------------
  * Internal helpers
@@ -369,10 +378,13 @@ static void menu_load_click_sfx(const c8 *game_path) {
 // 00437EB7 (init phase)
 void menu_init(menu_t *menu) {
     menu->state           = MENU_STATE_MAIN;
-    menu->hovered_item    = MENU_DEFAULT_ITEM;  /* var_4AEC = 6 → idx 0 default */
+    menu->hovered_item    = MENU_DEFAULT_ITEM;  /* var_4AEC = 6 */
     menu->selected_item   = -1;
     menu->dirty           = 1;
-    menu->pending_trailer = 0;
+    menu->quit_box        = 0;
+    menu->quit_hover      = 1;
+    menu->game_running    = 0;
+    menu->pending         = MENU_ACTION_NONE;
     menu->startup_frames_remaining = 30;  /* ignore Cocoa synth click ≈0.5s @60fps */
 
     /* Fetch backdrop loaded during game_init phase 3+7 */
@@ -543,51 +555,32 @@ static void menu_dispatch(menu_t *menu) {
     sfx_play(&sfx_click);
 
     switch (act) {
-        case MENU_ACTION_QUIT:
-            /* Mirrors game_exit_code=1 + var_C=2 path in original asm */
-            menu->state = MENU_STATE_QUIT;
-            print("menu: QUIT selected, transitioning to QUIT state\n");
-            break;
-
-        case MENU_ACTION_TRAILER:
-            /* sub_437DDD: triggers EADKE.CRH playback from the main menu.
-             * Set pending flag — rendered next in menu_render to avoid
-             * calling ls_play_movie from inside update. */
-            menu->pending_trailer = 1;
-            print("menu: TRAILER queued — will play EADKE.CRH\n");
-            break;
-
-        case MENU_ACTION_NEW_GAME:
+        case MENU_ACTION_NEW_GAME:                 /* sub_43A63D(1, -1) */
             print("menu: starting new game (level=%d)\n", state->first_room);
             actor_new_game();
             if (scene_load_level(state->first_room) == 0) {
                 menu->state = MENU_STATE_LOADING;
-                /* TODO: transition to game loop */
+                menu->game_running = 1;
             } else {
                 print("menu: scene_load_level failed\n");
             }
             break;
 
-        case MENU_ACTION_LOAD:
-            /* sub_4379C4 @ 0x4379C4 — load-slot picker panel.
-             * Loads SAVE.GIF backdrop, shows 2-button slot selector,
-             * returns slot index (1-based). Needs draw_image + overlay_cursor_image. */
-            print("menu: LOAD — sub_4379C4 (slot picker needs draw_image)\n");
-            menu->state = MENU_STATE_MAIN;
+        case MENU_ACTION_RESUME:                   /* var_C 7: leave the menu */
+            if (menu->game_running) menu->state = MENU_STATE_LOADING;
             break;
 
-        case MENU_ACTION_OPTIONS:
-            /* sub_438CA5 (within 0x437EB7) — options panel.
-             * 8-state keyboard nav grid (brightness/contrast/shadow/volume sliders).
-             * Deeply interleaved with 10K+ instruction mega-function. */
-            print("menu: OPTIONS — sub_438CA5 (needs mega-function refactor)\n");
-            menu->state = MENU_STATE_MAIN;
+        case MENU_ACTION_QUIT:                     /* var_C 8: open the DIAB box */
+            menu->quit_box   = 1;
+            menu->quit_hover = 1;                  /* 0x43A0A3: var_4AEC = 1 */
             break;
 
-        case MENU_ACTION_SAVE:
-            /* sub_4379C4 @ 0x4379C4 — save-slot picker panel (same as LOAD). */
-            print("menu: SAVE — sub_4379C4 (slot picker needs draw_image)\n");
-            menu->state = MENU_STATE_MAIN;
+        case MENU_ACTION_FILES:
+        case MENU_ACTION_PERSOS:
+        case MENU_ACTION_SOUND:
+        case MENU_ACTION_CINEMA:
+        case MENU_ACTION_DIALOGUES:
+            menu->pending = act;                   /* run by menu_render */
             break;
 
         default:
@@ -598,122 +591,136 @@ static void menu_dispatch(menu_t *menu) {
     menu->selected_item = -1;  /* consume */
 }
 
+/* process_input_event(vk) edge: consume the key so it fires once. */
+static i32 menu_key(system_t *sys, i32 vk) {
+    if (sys->actions[vk] != 1) return 0;
+    sys->actions[vk] = 0;
+    return 1;
+}
+
+/* The DIAB quit box (var_8 != 0, 0x438C0C): Left/Right pick no/yes, Enter or
+ * a click confirms, Esc or "no" closes it, "yes" sets game_exit_code = 1. */
+static void menu_quit_box_update(menu_t *menu, system_t *sys) {
+    for (i32 i = 0; i < 2; i++)
+        if (menu_item_hit(&QUIT_BOX_ITEMS[i], sys->motion_x, sys->motion_y)) menu->quit_hover = i;
+    if (menu_key(sys, 37) && menu->quit_hover == 1) { menu->quit_hover = 0; sfx_play(&sfx_click); }
+    if (menu_key(sys, 39) && menu->quit_hover == 0) { menu->quit_hover = 1; sfx_play(&sfx_click); }
+
+    i32 pick = 0;                                   /* var_C: 1 no, 2 yes */
+    if (sys->mouse_left == 2) {
+        sys->mouse_left = 1;
+        for (i32 i = 0; i < 2; i++)
+            if (menu_item_hit(&QUIT_BOX_ITEMS[i], sys->motion_x, sys->motion_y)) pick = i + 1;
+    }
+    if (menu_key(sys, 13)) pick = menu->quit_hover + 1;
+    if (menu_key(sys, 27)) pick = 1;
+    if (!pick) return;
+    sfx_play(&sfx_click);
+    menu->quit_box = 0;
+    menu->hovered_item = MENU_DEFAULT_ITEM;         /* var_4AEC = 6 */
+    menu->dirty = 1;
+    if (pick == 2) menu->state = MENU_STATE_QUIT;   /* game_exit_code = 1 */
+}
+
+/* Keyboard moves on the 3 x 2 + centre + quit layout (0x438F2E..0x439289):
+ *   0 3        Left/Right swap columns, the centre (6) and quit (7)
+ *   1 6 4      sit between them; Up/Down walk a column, Down from a
+ *   2 7 5      column's last button or the centre goes to quit. */
+static i32 menu_nav(i32 idx, i32 vk) {
+    switch (vk) {
+    case 37:                                        /* left */
+        if (idx == 3 || idx == 4) return idx - 3;
+        if (idx == 6 || idx == 7) return 2;
+        if (idx == 5) return 6;
+        return idx;
+    case 39:                                        /* right */
+        if (idx == 0 || idx == 1) return idx + 3;
+        if (idx == 6 || idx == 7) return 5;
+        if (idx == 2) return 6;
+        return idx;
+    case 38:                                        /* up */
+        if (idx == 7) return 6;
+        if (idx == 0 || idx == 3 || idx == 6) return idx;
+        return idx - 1;
+    case 40:                                        /* down */
+        if (idx == 2 || idx == 5 || idx == 6) return 7;
+        if (idx == 7) return idx;
+        return (idx + 1) % 7;
+    }
+    return idx;
+}
+
 // 00437EB7 (update phase — inner loop body)
 void menu_update(menu_t *menu, system_t *sys) {
-    if (menu->state != MENU_STATE_MAIN) {
-        return;
+    if (menu->state != MENU_STATE_MAIN) return;
+
+    if (menu->startup_frames_remaining > 0) {
+        /* Cocoa sends a synthetic click when the window gains focus. */
+        menu->startup_frames_remaining--;
+        if (sys->mouse_left == 2) sys->mouse_left = 0;
     }
+    if (menu->quit_box) { menu_quit_box_update(menu, sys); return; }
 
     i32 prev_hovered = menu->hovered_item;
 
-    /* --- Mouse hover (var_798/var_48A0 → ls_get_mouse path) ---
-     * Read motion_x/y from system_t (platform layer fills these).
-     * Find which item (if any) the cursor overlaps.
-     * Mirrors sub_43F7BD hitbox hit-test against var_4AE0 table.
-     * Pass 2: approximate hitboxes — will be replaced with exact asm coords
-     *         when MENU_%01d.CIF image pipeline lands. */
-    i32 mx = sys->motion_x;
-    i32 my = sys->motion_y;
-    i32 hit = -1;
-    for (i32 i = 0; i < MAIN_MENU_ITEM_COUNT; i++) {
-        if (menu_item_hit(&MAIN_MENU_ITEMS[i], mx, my)) {
-            hit = i;
+    /* sub_43F7BD: hover follows the mouse; the last hit stays selected. */
+    for (i32 i = 0; i < MAIN_MENU_ITEM_COUNT; i++)
+        if (menu_item_hit(&MAIN_MENU_ITEMS[i], sys->motion_x, sys->motion_y)) {
+            menu->hovered_item = i;
+            if (sys->mouse_left == 2) {
+                sys->mouse_left = 1;
+                menu->selected_item = i;
+                menu_dispatch(menu);
+                return;
+            }
             break;
         }
-    }
-    if (hit >= 0) {
-        menu->hovered_item = hit;
-        /* Log hover label for smoke-test verification */
-        if (hit != prev_hovered) {
-            print("menu: hover %s\n", MAIN_MENU_ITEMS[hit].label);
-        }
-    }
 
-    /* --- Mouse click (var_4C68 path in original asm) ---
-     * sys->mouse_left == 2: pressed-this-frame edge (set by mouseDown callback,
-     * downgraded to 1 by ls_update_events on the next tick).
-     * Original: var_4C68 == 1 or == 2 (click / double-click).
-     * We treat edge (2) as "confirm" to avoid repeat triggering on held button. */
-    if (menu->startup_frames_remaining > 0) {
-        menu->startup_frames_remaining--;
-        /* Consume any pending click edge during grace window. */
-        if (sys->mouse_left == 2) sys->mouse_left = 0;
-    } else if (sys->mouse_left == 2 && menu->hovered_item >= 0) {
+    static const i32 arrows[4] = { 37, 38, 39, 40 };
+    for (i32 k = 0; k < 4; k++)
+        if (menu_key(sys, arrows[k])) {
+            i32 next = menu_nav(menu->hovered_item, arrows[k]);
+            if (next != menu->hovered_item) sfx_play(&sfx_click);
+            menu->hovered_item = next;
+        }
+
+    if (menu_key(sys, 13)) {
         menu->selected_item = menu->hovered_item;
-        menu_dispatch(menu);
-        return;  /* dispatch may set QUIT — let caller check state */
-    }
-
-    /* --- Keyboard navigation (process_input_event path) ---
-     * ECX=0x25 ('%') = up arrow (var_4AEC--)
-     * ECX=0x27 (''') = down arrow (var_4AEC++)
-     * ECX=0x0D ('\r') = Enter / confirm
-     * ECX=0x1B = Esc → QUIT (mirrors var_C=2 path)
-     * sys->actions[] is indexed by macOS keyCode mapped in handle_events.
-     * Up/Down arrow + Return/Esc keycodes wired in pass 2 (macos.m). */
-
-    /* Up (macOS keyCode 126 → actions[38]) */
-    if (sys->actions[38] == 1) {
-        sys->actions[38] = 0;
-        menu->hovered_item--;
-        if (menu->hovered_item < 0) {
-            menu->hovered_item = MAIN_MENU_ITEM_COUNT - 1;
-        }
-        print("menu: nav UP hovered=%d (%s)\n",
-              menu->hovered_item, MAIN_MENU_ITEMS[menu->hovered_item].label);
-        menu->dirty = 1;
-    }
-    /* Down (macOS keyCode 125 → actions[40]) */
-    if (sys->actions[40] == 1) {
-        sys->actions[40] = 0;
-        menu->hovered_item++;
-        if (menu->hovered_item >= MAIN_MENU_ITEM_COUNT) {
-            menu->hovered_item = 0;
-        }
-        print("menu: nav DOWN hovered=%d (%s)\n",
-              menu->hovered_item, MAIN_MENU_ITEMS[menu->hovered_item].label);
-        menu->dirty = 1;
-    }
-    /* Return/Enter (macOS keyCode 36 → actions[13]) — confirm selection */
-    if (sys->actions[13] == 1) {
-        sys->actions[13] = 0;
-        menu->selected_item = menu->hovered_item;
-        print("menu: ENTER on %s\n", MAIN_MENU_ITEMS[menu->hovered_item].label);
         menu_dispatch(menu);
         return;
     }
-    /* Esc (macOS keyCode 53 → actions[27]) — QUIT (mirrors ECX=0x1B → game_exit_code) */
-    if (sys->actions[27] == 1) {
-        sys->actions[27] = 0;
-        print("menu: ESC → QUIT\n");
-        menu->state = MENU_STATE_QUIT;
+    /* Esc never quits directly: var_C = 8 opens the quit box (0x439378). */
+    if (menu_key(sys, 27)) {
+        sfx_play(&sfx_click);
+        menu->quit_box   = 1;
+        menu->quit_hover = 1;
         return;
     }
 
-    /* F12 → screenshot */
-    if (sys->actions[111] == 1) {
-        sys->actions[111] = 0;   /* consume single-press */
-        menu_screenshot(sys);
-    }
+    if (menu_key(sys, 111)) menu_screenshot(sys);   /* F12 */
 
-    if (menu->hovered_item != prev_hovered) {
-        menu->dirty = 1;
-    }
+    if (menu->hovered_item != prev_hovered) menu->dirty = 1;
 }
 
 // 00437EB7 (render phase — draw_image + text overlay)
 void menu_render(menu_t *menu, system_t *sys) {
-    /* --- Trailer playback (sub_437DDD path) ---
-     * pending_trailer is set by menu_dispatch on TRAILER click/enter.
-     * We handle it here rather than in update to ensure the last menu frame
-     * has been blitted before the movie takes over the framebuffer.
-     * After movie ends, force dirty=1 so the backdrop redraws cleanly. */
-    if (menu->pending_trailer) {
-        print("menu: playing trailer EADKE.CRH\n");
-        ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
-        menu->pending_trailer = 0;
+    /* Sub-screens are modal; they draw over the frame buffer and the menu
+     * is redrawn from scratch when they return. */
+    if (menu->pending) {
+        menu_action_e act = (menu_action_e)menu->pending;
+        menu->pending = MENU_ACTION_NONE;
+        switch (act) {
+        case MENU_ACTION_FILES:
+            if (menu_files_run()) { menu->state = MENU_STATE_LOADING; menu->game_running = 1; }
+            break;
+        case MENU_ACTION_PERSOS:    menu_persos_run(); break;
+        case MENU_ACTION_SOUND:     menu_sound_run();  break;
+        case MENU_ACTION_CINEMA:    menu_cine_run();   break;
+        case MENU_ACTION_DIALOGUES: menu_dial_run();   break;
+        default: break;
+        }
         menu->dirty = 1;
-        /* Re-enter the normal render path to restore the backdrop immediately */
+        if (menu->state != MENU_STATE_MAIN) return;
     }
 
     /* Backdrop blit — mirrors:
@@ -765,30 +772,43 @@ void menu_render(menu_t *menu, system_t *sys) {
         }
     }
 
-    /* GENICO hover icon — blit the sub-rect that corresponds to the currently
-     * hovered menu button. Mirrors asm process_mainmenu_437EB7+B?? →
-     * overlay_cursor_image(genico, ctx, src_x, src_y, src_x+w, src_y+h,
-     *                      dst_x, dst_y). Only the hovered item is drawn.
-     * No animation — GENICO is a single sprite sheet, not a frame strip. */
-    /* Each CIF carries its own 768-byte palette; since we render at 32bpp we
-     * don't need find_closest_palette_colors — use the sprite's own palette
-     * so its authored colours land in the framebuffer verbatim.  Fall back
-     * to the backdrop palette only when the sprite lacks one. */
-    if (menu->hovered_item >= 0 &&
-        menu->hovered_item < MAIN_MENU_ITEM_COUNT &&
-        menu->genico_bmap && menu->genico_bmap->pixels) {
-        const menu_item_t *hitem = &MAIN_MENU_ITEMS[menu->hovered_item];
+    /* Quit box (0x43A0A3): the menu picture is darkened through the shade
+     * table, then DIAB_<lang>.CIF (DIABOITE.GIF fallback) is pasted at
+     * (163,184). */
+    if (menu->quit_box) {
+        for (i32 i = 0; i < fb_w * fb_h; i++) fb[i] = 0xFF000000u | ((fb[i] >> 1) & 0x7F7F7F);
+        if (!g_diab_bmap) {
+            i32 lang = (state && state->language_id > 0) ? state->language_id : 1;
+            c8 path[64];
+            snprintf(path, sizeof(path), "DATAS>MENUS>DIAB_%d.GIF", lang);
+            g_diab_bmap = game_init_load_cursor(path);
+            if (!g_diab_bmap) g_diab_bmap = game_init_load_cursor("DATAS>MENUS>DIABOITE.GIF");
+        }
+        if (g_diab_bmap && g_diab_bmap->pixels) {
+            const u8 *pal = g_diab_bmap->palette ? g_diab_bmap->palette : menu->backdrop_palette;
+            if (pal)
+                blit_bmap_subrect_masked(fb, fb_w, fb_h, g_diab_bmap, pal,
+                                         0, 0, QUIT_BOX_W, QUIT_BOX_H,
+                                         QUIT_BOX_X, QUIT_BOX_Y, 0xFF /* opaque */);
+        }
+    }
+
+    /* GENICO hover icon (overlay_cursor_image, 0x438B44 / 0x438C07): the
+     * selected button's sub-rect of the sheet, from var_4AE0 or, with the
+     * quit box up, var_4B40. Sprites carry their own palette. */
+    const menu_item_t *hitem = NULL;
+    if (menu->quit_box)
+        hitem = &QUIT_BOX_ITEMS[menu->quit_hover ? 1 : 0];
+    else if (menu->hovered_item >= 0 && menu->hovered_item < MAIN_MENU_ITEM_COUNT)
+        hitem = &MAIN_MENU_ITEMS[menu->hovered_item];
+    if (hitem && menu->genico_bmap && menu->genico_bmap->pixels) {
         const u8 *pal = menu->genico_bmap->palette
                         ? menu->genico_bmap->palette
                         : menu->backdrop_palette;
-        if (pal) {
-            blit_bmap_subrect_masked(fb, fb_w, fb_h,
-                                     menu->genico_bmap, pal,
-                                     hitem->src_x, hitem->src_y,
-                                     hitem->w, hitem->h,
-                                     hitem->x, hitem->y,
-                                     0 /* index 0 = transparent */);
-        }
+        if (pal)
+            blit_bmap_subrect_masked(fb, fb_w, fb_h, menu->genico_bmap, pal,
+                                     hitem->src_x, hitem->src_y, hitem->w, hitem->h,
+                                     hitem->x, hitem->y, 0 /* index 0 = transparent */);
     }
 
     /* Mouse cursor — CURS128.CIF is a 65×35 sheet holding TWO cursor shapes
@@ -804,8 +824,13 @@ void menu_render(menu_t *menu, system_t *sys) {
                          ? menu->cursor_bmap->palette
                          : menu->backdrop_palette;
         if (cpal) {
+            /* var_4AF0: is the mouse over a button right now? */
+            i32 over = 0;
+            const menu_item_t *tbl = menu->quit_box ? QUIT_BOX_ITEMS : MAIN_MENU_ITEMS;
+            i32 n = menu->quit_box ? 2 : MAIN_MENU_ITEM_COUNT;
+            for (i32 i = 0; i < n; i++) over |= menu_item_hit(&tbl[i], mx, my);
             i32 cur_sx, cur_sw;
-            if (menu->hovered_item >= 0) {
+            if (over) {
                 cur_sx = 0;  cur_sw = 29;   /* "over-item" cursor */
             } else {
                 cur_sx = 30; cur_sw = 32;   /* "idle" cursor */

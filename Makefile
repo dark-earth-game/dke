@@ -7,7 +7,8 @@ BASE_SRCS = src/libsys/*.c \
 			src/libsys/audio/*.c \
 			src/libsys/graphics/*.c \
 			src/*.c \
-			src/levels/*.c
+			src/levels/*.c \
+			src/menu/*.c
 
 ifeq ($(shell uname),Darwin)
 	CC = $(shell brew --prefix llvm)/bin/clang

@@ -21,8 +21,7 @@
  *   - Selected action in var_C returned to caller.
  *   - Keyboard nav: ECX=0x25 (up), ECX=0x27 (down),
  *                   ECX=0x0D (enter), ECX=0x1B (esc).
- *   - Action codes: 1=new game, 2=quit, 3=load, 4=options,
- *                   5=save, 6=trailer, 7=credits.
+ *   - Action codes (var_C): see menu_action_e.
  */
 
 #include "libsys/common.h"
@@ -52,14 +51,15 @@ typedef enum {
  * Values are unchanged — compatible with existing asm mapping.
  */
 typedef enum {
-    MENU_ACTION_NONE     = 0,
-    MENU_ACTION_NEW_GAME = 1,   /* var_C == 1 → start new game (sub_4380F9) */
-    MENU_ACTION_QUIT     = 2,   /* var_C == 2 → exit application */
-    MENU_ACTION_LOAD     = 3,   /* var_C == 3 → load saved game (sub_437ADC) */
-    MENU_ACTION_OPTIONS  = 4,   /* var_C == 4 → options sub-menu (sub_438CA5) */
-    MENU_ACTION_SAVE     = 5,   /* var_C == 5 → save sub-menu */
-    MENU_ACTION_TRAILER  = 6,   /* var_C == 6 → play trailer (sub_437DDD) */
-    MENU_ACTION_CREDITS  = 7,   /* var_C == 7 → credits */
+    MENU_ACTION_NONE      = 0,
+    MENU_ACTION_NEW_GAME  = 1,  /* var_C 1: sub_43A63D(1, -1) */
+    MENU_ACTION_FILES     = 2,  /* var_C 2 / 'r': save + load, sub_43E038 */
+    MENU_ACTION_PERSOS    = 3,  /* var_C 3 / 's': characters, sub_43F8C7 */
+    MENU_ACTION_SOUND     = 4,  /* var_C 4 / 't': volume, sub_440B92 */
+    MENU_ACTION_CINEMA    = 5,  /* var_C 5 / 'u': seen movies, sub_441E43 */
+    MENU_ACTION_DIALOGUES = 6,  /* var_C 6 / 'v': seen dialogues, sub_46A4D5 */
+    MENU_ACTION_RESUME    = 7,  /* var_C 7: back to the game */
+    MENU_ACTION_QUIT      = 8,  /* var_C 8 (button or Esc): quit box (DIAB) */
 } menu_action_e;
 
 /* -------------------------------------------------------------------------
@@ -93,7 +93,10 @@ typedef struct {
     i32           hovered_item;    /* -1 = none; else index into current item table */
     i32           selected_item;   /* -1 = none; else index triggering action */
     b8            dirty;           /* redraw flag — set by init/update */
-    b8            pending_trailer; /* pass 2: set to trigger ls_play_movie next frame */
+    b8            quit_box;        /* var_8: the DIAB quit confirmation is up */
+    i32           quit_hover;      /* var_4AEC inside the box: 0 no, 1 yes */
+    b8            game_running;    /* a level is loaded: "resume" goes back to it */
+    i32           pending;         /* menu_action_e run by menu_render (modal screens) */
 
     /* loaded backdrop bmap + palette (fetched once from game_init) */
     bmap_t       *backdrop_bmap;

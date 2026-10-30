@@ -23,7 +23,7 @@
 #include "actor.h"
 #include "game_detection.h"
 #include "game_init.h"
-#include "menu.h"
+#include "menu/menu.h"
 #include "scene.h"
 #include "libsys/graphics/graphic.h"
 
@@ -282,8 +282,10 @@ i32 ls_main(system_t *system, c8 **argv) {
     if (dbg_autonew) {
         print("main: DKE_NEWGAME -> scene_load_level(%d)\n", state->first_room);
         actor_new_game();
-        if (scene_load_level(state->first_room) == 0)
+        if (scene_load_level(state->first_room) == 0) {
             menu.state = MENU_STATE_LOADING;
+            menu.game_running = 1;
+        }
         else
             print("main: DKE_NEWGAME scene_load_level failed\n");
     }
@@ -310,6 +312,7 @@ i32 ls_main(system_t *system, c8 **argv) {
              * action. */
             if (scene_render(system) == 1) {
                 menu.state = MENU_STATE_MAIN;
+                menu.hovered_item = 6;               /* var_4AEC = 6: resume */
                 menu.dirty = 1;
                 menu.startup_frames_remaining = 15;  /* re-arm click grace */
             }
