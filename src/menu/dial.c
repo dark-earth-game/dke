@@ -342,13 +342,6 @@ void menu_dial_run(void) {
     static u8 have[LOG_MAX];
     memset(have, 0, sizeof(have));
 
-    wav_t click = {0};
-    if (state->game_path) {
-        c8 p[512];
-        snprintf(p, sizeof(p), "%s/wav/ANIMS/INVENT1.WAV", state->game_path);
-        wav_load(&click, p);
-    }
-
     sys->motion_x = 0x208; sys->motion_y = 0xE6;            /* ls_set_mouse */
     i32 prev[256];
     memcpy(prev, sys->actions, sizeof(prev));
@@ -382,11 +375,11 @@ void menu_dial_run(void) {
         if (mouse_btn && hit != mouse_btn) mouse_btn = 0;
 
         if (enter) {                                        /* 0x46B190 */
-            sfx_play(&click);
+            sfx_ui_click(0);
             cur = find_prev(g_log_n, who);
         }
-        if (home) { sfx_play(&click); ci = 0; }             /* 0x46B248 */
-        if (act) sfx_play(&click);
+        if (home) { sfx_ui_click(0); ci = 0; }             /* 0x46B248 */
+        if (act) sfx_ui_click(0);
         if (act == 1) cur = find_prev(cur, who);
         if (act == 2) cur = find_next(cur, who);
         if (act == 3 && ci > 0) ci--;

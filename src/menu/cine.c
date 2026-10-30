@@ -50,7 +50,6 @@ static const cine_btn_t BTN[4] = {
     { 0x00, 0x00, STAMP_W, 0x73, STAMP_X, STAMP_Y },   /* stamp: play */
 };
 
-static wav_t s_click;
 
 static void cine_free_bmap(bmap_t *b) {
     if (!b) return;
@@ -160,12 +159,6 @@ void menu_cine_run(void) {
     const u8 *pal  = bg->palette ? bg->palette : img->palette;   /* CINEIMAG uses color_table */
     const u8 *cpal = (curs && curs->palette) ? curs->palette : pal;
 
-    if (!s_click.samples && state->game_path) {
-        c8 p[512];
-        snprintf(p, sizeof(p), "%s/wav/ANIMS/INVENT1.WAV", state->game_path);
-        wav_load(&s_click, p);
-    }
-
     u32 *cur_st = malloc(STAMP_W * STAMP_H * sizeof(u32));   /* var_D0 */
     u32 *new_st = malloc(STAMP_W * STAMP_H * sizeof(u32));   /* var_8 */
     if (!cur_st || !new_st) { free(cur_st); free(new_st); return; }
@@ -204,7 +197,7 @@ void menu_cine_run(void) {
         if (!anim && (act == 2 || act == 3)) {
             i32 n = act == 2 ? next_seen(cur) : prev_seen(cur);
             if (n != -1) {
-                sfx_play(&s_click);
+                sfx_ui_click(0);
                 load_stamp(new_st, n);
                 cur = n;
                 anim = act == 2 ? 1 : 2;
@@ -260,7 +253,7 @@ void menu_cine_run(void) {
     }
     #undef EDGE
 
-    sfx_play(&s_click);                                      /* 0x4429DC */
+    sfx_ui_click(0);                                      /* 0x4429DC */
     free(cur_st);
     free(new_st);
     cine_free_bmap(curs);

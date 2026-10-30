@@ -9,6 +9,7 @@
 
 #include "libsys/common.h"
 #include "entity.h"
+#include "libsys/audio/wav.h"
 
 /* sub_46D305 / sub_448F4D: level sound setup (reverb from the .DAT). */
 void sfx_level_begin(const c8 *root, i32 level, i32 reverb);
@@ -19,6 +20,11 @@ void audio_lock(void);        /* sfx/music state is shared with the mixer thread
 void audio_unlock(void);
 void sfx_tick(void);
 void sfx_pump(void);          /* keep the mixer fed inside a blocking loop */
+/* Menu sounds, mixed (not queued): the click is ls_play_sound(help_screen_context,
+ * freq, 1); freq 0 = the WAV's rate, the menus confirm at 8000 Hz. `w` must
+ * outlive the playback; ds_vol is in 1/100 dB before the master volume. */
+void sfx_ui_click(i32 freq);
+void sfx_ui_play(const wav_t *w, i32 freq, i32 ds_vol);
 /* sub_46E883 tail: re-place the ambience after a camera switch. */
 void sfx_camera_changed(void);
 void sfx_set_master(i32 v);

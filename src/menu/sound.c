@@ -56,7 +56,6 @@ static const snd_btn_t BTN[8] = {
 /* Settings live in DKEGAME.CFG (gamecfg.c); sfx.c owns the volume and
  * reverse stereo flag. */
 
-static wav_t s_click;           /* INVENT1.WAV */
 static wav_t s_test;            /* head of L08AMB1.WAV, scaled to the volume */
 
 static i32 clampv(i32 v) { return v < 0 ? 0 : (v > 64 ? 64 : v); }
@@ -93,32 +92,10 @@ static i32 hit_test(i32 mx, i32 my) {
     return 0;
 }
 
-static void load_click(void) {
-    if (s_click.samples || !state || !state->game_path) return;
-    c8 p[512];
-    snprintf(p, sizeof(p), "%s/wav/ANIMS/INVENT1.WAV", state->game_path);
-    wav_load(&s_click, p);
-}
-
-/* sub_44CFF6 / ls_set_sound_volume: attenuation in 1/100 dB. */
-static float vol_gain(i32 v) {
-    if (v <= 0) return 0.0f;
-    return powf(10.0f, -(float)((64 - v) * 32) / 2000.0f);
-}
-
 /* ls_play_sound on the test sample: only a short head, replayed while the
- * effects slider is held. */
-static void play_test(i32 vol) {
-    if (!s_test.samples) return;
-    wav_t t = s_test;
-    u32 n = t.num_samples * t.channels;
-    i16 *buf = (i16 *)malloc(n * sizeof(i16));
-    if (!buf) return;
-    float g = vol_gain(vol);
-    for (u32 i = 0; i < n; i++) buf[i] = (i16)(s_test.samples[i] * g);
-    t.samples = buf;
-    sfx_play(&t);
-    free(buf);
+ * effects slider is held, at the effects volume (sub_44CFF6). */
+static void play_test(void) {
+    if (s_test.samples) sfx_ui_play(&s_test, 0, 0);
 }
 
 static void load_test(void) {
@@ -169,7 +146,6 @@ void menu_sound_run(void) {
     const u8 *pal  = bg->palette ? bg->palette : img->palette;   /* SONIMAG uses color_table */
     const u8 *cpal = (curs && curs->palette) ? curs->palette : pal;
 
-    load_click();
     load_test();
 
     sys->motion_x = 0x208; sys->motion_y = 0xE6;            /* ls_set_mouse */
@@ -207,7 +183,7 @@ void menu_sound_run(void) {
         if (moved && focus >= 0) {
             sys->motion_x = BTN[focus].dx + BTN[focus].w / 2;
             sys->motion_y = BTN[focus].dy + BTN[focus].h / 2;
-            sfx_play(&s_click);
+            sfx_ui_click(0);
         }
 
         i32 mx = sys->motion_x, my = sys->motion_y;
@@ -224,20 +200,20 @@ void menu_sound_run(void) {
         }
 
         if (act) switch (hit) {
-        case 1: exit_pressed = 1; show_exit = 1; sfx_play(&s_click); break;
-        case 2: sfx_play(&s_click); set_music(g_music_option ? 0 : 0x3F); break;
-        case 3: sfx_play(&s_click); set_sfx(sfx_get_master() ? 0 : 0x3F); break;
+        case 1: exit_pressed = 1; show_exit = 1; sfx_ui_click(0); break;
+        case 2: sfx_ui_click(0); set_music(g_music_option ? 0 : 0x3F); break;
+        case 3: sfx_ui_click(0); set_sfx(sfx_get_master() ? 0 : 0x3F); break;
         case 4:
-            sfx_play(&s_click);
+            sfx_ui_click(0);
             g_gamecfg.subtitles ^= 1;
             if (!g_gamecfg.subtitles && !g_gamecfg.voices) g_gamecfg.voices = 1;
             break;
         case 5:
-            sfx_play(&s_click);
+            sfx_ui_click(0);
             sfx_set_reverse_stereo(!sfx_get_reverse_stereo());
             break;
         case 6:
-            sfx_play(&s_click);
+            sfx_ui_click(0);
             g_gamecfg.voices = !g_gamecfg.voices;                    /* abs(b0 - 1) */
             if (!g_gamecfg.subtitles && !g_gamecfg.voices) g_gamecfg.subtitles = 1;
             break;
@@ -246,7 +222,7 @@ void menu_sound_run(void) {
         /* Sliders follow the held button. */
         if (btn == 1 && hit == 7) set_music((mx - BTN[6].dx - 20) * 64 / 0x3D);
         if (btn == 1 && hit == 8) {
-            if (now - last_test >= 250) { play_test(sfx_get_master()); last_test = now; }
+            if (now - last_test >= 250) { play_test(); last_test = now; }
             set_sfx((mx - BTN[7].dx - 20) * 64 / 0x3D);
         }
 
@@ -278,7 +254,7 @@ void menu_sound_run(void) {
     }
     #undef EDGE
 
-    sfx_play(&s_click);                                     /* 0x441C09 */
+    sfx_ui_click(0);                                     /* 0x441C09 */
     snd_free_bmap(curs);
     snd_free_bmap(img);
     snd_free_bmap(bg);

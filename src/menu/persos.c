@@ -64,7 +64,6 @@ typedef struct {
     i32 hovered;            /* +24 */
 } prs_btn_t;
 
-static wav_t s_click;       /* INVENT1.WAV (help_screen_context) */
 
 static void prs_free_bmap(bmap_t *b) {
     if (!b) return;
@@ -111,12 +110,6 @@ static i32 prs_hit(prs_btn_t *t, i32 n, i32 mx, i32 my, i32 click) {
     return 0;
 }
 
-static void prs_load_click(void) {
-    if (s_click.samples || !state || !state->game_path) return;
-    c8 p[512];
-    snprintf(p, sizeof(p), "%s/wav/ANIMS/INVENT1.WAV", state->game_path);
-    wav_load(&s_click, p);
-}
 
 static void prs_shot(void) {
     const c8 *path = getenv("DKE_MENUSHOT");
@@ -378,7 +371,6 @@ void menu_persos_run(void) {
     const u8 *cpal = (curs && curs->palette) ? curs->palette : pal;
     static u8 grd[0x4000];
     i32 grd_ok = prs_load_grd(grd);                       /* MENUPERS.GRD -> palette_buffer */
-    prs_load_click();
 
     /* The hero: player_entity, or (main menu before a game) a stand-in. */
     entity_t *e = g_player_entity;
@@ -461,16 +453,16 @@ void menu_persos_run(void) {
 
         i32 old_shadow = *shadow, old_scheme = g_control_scheme;
         hit = prs_hit(btn, 6, sys->motion_x, sys->motion_y, click);
-        if (g_control_scheme != old_scheme) sfx_play(&s_click);   /* 0x44025C */
-        if (k_lr) { sfx_play(&s_click); g_control_scheme ^= 1; }  /* 0x4402C5 */
-        if (*shadow != old_shadow) sfx_play(&s_click);           /* 0x440322 */
+        if (g_control_scheme != old_scheme) sfx_ui_click(0);   /* 0x44025C */
+        if (k_lr) { sfx_ui_click(0); g_control_scheme ^= 1; }  /* 0x4402C5 */
+        if (*shadow != old_shadow) sfx_ui_click(0);           /* 0x440322 */
         if (k_up) {                                               /* 0x44037A */
-            if (*shadow < 3) { sfx_play(&s_click); (*shadow)++; }
-            else if (*shadow == 4) { sfx_play(&s_click); *shadow = 1; }
+            if (*shadow < 3) { sfx_ui_click(0); (*shadow)++; }
+            else if (*shadow == 4) { sfx_ui_click(0); *shadow = 1; }
         }
         if (k_dn) {                                               /* 0x440403 */
-            if (*shadow > 1 && *shadow != 4) { sfx_play(&s_click); (*shadow)--; }
-            else if (*shadow != 4) { sfx_play(&s_click); *shadow = 4; }
+            if (*shadow > 1 && *shadow != 4) { sfx_ui_click(0); (*shadow)--; }
+            else if (*shadow != 4) { sfx_ui_click(0); *shadow = 4; }
         }
 
         blit_bmap_to_framebuffer(fb, fw, fh, bg, pal, 0, 0);
@@ -507,7 +499,7 @@ void menu_persos_run(void) {
     #undef EDGE
 
     /* 0x44081C: click, the exit button held down for one frame. */
-    sfx_play(&s_click);
+    sfx_ui_click(0);
     blit_sub(fb, fw, fh, img, pal, 0x14, 0x2E, 0x33, 0x33, 0x235, 0x172);
     fx_present();
 

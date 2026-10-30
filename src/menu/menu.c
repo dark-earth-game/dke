@@ -16,6 +16,7 @@
 #include "libsys/file_system.h"
 #include "libsys/audio/wav.h"
 #include "menu/screens.h"
+#include "sfx.h"
 
 /*
  * menu.c — Main menu skeleton (Slice B pass 1)
@@ -41,16 +42,10 @@
 #define COLOR_WHITE  0xFFFFFFFFu
 #define COLOR_YELLOW 0xFFFFFF00u
 
-/* -------------------------------------------------------------------------
- * SFX state — click sound loaded once in menu_init
- * ------------------------------------------------------------------------- */
-
-/*
- * Click sound: originally INVENT1.WAV in the game's WAV/NORMAL/ directory.
- * If not found, we fall back to the first available WAV from a priority list,
- * then to the first .WAV in the NORMAL/ folder.
- */
-static wav_t sfx_click = {0};
+/* Menu sounds go through sfx_ui_click (help_screen_context, INVENT2.WAV):
+ * moves play at the sample's rate, confirmations at 8000 Hz (0x438D3E). */
+#define CLICK_MOVE     0
+#define CLICK_CONFIRM  8000
 
 /* sub_44CFF6 @ 0x44CFF6 — volume attenuation query.
  * Converts master volume (0..64) to DirectSound-style attenuation.
@@ -336,46 +331,6 @@ static void menu_screenshot(system_t *sys) {
  * Public API
  * ------------------------------------------------------------------------- */
 
-/*
- * menu_load_click_sfx — resolve and load the menu click WAV.
- *
- * Search order:
- *   1. wav/ANIMS/INVENT1.WAV — real game path confirmed from asm string "%sINVENT1.WAV"
- *                               and on-disk at bin/game/wav/ANIMS/INVENT1.WAV
- *   2. wav/NORMAL/INVENT1.WAV — secondary location searched in original engine
- *   3. wav/NORMAL/MENU.WAV
- *   4. wav/NORMAL/CLICK.WAV
- *   5. wav/NORMAL/SELECT.WAV
- *   6. First .WAV found in wav/NORMAL/ (alphabetical order from ls)
- *
- * Logs which file was chosen. No-ops if none found.
- */
-static void menu_load_click_sfx(const c8 *game_path) {
-    /* Priority list: subdir/filename pairs. */
-    static const struct { const c8 *subdir; const c8 *fname; } candidates[] = {
-        { "wav/ANIMS",  "INVENT1.WAV" },   /* real asm path — "%sINVENT1.WAV" in wav/ANIMS */
-        { "wav/NORMAL", "INVENT1.WAV" },   /* secondary location */
-        { "wav/NORMAL", "MENU.WAV"    },
-        { "wav/NORMAL", "CLICK.WAV"   },
-        { "wav/NORMAL", "SELECT.WAV"  },
-        { NULL, NULL }
-    };
-
-    c8 path[512];
-
-    /* Try priority list first. */
-    for (i32 i = 0; candidates[i].subdir; i++) {
-        snprintf(path, sizeof(path), "%s/%s/%s",
-                 game_path, candidates[i].subdir, candidates[i].fname);
-        if (ls_exists(path)) {
-            printf("menu: click sfx using '%s'\n", path);
-            if (wav_load(&sfx_click, path)) return;
-        }
-    }
-
-    printf("menu: no click sfx found under '%s/wav/'\n", game_path);
-}
-
 // 00437EB7 (init phase)
 void menu_init(menu_t *menu) {
     menu->state           = MENU_STATE_MAIN;
@@ -395,11 +350,6 @@ void menu_init(menu_t *menu) {
     menu->backdrop_palette = NULL;
     game_init_get_menu_backdrop(&menu->backdrop_bmap, &menu->backdrop_palette);
 
-    /* Load click sound effect (INVENT1.WAV or best fallback). */
-    extern state_t *state;
-    if (state && state->game_path) {
-        menu_load_click_sfx(state->game_path);
-    }
 
     /* ---- Pass 3: load cursor sprites ---- */
 
@@ -502,7 +452,6 @@ void menu_init(menu_t *menu) {
  * Use menu_release_cursors(menu) for cursor cleanup.
  */
 void menu_release(void) {
-    wav_free(&sfx_click);
 }
 
 /*
@@ -554,8 +503,7 @@ static void menu_dispatch(menu_t *menu) {
     const c8     *lbl = MAIN_MENU_ITEMS[menu->selected_item].label;
     print("menu: click %s action=%d\n", lbl, (i32)act);
 
-    /* Play click feedback before dispatching (fire-and-forget). */
-    sfx_play(&sfx_click);
+    sfx_ui_click(CLICK_CONFIRM);                   /* 0x438D3E / 0x439301 */
 
     switch (act) {
         case MENU_ACTION_NEW_GAME:                 /* sub_43A63D(1, -1) */
@@ -606,8 +554,8 @@ static i32 menu_key(system_t *sys, i32 vk) {
 static void menu_quit_box_update(menu_t *menu, system_t *sys) {
     for (i32 i = 0; i < 2; i++)
         if (menu_item_hit(&QUIT_BOX_ITEMS[i], sys->motion_x, sys->motion_y)) menu->quit_hover = i;
-    if (menu_key(sys, 37) && menu->quit_hover == 1) { menu->quit_hover = 0; sfx_play(&sfx_click); }
-    if (menu_key(sys, 39) && menu->quit_hover == 0) { menu->quit_hover = 1; sfx_play(&sfx_click); }
+    if (menu_key(sys, 37) && menu->quit_hover == 1) { menu->quit_hover = 0; sfx_ui_click(CLICK_MOVE); }
+    if (menu_key(sys, 39) && menu->quit_hover == 0) { menu->quit_hover = 1; sfx_ui_click(CLICK_MOVE); }
 
     i32 pick = 0;                                   /* var_C: 1 no, 2 yes */
     if (sys->mouse_left == 2) {
@@ -618,7 +566,7 @@ static void menu_quit_box_update(menu_t *menu, system_t *sys) {
     if (menu_key(sys, 13)) pick = menu->quit_hover + 1;
     if (menu_key(sys, 27)) pick = 1;
     if (!pick) return;
-    sfx_play(&sfx_click);
+    sfx_ui_click(CLICK_CONFIRM);                    /* 0x438E3F */
     menu->quit_box = 0;
     menu->hovered_item = MENU_DEFAULT_ITEM;         /* var_4AEC = 6 */
     menu->dirty = 1;
@@ -683,7 +631,7 @@ void menu_update(menu_t *menu, system_t *sys) {
     for (i32 k = 0; k < 4; k++)
         if (menu_key(sys, arrows[k])) {
             i32 next = menu_nav(menu->hovered_item, arrows[k]);
-            if (next != menu->hovered_item) sfx_play(&sfx_click);
+            if (next != menu->hovered_item) sfx_ui_click(CLICK_MOVE);
             menu->hovered_item = next;
         }
 
@@ -694,7 +642,7 @@ void menu_update(menu_t *menu, system_t *sys) {
     }
     /* Esc never quits directly: var_C = 8 opens the quit box (0x439378). */
     if (menu_key(sys, 27)) {
-        sfx_play(&sfx_click);
+        sfx_ui_click(CLICK_MOVE);                   /* 0x43936B */
         menu->quit_box   = 1;
         menu->quit_hover = 1;
         return;

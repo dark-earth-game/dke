@@ -104,7 +104,6 @@ typedef struct {
 } fscreen_t;
 
 static fscreen_t *S;
-static wav_t s_click;            /* INVENT1.WAV */
 
 /* ------------------------------------------------------------------ */
 /* helpers                                                             */
@@ -138,14 +137,7 @@ static void bit_move(u32 *fb, i32 fw, i32 fh, const bmap_t *src, const u8 *pal,
     }
 }
 
-static void click(void) { if (s_click.samples) sfx_play(&s_click); }
-
-static void load_click(void) {
-    if (s_click.samples || !state || !state->game_path) return;
-    c8 p[512];
-    snprintf(p, sizeof(p), "%s/wav/ANIMS/INVENT1.WAV", state->game_path);
-    wav_load(&s_click, p);
-}
+static void click(void) { sfx_ui_click(0); }   /* help_screen_context */
 
 static void shot(void) {
     const c8 *path = getenv("DKE_MENUSHOT");
@@ -768,7 +760,6 @@ static i32 files_run(i32 save_mode) {
         game = (u32 *)malloc((size_t)fw * fh * 4);
         if (game) memcpy(game, fb, (size_t)fw * fh * 4);
     }
-    load_click();
 
 reopen:
     files_set_dir();

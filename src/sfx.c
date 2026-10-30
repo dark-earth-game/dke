@@ -66,7 +66,8 @@ extern state_t *state;
 #define SFX_EV_SLOTS      10      /* unk_4FF0B0, stride 0x110 */
 #define SFX_INST_VOICE    0       /* renderer_instance[0]  (dialogue / one-shot) */
 #define SFX_INST_AMB      1       /* renderer_instance[1] == dword_4FB334 (AMB loop) */
-#define SFX_VOICES        (SFX_CACHE + 2 + SFX_EV_SLOTS)
+#define SFX_UI_SLOTS      4       /* menu clicks and the sound-screen test sample */
+#define SFX_VOICES        (SFX_CACHE + 2 + SFX_EV_SLOTS + SFX_UI_SLOTS)
 #define SFX_LEAD_FRAMES   2048    /* ~93 ms queued ahead of the device */
 #define SFX_MAX_CHUNK     4096
 #define SFX_MIN_CHUNK     256     /* ~12 ms minimum refill */
@@ -703,6 +704,44 @@ void sfx_tick(void) {
 
 /* Kept for loops that block the frame: the mixer thread feeds the device. */
 void sfx_pump(void) { }
+
+/* Menu sounds: mixed on their own voices, so a click never queues ahead of
+ * the music (ls_audio_push is a FIFO; a whole clip pushed there delays
+ * everything behind it). */
+#define VI_UI(i)  (SFX_CACHE + 2 + SFX_EV_SLOTS + (i))
+static wav_t g_ui_click;      /* help_screen_context: WAV>ANIMS>INVENT2.WAV (sub_44CF90) */
+static b8    g_ui_click_tried;
+
+static void sfx_ui_play_impl(const wav_t *w, i32 freq, i32 ds_vol) {
+    static i32 next;
+    i32 slot = -1;
+    for (i32 i = 0; i < SFX_UI_SLOTS && slot < 0; i++)
+        if (!voice_playing(VI_UI(i))) slot = i;
+    if (slot < 0) slot = next++ % SFX_UI_SLOTS;          /* all busy: cut the oldest */
+    voice_play(VI_UI(slot), w, freq, 1);
+    voice_volume(VI_UI(slot), ds_vol);
+    voice_pan(VI_UI(slot), 0);
+}
+
+void sfx_ui_play(const wav_t *w, i32 freq, i32 ds_vol) {
+    audio_lock();
+    sfx_ui_play_impl(w, freq, master_vol(ds_vol));
+    audio_unlock();
+    mixer_thread_start();
+}
+
+void sfx_ui_click(i32 freq) {
+    audio_lock();
+    if (!g_ui_click_tried && state && state->game_path) {
+        g_ui_click_tried = 1;
+        c8 p[512];
+        snprintf(p, sizeof(p), "%s/wav/ANIMS/INVENT2.WAV", state->game_path);
+        if (!wav_load(&g_ui_click, p)) print("sfx: no menu click %s\n", p);
+    }
+    if (g_ui_click.samples) sfx_ui_play_impl(&g_ui_click, freq, master_vol(0));   /* sub_44CFF6(0) */
+    audio_unlock();
+    mixer_thread_start();
+}
 
 static b8 sfx_voice_busy_impl(void) { return g_inst_used[SFX_INST_VOICE]; }
 
