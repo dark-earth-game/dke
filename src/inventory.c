@@ -496,7 +496,11 @@ void inventory_screen_open(void) {             /* sub_42701B */
     if (getenv("DKE_GIVE")) {
         c8 list[256]; snprintf(list, sizeof(list), "%s", getenv("DKE_GIVE"));
         for (c8 *t = strtok(list, ","); t; t = strtok(NULL, ",")) inv_add(t, 1, getenv("DKE_GIVE_NEW") ? 1 : 0);
+#ifdef _WIN32
+        _putenv("DKE_GIVE=");
+#else
         unsetenv("DKE_GIVE");
+#endif
     }
     /* dword_4B33F0 = 1; set_display_mode(0x19); sub_416C10(2); */
     inv_sort(NULL /* TODO player held name */);

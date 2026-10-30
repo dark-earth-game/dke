@@ -409,7 +409,11 @@ i32 CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     if (ls_init_instance(system, 640, 480, 4)) {
         // TODO: hide cursor
+#ifdef _WIN32
+        ls_main(system, NULL);
+#else
         ls_main(system, argv);
+#endif
     }
     
     ls_release(system);
