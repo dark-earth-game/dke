@@ -338,12 +338,6 @@ i32 ls_main(system_t *system, c8 **argv) {
             break;
         }
 
-        /* Overlay debug text if enabled */
-        if (state->debug_enabled) {
-            set_position_coordinates(4, 4);
-            draw_text("DKE - main menu");
-        }
-
         /* Headless capture of any screen (menu included): DKE_MSHOT=<frame>
          * writes DKE_SHOT_PATH (PPM). */
         if (getenv("DKE_MSHOT") && dbg_frame == atoi(getenv("DKE_MSHOT")) &&

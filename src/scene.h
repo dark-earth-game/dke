@@ -46,6 +46,8 @@ void scene_release(void);
 
 /* dword_506B9C: the combat meter (OB86 / OB71 set it to 0x124F80). */
 void scene_set_combat_meter(i32 v);
+/* sub_45619D: rebuild the navigation grid (after VireCol). */
+void scene_rebuild_nav(void);
 
 /*
  * scene_get_camera_zfar — far-plane world distance for a camera as read

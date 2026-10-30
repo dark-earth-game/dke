@@ -1306,6 +1306,8 @@ static void build_nav_grid(void) { /* sub_45619D @ 0x45619D */
                    g_world.num_collisions);
 }
 
+void scene_rebuild_nav(void) { build_nav_grid(); }
+
 /* set_entities_combat_mode @ 0x406AC3 — (re)assert entity type flags.
  * Sets entity+0x90=2 and entity+0x94=2 on player, companion, and
  * secondary companion. Called from game_init phase 38 and scene_load_level. */
@@ -3503,17 +3505,6 @@ i32 scene_render(system_t *sys) {
                      g_scene_z_bmap,
                      0, 0, 0,
                      0, 0, 0);
-    }
-
-    /* HUD — current level, camera, and cube world position so testers
-     * can see WASD input landing without staring at the log. */
-    if (state && state->debug_enabled) {
-        c8 hud[128];
-        snprintf(hud, sizeof(hud),
-                 "L%02d cam=%d  wX=%d wZ=%d  zone=%d",
-                 g_scene_bg_level, g_scene_camera,
-                 g_player_wx, g_player_wz, lieu_detect_zone());
-        draw_text_at(font_handle, 6, 6, hud, 0xFFFFFFFFu);
     }
 
     /* Debug (DKE_ZONEDBG): label the personas the LIEU script placed. */

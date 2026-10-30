@@ -45,6 +45,8 @@
 #include "sfx.h"
 #include "screen_fx.h"
 #include "inventory.h"
+#include "scene.h"
+#include "world.h"
 #include "music.h"
 #include "libsys/file_system.h"
 #include "lieu_action.h"
@@ -2202,10 +2204,20 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
         return 1;
     }
 
-    case LA_VIRECOL:                           /* case 0x17 */
-        if (n->p68 >= 0 && n->p68 < LIEU_FLAG_MAX) g_flags[n->p68] = n->p4C;
-        print("lieu_act: VIRECOL flag[%d] = %d\n", n->p68, n->p4C);
+    case LA_VIRECOL: {                         /* case 0x17 @ 0x44C505 */
+        /* Collision polygon id (dword_4F5FB0[id]) or, negative, stair
+         * floor -id (dword_4F915C[-id] = the sol%02d list): bit 0 makes it
+         * solid. Then the navigation grid is rebuilt (sub_45619D). */
+        sol_limit_t *z = NULL;
+        i32 id = n->p68;
+        if (id >= 0 && id < g_world.num_collisions) z = g_world.collision_zones[id];
+        if (id < 0 && -id - 1 < g_world.num_stairs) z = g_world.stair_zones[-id - 1];
+        if (z) { if (n->p4C) z->flags |= 1; else z->flags &= ~1u; }
+        if (id >= 0 && id < LIEU_FLAG_MAX) g_flags[id] = n->p4C;
+        scene_rebuild_nav();
+        print("lieu_act: VIRECOL %d = %d%s\n", id, n->p4C, z ? "" : " (no polygon)");
         return 1;
+    }
 
     case LA_LINKOBJET: {                       /* case 0x20 */
         lieu_obj_t *o = obj_find(n->name, 1);
@@ -2315,6 +2327,11 @@ void lieu_enter(i32 level_id) {
     lieu_action_reset();  /* drop stale actions + object timers            */
     g_spawn_count = 0;
     g_op9c_counter = 0;
+    /* sub_448F4D @ 0x449021: every room starts with the camera and the
+     * player free and the zones answering only the action key. */
+    g_cam_lock = 0;          /* dword_4FF0A0 */
+    g_player_blocked = 0;    /* player_movement_enabled */
+    g_force_zones = 0;       /* dword_4FFB80 */
     dlg_reset();
     /* Trace on via env LIEU_TRACE=1 (observe opcode dispatch at runtime). */
     g_lieu_trace = (getenv("LIEU_TRACE") != NULL);
