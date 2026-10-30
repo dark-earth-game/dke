@@ -416,7 +416,7 @@ i32 g_combat_flags = 0;              /* debug_flags: COMBAT mode (bit 0 hold, bi
 extern i32 g_hero_autofight;         /* dword_4B219C (combat_ai.c) */
 extern i32 g_enemy_hits;             /* dword_506520 */
 static i32 g_game_exit_code = 0;     /* game_exit_code */
-static u8  g_movie_seen[8];          /* byte_507350 */
+u8         g_movie_seen[8];          /* byte_507350: bit n = movie SCnn seen */
 
 /* slot 3 sub_444AC0 "Cinematique": QUEUES type 3, strcpy(node+0x30, name).
  * The port played it straight away; it must wait its turn in the pile

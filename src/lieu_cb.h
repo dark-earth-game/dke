@@ -219,3 +219,6 @@ i32 lieu_player_blocked(void);
 
 
 #endif /* DKE_LIEU_CB_H */
+
+/* byte_507350: bit n set once movie SCnn has played (menu cinematics). */
+extern u8 g_movie_seen[8];
