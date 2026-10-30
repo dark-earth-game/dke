@@ -189,19 +189,24 @@ static void mixer_pump(u32 now) {
     any = any || music_is_playing();
     if (!any) { g_streaming = 0; return; }
     if (!g_streaming) { g_streaming = 1; g_clock_t0 = now; g_pushed = 0; }
-    u32 played = (u32)((u64)(now - g_clock_t0) * SFX_RATE / 1000);
+    /* Frames missing from the lead. The device queue may also hold audio
+     * that is not ours (a movie's tail, a menu click): it counts too. */
+    i32 need;
     i32 queued = ls_audio_queued(&state->audio);
-    if (queued >= 0) played = g_pushed - (u32)queued / 4;  /* device position */
-    if (g_pushed < played) g_pushed = played;              /* underrun: resync */
-    u32 want = played + SFX_LEAD_FRAMES;
-    while (g_pushed < want) {
-        u32 n = want - g_pushed;
-        if (n < SFX_MIN_CHUNK) break;
-        if (n > SFX_PUSH_CHUNK) n = SFX_PUSH_CHUNK;
+    if (queued >= 0) {
+        need = SFX_LEAD_FRAMES - queued / 4;
+    } else {
+        u32 played = (u32)((u64)(now - g_clock_t0) * SFX_RATE / 1000);
+        if (g_pushed < played) g_pushed = played;          /* underrun: resync */
+        need = (i32)(played + SFX_LEAD_FRAMES - g_pushed);
+    }
+    while (need >= SFX_MIN_CHUNK) {
+        i32 n = need > SFX_PUSH_CHUNK ? SFX_PUSH_CHUNK : need;
         static i16 buf[SFX_MAX_CHUNK * 2];
-        mix(buf, n);
-        if (ls_audio_push(&state->audio, buf, (i32)(n * 4)) <= 0) break;
-        g_pushed += n;
+        mix(buf, (u32)n);
+        if (ls_audio_push(&state->audio, buf, n * 4) <= 0) break;
+        g_pushed += (u32)n;
+        need -= n;
     }
 }
 
