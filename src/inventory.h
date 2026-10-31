@@ -42,6 +42,8 @@ void inv_sort(void);
 i32  inv_fight_usable(const c8 *name);
 /* DIVERS op 7: sub_4274C2 wipe / sub_427593 confiscate / sub_4276B6 restore. */
 void inv_clear_all(void);
+/* sub_426D2C: re-hold the equipped object after a body swap. */
+i32  inv_rehold(void);
 i32  inv_confiscate(void);
 void inv_restore(void);
 

@@ -944,6 +944,21 @@ void inv_holster(const c8 *obj_name, i32 mode) {   /* sub_473DBC */
     }
 }
 
+/* sub_426D2C @ 0x426D2C: after the player's body changed, put the first
+ * equipped object back in the new body's hand; a creature body (id >= 4
+ * with desc[0x97] set) cannot hold it and the flag is dropped. The move-set
+ * reload (sub_462BCC) is done by weapon_take. Returns 1 if re-held. */
+i32 inv_rehold(void) {
+    entity_t *p = g_player_entity;
+    for (i32 i = 0; i < INV_SLOTS; i++) {
+        inv_entry_t *e = &g_inv[i];
+        if (!e->name[0] || !e->equipped) continue;
+        if (p && E32(p, 0xB0) >= 4 && EDESC(p) && EDESC(p)[0x97]) { e->equipped = 0; return 0; }
+        return weapon_take(object_get(e->name)) ? 1 : 0;
+    }
+    return 0;
+}
+
 i32 player_in_anim(void) {                         /* is_entity_in_animation */
     return g_player_entity && !actor_anim_done(g_player_entity);
 }

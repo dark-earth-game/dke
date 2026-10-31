@@ -825,14 +825,29 @@ void actor_hero_swap(i32 id) {
 
 entity_t *actor_pos_perso(i32 id, i32 x, i32 z, i32 facing, i32 vie,
                           const c8 *anim, i32 zone, i32 radius) {    /* sub_4640BC */
-    /* 0x4640E9..0x464250: the 0x62..0x67 ids swap the player to another
-     * hero mid-level; not reached by the scripts ported so far. */
+    entity_t *e = NULL;
+    /* 0x4640E9..0x464250: 0x62 / 0x63 turn the player into another body
+     * on the spot (P98 / P99, the SOB86 transformation), 0x64..0x67 bring
+     * back hero 0..3. The new actor keeps the old one's x / z, takes
+     * `facing` and the "g01arr01" stance, counts as hero 2 (+0xB0) and
+     * re-holds the equipped object (sub_426D2C). */
     if (id >= 0x62 && id <= 0x67) {
-        print("actor: PosPerso hero swap %d not ported\n", id);
-        return NULL;
+        entity_t *old = g_player_entity;
+        if (!old || !EROOT(old)) return NULL;
+        i32 px = EROOT(old)->pos[0], pz = EROOT(old)->pos[2];
+        g_player_entity = NULL;
+        actor_free(old);                                   /* sub_4663E3 + sub_4658D4 */
+        e = actor_create(id >= 0x64 ? id - 0x64 : id);     /* sub_46493B */
+        if (!e) { print("actor: PosPerso %d: no actor\n", id); return NULL; }
+        g_player_entity = e;
+        actor_place_ex(2, e, px, pz, facing, "g01arr01", -1, -1);   /* sub_463FB5 */
+        inv_rehold();                                      /* sub_426D2C */
+        if (id <= 0x63) E32(e, 0xC78) = 1;
+        EPTR(e, 0xCD8) = &g_nav_workspace[0];              /* byte_4F60E0 */
+        print("actor: PosPerso body swap -> %d\n", id);
+        return e;
     }
 
-    entity_t *e = NULL;
     switch (vie) {
     case 0: case 1: case 2:
         if (id >= 0 && id < HERO_COUNT) {
