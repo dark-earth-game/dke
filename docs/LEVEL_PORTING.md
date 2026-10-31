@@ -158,9 +158,13 @@ get wrong:
     - Divers ops `DV_*`, plus `CAM_*` and `BLOQUE_*`
     - the engine slots `ST_HERO`, `ST_LEVEL`, `ST_VIE(P_x)` with
       `VIE_DEAD`, `ST_START_POINT(level)`, and others
-  - `src/levels/lieu_vars.h`: script variables, `V_*`. The state block is
-    game-wide, so an offset has the same meaning in every level. When the
-    annotator prints a `V_` name, use it.
+  - `src/levels/lieu_vars.h`: script variables shared by several levels,
+    `V_*`. When the annotator prints a `V_` name, use it.
+  - `src/levels/lieuNN_int.h`: the level's own variables, `LNN_*`. The
+    state block persists across levels, but many slots (most of 0x64 to
+    0x100, and others) are scratch space that each level reuses for its
+    own purpose: 0x6C means something different in levels 3, 20 and 50.
+    Name those per level.
   - Leave an unknown slot as `ST(0xOFF)`. Don't add names to
     `lieu_vars.h` in a level port. Propose them in your report instead.
 - Write these in decimal:

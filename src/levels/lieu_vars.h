@@ -1,10 +1,10 @@
 #pragma once
 
 /*
- * lieu_vars.h — script variables in the game-wide LIEU state block
- * (dword_505C40, byte offsets for ST()). The block persists across
- * levels, so an offset has one meaning in every level script.
- * Offsets still written as ST(0x...) in the ports are not understood yet.
+ * lieu_vars.h — script variables in the LIEU state block (dword_505C40,
+ * byte offsets for ST()) that keep one meaning across levels. The block
+ * persists across levels, but many slots are scratch space each level
+ * reuses for itself; those are named per level, LNN_* in lieuNN_int.h.
  */
 
 #define V_PLAYER_STRIKE       0x014   /* engine-set >=1 when the player hits/acts on the persona in front; scripts consume by writing -1 (L1, L2) */
