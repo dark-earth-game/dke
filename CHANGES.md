@@ -3,6 +3,8 @@
 - List of all changes during public version releases
 
 ## Unreleased
+- 838ec80 fix: bubble, smoke and texture images load from DATAS>GLOBAL>IMAGES
+- 532f3a8 feat: PosPerso body swap ids 0x62..0x67 (SOB86 transformation)
 - 3bd52dc feat: ambient creatures (PlaceAnimal): rats, snakes, fish, birds, bats spawn, move, animate and draw in the room
 - c51f1a1 fix: dialogue voices play from the speaker's position (stereo pan and distance), re-placed on camera cuts
 
