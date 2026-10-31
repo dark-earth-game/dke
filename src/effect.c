@@ -39,8 +39,7 @@
  *
  * Type 7 (LAME, level 44 blades) rides the FAUX.INF path table (0x544B60).
  *
- * Left out: the dynamic blockers (entity_data_array) in process_entity_interaction; the shell
- * casing effect (type 100); the screen-space texture pass.
+ * Left out: the shell casing effect (type 100); the screen-space texture pass.
  */
 
 #include <math.h>
@@ -59,6 +58,7 @@
 #include "model.h"
 #include "model_ome.h"
 #include "nav_grid.h"
+#include "object.h"
 #include "state.h"
 
 typedef struct { i32 d[EFFECT_STRIDE / 4]; } effect_slot_t;
@@ -212,9 +212,26 @@ static creature_model_t *creature_register(i32 type) {
  * The 64x64 interaction grid holds 0 free, 2/3 border / wall, 0xFE/0xFF
  * blocked; ground creatures are stopped by anything non-zero, flyers (arg 1,
  * threshold 0x80) only by the hard cells. Cells are found with idiv, so a
- * point just outside the grid truncates into row / column 0. The original
- * then tests 8 dynamic blockers (entity_data_array); not ported.
+ * point just outside the grid truncates into row / column 0. Then the 8
+ * object slots (entity_data_array) are tested.
  * ---------------------------------------------------------------------- */
+/* sub_458F60 @ 0x458F60: crossing test on a collision polygon (sol layout:
+ * vertex count +0x1D8, vertices +0x14, 12 bytes each). */
+static i32 poly_contains(const u8 *s, i32 x, i32 z) {
+    i32 n = faux_i32(s, 0x1D8), cnt = 0;
+    for (i32 i = 0; i < n; i++) {
+        i32 j  = (i == n - 1) ? 0 : i + 1;
+        i32 x1 = faux_i32(s, 0x14 + i * 12), z1 = faux_i32(s, 0x14 + i * 12 + 8);
+        i32 x2 = faux_i32(s, 0x14 + j * 12), z2 = faux_i32(s, 0x14 + j * 12 + 8);
+        if (!((z1 < z && z <= z2) || (z2 < z && z <= z1))) continue;
+        if (x1 < x && x2 < x) continue;
+        if (x1 >= x && x <= x2) { cnt++; continue; }
+        i32 xi = x1 + (i32)((f64)(x2 - x1) * (f64)(z - z1) / (f64)(z2 - z1));
+        if (x <= xi) cnt++;
+    }
+    return cnt & 1;
+}
+
 static i32 interaction(i32 x, i32 z, i32 flying) {
     if (g_nav.cell_width <= 0 || g_nav.cell_height <= 0) return 1;
     i32 cx = (x - g_nav.world_x_origin) / g_nav.cell_width;
@@ -223,6 +240,16 @@ static i32 interaction(i32 x, i32 z, i32 flying) {
     if (cx >= 0 && cz >= 0 && cx <= 63 && cz <= 63 &&
         g_nav.grid[cz * NAV_GRID_SIZE + cx] > thr)
         return 0;
+    /* The 8 object slots (entity_data_array @ 0x4DAB60, stride 0x10C): a
+     * placed prop / ColObjet footprint, not flagged free, blocks its box. */
+    for (i32 i = 0; i < OBJ_SLOTS; i++) {
+        const u8 *poly = object_poly(i);
+        if (!poly) continue;
+        if (faux_i32(poly, 0x1DC) < x && faux_i32(poly, 0x1E8) > x &&
+            faux_i32(poly, 0x1E4) < z && faux_i32(poly, 0x1F0) > z &&
+            poly_contains(poly, x, z))
+            return 0;
+    }
     return 1;
 }
 
