@@ -10,6 +10,7 @@
 #include "libsys/file_system.h"
 #include "state.h"
 #include "anim2d.h"
+#include "world.h"
 
 /* -------------------------------------------------------------------------
  * LZSS decompressor — direct port of sub_4780B4.
@@ -162,8 +163,8 @@ void anim2d_load_camera(i32 level, i32 camera) {               /* sub_4130FB */
      * ship 'L' only, so the day set is loaded. */
     for (i32 i = 0; i < ANIM2D_SLOTS; i++) {
         c8 vpath[64];
-        snprintf(vpath, sizeof(vpath), "DATAS>L%02d>ANIM2D>L%02dC%1dA%1d.ANI",
-                 level, level, camera, i + 1);
+        snprintf(vpath, sizeof(vpath), "DATAS>L%02d>ANIM2D>%c%02dC%1dA%1d.ANI",
+                 level, g_light_char, level, camera, i + 1);
         if (!slot_load(&g_slots[i], vpath)) break;
         g_slots[i].enabled = 1;                                 /* +0x93C */
         g_slots[i].loop = 1;                                    /* +0x940 */

@@ -1413,6 +1413,7 @@ void actor_frame(u32 now) {
  * starts outside combat stance (special_mode_active = 1). */
 void actor_new_game(void) {
     lieu_new_game();
+    g_light_char = getenv("DKE_NIGHT") ? 'N' : 'L';     /* byte_4B71F0 (DKE_NIGHT: test hook) */
     g_special_mode_active = 1;
     g_cinematic_mode = 0;
     g_player_movement_locked = 0;

@@ -409,8 +409,8 @@ static i32 parse_dat_int(const c8 *buf, const c8 *key, i32 *out) {
 static void scene_load_dat_config(i32 level_id) {
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     c8 vpath[64];
-    snprintf(vpath, sizeof(vpath), "DATAS>L%02d>L%02d.DAT",
-             level_id, level_id);
+    snprintf(vpath, sizeof(vpath), "DATAS>L%02d>%c%02d.DAT",
+             level_id, g_light_char, level_id);
     c8 host[512];
     if (!ls_resolve_path(base, vpath, host, (i32)sizeof(host))) {
         print("scene: DAT resolve failed for '%s'\n", vpath);
@@ -492,8 +492,8 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
 
     /* F layer — required. */
     snprintf(vpath, sizeof(vpath),
-             "DATAS>L%02d>IMAGES>FL%02dC%dL0.CIF",
-             level_id, level_id, camera);
+             "DATAS>L%02d>IMAGES>F%c%02dC%dL0.CIF",
+             level_id, g_light_char, level_id, camera);
     print("scene: loading F '%s'\n", vpath);
     bmap_t *fb = game_init_load_cursor(vpath);
     if (!fb) {
@@ -503,8 +503,8 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
 
     /* L layer — grayscale light map at half res. Optional. */
     snprintf(vpath, sizeof(vpath),
-             "DATAS>L%02d>IMAGES>LL%02dC%dL0.CIF",
-             level_id, level_id, camera);
+             "DATAS>L%02d>IMAGES>L%c%02dC%dL0.CIF",
+             level_id, g_light_char, level_id, camera);
     bmap_t *lb = game_init_load_cursor(vpath);
     if (lb) {
         print("scene: L loaded -> %dx%d\n", (i32)lb->width, lb->height);
@@ -515,8 +515,8 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     /* Z layer — depth. Optional, currently unused (reserved for entity
      * occlusion). */
     snprintf(vpath, sizeof(vpath),
-             "DATAS>L%02d>IMAGES>ZL%02dC%dL0.CIF",
-             level_id, level_id, camera);
+             "DATAS>L%02d>IMAGES>Z%c%02dC%dL0.CIF",
+             level_id, g_light_char, level_id, camera);
     bmap_t *zb = game_init_load_cursor(vpath);
     if (zb) {
         print("scene: Z loaded -> %dx%d (stored for later occlusion)\n",
@@ -559,8 +559,8 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     g_scene_grd_loaded = 0;
     {
         c8 gp[80], host[512];
-        snprintf(gp, sizeof(gp), "DATAS>L%02d>PAL>FL%02dC%dL0.GRD",
-                 level_id, level_id, camera);
+        snprintf(gp, sizeof(gp), "DATAS>L%02d>PAL>F%c%02dC%dL0.GRD",
+                 level_id, g_light_char, level_id, camera);
         const c8 *base = (state && state->game_path) ? state->game_path : ".";
         if (ls_resolve_path(base, gp, host, (i32)sizeof(host))) {
             FILE *gf = fopen(host, "rb");
@@ -1777,7 +1777,7 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
     g_scene_cam_sy = 350;
 
     c8 virt[64];
-    snprintf(virt, sizeof(virt), "DATAS>L%02d>L%02d.INF", level_id, level_id);
+    snprintf(virt, sizeof(virt), "DATAS>L%02d>%c%02d.INF", level_id, g_light_char, level_id);
     c8 host[512];
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     if (!ls_resolve_path(base, virt, host, (i32)sizeof(host))) return;
@@ -1893,7 +1893,7 @@ static void scene_load_camera_anchor(i32 level_id, i32 cam_idx) {
 static void scene_load_camera_regions(i32 level_id) {
     g_cam_region_count = 0;
     c8 virt[64], host[512];
-    snprintf(virt, sizeof(virt), "DATAS>L%02d>L%02d.INF", level_id, level_id);
+    snprintf(virt, sizeof(virt), "DATAS>L%02d>%c%02d.INF", level_id, g_light_char, level_id);
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     if (!ls_resolve_path(base, virt, host, (i32)sizeof(host))) return;
     FILE *f = ls_open(host, "rb");
@@ -1978,7 +1978,7 @@ static i32 scene_camera_for_position(i32 wx, i32 wz, i32 current) {
 static i32 scene_load_inf_pitch(i32 level_id, i32 cam_idx) {
     /* Build INF path: DATAS>L{level_id:02d}>L{level_id:02d}.INF */
     c8 virt[64];
-    snprintf(virt, sizeof(virt), "DATAS>L%02d>L%02d.INF", level_id, level_id);
+    snprintf(virt, sizeof(virt), "DATAS>L%02d>%c%02d.INF", level_id, g_light_char, level_id);
     c8 host[512];
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     if (!ls_resolve_path(base, virt, host, (i32)sizeof(host))) return 300;
@@ -2401,8 +2401,8 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     {
         c8 inf_vpath[64];
-        snprintf(inf_vpath, sizeof(inf_vpath), "DATAS>L%02d>L%02d.INF",
-                 level_id, level_id);
+        snprintf(inf_vpath, sizeof(inf_vpath), "DATAS>L%02d>%c%02d.INF",
+                 level_id, g_light_char, level_id);
         c8 inf_host[512];
         if (ls_resolve_path(base, inf_vpath, inf_host, (i32)sizeof(inf_host))) {
             print("scene: INF path = '%s'\n", inf_host);
@@ -2553,7 +2553,7 @@ i32 scene_load_level(i32 level_id) {
         const c8 *gp = (state && state->game_path) ? state->game_path : ".";
         c8 vpath[64], host[512];
         i32 reverb = 0;
-        snprintf(vpath, sizeof(vpath), "DATAS>L%02d>L%02d.DAT", level_id, level_id);
+        snprintf(vpath, sizeof(vpath), "DATAS>L%02d>%c%02d.DAT", level_id, g_light_char, level_id);
         if (ls_resolve_path(gp, vpath, host, (i32)sizeof(host))) {
             FILE *df = ls_open(host, "rb");
             if (df) {

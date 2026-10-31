@@ -22,6 +22,11 @@
 
 world_data_t g_world;
 
+/* byte_4B71F0 @ 0x4B71F0: 'L' (day) or 'N' (night). Every room file inside
+ * a level folder carries it: FN40C0L0.CIF, N44.INF, ANIM2D>N44C0A1.ANI.
+ * New game sets 'L'; LIEU Divers op 14 sets 'N' when night falls. */
+c8 g_light_char = 'L';
+
 static sol_limit_t *alloc_sol(void) {
     sol_limit_t *s = (sol_limit_t *)calloc(1, sizeof(sol_limit_t));
     return s;
@@ -57,8 +62,8 @@ void world_load_level_data(i32 level_id, const c8 *game_path,
           level_id, g_world.level_dll_name);
 
     c8 inf_vpath[128], inf_host[512];
-    snprintf(inf_vpath, sizeof(inf_vpath), "%sL%02d.INF",
-             g_world.level_data_path, level_id);
+    snprintf(inf_vpath, sizeof(inf_vpath), "%s%c%02d.INF",
+             g_world.level_data_path, g_light_char, level_id);
 
     if (!ls_resolve_path(game_path, inf_vpath, inf_host, (i32)sizeof(inf_host))) {
         print("world: cannot resolve INF path '%s'\n", inf_vpath);

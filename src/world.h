@@ -54,6 +54,7 @@ typedef struct {
 } world_data_t;
 
 extern world_data_t g_world;
+extern c8 g_light_char;      /* byte_4B71F0: 'L' day / 'N' night file letter */
 
 void world_load_level_data(i32 level_id, const c8 *game_path,
                            i32 is_demo, i32 is_hdd, i32 debug);

@@ -956,7 +956,6 @@ static i16 g_tab_509B40[LO_TAB509B40_ROWS * 8];
 
 static i32 g_dword_505D70 = 0;   /* op 18: hit-reaction delay by weapon   */
 static i32 g_dword_4B2B98 = 0;   /* op 15                                 */
-static c8  g_byte_4B71F0  = 0;   /* op 14                                 */
 static c8  g_byte_507260[0x10];  /* op 40: "s" + clip name                */
 
 /* ------------------------------------------------------------------------ */
@@ -1178,7 +1177,7 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
 
     /* op 14 @ 0x447ABE — byte_4B71F0 = 'N'. */
     case 14:
-        g_byte_4B71F0 = 'N';
+        g_light_char = 'N';
         return 0;
 
     /* op 15 @ 0x447ACA — a in {0,1}: dword_4B2B98 = a. */
