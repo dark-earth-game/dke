@@ -1319,9 +1319,10 @@ b8 game_init(state_t *state) {
         g_display_surface = ls_init_bmap_ex(16, 16, 8, 8);
 
         static const c8 *smoke_names[] = {
-            "datas>objets>SMOKE0.GIF", "datas>objets>SMOKE1.GIF",
-            "datas>objets>SMOKE2.GIF", "datas>objets>SMOKE3.GIF",
-            "datas>objets>SMOKE4.GIF",
+            /* sub_43040A: "DATAS>GLOBAL>IMAGES>SMOKE%ld.GIF", 0..4 */
+            "DATAS>GLOBAL>IMAGES>SMOKE0.GIF", "DATAS>GLOBAL>IMAGES>SMOKE1.GIF",
+            "DATAS>GLOBAL>IMAGES>SMOKE2.GIF", "DATAS>GLOBAL>IMAGES>SMOKE3.GIF",
+            "DATAS>GLOBAL>IMAGES>SMOKE4.GIF",
         };
         for (i32 i = 0; i < 5; i++)
             g_smoke_sprites[i] = image_load_compressed(smoke_names[i], NULL);
@@ -1416,13 +1417,14 @@ b8 game_init(state_t *state) {
         }
 
         static const c8 *bulle_names[] = {
-            "datas>objets>BULLE0.GIF", "datas>objets>BULLE1.GIF",
-            "datas>objets>BULLE2.GIF", "datas>objets>BULLE3.GIF",
+            /* sub_42F88E: "DATAS>GLOBAL>IMAGES>BULLE%ld.GIF", 1..4 */
+            "DATAS>GLOBAL>IMAGES>BULLE1.GIF", "DATAS>GLOBAL>IMAGES>BULLE2.GIF",
+            "DATAS>GLOBAL>IMAGES>BULLE3.GIF", "DATAS>GLOBAL>IMAGES>BULLE4.GIF",
         };
         for (i32 i = 0; i < 4; i++)
             g_bulle_sprites[i] = image_load_compressed(bulle_names[i], NULL);
 
-        g_textures_gif = image_load_compressed("datas>objets>TEXTURES.GIF", NULL);
+        g_textures_gif = image_load_compressed("DATAS>GLOBAL>IMAGES>TEXTURES.GIF", NULL);
     }
 
     /* ------------------------------------------------------------------ */
