@@ -3,6 +3,7 @@
 - List of all changes during public version releases
 
 ## Unreleased
+- b5d49e0 fix: day/night file letter: night-only levels 40, 43, 44, 51 load, and after nightfall rooms use their night files
 - 8947fab feat: shell casings (create_shell_casing_effect, type 100)
 - b74ef42 feat: object slots block creatures (process_entity_interaction)
 - 98851c7 feat: blade trap (LAME) path
