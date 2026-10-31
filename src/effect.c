@@ -39,7 +39,11 @@
  *
  * Type 7 (LAME, level 44 blades) rides the FAUX.INF path table (0x544B60).
  *
- * Left out: the shell casing effect (type 100); the screen-space texture pass.
+ * Type 100 is the shell casing (effect_shell_casing); it shares the slot but
+ * uses its own model (OBJETS>DOUILLE) and a ballistic flight.
+ *
+ * Left out: the screen-space texture pass, and initialize_effect_position's
+ * light sample (+0x64), which the renderer redoes every frame.
  */
 
 #include <math.h>
@@ -66,7 +70,8 @@ _Static_assert(sizeof(effect_slot_t) == EFFECT_STRIDE, "effect slot stride");
 
 #define F(s, off) ((s)->d[(off) >> 2])
 
-#define CREATURE_COUNT 8
+#define CREATURE_COUNT 9           /* model slots: 1..7 creatures, 8 DOUILLE */
+#define MODEL_DOUILLE  8
 #define ZONE_UNIT      600          /* script units -> world units */
 #define NEAR_PLAYER    1.0404e10    /* dbl_4B01A8: (170 * 600)^2 */
 
@@ -77,8 +82,12 @@ static obc_node_t *s_tree[EFFECT_SLOTS];
 
 /* register_player_creature: jump table, index = type - 1. */
 static const c8 *const k_names[CREATURE_COUNT] = {
-    NULL, "RAT", "SERPENT", "POISSON", "PIAF", "CHSOURIS", "TITI", "LAME"
+    NULL, "RAT", "SERPENT", "POISSON", "PIAF", "CHSOURIS", "TITI", "LAME", "DOUILLE"
 };
+/* The shell casing (type 100) is OBJETS>DOUILLE, loaded by
+ * display_weapons_inventory @ 0x40CE30 through the same setup_creature. */
+static const c8 *model_dir(i32 idx) { return idx == MODEL_DOUILLE ? "OBJETS>" : "PERSOS>"; }
+static i32 model_index(i32 type) { return type == 100 ? MODEL_DOUILLE : type; }
 
 typedef struct {
     i32         tried;
@@ -187,7 +196,7 @@ static creature_model_t *creature_register(i32 type) {
     if (type == 7) g_blade_flag = 0;
 
     void *mat = NULL, *obc = NULL;
-    setup_creature("PERSOS>", k_names[type], &mat, &obc, 0);
+    setup_creature(model_dir(type), k_names[type], &mat, &obc, 0);
     m->root = (obc_node_t *)obc;
     if (!m->root) {
         print("effect: creature %d (%s) has no object tree\n", type, k_names[type]);
@@ -196,7 +205,7 @@ static creature_model_t *creature_register(i32 type) {
 
     /* Material library + texture atlas for the port's renderer. */
     c8 vpath[48], host[512];
-    snprintf(vpath, sizeof(vpath), "PERSOS>%s.OME", k_names[type]);
+    snprintf(vpath, sizeof(vpath), "%s%s.OME", model_dir(type), k_names[type]);
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     ome_file_t ome = {0};
     if (ls_resolve_path(base, vpath, host, (i32)sizeof(host)) && model_ome_open(host, &ome)) {
@@ -269,6 +278,7 @@ static void calc_pos(const effect_slot_t *s, i32 now, i32 *ox, i32 *oz) {
  * process_creature_effects @ 0x40D4C1
  * ---------------------------------------------------------------------- */
 i32 effect_place_creature(i32 type, i32 x, i32 y, i32 z, i32 a, i32 b) {
+    if (type < 1 || type > 7) return -1;
     creature_model_t *m = creature_register(type);
     if (!m) return -1;
     for (i32 i = 0; i < EFFECT_SLOTS; i++) {
@@ -346,6 +356,56 @@ void effect_frame_end(void) {
 }
 
 /* ------------------------------------------------------------------------
+ * Shell casing, creature type 100 -- create_shell_casing_effect @ 0x40CE9E
+ * and process_entity_direction @ 0x40F3D3. A fired gun (desc+0x97 == 0x17)
+ * drops one DOUILLE at the midpoint of the weapon node and its muzzle child,
+ * thrown to the side of the shooter's heading, flying a gravity arc for
+ * 600 ms. The slot reuses the creature layout: +0x30/+0x34/+0x38 start
+ * point, +0xD0/+0xD4/+0xD8 launch velocity (units per second), +0xCC spin.
+ * ---------------------------------------------------------------------- */
+void effect_shell_casing(const i32 *weapon, const i32 *muzzle, i32 heading, i32 kind) {
+    if (kind != 0x17) return;
+    creature_model_t *m = creature_register(MODEL_DOUILLE);
+    if (!m) return;
+    i32 x = (weapon[0] + muzzle[0]) / 2;            /* world position of both nodes */
+    i32 y = (weapon[1] + muzzle[1]) / 2;
+    i32 z = (weapon[2] + muzzle[2]) / 2;
+    for (i32 i = 0; i < EFFECT_SLOTS; i++) {
+        effect_slot_t *s = &g_slot[i];
+        if (F(s, 0x70)) continue;
+        i32 now = now_ms();
+        F(s, 0x6C) = now;
+        F(s, 0x74) = 9;
+        F(s, 0x9C) = now;
+        F(s, 0x8C) = actor_floor_height(x, z, NULL);        /* generate_effect */
+        F(s, 0xE4) = 100;
+        F(s, 0x70) = 1;
+        s_tree[i] = m->root;
+        F(s, 0xAC) = F(s, 0x30) = x;
+        F(s, 0xB0) = F(s, 0x38) = y + 0x1770;
+        F(s, 0xB4) = F(s, 0x34) = z;
+        F(s, 0xC4) = (i32)0xFFFF4000;
+        F(s, 0xC8) = (i32)0xFFFFC000;
+        F(s, 0xCC) = heading;
+        F(s, 0xD0) = -6 * sine_at(heading + 8) + rnd(0xFFFF);
+        F(s, 0xD4) = rnd(0xFFFF) + 0x29810;
+        F(s, 0xD8) = -6 * sine_at(heading - 0x3FF8) + rnd(0xFFFF);
+        m->root->pos[0] = x; m->root->pos[1] = F(s, 0xB0); m->root->pos[2] = z;
+        return;
+    }
+}
+
+/* Ballistic flight: p = p0 + v * t, y also falls by 300000 * t^2 (t in s). */
+static void casing_direction(effect_slot_t *s, i32 now) {
+    i32 dt = now - F(s, 0x9C);
+    f64 t = (f64)dt / 1000.0;
+    F(s, 0xAC) = (i32)((f64)F(s, 0xD0) * t + (f64)F(s, 0x30));
+    F(s, 0xB0) = (i32)((f64)F(s, 0xD4) * t + (f64)F(s, 0x38) - t * t * 300000.0);
+    F(s, 0xB4) = (i32)((f64)F(s, 0xD8) * t + (f64)F(s, 0x34));
+    if (dt > 600) F(s, 0x70) = 2;
+}
+
+/* ------------------------------------------------------------------------
  * process_entity_direction @ 0x40DBE1 -- creature branches
  * ---------------------------------------------------------------------- */
 
@@ -409,6 +469,7 @@ static void creature_direction(effect_slot_t *s, i32 now) {
     i32 x, z;
     f64 dx, dz, d2;
     if (type == 7) { lame_direction(s); return; }   /* no clock update */
+    if (type == 100) { casing_direction(s, now); return; }
     F(s, 0xD4) = 0;
 
     if (type == 1 || type == 2) {
@@ -555,7 +616,7 @@ i32 effect_creature_step(i32 slot, effect_draw_t *out) {
     if (slot < 0 || slot >= EFFECT_SLOTS) return 0;
     effect_slot_t *s = &g_slot[slot];
     if (F(s, 0x70) != 1 || F(s, 0x74) != 9 || !s_tree[slot]) return 0;
-    creature_model_t *m = &g_model[F(s, 0xE4)];
+    creature_model_t *m = &g_model[model_index(F(s, 0xE4))];
     obc_node_t *root = s_tree[slot];
     i32 now = now_ms();
 

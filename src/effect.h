@@ -33,6 +33,12 @@ void effect_reset(void);
 /* handle_data_l44_faux @ 0x40FD5C: read DATAS>L44>FAUX.INF (LAME paths). */
 void effect_load_faux(const c8 *game_path);
 
+/* create_shell_casing_effect @ 0x40CE9E: drop a casing at the midpoint of two
+ * node world positions (x, y, z each), thrown relative to `heading` (the
+ * shooter's root rot[2]). `kind` is the held object's desc+0x97; only 0x17
+ * guns eject one. */
+void effect_shell_casing(const i32 *weapon, const i32 *muzzle, i32 heading, i32 kind);
+
 /* Number of used slots (case 33 @ 0x44CA4B counts them). */
 i32  effect_used_count(void);
 

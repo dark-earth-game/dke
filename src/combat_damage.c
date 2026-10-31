@@ -48,6 +48,7 @@
 #include "libsys/graphics/graphic.h"
 #include "libsys/graphics/shading.h"   /* cosine_table */
 #include "object.h"
+#include "effect.h"
 
 void combat_enemy_bar(entity_t *e);
 
@@ -753,8 +754,9 @@ static void muzzle_flash(entity_t *e) {
     obc_node_t *w = (obc_node_t *)EPTR(e, 0x178);
     if (w && w->child) {
         E32(e, 0xE5C) = 1; E32(e, 0xE58) = now_ms();
-        /* TODO w->child->child = flash mesh (dword_5099C0);
-         *      create_shell_casing_effect(e, w->child, w). */
+        /* TODO w->child->child = flash mesh (dword_5099C0). */
+        effect_shell_casing(&w->raw_88[2], &w->child->raw_88[2],
+                            EROOT(e) ? EROOT(e)->rot[2] : 0, EDESC(e)[0x97]);   /* @ 0x41BB2D */
     }
 }
 static void miss_spark(entity_t *e) {
