@@ -3,6 +3,9 @@
 - List of all changes during public version releases
 
 ## Unreleased
+- 8947fab feat: shell casings (create_shell_casing_effect, type 100)
+- b74ef42 feat: object slots block creatures (process_entity_interaction)
+- 98851c7 feat: blade trap (LAME) path
 - 838ec80 fix: bubble, smoke and texture images load from DATAS>GLOBAL>IMAGES
 - 532f3a8 feat: PosPerso body swap ids 0x62..0x67 (SOB86 transformation)
 - 3bd52dc feat: ambient creatures (PlaceAnimal): rats, snakes, fish, birds, bats spawn, move, animate and draw in the room
