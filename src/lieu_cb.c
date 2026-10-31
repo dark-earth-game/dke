@@ -46,6 +46,7 @@
 #include "screen_fx.h"
 #include "inventory.h"
 #include "scene.h"
+#include "effect.h"
 #include "world.h"
 #include "music.h"
 #include "libsys/file_system.h"
@@ -1381,8 +1382,15 @@ static i32 cb_divers(i32 op, i32 a, i32 b) {
      * (0x543CD0, stride 0xF0; +0x3C x, +0x44 z): (i32)sqrt((dx^2+dz^2)/360000).
      * Slot empty (+0 == 0) -> 100000000. */
     case 31:
-        /* TODO g_game_structures is static in scene.c */
-        return 100000000;
+        {
+            i32 sx, sz;
+            if (a < 0 || a >= EFFECT_SLOTS || !effect_slot_xz(a, &sx, &sz) ||
+                !g_player_entity || !EROOT(g_player_entity))
+                return 100000000;
+            f64 dx = (f64)(EROOT(g_player_entity)->pos[0] - sx);
+            f64 dz = (f64)(EROOT(g_player_entity)->pos[2] - sz);
+            return (i32)sqrt((dx * dx + dz * dz) / 360000.0);   /* dbl_4B0688 */
+        }
 
     /* op 32 @ 0x44870C — player+0xCB0 (index of the collision zone under
      * the player, actor_move.c). */
@@ -2072,11 +2080,13 @@ i32 lieu_action_dispatch(lieu_action_t *n, u32 now_ms) {
     }
 
     case LA_PLACEANIMAL:                       /* case 33 @ 0x44CA4B */
-        /* count used game_structures (16 x 0xF0); > 12 -> log "Ivan faut pas
-         * me prendre pour un con..." and skip; else
-         * process_creature_effects(id, x, y, z, p28, p4C). TODO creatures. */
-        print("lieu_act: PLACEANIMAL id=%d (%d,%d,%d) %d %d (no creatures)\n",
-              n->actor, n->x, n->y, n->z, n->p28, n->p4C);
+        /* count used game_structures (16 x 0xF0); > 12 -> log and skip;
+         * else process_creature_effects(id, x, y, z, p28, p4C). */
+        if (effect_used_count() > 12) {
+            print("Ivan faut pas me prendre pour un con, ah ah ah !!!\n");   /* log_message */
+            return 1;
+        }
+        effect_place_creature(n->actor, n->x, n->y, n->z, n->p28, n->p4C);
         return 1;
 
     case LA_DIVERSEMPILE:                      /* case 37 @ 0x44CC77 */

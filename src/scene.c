@@ -62,6 +62,7 @@
 #include "game_init.h"
 #include "world.h"
 #include "nav_grid.h"
+#include "effect.h"
 #include "anim2d.h"
 #include "object.h"
 #include "sfx.h"
@@ -129,16 +130,9 @@ static i32 g_dword_4B2AB8 = 0;
 /* last_event_check_time — gametime snapshot from Phase 23. */
 static i32 g_last_event_check_time = 0;
 
-/* dword_543C60 @ 0x543C60 — 0xF00-byte buffer cleared before world controller init.
- * Used by sub_46D305 as staging area for INF/camera data. */
-static u8 g_dword_543C60[0xF00] = {0};
+/* dword_543C60 @ 0x543C60 / game_structures @ 0x543CD0: the 16 effect slots,
+ * see effect.c. */
 
-/* game_structures @ 0x543CD0 — 16-entry array, stride 0xF0 (240 bytes).
- * Each entry holds an entity/object state block. Field +0x00 = entity pointer
- * (non-NULL = active), field +0x2C = last-synced game time. */
-#define GAME_STRUCT_COUNT  16
-#define GAME_STRUCT_STRIDE 0xF0
-static u8 g_game_structures[GAME_STRUCT_COUNT * GAME_STRUCT_STRIDE] = {0};
 
 /* render_buffer2 — 640x480 8bpp bmap (allocated in game_init phase 28).
  * Used by sub_45E070 to build the coarse brightness map. */
@@ -1765,12 +1759,7 @@ static void update_game_time_entities(void) { /* sub_40636D @ 0x40636D */
     sync_entity_time(g_companion_entity, t);
     sync_entity_time(g_secondary_companion_entity, t);
 
-    for (i32 i = 0; i < GAME_STRUCT_COUNT; i++) {
-        u8 *entry = g_game_structures + i * GAME_STRUCT_STRIDE;
-        if (*(void **)entry) {  /* +0x00: entity pointer non-NULL = active */
-            *(i32 *)(entry + 0x2C) = t;  /* +0x2C: time field */
-        }
-    }
+    effect_sync_time(t);   /* game_structures_time_values */
 }
 
 /*
@@ -2157,7 +2146,7 @@ i32 scene_load_level(i32 level_id) {
     print("scene: phase 8 — world_controller check\n");
     if (!g_world_controller) {
         print("scene: world_controller is NULL — memset dword_543C60 + sub_46D305\n");
-        memset(g_dword_543C60, 0, sizeof(g_dword_543C60));  /* dword_543C60 @ 0x543C60 */
+        effect_reset();   /* memset(dword_543C60, 0, 0xF00) */
         load_world_controller();   /* sub_46D305 @ 0x46D305 — world controller alloc */
     } else {
         print("scene: world_controller already set, skip alloc\n");
@@ -3473,13 +3462,30 @@ i32 scene_render(system_t *sys) {
         {
             entity_t *cast[3] = { g_player_entity, g_companion_entity,
                                   g_secondary_companion_entity };
-            static model_draw_t items[192];
+            static model_draw_t items[512];
             i32 n_items = 0;
             for (i32 ci = 0; ci < 3; ci++) {
                 if (!cast[ci]) continue;
                 if (getenv("DKE_HIDEACTOR") && atoi(getenv("DKE_HIDEACTOR")) == ci) continue;
                 n_items = scene_collect_actor(cast[ci], items, n_items, 192);
             }
+            /* Ambient creatures (PlaceAnimal): the effect slots, type 9. They
+             * move and pose their tree here, as update_game_hud does. */
+            for (i32 ei = 0; ei < EFFECT_SLOTS && !getenv("DKE_NOCREATURE"); ei++) {
+                effect_draw_t d;
+                if (!effect_creature_step(ei, &d)) continue;
+                i32 zv = scene_actor_zval(d.root->pos[0], d.root->pos[1], d.root->pos[2]);
+                i32 n0 = n_items;
+                n_items = scene_collect_tree(d.root, d.matr, zv, d.ground_y,
+                                             items, n_items, 512, 0, 0);
+                if (getenv("DKE_CRDBG")) {
+                    i32 px = 0, py = 0;
+                    scene_project_world(d.root->pos[0], d.root->pos[1], d.root->pos[2], &px, &py);
+                    print("creature %d: pos (%d,%d,%d) screen (%d,%d) zv %d items %d\n", ei,
+                          d.root->pos[0], d.root->pos[1], d.root->pos[2], px, py, zv, n_items - n0);
+                }
+            }
+            effect_frame_end();
             model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, zact,
                                g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
