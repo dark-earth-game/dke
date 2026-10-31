@@ -37,9 +37,9 @@
  *   +0xDC/+0xE0 turning toward heading +0xE0 while +0xDC == 1
  *   +0xE4       creature type 1..7 (shell_lifetimes)
  *
- * Left out: type 7 (LAME, the flying blades) follows a path table at
- * 0x544B60 that nothing in the port fills, so it is not spawned; the dynamic
- * blockers (entity_data_array) in process_entity_interaction; the shell
+ * Type 7 (LAME, level 44 blades) rides the FAUX.INF path table (0x544B60).
+ *
+ * Left out: the dynamic blockers (entity_data_array) in process_entity_interaction; the shell
  * casing effect (type 100); the screen-space texture pass.
  */
 
@@ -51,6 +51,7 @@
 #include "libsys/common.h"
 #include "libsys/file_system.h"
 #include "libsys/graphics/shading.h"
+#include "libsys/system.h"
 #include "effect.h"
 #include "actor.h"
 #include "entity.h"
@@ -100,6 +101,80 @@ static i32 rnd(i32 n) {
 /* sine_table[(a + off) >> 4 & 0xFFF] -- the asm's table is the port's
  * cosine_table, indexed identically. */
 static i32 sine_at(i32 a) { return cosine_table[((u32)a >> 4) & 0xFFF]; }
+
+/* ------------------------------------------------------------------------
+ * LAME path table @ 0x544B60: DATAS>L44>FAUX.INF, 6 paths of 844 bytes
+ * (handle_data_l44_faux @ 0x40FD5C reads it with ls_read(0x13C8)). A path:
+ *   +0x000 i32 n points
+ *   +0x004 n x { i32 x, y, z }            (x = X * 600, y = -3913200, z = -Y * 600)
+ *   +0x16C f64[n] cumulative arc length   (c[0] = 0)
+ *   +0x25C f64[n-1] segment lengths
+ * The original builds the file from DATAS>L44>FAUX.ASC (Blender dumps) when
+ * the .INF is missing; the port only reads the .INF.
+ * ---------------------------------------------------------------------- */
+#define FAUX_PATHS  6
+#define FAUX_STRIDE 844
+static u8  g_faux[FAUX_PATHS * FAUX_STRIDE];
+static i32 g_faux_ok = 0;
+
+static i32 faux_i32(const u8 *p, i32 off) { i32 v; memcpy(&v, p + off, 4); return v; }
+static f64 faux_f64(const u8 *p, i32 off) { f64 v; memcpy(&v, p + off, 8); return v; }
+
+/* handle_data_l44_faux @ 0x40FD5C (level 44 load). */
+void effect_load_faux(const c8 *game_path) {
+    c8 host[512];
+    g_faux_ok = 0;
+    memset(g_faux, 0, sizeof(g_faux));
+    if (!ls_resolve_path(game_path ? game_path : ".", "DATAS>L44>FAUX.INF", host,
+                         (i32)sizeof(host)))
+        return;
+    FILE *f = fopen(host, "rb");
+    if (!f) return;
+    g_faux_ok = fread(g_faux, 1, sizeof(g_faux), f) == sizeof(g_faux);
+    fclose(f);
+    print("effect: FAUX.INF %s\n", g_faux_ok ? "loaded" : "short");
+}
+
+/* calculate_interpolated_values @ 0x410340: point at arc length t. */
+static void faux_interp(i32 t, const u8 *p, i32 *out) {
+    i32 n = faux_i32(p, 0);
+    i32 i = 0;
+    while (!((f64)t < faux_f64(p, 0x16C + i * 8)) && n > i) i++;
+    i32 seg = i - 1;
+    f64 k = ((f64)t - faux_f64(p, 0x16C + seg * 8)) / faux_f64(p, 0x25C + seg * 8);
+    for (i32 c = 0; c < 3; c++) {
+        i32 a = faux_i32(p, 4 + seg * 12 + c * 4);
+        i32 b = faux_i32(p, 4 + (seg + 1) * 12 + c * 4);
+        out[c] = (i32)((f64)(b - a) * k + (f64)a);
+    }
+}
+
+/* process_entity_direction, type 7 @ 0x40F1DC: the blade rides its path back
+ * and forth; +0x64 pulses 0..0x100. */
+static void lame_direction(effect_slot_t *s) {
+    i32 flag = F(s, 0x48);
+    i32 now  = now_ms();
+    i32 t    = (i32)ls_tick() - F(s, 0x9C) - (flag << 8);
+    i32 v    = sine_at((i32)((u32)t << 6) + 8);
+    v = (v + ((v >> 31) & 0x7FF)) >> 11;
+    F(s, 0x64) += v;
+    if (F(s, 0x64) < 0) F(s, 0x64) = 0;
+    if (F(s, 0x64) > 0x100) F(s, 0x64) = 0x100;
+
+    if (!g_faux_ok || flag < 0 || flag >= FAUX_PATHS) return;
+    const u8 *p = g_faux + flag * FAUX_STRIDE;
+    i32 n = faux_i32(p, 0);
+    if (n < 2 || n > 28) return;
+    i32 total = (i32)(faux_f64(p, 0x15C + n * 8) + faux_f64(p, 0x24C + n * 8));
+    if (total <= 0) return;
+    i32 d = (i32)((u32)(now - F(s, 0x9C)) << 8);
+    if (d < 0) { d = 0; F(s, 0x9C) = now; }
+    d %= 2 * total;
+    if (d == total) d = total - 1;
+    i32 pos[3];
+    faux_interp(d < total ? d : 2 * total - d, p, pos);
+    F(s, 0xAC) = pos[0]; F(s, 0xB0) = pos[1]; F(s, 0xB4) = pos[2];
+}
 
 /* ------------------------------------------------------------------------
  * register_player_creature @ 0x40D265
@@ -169,10 +244,6 @@ static void calc_pos(const effect_slot_t *s, i32 now, i32 *ox, i32 *oz) {
 i32 effect_place_creature(i32 type, i32 x, i32 y, i32 z, i32 a, i32 b) {
     creature_model_t *m = creature_register(type);
     if (!m) return -1;
-    if (type == 7) {
-        print("effect: LAME path table (0x544B60) not ported, not spawned\n");
-        return -1;
-    }
     for (i32 i = 0; i < EFFECT_SLOTS; i++) {
         effect_slot_t *s = &g_slot[i];
         if (F(s, 0x70)) continue;
@@ -310,6 +381,7 @@ static void creature_direction(effect_slot_t *s, i32 now) {
     i32 type = F(s, 0xE4);
     i32 x, z;
     f64 dx, dz, d2;
+    if (type == 7) { lame_direction(s); return; }   /* no clock update */
     F(s, 0xD4) = 0;
 
     if (type == 1 || type == 2) {
@@ -432,6 +504,8 @@ static void creature_transform(effect_slot_t *s, obc_node_t *root, i32 now) {
         for (i32 i = 0; i < atom->face_count; i++) face_normal(atom, i);
         atom_resync(atom);
     }
+    if (type == 7)
+        root->rot[2] = (i32)(((u32)now << 8) & 0xFFFF);      /* root +0x5C: spin */
     if (type >= 3 && type <= 6) {
         static const i32 k_shift[7] = { 0, 0, 0, 7, 6, 9, 7 };
         root->raw_60[3] = F(s, 0x48);                       /* root +0x6C */

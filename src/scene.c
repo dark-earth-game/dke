@@ -612,11 +612,11 @@ static void detect_cdrom(i32 arg) {
     (void)arg;
 }
 
-/* TODO: handle_data_l44_faux — called when level_id == 0x2C (44).
- * Likely special-case for a test/dummy level.
+/* handle_data_l44_faux — called when level_id == 0x2C (44).
  * Mirrors asm: cmp [ebp+var_4], 2Ch / call handle_data_l44_faux */
 static void handle_data_l44_faux(void) {
-    /* handle_data_l44_faux — special-case for test level 0x2C, no-op */
+    /* handle_data_l44_faux @ 0x40FD5C: LAME blade paths */
+    effect_load_faux((state && state->game_path) ? state->game_path : ".");
 }
 
 /* sub_46D305 — world controller: load INF zone data + build level paths. */
@@ -2096,7 +2096,7 @@ i32 scene_load_level(i32 level_id) {
      * ----------------------------------------------------------------- */
     if (level_id == 0x2C) {
         print("scene: phase 4 — level 44 special case: handle_data_l44_faux\n");
-        handle_data_l44_faux();   /* handle_data_l44_faux — test level no-op */
+        handle_data_l44_faux();
     }
 
     /* -----------------------------------------------------------------

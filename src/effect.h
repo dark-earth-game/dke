@@ -30,6 +30,9 @@ typedef struct {
 /* Level / room load: memset(dword_543C60, 0, 0xF00). */
 void effect_reset(void);
 
+/* handle_data_l44_faux @ 0x40FD5C: read DATAS>L44>FAUX.INF (LAME paths). */
+void effect_load_faux(const c8 *game_path);
+
 /* Number of used slots (case 33 @ 0x44CA4B counts them). */
 i32  effect_used_count(void);
 
