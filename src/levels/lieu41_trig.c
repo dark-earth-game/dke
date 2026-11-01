@@ -47,9 +47,9 @@ void l41_trig00(void) {
         ST(ST_HERO) = 3;
         ST(ST_LEVEL) = 40;
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
+    ST(L41_CAM1_REMARK_DONE) = 0;
+    ST(L41_SEARCH_REMARK_COUNT) = 0;
+    ST(L41_SIDE_ZONE_REMARK_DONE) = 0;
     ST(V_PRE90_OBJECT) = 0;
     ST(V_LAST_WEAPON) = 0;
     ST(V_EVENT_0) = 0;
@@ -71,10 +71,10 @@ void l41_trig00(void) {
 static void trig41(void) {
     CB->divers_empile(DV_MUSIC, 1, 1);
     CB->bloque(BLOQUE_ALL);
-    if (ST(0x8E8) == 0) {
+    if (ST(L41_ENTRY_REMARK_DONE) == 0) {
         lieu_action_register("L41D02", P_ARKHAN3, "SG00DIA04", "Sar_10");
     }
-    ST(0x8E8) = 1;
+    ST(L41_ENTRY_REMARK_DONE) = 1;
     CB->bloque(BLOQUE_NONE);
 }
 
@@ -122,8 +122,8 @@ static void trig06(void) {
         } else {
             lieu_action_register("LCOD68", P_ARKHAN3, "SP03ATT28", "Sar_10");
         }
-        if (ST(0x6C) == 0) {
-            ST(0x6C) = 1;
+        if (ST(L41_SIDE_ZONE_REMARK_DONE) == 0) {
+            ST(L41_SIDE_ZONE_REMARK_DONE) = 1;
             lieu_action_register("L41D09", P_ARKHAN3, "SG00DIA02", "Sar_10");
         }
         CB->bloque(BLOQUE_NONE);
@@ -140,8 +140,8 @@ static void trig07(void) {
         } else {
             lieu_action_register("LCOD68", P_ARKHAN3, "SP03ATT28", "Sar_10");
         }
-        if (ST(0x6C) == 0) {
-            ST(0x6C) = 1;
+        if (ST(L41_SIDE_ZONE_REMARK_DONE) == 0) {
+            ST(L41_SIDE_ZONE_REMARK_DONE) = 1;
             lieu_action_register("L41D09", P_ARKHAN3, "SG00DIA02", "Sar_10");
         }
         CB->bloque(BLOQUE_NONE);

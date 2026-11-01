@@ -47,8 +47,8 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x76D7 - first time in the locked camera 1 */
-    if (ST(ST_LOCKED_CAMERA) == 1 && ST(0x64) == 0) {
-        ST(0x64) = 1;
+    if (ST(ST_LOCKED_CAMERA) == 1 && ST(L41_CAM1_REMARK_DONE) == 0) {
+        ST(L41_CAM1_REMARK_DONE) = 1;
         lieu_action_register("L41D01", P_ARKHAN3, "SG00DIA04", "Sar_10");
     }
     /* 0x771D - action key, none of the zones 3..7 holds the hero */
@@ -62,9 +62,9 @@ static void tick_body(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
         CB->joindre(-ST(ST_HERO), 0, 0, 0, -3);
-        /* 0x781E: ST(0x68) is the line counter of the hero's remarks */
-        if (ST(0x68) == 2) {
-            ST(0x68) = 2;
+        /* 0x781E: ST(L41_SEARCH_REMARK_COUNT) is the line counter of the hero's remarks */
+        if (ST(L41_SEARCH_REMARK_COUNT) == 2) {
+            ST(L41_SEARCH_REMARK_COUNT) = 2;
             if (ST(ST_SPECIAL_MODE) == 1) {
                 lieu_action_register("L41D14", P_ARKHAN3, "SG00DIA06", "SP03ACT77");
             } else {
@@ -72,8 +72,8 @@ static void tick_body(void) {
             }
         }
         /* 0x7882 */
-        if (ST(0x68) == 1) {
-            ST(0x68) = 2;
+        if (ST(L41_SEARCH_REMARK_COUNT) == 1) {
+            ST(L41_SEARCH_REMARK_COUNT) = 2;
             if (ST(ST_SPECIAL_MODE) == 1) {
                 lieu_action_register("L41D12", P_ARKHAN3, "SG00DIA08", "SP03ACT77");
             } else {
@@ -81,8 +81,8 @@ static void tick_body(void) {
             }
         }
         /* 0x78E6 */
-        if (ST(0x68) == 0) {
-            ST(0x68) = 1;
+        if (ST(L41_SEARCH_REMARK_COUNT) == 0) {
+            ST(L41_SEARCH_REMARK_COUNT) = 1;
             /* 0x7906 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 if (CB->divers(DV_CAN_FIGHT, 7, 2)) {
@@ -151,7 +151,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L41_DEATH_ENDING_BYPASS) == 1) {
         l41_trig00();   /* 0x10008809: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
