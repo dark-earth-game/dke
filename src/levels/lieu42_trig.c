@@ -99,19 +99,19 @@ void l42_trig00(void) {
     ST(V_EVENT_38) = 0;
     ST(V_EVENT_39) = 0;
     ST(V_EVENT_41) = 0;
-    ST(0x64) = -1;
-    ST(0x68) = -1;
-    ST(0x6C) = -1;
-    ST(0x70) = -1;
-    ST(0x74) = -1;
-    ST(0x78) = -1;
-    ST(0x7C) = 0;
-    ST(0x80) = 0;
-    ST(0x84) = 0;
-    ST(0x88) = 0;
-    ST(0xB8) = 0;
-    ST(0xE0) = 0;
-    ST(0xF0) = 0;
+    ST(L42_LEVER1_STATE) = -1;
+    ST(L42_LEVER2_STATE) = -1;
+    ST(L42_LEVER3_STATE) = -1;
+    ST(L42_LEVER4_STATE) = -1;
+    ST(L42_LEVER5_STATE) = -1;
+    ST(L42_LEVER6_STATE) = -1;
+    ST(L42_CAM4_ANIMS_ON) = 0;
+    ST(L42_CAM5_ANIMS_ON) = 0;
+    ST(L42_LEVER_MOVE) = 0;
+    ST(L42_CAM3_AMBIENT) = 0;
+    ST(L42_CAM_RELEASE_PENDING) = 0;
+    ST(L42_ARKHAN3_HINT_SEEN) = 0;
+    ST(L42_HINT_B_SAID) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_LAST_WEAPON) = 0;
@@ -157,8 +157,8 @@ static void trig02(void) {
         /* 0x89E5 */
         if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 0x4F1 && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 0x523) {
             /* 0x8A1A */
-            if (ST(0xE0) == 0) {
-                ST(0xE0) = 1;
+            if (ST(L42_ARKHAN3_HINT_SEEN) == 0) {
+                ST(L42_ARKHAN3_HINT_SEEN) = 1;
                 /* 0x8A43 */
                 if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                     CB->animation("SP03ATT96");
@@ -200,9 +200,9 @@ static void trig02(void) {
         CB->pos_perso(ST(ST_HERO), 1205, -1880, 0x5E3, 1, "ar", 1, 0);
         CB->animation("Sar_100");
         /* 0x8BB5 */
-        if (ST(0x64) == 1) {
-            ST(0x64) = -1;
-            ST(0x84) = 11;
+        if (ST(L42_LEVER1_STATE) == 1) {
+            ST(L42_LEVER1_STATE) = -1;
+            ST(L42_LEVER_MOVE) = 11;
             CB->load_anim("242BAI03", 6);
             CB->evenement(0, 1200);
             CB->evenement(2, 2300);
@@ -214,9 +214,9 @@ static void trig02(void) {
             return;
         }
         /* 0x8C50 */
-        if (ST(0x64) == -1) {
-            ST(0x64) = 1;
-            ST(0x84) = -11;
+        if (ST(L42_LEVER1_STATE) == -1) {
+            ST(L42_LEVER1_STATE) = 1;
+            ST(L42_LEVER_MOVE) = -11;
             CB->load_anim("242LEV03", 6);
             CB->evenement(0, 800);
             CB->evenement(2, 1500);
@@ -239,8 +239,8 @@ static void trig03(void) {
         /* 0x8D70 */
         if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 0x57D && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 0x5AF) {
             /* 0x8DA5 */
-            if (ST(0xE0) == 0) {
-                ST(0xE0) = 1;
+            if (ST(L42_ARKHAN3_HINT_SEEN) == 0) {
+                ST(L42_ARKHAN3_HINT_SEEN) = 1;
                 /* 0x8DCE */
                 if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                     CB->animation("SP03ATT96");
@@ -278,9 +278,9 @@ static void trig03(void) {
         CB->pos_perso(ST(ST_HERO), 1340, -1880, 0x5E3, 1, "ar", 1, 0);
         CB->animation("Sar_100");
         /* 0x8F2A */
-        if (ST(0x68) == 1) {
-            ST(0x68) = -1;
-            ST(0x84) = 12;
+        if (ST(L42_LEVER2_STATE) == 1) {
+            ST(L42_LEVER2_STATE) = -1;
+            ST(L42_LEVER_MOVE) = 12;
             CB->load_anim("242BAI02", 6);
             CB->evenement(0, 1200);
             CB->evenement(2, 2500);
@@ -291,9 +291,9 @@ static void trig03(void) {
             return;
         }
         /* 0x8FB5 */
-        if (ST(0x68) == -1) {
-            ST(0x68) = 1;
-            ST(0x84) = -12;
+        if (ST(L42_LEVER2_STATE) == -1) {
+            ST(L42_LEVER2_STATE) = 1;
+            ST(L42_LEVER_MOVE) = -12;
             CB->load_anim("242LEV02", 6);
             CB->evenement(0, 800);
             CB->evenement(2, 1700);
@@ -315,8 +315,8 @@ static void trig04(void) {
         /* 0x90C5 */
         if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 0x61D && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 0x645) {
             /* 0x90FA */
-            if (ST(0xE0) == 0) {
-                ST(0xE0) = 1;
+            if (ST(L42_ARKHAN3_HINT_SEEN) == 0) {
+                ST(L42_ARKHAN3_HINT_SEEN) = 1;
                 /* 0x9123 */
                 if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                     CB->animation("SP03ATT96");
@@ -354,9 +354,9 @@ static void trig04(void) {
         CB->pos_perso(ST(ST_HERO), 1500, -1880, 0x5E3, 1, "ar", 1, 0);
         CB->animation("Sar_100");
         /* 0x927F */
-        if (ST(0x6C) == 1) {
-            ST(0x6C) = -1;
-            ST(0x84) = 13;
+        if (ST(L42_LEVER3_STATE) == 1) {
+            ST(L42_LEVER3_STATE) = -1;
+            ST(L42_LEVER_MOVE) = 13;
             CB->load_anim("242BAI01", 6);
             CB->evenement(0, 1200);
             CB->evenement(2, 2300);
@@ -367,9 +367,9 @@ static void trig04(void) {
             return;
         }
         /* 0x930A */
-        if (ST(0x6C) == -1) {
-            ST(0x6C) = 1;
-            ST(0x84) = -13;
+        if (ST(L42_LEVER3_STATE) == -1) {
+            ST(L42_LEVER3_STATE) = 1;
+            ST(L42_LEVER_MOVE) = -13;
             CB->load_anim("242LEV01", 6);
             CB->evenement(0, 800);
             CB->evenement(2, 1500);
@@ -387,8 +387,8 @@ static void trig05(void) {
     /* 0x93A3 */
     if (ST(ST_HERO) != 4 && ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x8000)) {
         /* 0x93F5 */
-        if (ST(0xB8) == 1) {
-            ST(0xB8) = 1000;
+        if (ST(L42_CAM_RELEASE_PENDING) == 1) {
+            ST(L42_CAM_RELEASE_PENDING) = 1000;
             CB->change_camera(99, CAM_AUTO);
         }
         CB->bloque(BLOQUE_ALL);
@@ -396,8 +396,8 @@ static void trig05(void) {
         /* 0x944E */
         if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 0x5F0 && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 0x62C) {
             /* 0x9483 */
-            if (ST(0xE0) == 0) {
-                ST(0xE0) = 1;
+            if (ST(L42_ARKHAN3_HINT_SEEN) == 0) {
+                ST(L42_ARKHAN3_HINT_SEEN) = 1;
                 /* 0x94AC */
                 if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                     CB->animation("SP03ATT96");
@@ -435,9 +435,9 @@ static void trig05(void) {
         CB->pos_perso(ST(ST_HERO), 1505, -1080, 0x815D, 1, "ar", 1, 0);
         CB->animation("Sar_100");
         /* 0x9608 */
-        if (ST(0x78) == 1) {
-            ST(0x78) = -1;
-            ST(0x84) = 16;
+        if (ST(L42_LEVER6_STATE) == 1) {
+            ST(L42_LEVER6_STATE) = -1;
+            ST(L42_LEVER_MOVE) = 16;
             CB->load_anim("242BAI06", 6);
             CB->evenement(0, 1200);
             CB->evenement(2, 2300);
@@ -448,9 +448,9 @@ static void trig05(void) {
             return;
         }
         /* 0x9693 */
-        if (ST(0x78) == -1) {
-            ST(0x78) = 1;
-            ST(0x84) = -16;
+        if (ST(L42_LEVER6_STATE) == -1) {
+            ST(L42_LEVER6_STATE) = 1;
+            ST(L42_LEVER_MOVE) = -16;
             CB->load_anim("242LEV06", 6);
             CB->evenement(0, 800);
             CB->evenement(2, 2000);
@@ -468,8 +468,8 @@ static void trig06(void) {
     /* 0x972C */
     if (ST(ST_HERO) != 4 && ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x8000)) {
         /* 0x977E */
-        if (ST(0xB8) == 1) {
-            ST(0xB8) = 1000;
+        if (ST(L42_CAM_RELEASE_PENDING) == 1) {
+            ST(L42_CAM_RELEASE_PENDING) = 1000;
             CB->change_camera(99, CAM_AUTO);
         }
         CB->bloque(BLOQUE_ALL);
@@ -477,8 +477,8 @@ static void trig06(void) {
         /* 0x97D7 */
         if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 0x555 && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 0x58C) {
             /* 0x980C */
-            if (ST(0xE0) == 0) {
-                ST(0xE0) = 1;
+            if (ST(L42_ARKHAN3_HINT_SEEN) == 0) {
+                ST(L42_ARKHAN3_HINT_SEEN) = 1;
                 /* 0x9835 */
                 if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                     CB->animation("SP03ATT96");
@@ -516,9 +516,9 @@ static void trig06(void) {
         CB->pos_perso(ST(ST_HERO), 1333, -1071, 0x898F, 1, "ar", 1, 0);
         CB->animation("Sar_100");
         /* 0x9991 */
-        if (ST(0x74) == 1) {
-            ST(0x74) = -1;
-            ST(0x84) = 15;
+        if (ST(L42_LEVER5_STATE) == 1) {
+            ST(L42_LEVER5_STATE) = -1;
+            ST(L42_LEVER_MOVE) = 15;
             CB->load_anim("242BAI05", 6);
             CB->evenement(0, 1200);
             CB->evenement(2, 2300);
@@ -529,9 +529,9 @@ static void trig06(void) {
             return;
         }
         /* 0x9A1C */
-        if (ST(0x74) == -1) {
-            ST(0x74) = 1;
-            ST(0x84) = -15;
+        if (ST(L42_LEVER5_STATE) == -1) {
+            ST(L42_LEVER5_STATE) = 1;
+            ST(L42_LEVER_MOVE) = -15;
             CB->load_anim("242LEV05", 6);
             CB->evenement(0, 800);
             CB->evenement(2, 1500);
@@ -549,8 +549,8 @@ static void trig07(void) {
     /* 0x9AB5 */
     if (ST(ST_HERO) != 4 && ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x8000)) {
         /* 0x9B07 */
-        if (ST(0xB8) == 1) {
-            ST(0xB8) = 1000;
+        if (ST(L42_CAM_RELEASE_PENDING) == 1) {
+            ST(L42_CAM_RELEASE_PENDING) = 1000;
             CB->change_camera(99, CAM_AUTO);
         }
         CB->bloque(BLOQUE_ALL);
@@ -558,8 +558,8 @@ static void trig07(void) {
         /* 0x9B60 */
         if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 0x4BA && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 0x4EC) {
             /* 0x9B95 */
-            if (ST(0xE0) == 0) {
-                ST(0xE0) = 1;
+            if (ST(L42_ARKHAN3_HINT_SEEN) == 0) {
+                ST(L42_ARKHAN3_HINT_SEEN) = 1;
                 /* 0x9BBE */
                 if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                     CB->animation("SP03ATT96");
@@ -601,9 +601,9 @@ static void trig07(void) {
         CB->pos_perso(ST(ST_HERO), 1184, -1071, 0x8672, 1, "ar", 1, 0);
         CB->animation("Sar_100");
         /* 0x9D3C */
-        if (ST(0x70) == 1) {
-            ST(0x70) = -1;
-            ST(0x84) = 14;
+        if (ST(L42_LEVER4_STATE) == 1) {
+            ST(L42_LEVER4_STATE) = -1;
+            ST(L42_LEVER_MOVE) = 14;
             CB->load_anim("242BAI04", 6);
             CB->evenement(0, 1200);
             CB->evenement(2, 2300);
@@ -615,9 +615,9 @@ static void trig07(void) {
             return;
         }
         /* 0x9DD7 */
-        if (ST(0x70) == -1) {
-            ST(0x70) = 1;
-            ST(0x84) = -14;
+        if (ST(L42_LEVER4_STATE) == -1) {
+            ST(L42_LEVER4_STATE) = 1;
+            ST(L42_LEVER_MOVE) = -14;
             CB->load_anim("242LEV04", 6);
             CB->animation("ar_50");
             CB->evenement(0, 800);
@@ -637,10 +637,10 @@ static void trig08(void) {
     /* 0x9E88 */
     if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x8D60)) {
         /* 0x9ECB */
-        if (ST(0x56C) == 0) {
+        if (ST(L42_GATE_OPEN) == 0) {
             /* 0x9EDA */
-            if (ST(0x64) == 1 && ST(0x68) == 1 && ST(0x6C) == -1 && ST(0x70) == 1 && ST(0x74) == -1 && ST(0x78) == 1) {
-                ST(0x56C) = 1;
+            if (ST(L42_LEVER1_STATE) == 1 && ST(L42_LEVER2_STATE) == 1 && ST(L42_LEVER3_STATE) == -1 && ST(L42_LEVER4_STATE) == 1 && ST(L42_LEVER5_STATE) == -1 && ST(L42_LEVER6_STATE) == 1) {
+                ST(L42_GATE_OPEN) = 1;
                 CB->bloque(BLOQUE_ALL);
                 CB->retire_zone(20);
                 CB->ajoute_zone(25, 1762, -1476, 45, 100, 1);
@@ -680,7 +680,7 @@ static void trig08(void) {
             }
         }
         /* 0xA112 */
-        if (ST(0x56C) == 1) {
+        if (ST(L42_GATE_OPEN) == 1) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             lieu_action_register("L42D06", P_ARKHAN3, "SG03DIA01", NULL);
@@ -719,8 +719,8 @@ static void trig11(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         lieu_action_register("L42D13A", P_ARKHAN3, "SG03DIA05", NULL);
         /* 0xA2FA */
-        if (ST(0xF0) == 0) {
-            ST(0xF0) = 1;
+        if (ST(L42_HINT_B_SAID) == 0) {
+            ST(L42_HINT_B_SAID) = 1;
             lieu_action_register("L42D13B", P_ARKHAN3, "SG03DIA05", NULL);
         }
         CB->animation("Sar_10");
@@ -738,8 +738,8 @@ static void trig12(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         lieu_action_register("L42D13A", P_ARKHAN3, "SG03DIA05", NULL);
         /* 0xA3D2 */
-        if (ST(0xF0) == 0) {
-            ST(0xF0) = 1;
+        if (ST(L42_HINT_B_SAID) == 0) {
+            ST(L42_HINT_B_SAID) = 1;
             lieu_action_register("L42D13B", P_ARKHAN3, "SG03DIA05", NULL);
         }
         CB->animation("Sar_10");
@@ -757,8 +757,8 @@ static void trig13(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         lieu_action_register("L42D13A", P_ARKHAN3, "SG03DIA05", NULL);
         /* 0xA4A7 */
-        if (ST(0xF0) == 0) {
-            ST(0xF0) = 1;
+        if (ST(L42_HINT_B_SAID) == 0) {
+            ST(L42_HINT_B_SAID) = 1;
             lieu_action_register("L42D13B", P_ARKHAN3, "SG03DIA05", NULL);
         }
         CB->animation("Sar_10");
@@ -837,8 +837,8 @@ static void trig16(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         lieu_action_register("L42D13A", P_ARKHAN3, "SG03DIA05", NULL);
         /* 0xA815 */
-        if (ST(0xF0) == 0) {
-            ST(0xF0) = 1;
+        if (ST(L42_HINT_B_SAID) == 0) {
+            ST(L42_HINT_B_SAID) = 1;
             lieu_action_register("L42D13B", P_ARKHAN3, "SG03DIA05", NULL);
         }
         CB->animation("Sar_10");
@@ -895,8 +895,8 @@ static void trig20(void) {
 static void trig41(void) {
     CB->divers(DV_MUSIC, 1, 1);
     /* 0x78D8 */
-    if (ST(0x8B0) == 0) {
-        ST(0x8B0) = 1;
+    if (ST(L42_INTRO_STAGE) == 0) {
+        ST(L42_INTRO_STAGE) = 1;
         CB->bloque(BLOQUE_ALL);
         CB->joindre(ST(ST_HERO), 1205, -1489, -1, -1);
         CB->cinematique("SC31_500");

@@ -58,32 +58,32 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x7B75 */
-    if (ST(0x88) == 0 && ST(ST_LOCKED_CAMERA) == 3) {
-        ST(0x88) = 1;
+    if (ST(L42_CAM3_AMBIENT) == 0 && ST(ST_LOCKED_CAMERA) == 3) {
+        ST(L42_CAM3_AMBIENT) = 1;
         CB->bruitage("L42AMB2", -3700, -1199);
     }
     /* 0x7BBD */
-    if (ST(0x88) == 1 && ST(ST_LOCKED_CAMERA) != 3) {
-        ST(0x88) = 0;
+    if (ST(L42_CAM3_AMBIENT) == 1 && ST(ST_LOCKED_CAMERA) != 3) {
+        ST(L42_CAM3_AMBIENT) = 0;
         CB->bruitage("L42AMB1", -2796, -1288);
     }
     /* 0x7C02 */
-    if (ST(0x7C) == 0 && ST(ST_LOCKED_CAMERA) == 4) {
+    if (ST(L42_CAM4_ANIMS_ON) == 0 && ST(ST_LOCKED_CAMERA) == 4) {
         CB->select_pile(1, 1);
-        ST(0x7C) = 1;
+        ST(L42_CAM4_ANIMS_ON) = 1;
         CB->play_anim(0, 0);
         CB->play_anim(1, 0);
         CB->play_anim(2, 0);
         CB->select_pile(0, 1);
     }
     /* 0x7C70 */
-    if (ST(0x7C) == 1 && ST(ST_LOCKED_CAMERA) != 4) {
-        ST(0x7C) = 0;
+    if (ST(L42_CAM4_ANIMS_ON) == 1 && ST(ST_LOCKED_CAMERA) != 4) {
+        ST(L42_CAM4_ANIMS_ON) = 0;
     }
     /* 0x7CA0 */
     if (ST(V_EVENT_0) == 1) {
         /* 0x7CB2 */
-        if (ST(0x84) == -11) {
+        if (ST(L42_LEVER_MOVE) == -11) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(1, 2);
             CB->free_anim(2);
@@ -92,7 +92,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7D0D */
-        if (ST(0x84) == 11) {
+        if (ST(L42_LEVER_MOVE) == 11) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(1, 2);
             CB->free_anim(2);
@@ -101,7 +101,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7D68 */
-        if (ST(0x84) == -12) {
+        if (ST(L42_LEVER_MOVE) == -12) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(1, 2);
             CB->free_anim(1);
@@ -110,7 +110,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7DC3 */
-        if (ST(0x84) == 12) {
+        if (ST(L42_LEVER_MOVE) == 12) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(1, 2);
             CB->free_anim(1);
@@ -119,7 +119,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7E1E */
-        if (ST(0x84) == -13) {
+        if (ST(L42_LEVER_MOVE) == -13) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(1, 2);
             CB->free_anim(0);
@@ -128,7 +128,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7E76 */
-        if (ST(0x84) == 13) {
+        if (ST(L42_LEVER_MOVE) == 13) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(1, 2);
             CB->free_anim(0);
@@ -140,7 +140,7 @@ static void tick_body(void) {
     /* 0x7ECE */
     if (ST(V_EVENT_2) == 1) {
         /* 0x7EE0 */
-        if (ST(0x84) == -11) {
+        if (ST(L42_LEVER_MOVE) == -11) {
             ST(V_EVENT_2) = 0;
             CB->select_pile(2, 2);
             CB->load_anim("242HAU03", 2);
@@ -150,7 +150,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7F4B */
-        if (ST(0x84) == 11) {
+        if (ST(L42_LEVER_MOVE) == 11) {
             ST(V_EVENT_2) = 0;
             CB->select_pile(2, 2);
             CB->load_anim("242BAS03", 2);
@@ -160,7 +160,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x7FB6 */
-        if (ST(0x84) == -12) {
+        if (ST(L42_LEVER_MOVE) == -12) {
             ST(V_EVENT_2) = 0;
             CB->select_pile(2, 2);
             CB->load_anim("242HAU02", 1);
@@ -170,7 +170,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x8021 */
-        if (ST(0x84) == 12) {
+        if (ST(L42_LEVER_MOVE) == 12) {
             ST(V_EVENT_2) = 0;
             CB->select_pile(2, 2);
             CB->load_anim("242BAS02", 1);
@@ -180,7 +180,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x808C */
-        if (ST(0x84) == -13) {
+        if (ST(L42_LEVER_MOVE) == -13) {
             ST(V_EVENT_2) = 0;
             CB->select_pile(2, 2);
             CB->load_anim("242HAU01", 0);
@@ -190,7 +190,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x80F1 */
-        if (ST(0x84) == 13) {
+        if (ST(L42_LEVER_MOVE) == 13) {
             ST(V_EVENT_2) = 0;
             CB->select_pile(2, 2);
             CB->load_anim("242BAS01", 0);
@@ -201,44 +201,44 @@ static void tick_body(void) {
         }
     }
     /* 0x8156 */
-    if (ST(0x80) == 0 && ST(ST_LOCKED_CAMERA) == 5) {
-        ST(0x80) = 1;
+    if (ST(L42_CAM5_ANIMS_ON) == 0 && ST(ST_LOCKED_CAMERA) == 5) {
+        ST(L42_CAM5_ANIMS_ON) = 1;
         CB->select_pile(1, 1);
         /* 0x8196 */
-        if (ST(0x70) == 1) {
+        if (ST(L42_LEVER4_STATE) == 1) {
             CB->play_anim(3, 0);
         }
         /* 0x81B2 */
-        if (ST(0x70) == -1) {
+        if (ST(L42_LEVER4_STATE) == -1) {
             CB->play_anim(3, 0);
         }
         /* 0x81CE */
-        if (ST(0x74) == 1) {
+        if (ST(L42_LEVER5_STATE) == 1) {
             CB->play_anim(4, 0);
         }
         /* 0x81EA */
-        if (ST(0x74) == -1) {
+        if (ST(L42_LEVER5_STATE) == -1) {
             CB->play_anim(4, 0);
         }
         /* 0x8206 */
-        if (ST(0x78) == 1) {
+        if (ST(L42_LEVER6_STATE) == 1) {
             CB->play_anim(5, 0);
         }
         /* 0x8222 */
-        if (ST(0x78) == -1) {
+        if (ST(L42_LEVER6_STATE) == -1) {
             CB->play_anim(5, 0);
         }
         CB->select_pile(0, 1);
     }
     /* 0x824E */
-    if (ST(0x80) == 1 && ST(ST_LOCKED_CAMERA) != 5) {
-        ST(0x80) = 0;
+    if (ST(L42_CAM5_ANIMS_ON) == 1 && ST(ST_LOCKED_CAMERA) != 5) {
+        ST(L42_CAM5_ANIMS_ON) = 0;
     }
     /* 0x8281 */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         /* 0x82A2 */
-        if (ST(0x84) == -14) {
+        if (ST(L42_LEVER_MOVE) == -14) {
             CB->select_pile(1, 2);
             CB->free_anim(3);
             CB->play_anim(6, 0);
@@ -246,7 +246,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x82EE */
-        if (ST(0x84) == 14) {
+        if (ST(L42_LEVER_MOVE) == 14) {
             CB->select_pile(1, 2);
             CB->free_anim(3);
             CB->play_anim(6, 0);
@@ -254,7 +254,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x833A */
-        if (ST(0x84) == -15) {
+        if (ST(L42_LEVER_MOVE) == -15) {
             CB->select_pile(1, 2);
             CB->free_anim(4);
             CB->play_anim(6, 0);
@@ -262,7 +262,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x8386 */
-        if (ST(0x84) == 15) {
+        if (ST(L42_LEVER_MOVE) == 15) {
             CB->select_pile(1, 2);
             CB->free_anim(4);
             CB->play_anim(6, 0);
@@ -270,8 +270,8 @@ static void tick_body(void) {
             return;
         }
         /* 0x83D2 */
-        if (ST(0x84) == -16) {
-            ST(0xE0) = 1;
+        if (ST(L42_LEVER_MOVE) == -16) {
+            ST(L42_ARKHAN3_HINT_SEEN) = 1;
             CB->select_pile(1, 2);
             CB->free_anim(5);
             CB->play_anim(6, 0);
@@ -279,8 +279,8 @@ static void tick_body(void) {
             return;
         }
         /* 0x842D */
-        if (ST(0x84) == 16) {
-            ST(0xE0) = 2;
+        if (ST(L42_LEVER_MOVE) == 16) {
+            ST(L42_ARKHAN3_HINT_SEEN) = 2;
             CB->select_pile(1, 2);
             CB->free_anim(5);
             CB->play_anim(6, 0);
@@ -292,8 +292,8 @@ static void tick_body(void) {
     if (ST(V_EVENT_2) == 1) {
         ST(V_EVENT_2) = 0;
         /* 0x84A9 */
-        if (ST(0x84) == -16) {
-            ST(0xE0) = 3;
+        if (ST(L42_LEVER_MOVE) == -16) {
+            ST(L42_ARKHAN3_HINT_SEEN) = 3;
             CB->select_pile(2, 2);
             CB->load_anim("242HAU06", 5);
             CB->play_anim(5, 0);
@@ -302,8 +302,8 @@ static void tick_body(void) {
             return;
         }
         /* 0x8514 */
-        if (ST(0x84) == 16) {
-            ST(0xE0) = 4;
+        if (ST(L42_LEVER_MOVE) == 16) {
+            ST(L42_ARKHAN3_HINT_SEEN) = 4;
             CB->select_pile(2, 2);
             CB->load_anim("242BAS06", 5);
             CB->play_anim(5, 0);
@@ -312,7 +312,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x857F */
-        if (ST(0x84) == -15) {
+        if (ST(L42_LEVER_MOVE) == -15) {
             CB->select_pile(2, 2);
             CB->load_anim("242HAU05", 4);
             CB->play_anim(4, 0);
@@ -321,7 +321,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x85DB */
-        if (ST(0x84) == 15) {
+        if (ST(L42_LEVER_MOVE) == 15) {
             CB->select_pile(1, 2);
             CB->load_anim("242BAS05", 4);
             CB->play_anim(4, 0);
@@ -330,7 +330,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x8637 */
-        if (ST(0x84) == -14) {
+        if (ST(L42_LEVER_MOVE) == -14) {
             CB->select_pile(2, 2);
             CB->load_anim("242HAU04", 3);
             CB->play_anim(3, 0);
@@ -339,7 +339,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x8693 */
-        if (ST(0x84) == 14) {
+        if (ST(L42_LEVER_MOVE) == 14) {
             CB->select_pile(2, 2);
             CB->load_anim("242BAS04", 3);
             CB->play_anim(3, 0);
@@ -349,8 +349,8 @@ static void tick_body(void) {
         }
     }
     /* 0x86EF */
-    if (ST(0x8B0) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
-        ST(0x8B0) = 2;
+    if (ST(L42_INTRO_STAGE) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
+        ST(L42_INTRO_STAGE) = 2;
         lieu_action_register("L42D02A", P_ARKHAN3, "SG03DIA01", NULL);
         lieu_action_register("L42D02B", P_ARKHAN3, "SG03DIA01", NULL);
         lieu_action_register("L42D02C", P_ARKHAN3, "SG03DIA01", NULL);
@@ -359,14 +359,14 @@ static void tick_body(void) {
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         /* 0x8785 */
-        if (ST(0x56C) == 0) {
+        if (ST(L42_GATE_OPEN) == 0) {
             CB->select_pile(2, 1);
             CB->anim_objet("IM88", 1, 30, 1000, 0x400);
             CB->anim_objet("IM88", 1, -30, 0x32, 0);
             CB->select_pile(0, 1);
         }
         /* 0x87E6 */
-        if (ST(0x56C) == 1) {
+        if (ST(L42_GATE_OPEN) == 1) {
             CB->select_pile(2, 1);
             CB->vire_col(30, 1);
             CB->vire_col(-7, 1);
@@ -378,8 +378,8 @@ static void tick_body(void) {
             CB->etat_objet("IM88", 1725, -5835, -1253, 0x4000, 0xC000, 0, 0, 4);
             CB->change_camera(0, CAM_LOCKED);
             CB->divers_empile(DV_SCREEN, 3, 0);
-            ST(0x80) = 1;
-            ST(0xB8) = 1;
+            ST(L42_CAM5_ANIMS_ON) = 1;
+            ST(L42_CAM_RELEASE_PENDING) = 1;
             CB->animation("Sar_50");
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
@@ -388,9 +388,9 @@ static void tick_body(void) {
         }
     }
     /* 0x890F */
-    if (ST(0xB8) == 1 && CB->distance(1, 8) > 500) {
+    if (ST(L42_CAM_RELEASE_PENDING) == 1 && CB->distance(1, 8) > 500) {
         CB->change_camera(0, CAM_AUTO);
-        ST(0xB8) = 0;
+        ST(L42_CAM_RELEASE_PENDING) = 0;
     }
 }
 
@@ -423,7 +423,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L42_DEATH_ENDING_SKIP) == 1) {
         l42_trig00();   /* 0x1000C059: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
