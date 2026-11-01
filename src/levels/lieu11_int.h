@@ -27,4 +27,26 @@ void l11_preload_anims(i32 persona, i32 target, i32 item, i32 a, i32 b);
 extern c8 g_txt[256];
 extern c8 g_txt2[256];
 
+/* Level 11 script variables (low slots 0x64.. are scratch private to this level; 0x338.. and above are game-wide story flags) */
+#define L11_UNUSED_64             0x064   /* only zeroed by the INIT trigger; never read in this level */
+#define L11_GUARD_WARN_FAR_DONE   0x068   /* 1 = guard's first warning (L11D01, distance < 500, Arkhan3 sneaking) already played; reset at INIT */
+#define L11_GUARD_ATTACK_DONE     0x06C   /* 1 = guard attacks Arkhan3 (L11D02, distance < 200) already triggered; reset at INIT */
+#define L11_GUARD_WARN2_FAR_DONE  0x070   /* 1 = guard's first warning to Arkhan2 (L11D03, distance < 400) already played; reset at INIT */
+#define L11_GUARD_WARN2_NEAR_DONE 0x074   /* 1 = guard's second warning to Arkhan2 (L11D04, distance < 250) already played; reset at INIT */
+#define L11_GUARD_TALK_BUSY       0x078   /* 1 while the hero's L11D06/L11D07 line to the guard is running (modify_var clears it); reset at INIT */
+#define L11_DEATH_EVENT_SENT      0x07C   /* 1 = hero dead and the EV_END_GAME timer was already queued; reset at INIT */
+#define L11_CRI_STATE             0x080   /* 32 = shout (cri) at the guard pending for event 0 (starts the fight), 99 = already consumed */
+#define L11_CAMERA_PAUSED         0x084   /* 1 = lever animation paused while the camera is locked to 3 (V_GUARD_FIGHT_DONE == 2); reset when the camera is released */
+#define L11_EVENT6_DONE           0x338   /* event 6 fired flag; INIT sets 1 together with L11_EVENT10_DONE when the arc is past (game-wide, same pattern in L1, L3, L6-L10) */
+#define L11_EVENT10_DONE          0x348   /* event 10 fired flag; see L11_EVENT6_DONE (game-wide) */
+#define L11_GUARD_HOSTILE         0x4E4   /* 1 = the guard is hostile / fight engaged (set by attack, hit, shout, bribe failure); 0 = still peaceful */
+#define L11_GUARD_LOOT_HINT       0x60C   /* 1 = hint line (L11D43/L11D44) after searching the dead guard already shown */
+#define L11_LORY_QUEST_STAGE      0xAF4   /* game-wide story stage; 1 = Lory and Rylsadhar20 are placed at (4288,-2702)/(4454,-2713) when the fight is not yet done (L2 tests < 3) */
+#define L11_GUARD_ARC_PHASE       0xAF8   /* guardian-arc stage; 0 = Arkhan1 before the challenge, 1 = after it; start points 2 and 3 set 1 (game-wide) */
+#define L11_RETURN_ROOM_STEP      0xB4C   /* which L10 exit room the hero (Arkhan2/3) returns to when leaving: 0 -> room 10 point 1, 1 -> 2, 2 -> 3, 3 -> level 51; written by L10 */
+#define L11_GUARDIAN4_STAGE       0xB98   /* guardian-4 encounter stage; 0 -> 2 at INIT while Arkhan1 arc is open, 2 reset to 0 if guardian 4 alive, 4 = finished (game-wide) */
+#define L11_GUARD_BRIBE_DIALOG    0xC9C   /* conversation step with the guard (special mode): 0..5 = L11D08..L11D16 lines in order, 5 = the bribe offer is open */
+#define L11_ENDING_OVERRIDE       0xE8C   /* game-wide; 1 = skip the hero-death ending in the tick and re-run INIT (set to 1 in L31 near the end) */
+#define L11_GUARD_BRIBE_STAGE     0xEA4   /* bribe of the guard: 0 = not offered, 1 = offered (L11D17-L11D19), 2 = given meat/fish (he is distracted), 3 = guard dealt with using the full gourd (he dies, gourd swapped for the flask); shown as "F37:" in the debug overlay */
+
 #endif /* DKE_LIEU11_INT_H */
