@@ -3,6 +3,7 @@
 - List of all changes during public version releases
 
 ## Unreleased
+- a875b55 feat: blood spray, smoke puffs, flame burst and the enemy flame projectile; 83acec7 flying imp (P92) AI
 - 5ee1805 feat: P pauses the game (PAUSED screen, cheat words, sound pause) and pauses/menus/inventory no longer advance game timers
 - 2ef6bfb feat: first-run gamma picker (handle_screen_gamma_picker); 291613b brightness, contrast and saturation from DKEGAME.CFG applied to the frame
 - 6ecb64e docs: engine gap plan (docs/ENGINE_GAPS.md) and per-function exe coverage from a full IDA 7 Hex-Rays dump (tools/ida7/dump.sh)
