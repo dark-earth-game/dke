@@ -29,7 +29,7 @@ static void tick_body(void) {
     /* 0x8109 */
     if (ST(ST_VIE(P_MALROT5)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) == P_MALROT5) {
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0x4D0) = 0;
+        ST(L19_MALROT_HOSTILE) = 0;
     }
     /* 0x8145 */
     if (ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) == P_DELIA) {
@@ -41,42 +41,42 @@ static void tick_body(void) {
     if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 12) && ST(V_CRI_KEY) == 1 && ST(V_CRI_USED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && ST(ST_VIE(P_DELIA)) != VIE_DEAD && CB->direction_perso(P_DELIA)) {
         ST(V_CRI_USED) = 1;
         /* 0x8226 */
-        if (ST(0x88) != 99) {
-            ST(0x88) = 10;
+        if (ST(L19_DELIA_CRY_STATE) != 99) {
+            ST(L19_DELIA_CRY_STATE) = 10;
         }
         CB->bloque(BLOQUE_ALL);
         CB->evenement(34, 1000);
         return;
     }
     /* 0x8267 */
-    if (ST(0x88) == 99) {
-        ST(0x88) = 10;
+    if (ST(L19_DELIA_CRY_STATE) == 99) {
+        ST(L19_DELIA_CRY_STATE) = 10;
     }
     /* 0x8296 */
     if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 3) && ST(V_CRI_KEY) == 1 && ST(V_CRI_USED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && CB->direction_perso(P_MALROT5)) {
         ST(V_CRI_USED) = 1;
         /* 0x831E */
-        if (ST(0x80) != 99) {
-            ST(0x80) = 65;
+        if (ST(L19_MALROT_CRY_STATE) != 99) {
+            ST(L19_MALROT_CRY_STATE) = 65;
         }
         CB->bloque(BLOQUE_ALL);
         CB->evenement(2, 1000);
         return;
     }
     /* 0x835F */
-    if (ST(0x80) == 99) {
-        ST(0x80) = 65;
+    if (ST(L19_MALROT_CRY_STATE) == 99) {
+        ST(L19_MALROT_CRY_STATE) = 65;
     }
     /* 0x8380 */
     if (ST(V_EVENT_2) == 1) {
         ST(V_EVENT_2) = 0;
         /* 0x83A1 */
-        if (ST(0x80) == 65) {
-            ST(0x80) = 99;
+        if (ST(L19_MALROT_CRY_STATE) == 65) {
+            ST(L19_MALROT_CRY_STATE) = 99;
             CB->dialogue("L19D88", P_MALROT5);
             CB->combat(P_MALROT5, 0);
             ST(V_ENGAGED_PERSONA) = P_MALROT5;
-            ST(0x4D0) = 1;
+            ST(L19_MALROT_HOSTILE) = 1;
             CB->animation("Sar_50");
             CB->modify_var(&ST(V_CRI_USED), 0);
             CB->bloque(BLOQUE_NONE);
@@ -84,7 +84,7 @@ static void tick_body(void) {
         }
     }
     /* 0x8426 */
-    if (ST(0xBBC) == 5 && ST(ST_VIE(P_KALHI13)) != VIE_DEAD && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(ST_LOCKED_CAMERA) == 1 && ST(0x68) == 0) {
+    if (ST(L19_KALHI_MALROT_SCENE) == 5 && ST(ST_VIE(P_KALHI13)) != VIE_DEAD && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(ST_LOCKED_CAMERA) == 1 && ST(L19_KALHI_SCENE_STARTED) == 0) {
         CB->bloque(BLOQUE_ALL);
         lieu_action_register("L19D01", P_KALHI13, "SP13DIA53", "SP13ARR01");
         lieu_action_register("L19D02", P_MALROT5, "SP65DIA54", "SP65ARR01");
@@ -95,13 +95,13 @@ static void tick_body(void) {
         CB->joindre(P_ARKHAN2, 3894, 2952, 0xFA22, -1);
         /* 0x84F5 */
         if (!CB->on_joindre(P_ARKHAN2)) {
-            ST(0x68) = 1;
+            ST(L19_KALHI_SCENE_STARTED) = 1;
             CB->joindre(P_KALHI13, 0, 0, 0, ST(ST_HERO));
             CB->evenement(0, 100);
         }
     }
     /* 0x853D */
-    if (ST(V_EVENT_0) == 1 && ST(0xBBC) == 5) {
+    if (ST(V_EVENT_0) == 1 && ST(L19_KALHI_MALROT_SCENE) == 5) {
         ST(V_EVENT_0) = 0;
         lieu_action_register("L19D03A", P_KALHI13, "SP13DIA54", "SP13ARR01");
         lieu_action_register("L19D03B", P_KALHI13, "SP13DIA53", "SP13ARR01");
@@ -134,13 +134,13 @@ static void tick_body(void) {
         CB->evenement(1, 200);
     }
     /* 0x86DE */
-    if (ST(V_EVENT_1) == 1 && ST(0xBBC) == 5) {
+    if (ST(V_EVENT_1) == 1 && ST(L19_KALHI_MALROT_SCENE) == 5) {
         ST(V_EVENT_1) = 0;
         CB->joindre(P_MALROT5, 4052, 3033, 0x7439, -1);
         CB->divers(DV_RUN, P_KALHI13, 1);
         CB->joindre(P_ARKHAN2, 3773, 2998, 0xB640, -1);
         CB->joindre(P_KALHI13, 3887, 2404, 0x75D5, -1);
-        CB->modify_var(&ST(0x6C), 1);
+        CB->modify_var(&ST(L19_KALHI_LEAVING), 1);
         /* 0x878B */
         if (ST(ST_HERO) == P_ARKHAN2) {
             lieu_action_register("L19D07", P_ARKHAN2, "SG02DIA02", NULL);
@@ -150,7 +150,7 @@ static void tick_body(void) {
             lieu_action_register("L19D08", P_ARKHAN3, "SG02DIA02", NULL);
         }
         /* 0x87DB */
-        if (ST(0x4D0) == 1) {
+        if (ST(L19_MALROT_HOSTILE) == 1) {
             /* 0x87ED */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->dialogue("L19D94", P_MALROT5);
@@ -165,17 +165,17 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8853 */
-    if (!CB->on_joindre(P_KALHI13) && ST(0x6C) == 1) {
-        ST(0xBBC) = 6;
-        ST(0x6C) = 0;
+    if (!CB->on_joindre(P_KALHI13) && ST(L19_KALHI_LEAVING) == 1) {
+        ST(L19_KALHI_MALROT_SCENE) = 6;
+        ST(L19_KALHI_LEAVING) = 0;
         CB->pos_perso(P_KALHI13, 0, 0, 0, 4, "", -1, 0);
     }
     /* 0x88AB */
     if (ST(V_EVENT_34) == 1) {
         ST(V_EVENT_34) = 0;
         /* 0x88CC */
-        if (ST(0x88) == 10) {
-            ST(0x88) = 99;
+        if (ST(L19_DELIA_CRY_STATE) == 10) {
+            ST(L19_DELIA_CRY_STATE) = 99;
             lieu_action_register("L16D122", P_DELIA, "SP10DIA50", "SP10ARR01_10");
             CB->animation("Sar_50");
             CB->modify_var(&ST(V_CRI_USED), 0);
@@ -184,9 +184,9 @@ static void tick_body(void) {
         }
     }
     /* 0x892F */
-    if (ST(ST_COMBAT_STANCE) == 1 && ST(0x64) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN2 && CB->distance(1, 3) < 200) {
+    if (ST(ST_COMBAT_STANCE) == 1 && ST(L19_MALROT_WATCHING_A2) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN2 && CB->distance(1, 3) < 200) {
         CB->bloque(BLOQUE_ALL);
-        ST(0x64) = 1;
+        ST(L19_MALROT_WATCHING_A2) = 1;
         CB->divers(DV_LOOK_AT_PLAYER, P_MALROT5, 1);
         CB->joindre(-P_MALROT5, 0, 0, 0, ST(ST_HERO));
         CB->animation("SP65GAR26");
@@ -196,9 +196,9 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8A25 */
-    if (ST(ST_COMBAT_STANCE) == 0 && ST(0x64) == 1 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_HERO) == P_ARKHAN2 && CB->distance(1, 3) < 5000) {
+    if (ST(ST_COMBAT_STANCE) == 0 && ST(L19_MALROT_WATCHING_A2) == 1 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_HERO) == P_ARKHAN2 && CB->distance(1, 3) < 5000) {
         CB->bloque(BLOQUE_ALL);
-        ST(0x64) = 0;
+        ST(L19_MALROT_WATCHING_A2) = 0;
         CB->divers(DV_LOOK_AT_PLAYER, P_MALROT5, 0);
         CB->stop_joindre(-P_MALROT5);
         CB->animation("SP65GAR27");
@@ -210,10 +210,10 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8B0E */
-    if (ST(ST_COMBAT_STANCE) == 1 && ST(V_EVENT15_STEP) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN3 && ST(0x578) != 1 && ST(0xBBC) != 5 && CB->distance(1, 3) < 200) {
+    if (ST(ST_COMBAT_STANCE) == 1 && ST(V_EVENT15_STEP) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN3 && ST(L19_MALROT_A3_STEP) != 1 && ST(L19_KALHI_MALROT_SCENE) != 5 && CB->distance(1, 3) < 200) {
         CB->bloque(BLOQUE_ALL);
         ST(V_EVENT15_STEP) = 1;
-        ST(0x578) = 1;
+        ST(L19_MALROT_A3_STEP) = 1;
         CB->divers(DV_LOOK_AT_PLAYER, P_MALROT5, 1);
         CB->joindre(-P_MALROT5, 0, 0, 0, ST(ST_HERO));
         CB->animation("SP65GAR26");
@@ -223,14 +223,14 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8C3D */
-    if (ST(ST_COMBAT_STANCE) == 1 && ST(0x578) == 1 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(0x90) == 0 && CB->distance(1, 3) < 200) {
-        ST(0x90) = 1;
+    if (ST(ST_COMBAT_STANCE) == 1 && ST(L19_MALROT_A3_STEP) == 1 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(L19_MALROT_FIGHT_STARTED_A3) == 0 && CB->distance(1, 3) < 200) {
+        ST(L19_MALROT_FIGHT_STARTED_A3) = 1;
         /* 0x8CAF */
         if (ST(V_EVENT15_STEP) == 0) {
             ST(V_EVENT15_STEP) = 1;
             CB->dialogue("L19D94", P_MALROT5);
         }
-        ST(0x4D0) = 1;
+        ST(L19_MALROT_HOSTILE) = 1;
         ST(V_ENGAGED_PERSONA) = P_MALROT5;
         CB->combat(P_MALROT5, 0);
         CB->bloque(BLOQUE_NONE);
@@ -251,7 +251,7 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8E0C */
-    if (CB->divers(DV_WAS_HIT, P_MALROT5, 0) && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(0xBBC) != 5) {
+    if (CB->divers(DV_WAS_HIT, P_MALROT5, 0) && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(L19_KALHI_MALROT_SCENE) != 5) {
         ST(ST_VIE(P_MALROT5)) = VIE_DEAD;
         CB->select_pile(1, 2);
         CB->combat(P_MALROT5, -1);
@@ -268,23 +268,23 @@ static void tick_body(void) {
     if (ST(V_DELIA_PHASE) == 3 && ST(ST_VIE(P_DELIA)) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) != P_DELIA) {
         CB->select_pile(2, 1);
         /* 0x8F44 */
-        if (CB->distance(12, 1) < 100 && ST(0x7C) == 0) {
-            ST(0x7C) = 1;
+        if (CB->distance(12, 1) < 100 && ST(L19_DELIA_CLOSE) == 0) {
+            ST(L19_DELIA_CLOSE) = 1;
             CB->joindre_perm(-P_DELIA, ST(ST_HERO));
             CB->stop_joindre(P_DELIA);
             CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0xC, 0);
         }
         /* 0x8FDF */
-        if (ST(0x78) == 1 && (ST(0x38) % 20) == 0) {
+        if (ST(L19_DELIA_FOLLOWING) == 1 && (ST(L19_TICK_COUNTER) % 20) == 0) {
             /* 0x9012 */
             if (CB->distance(12, 1) >= 180) {
                 CB->divers(DV_RUN, P_DELIA, 0);
-                ST(0x7C) = 0;
+                ST(L19_DELIA_CLOSE) = 0;
                 CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
             }
             /* 0x906B */
             if (CB->distance(12, 1) >= 300) {
-                ST(0x7C) = 0;
+                ST(L19_DELIA_CLOSE) = 0;
                 CB->divers(DV_RUN, P_DELIA, 1);
                 CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
             }
@@ -305,10 +305,10 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x91B4 */
-    if (CB->distance(1, 3) < 200 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(0x578) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(0xBBC) != 5 && ST(ST_HERO) == P_ARKHAN3) {
+    if (CB->distance(1, 3) < 200 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(L19_MALROT_A3_STEP) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(L19_KALHI_MALROT_SCENE) != 5 && ST(ST_HERO) == P_ARKHAN3) {
         CB->select_pile(1, 2);
         CB->bloque(BLOQUE_ALL);
-        ST(0x578) = 1;
+        ST(L19_MALROT_A3_STEP) = 1;
         CB->divers(DV_LOOK_AT_PLAYER, P_MALROT5, 1);
         CB->joindre(-P_MALROT5, 0, 0, 0, ST(ST_HERO));
         CB->animation("SP65GAR26");
@@ -319,12 +319,12 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x92D6 */
-    if (ST(ST_VIE(P_KALHI13)) == VIE_DEAD && ST(0xBBC) == 5) {
-        ST(0xBBC) = 10;
+    if (ST(ST_VIE(P_KALHI13)) == VIE_DEAD && ST(L19_KALHI_MALROT_SCENE) == 5) {
+        ST(L19_KALHI_MALROT_SCENE) = 10;
     }
     /* 0x9309 */
-    if (ST(ST_HERO) == 4 && ST(0x84) == 0) {
-        ST(0x84) = 1;
+    if (ST(ST_HERO) == 4 && ST(L19_DEATH_EVENT_SENT) == 0) {
+        ST(L19_DEATH_EVENT_SENT) = 1;
         CB->evenement(44, 3000);
     }
     /* 0x934C */
@@ -388,7 +388,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L19_DEATH_ENDING_DONE) == 1) {
         l19_trig00();   /* 0x1000DE19: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
