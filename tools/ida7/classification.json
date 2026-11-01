@@ -1,0 +1,7062 @@
+[
+ {
+  "addr": "004033DF",
+  "name": "destroy_bitmap",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thin wrapper over ls_free_bmap/ls_free_palette; original memory/bitmap manager replaced.",
+  "callers": "clear_primary_inventory,game_release_resources_46C599,sub_4130DB,sub_427C2B,sub_42FA6D,sub_43057C,sub_43E038,sub_44F605,",
+  "impact": null
+ },
+ {
+  "addr": "00403424",
+  "name": "release_resource_safe",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thin wrapper over ls_free_bmap/ls_free_palette; original memory/bitmap manager replaced.",
+  "callers": "game_release_resources_46C599,sub_427C2B,sub_43E038",
+  "impact": null
+ },
+ {
+  "addr": "004035D2",
+  "name": "graphics_triangle_rasteriser",
+  "c_lines": 127,
+  "status": "SKIP",
+  "port": null,
+  "what": "Legacy flat/textured triangle rasteriser, only reached from uncalled 3DF converter; port has own rasteriser in model.c.",
+  "callers": "sub_4A9E80",
+  "impact": null
+ },
+ {
+  "addr": "00403930",
+  "name": "graphics_trinagle_rasteriser_drawlines",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug rectangle outline helper; no callers.",
+  "callers": "none",
+  "impact": null
+ },
+ {
+  "addr": "004039C3",
+  "name": "rectangle_editor",
+  "c_lines": 97,
+  "status": "SKIP",
+  "port": null,
+  "what": "In-game rectangle editor dev tool.",
+  "callers": "sub_44968B",
+  "impact": null
+ },
+ {
+  "addr": "00403E3B",
+  "name": "capture_screen_region",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Empty stub.",
+  "callers": "sub_44968B",
+  "impact": null
+ },
+ {
+  "addr": "00403F50",
+  "name": "calculate_scale_factor",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "Control-point scale pass whose result is discarded; no side effects.",
+  "callers": "process_node_hierarchy",
+  "impact": null
+ },
+ {
+  "addr": "00403FD8",
+  "name": "process_node_hierarchy",
+  "c_lines": 30,
+  "status": "SKIP",
+  "port": null,
+  "what": "Control-point scale pass whose result is discarded; no side effects.",
+  "callers": "process_scene_hierarchy",
+  "impact": null
+ },
+ {
+  "addr": "00404B03",
+  "name": "clean_node_hierarchy_control_points",
+  "c_lines": 33,
+  "status": "SKIP",
+  "port": "obc.c:obc free (clefs)",
+  "what": "Frees per-node control-point arrays on entity destroy; port frees clefs with the node.",
+  "callers": "clean_root_scene_hierarchy,cleanup_scene_hierarchy",
+  "impact": null
+ },
+ {
+  "addr": "00404BD4",
+  "name": "process_scene_hierarchy",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Control-point scale pass whose result is discarded; no side effects.",
+  "callers": "sub_459E80",
+  "impact": null
+ },
+ {
+  "addr": "00404C7E",
+  "name": "cleanup_scene_hierarchy",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": "obc.c:obc free (clefs)",
+  "what": "Frees per-node control-point arrays on entity destroy; port frees clefs with the node.",
+  "callers": "sub_4658D4",
+  "impact": null
+ },
+ {
+  "addr": "00404D3D",
+  "name": "clean_root_scene_hierarchy",
+  "c_lines": 19,
+  "status": "SKIP",
+  "port": "obc.c:obc free (clefs)",
+  "what": "Frees per-node control-point arrays on entity destroy; port frees clefs with the node.",
+  "callers": "sub_476BEE",
+  "impact": null
+ },
+ {
+  "addr": "00404F10",
+  "name": "cleanup_root_node_control_points",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": "obc.c:obc free (clefs)",
+  "what": "Frees per-node control-point arrays on entity destroy; port frees clefs with the node.",
+  "callers": "sub_4658D4",
+  "impact": null
+ },
+ {
+  "addr": "00404FC9",
+  "name": "cleanup_renderer_instance",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Stops and frees a sound renderer instance; platform audio replaces it.",
+  "callers": "process_menu",
+  "impact": null
+ },
+ {
+  "addr": "00405663",
+  "name": "graphics_display_error_message_2",
+  "c_lines": 49,
+  "status": "SKIP",
+  "port": null,
+  "what": "MessageBox error dialog; no callers.",
+  "callers": "none",
+  "impact": null
+ },
+ {
+  "addr": "004057E3",
+  "name": "update_status_display_with_throttling",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Throttled debug status display.",
+  "callers": "process_input_command,process_input_event",
+  "impact": null
+ },
+ {
+  "addr": "004059D0",
+  "name": "ensure_object_initialization",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Lock/unlock/init wrappers for bitmaps (ls_lock_bmap); not needed.",
+  "callers": "create_entity_texture,render_entity_bounds,sub_411FE8,sub_42D03F",
+  "impact": null
+ },
+ {
+  "addr": "004059F8",
+  "name": "ensure_object_deinitialization",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Lock/unlock/init wrappers for bitmaps (ls_lock_bmap); not needed.",
+  "callers": "create_entity_texture,render_entity_bounds,sub_411FE8,sub_42D03F",
+  "impact": null
+ },
+ {
+  "addr": "00405A20",
+  "name": "render_graphics_element_if_visible",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Lock/unlock/init wrappers for bitmaps (ls_lock_bmap); not needed.",
+  "callers": "render_entity_bounds,render_entity_with_ui,render_selection_indicator,sub_411FE8,sub_41333A,sub_413857,sub_427C2B,sub_42",
+  "impact": null
+ },
+ {
+  "addr": "00405A46",
+  "name": "cleanup_graphics_element_if_hidden",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Lock/unlock/init wrappers for bitmaps (ls_lock_bmap); not needed.",
+  "callers": "render_entity_bounds,render_entity_with_ui,render_selection_indicator,sub_411FE8,sub_41333A,sub_413857,sub_427C2B,sub_42",
+  "impact": null
+ },
+ {
+  "addr": "00405D37",
+  "name": "read_file_data",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "ls_open+read+close wrapper.",
+  "callers": "sub_4161D0,sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00405E0A",
+  "name": "display_text_message",
+  "c_lines": 47,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug text prompt waiting for ESC/Enter, used by dev tools.",
+  "callers": "process_menu,sub_414777,sub_45BB9C,sub_4640BC",
+  "impact": null
+ },
+ {
+  "addr": "004062A9",
+  "name": "sub_4062A9",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thunks to ls_get/set_mouse; platform layer handles mouse.",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "004062CE",
+  "name": "sub_4062CE",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thunks to ls_get/set_mouse; platform layer handles mouse.",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "004062ED",
+  "name": "sub_4062ED",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thunks to ls_get/set_mouse; platform layer handles mouse.",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "004067EA",
+  "name": "update_game_timing_state",
+  "c_lines": 108,
+  "status": "MISSING",
+  "port": null,
+  "what": "Timer-stack pop after pause/menu: shifts entity, effect, object, world and level timers by the paused duration.",
+  "callers": "ls_main,process_menu",
+  "impact": "After pausing or closing a menu, timers jump by the elapsed real time; cooldowns, level timer and animations skip ahead."
+ },
+ {
+  "addr": "00406B51",
+  "name": "synchronize_entity_combat_modes",
+  "c_lines": 44,
+  "status": "MISSING",
+  "port": null,
+  "what": "Adaptive mesh LOD: lowers or raises entity+0x94 detail level (1..3) from measured frame rate.",
+  "callers": "sub_461468",
+  "impact": "No frame-rate-driven LOD change; entity LOD stays at 2. Minor visual only."
+ },
+ {
+  "addr": "00406C30",
+  "name": "synchronize_entity_combat_modes_up",
+  "c_lines": 43,
+  "status": "MISSING",
+  "port": null,
+  "what": "Adaptive mesh LOD: lowers or raises entity+0x94 detail level (1..3) from measured frame rate.",
+  "callers": "sub_461468",
+  "impact": "No frame-rate-driven LOD change; entity LOD stays at 2. Minor visual only."
+ },
+ {
+  "addr": "00406D09",
+  "name": "decode_string",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "XOR string decode for the on-screen watermark.",
+  "callers": "sub_406D74",
+  "impact": null
+ },
+ {
+  "addr": "00406D74",
+  "name": "sub_406D74",
+  "c_lines": 125,
+  "status": "SKIP",
+  "port": null,
+  "what": "Per-frame debug overlay, FPS counter, memory stats and watermark text.",
+  "callers": "sub_461468",
+  "impact": null
+ },
+ {
+  "addr": "00409F2A",
+  "name": "update_game_ui",
+  "c_lines": 51,
+  "status": "SKIP",
+  "port": null,
+  "what": "Rebuilds 16-bit UI background and HUD after a menu; port redraws every frame.",
+  "callers": "sub_461468",
+  "impact": null
+ },
+ {
+  "addr": "0040A0C0",
+  "name": "create_palette_entry",
+  "c_lines": 37,
+  "status": "SKIP",
+  "port": null,
+  "what": "8-bit palette closest-colour search for palette-index mode; port renders XRGB.",
+  "callers": "configure_game_palette",
+  "impact": null
+ },
+ {
+  "addr": "0040A140",
+  "name": "find_closest_palette_colors",
+  "c_lines": 62,
+  "status": "SKIP",
+  "port": null,
+  "what": "8-bit palette closest-colour search for palette-index mode; port renders XRGB.",
+  "callers": "process_mainmenu_437EB7",
+  "impact": null
+ },
+ {
+  "addr": "0040A280",
+  "name": "check_keyboard_letter",
+  "c_lines": 13,
+  "status": "MISSING",
+  "port": null,
+  "what": "P-key pause screen: random DATAS>GLOBAL image, key-sequence cheat codes (FORTYTWO easy mode, BIGHEAD/BIGFOOT/DWARF model overrides), PrintScreen PCX save.",
+  "callers": "display_pause_screen",
+  "impact": "No pause screen; P does nothing. Cheat/easy mode and model overrides unavailable."
+ },
+ {
+  "addr": "0040A2B0",
+  "name": "display_pause_screen",
+  "c_lines": 289,
+  "status": "MISSING",
+  "port": null,
+  "what": "P-key pause screen: random DATAS>GLOBAL image, key-sequence cheat codes (FORTYTWO easy mode, BIGHEAD/BIGFOOT/DWARF model overrides), PrintScreen PCX save.",
+  "callers": "process_menu",
+  "impact": "No pause screen; P does nothing. Cheat/easy mode and model overrides unavailable."
+ },
+ {
+  "addr": "0040ACC0",
+  "name": "render_game_background",
+  "c_lines": 36,
+  "status": "MISSING",
+  "port": null,
+  "what": "Gamma picker: brightness, contrast and saturation sliders with mouse, writes DKEGAME.CFG values.",
+  "callers": "handle_screen_gamma_picker",
+  "impact": "First-run gamma picker absent; brightness/contrast/saturation are stored but never editable or applied."
+ },
+ {
+  "addr": "0040ADE0",
+  "name": "handle_screen_gamma_picker",
+  "c_lines": 196,
+  "status": "MISSING",
+  "port": null,
+  "what": "Gamma picker: brightness, contrast and saturation sliders with mouse, writes DKEGAME.CFG values.",
+  "callers": "menu_process_gamma,process_menu",
+  "impact": "First-run gamma picker absent; brightness/contrast/saturation are stored but never editable or applied."
+ },
+ {
+  "addr": "0040B550",
+  "name": "apply_ui_theme",
+  "c_lines": 282,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/colour_tables.c",
+  "what": "Builds 16-bit colour LUTs from palette with envred/envgreen/envblue theme tint; port uses direct XRGB so tint is not applied.",
+  "callers": "apply_screen_gamma,process_mainmenu_437EB7,render_game_background,sub_42701B,sub_4355E0,sub_43E038,sub_46E883,update_gam",
+  "impact": "Per-level environment colour tint not applied; values small, subtle colour difference."
+ },
+ {
+  "addr": "0040BCA0",
+  "name": "blit_texture_with_colormap",
+  "c_lines": 126,
+  "status": "SKIP",
+  "port": null,
+  "what": "Circle-plot blit for 8-bit iris transition (render_loading_transition); port uses lieu_cb.c op 10 dissolve instead.",
+  "callers": "render_loading_transition",
+  "impact": null
+ },
+ {
+  "addr": "0040C010",
+  "name": "apply_palette_transformation_2",
+  "c_lines": 69,
+  "status": "PARTIAL",
+  "port": null,
+  "what": "8-bit palette remap with theme tint offsets; tint not applied in port.",
+  "callers": "process_mainmenu_437EB7,sub_42701B,sub_43E038,sub_46E883",
+  "impact": "Same env tint gap; subtle."
+ },
+ {
+  "addr": "0040C160",
+  "name": "generate_color_lookup_table",
+  "c_lines": 72,
+  "status": "SKIP",
+  "port": null,
+  "what": "8-bit lookup/shade table builder with no callers; dead.",
+  "callers": "none",
+  "impact": null
+ },
+ {
+  "addr": "0040C350",
+  "name": "process_entity_animation_states",
+  "c_lines": 51,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug-only node-flag setter (dword_4B70D8 overlay).",
+  "callers": "sub_451BF9",
+  "impact": null
+ },
+ {
+  "addr": "0040C430",
+  "name": "free_health_hud",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees HUD/health buffer; memory manager replaced.",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "0040C440",
+  "name": "process_health_hud",
+  "c_lines": 155,
+  "status": "SKIP",
+  "port": null,
+  "what": "8-bit lookup/shade table builder with no callers; dead.",
+  "callers": "none",
+  "impact": null
+ },
+ {
+  "addr": "0040C920",
+  "name": "update_palette",
+  "c_lines": 49,
+  "status": "MISSING",
+  "port": null,
+  "what": "Apply brightness, contrast and saturation to palette entries via RGB<->HSI-like conversion.",
+  "callers": "update_palette_with_default_colors",
+  "impact": "Gamma/colour settings from DKEGAME.CFG have no effect on rendering."
+ },
+ {
+  "addr": "0040CA80",
+  "name": "convert_rgb_to_color_space",
+  "c_lines": 44,
+  "status": "MISSING",
+  "port": null,
+  "what": "Apply brightness, contrast and saturation to palette entries via RGB<->HSI-like conversion.",
+  "callers": "apply_screen_gamma,find_closest_palette_colors,sub_427C2B,update_palette",
+  "impact": "Gamma/colour settings from DKEGAME.CFG have no effect on rendering."
+ },
+ {
+  "addr": "0040CBF0",
+  "name": "process_color_values",
+  "c_lines": 72,
+  "status": "MISSING",
+  "port": null,
+  "what": "Apply brightness, contrast and saturation to palette entries via RGB<->HSI-like conversion.",
+  "callers": "apply_screen_gamma,find_closest_palette_colors,sub_427C2B,update_palette",
+  "impact": "Gamma/colour settings from DKEGAME.CFG have no effect on rendering."
+ },
+ {
+  "addr": "0040CE5A",
+  "name": "clear_weapons_inventory",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Release/clear inventory lists on level or game release; port manages inventory in inventory.c.",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "0040D440",
+  "name": "reset_player_inventory",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Release/clear inventory lists on level or game release; port manages inventory in inventory.c.",
+  "callers": "game_release_resources_46C599,scene_release_level_resources_46E4A8",
+  "impact": null
+ },
+ {
+  "addr": "0040FE80",
+  "name": "process_vertex_data",
+  "c_lines": 103,
+  "status": "PORTED",
+  "port": "effect.c:effect_load_faux",
+  "what": "FAUX.INF path parser for level 44 blades.",
+  "callers": "handle_data_l44_faux",
+  "impact": null
+ },
+ {
+  "addr": "00410D3F",
+  "name": "is_entity_close_proximity",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "No callers; dead helper.",
+  "callers": "none",
+  "impact": null
+ },
+ {
+  "addr": "00410E1C",
+  "name": "set_vector_angle",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "No callers; dead helper.",
+  "callers": "none",
+  "impact": null
+ },
+ {
+  "addr": "00410E8A",
+  "name": "run_entity_callback",
+  "c_lines": 16,
+  "status": "MISSING",
+  "port": null,
+  "what": "Bone-chain leaf world position for flame projectile launch (process_counter_attack).",
+  "callers": "process_counter_attack",
+  "impact": "Part of unported enemy flame projectile."
+ },
+ {
+  "addr": "00410F49",
+  "name": "free_health_buffer",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees HUD/health buffer; memory manager replaced.",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "004119B7",
+  "name": "handle_input_and_execute_action",
+  "c_lines": 13,
+  "status": "MISSING",
+  "port": null,
+  "what": "Per-tick wrapper calling process_entity_direction_and_state (flame projectile flight) plus debug J-key counter-attack.",
+  "callers": "sub_461468",
+  "impact": "Enemy flame projectile never flies or hits (see combat_damage.c TODO)."
+ },
+ {
+  "addr": "00411C27",
+  "name": "initialize_entity_positions",
+  "c_lines": 28,
+  "status": "MISSING",
+  "port": null,
+  "what": "Flame impact: 12 spark entities, 154-particle burst and its per-frame render (update_game_hud effect type 10).",
+  "callers": "process_entity_direction_and_state",
+  "impact": "Flame weapon impact has no sparks or particle burst; no damage to player (-100 HP)."
+ },
+ {
+  "addr": "00411D09",
+  "name": "process_entity_random_transformations",
+  "c_lines": 86,
+  "status": "MISSING",
+  "port": null,
+  "what": "Flame impact: 12 spark entities, 154-particle burst and its per-frame render (update_game_hud effect type 10).",
+  "callers": "process_entity_direction_and_state",
+  "impact": "Flame weapon impact has no sparks or particle burst; no damage to player (-100 HP)."
+ },
+ {
+  "addr": "00411FE8",
+  "name": "sub_411FE8",
+  "c_lines": 248,
+  "status": "MISSING",
+  "port": null,
+  "what": "Flame impact: 12 spark entities, 154-particle burst and its per-frame render (update_game_hud effect type 10).",
+  "callers": "update_game_hud",
+  "impact": "Flame weapon impact has no sparks or particle burst; no damage to player (-100 HP)."
+ },
+ {
+  "addr": "00412B73",
+  "name": "sub_412B73",
+  "c_lines": 9,
+  "status": "PORTED",
+  "port": "object.c:place",
+  "what": "Places object tree at script position (sub_475F7A + sub_412ACF).",
+  "callers": "process_menu,scene_load_savegame_level_43B9ED,sub_44A58B",
+  "impact": null
+ },
+ {
+  "addr": "00412FB0",
+  "name": "sub_412FB0",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "8-bit half-size capture preview copy and its free.",
+  "callers": "sub_41333A",
+  "impact": null
+ },
+ {
+  "addr": "004130DB",
+  "name": "sub_4130DB",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "8-bit half-size capture preview copy and its free.",
+  "callers": "game_release_resources_46C599,sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "004132F3",
+  "name": "sub_4132F3",
+  "c_lines": 17,
+  "status": "PORTED",
+  "port": "anim2d.c:anim2d_release",
+  "what": "Clears 2D backdrop animation state.",
+  "callers": "scene_load_savegame_level_43B9ED,scene_release_level_resources_46E4A8,sub_43F57C,sub_4432D7,sub_4608A0,sub_46E883",
+  "impact": null
+ },
+ {
+  "addr": "00414211",
+  "name": "sub_414211",
+  "c_lines": 109,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dev tool that walks J:\\DKE\\ANM folders to convert animations.",
+  "callers": "sub_414777",
+  "impact": null
+ },
+ {
+  "addr": "00414777",
+  "name": "sub_414777",
+  "c_lines": 69,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dev tool that walks J:\\DKE\\ANM folders to convert animations.",
+  "callers": "process_menu",
+  "impact": null
+ },
+ {
+  "addr": "0041553F",
+  "name": "sub_41553F",
+  "c_lines": 46,
+  "status": "PARTIAL",
+  "port": "actor.c:actor_blend_pose",
+  "what": "Matrix-based pose blend (flag 0x800) between clips; port uses per-angle lerp only.",
+  "callers": "sub_415021",
+  "impact": "Some clip transitions blend with slightly wrong in-between poses; cosmetic."
+ },
+ {
+  "addr": "0041560C",
+  "name": "sub_41560C",
+  "c_lines": 78,
+  "status": "PARTIAL",
+  "port": "actor.c:actor_blend_pose",
+  "what": "Matrix-based pose blend (flag 0x800) between clips; port uses per-angle lerp only.",
+  "callers": "sub_41553F",
+  "impact": "Some clip transitions blend with slightly wrong in-between poses; cosmetic."
+ },
+ {
+  "addr": "0041599C",
+  "name": "sub_41599C",
+  "c_lines": 75,
+  "status": "PARTIAL",
+  "port": "actor.c:actor_blend_pose",
+  "what": "Matrix-based pose blend (flag 0x800) between clips; port uses per-angle lerp only.",
+  "callers": "sub_41560C",
+  "impact": "Some clip transitions blend with slightly wrong in-between poses; cosmetic."
+ },
+ {
+  "addr": "00415C99",
+  "name": "sub_415C99",
+  "c_lines": 5,
+  "status": "PARTIAL",
+  "port": "actor.c:actor_blend_pose",
+  "what": "Matrix-based pose blend (flag 0x800) between clips; port uses per-angle lerp only.",
+  "callers": "sub_41599C",
+  "impact": "Some clip transitions blend with slightly wrong in-between poses; cosmetic."
+ },
+ {
+  "addr": "00415D80",
+  "name": "sub_415D80",
+  "c_lines": 27,
+  "status": "PORTED",
+  "port": "scene.c:scene_render (subtitle)",
+  "what": "Restores screen strips around the subtitle box; port redraws the full frame.",
+  "callers": "sub_415E40",
+  "impact": null
+ },
+ {
+  "addr": "00415E40",
+  "name": "sub_415E40",
+  "c_lines": 47,
+  "status": "PORTED",
+  "port": "scene.c:scene_render (subtitle)",
+  "what": "Restores screen strips around the subtitle box; port redraws the full frame.",
+  "callers": "update_overlay_effects",
+  "impact": null
+ },
+ {
+  "addr": "004161C0",
+  "name": "sub_4161C0",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Clears or frees subtitle buffers.",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "004162F0",
+  "name": "sub_4162F0",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Clears or frees subtitle buffers.",
+  "callers": "sub_449BAD,sub_46A4D5,sub_46BAEB",
+  "impact": null
+ },
+ {
+  "addr": "00416320",
+  "name": "sub_416320",
+  "c_lines": 139,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_render (subtitle block)",
+  "what": "Bitmap-glyph subtitle drawing in box 72..635 x 460; port word-wraps with engine font in its own bar.",
+  "callers": "sub_416950",
+  "impact": "Subtitle look and position differ from original; text still shown."
+ },
+ {
+  "addr": "004168F0",
+  "name": "sub_4168F0",
+  "c_lines": 28,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_render (subtitle block)",
+  "what": "Bitmap-glyph subtitle drawing in box 72..635 x 460; port word-wraps with engine font in its own bar.",
+  "callers": "sub_415CC0,sub_416C10,sub_46BAEB,update_display_state",
+  "impact": "Subtitle look and position differ from original; text still shown."
+ },
+ {
+  "addr": "00416950",
+  "name": "sub_416950",
+  "c_lines": 94,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_render (subtitle block)",
+  "what": "Bitmap-glyph subtitle drawing in box 72..635 x 460; port word-wraps with engine font in its own bar.",
+  "callers": "sub_4168F0,sub_427C2B",
+  "impact": "Subtitle look and position differ from original; text still shown."
+ },
+ {
+  "addr": "00417E40",
+  "name": "sub_417E40",
+  "c_lines": 23,
+  "status": "PARTIAL",
+  "port": "menu/persos.c:prs_fill_tri",
+  "what": "Polygon clip and flat fill for entity shadows; ported only for the PERSOS screen.",
+  "callers": "check_entity_selection,render_entity_bounds",
+  "impact": "In-game actor shadows are not drawn."
+ },
+ {
+  "addr": "00418300",
+  "name": "sub_418300",
+  "c_lines": 44,
+  "status": "PARTIAL",
+  "port": "menu/persos.c:prs_fill_tri",
+  "what": "Polygon clip and flat fill for entity shadows; ported only for the PERSOS screen.",
+  "callers": "sub_417E80",
+  "impact": "In-game actor shadows are not drawn."
+ },
+ {
+  "addr": "00418470",
+  "name": "sub_418470",
+  "c_lines": 27,
+  "status": "PARTIAL",
+  "port": "menu/persos.c:prs_fill_tri",
+  "what": "Polygon clip and flat fill for entity shadows; ported only for the PERSOS screen.",
+  "callers": "sub_417E80",
+  "impact": "In-game actor shadows are not drawn."
+ },
+ {
+  "addr": "00418BA3",
+  "name": "sub_418BA3",
+  "c_lines": 32,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug pool-usage counters overlay.",
+  "callers": "sub_406D74",
+  "impact": null
+ },
+ {
+  "addr": "0041F52F",
+  "name": "sub_41F52F",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Free-slot search and free of CAN position/message pools; port uses malloc.",
+  "callers": "get_animation_id,sub_41DE86",
+  "impact": null
+ },
+ {
+  "addr": "0041F605",
+  "name": "sub_41F605",
+  "c_lines": 22,
+  "status": "SKIP",
+  "port": null,
+  "what": "Free-slot search and free of CAN position/message pools; port uses malloc.",
+  "callers": "get_animation_id,sub_41DE86",
+  "impact": null
+ },
+ {
+  "addr": "0041FA4A",
+  "name": "sub_41FA4A",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Free-slot search and free of CAN position/message pools; port uses malloc.",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "0041FAA2",
+  "name": "sub_41FAA2",
+  "c_lines": 13,
+  "status": "MISSING",
+  "port": null,
+  "what": "Entity animation clock resync (set_display_mode / pause resume): shifts entity timers by elapsed time.",
+  "callers": "set_display_mode",
+  "impact": "Entity clocks not shifted after pause or display-mode change."
+ },
+ {
+  "addr": "0041FAD1",
+  "name": "update_entity_animation",
+  "c_lines": 16,
+  "status": "MISSING",
+  "port": null,
+  "what": "Entity animation clock resync (set_display_mode / pause resume): shifts entity timers by elapsed time.",
+  "callers": "restore_display_mode,update_game_timing_state",
+  "impact": "Entity clocks not shifted after pause or display-mode change."
+ },
+ {
+  "addr": "0041FB48",
+  "name": "sub_41FB48",
+  "c_lines": 50,
+  "status": "MISSING",
+  "port": null,
+  "what": "Walks bone parent chain for world position of the two foot bones; used by unported sub_41AD23.",
+  "callers": "sub_41AD23",
+  "impact": "Walk/run restart foot ordering missing; minor animation foot-sync."
+ },
+ {
+  "addr": "0041FF00",
+  "name": "sub_41FF00",
+  "c_lines": 110,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_load_inf_pitch",
+  "what": "Builds look-at rotation matrices for camera setup (sub_4204BF); port reads Q14 matrices from INF.",
+  "callers": "sub_4204BF,sub_42BE0E",
+  "impact": "Only affects levels whose camera is built from the camera object; likely none."
+ },
+ {
+  "addr": "0042035A",
+  "name": "sub_42035A",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "Camera matrix/FOV build from position+direction; original caches result in INF, port reads cached params",
+  "callers": "sub_41FF00, sub_46D305",
+  "impact": null
+ },
+ {
+  "addr": "00420418",
+  "name": "sub_420418",
+  "c_lines": 19,
+  "status": "SKIP",
+  "port": null,
+  "what": "Camera matrix/FOV build from position+direction; original caches result in INF, port reads cached params",
+  "callers": "sub_41FF00, sub_46D305",
+  "impact": null
+ },
+ {
+  "addr": "004204BF",
+  "name": "sub_4204BF",
+  "c_lines": 81,
+  "status": "SKIP",
+  "port": null,
+  "what": "Camera matrix/FOV build from position+direction; original caches result in INF, port reads cached params",
+  "callers": "sub_41FF00, sub_46D305",
+  "impact": null
+ },
+ {
+  "addr": "004208DD",
+  "name": "sub_4208DD",
+  "c_lines": 16,
+  "status": "PORTED",
+  "port": "scene.c:scene_actor_zval",
+  "what": "calculate_model_scale: depth to 41-step Z table value",
+  "callers": "update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00420990",
+  "name": "sub_420D80",
+  "c_lines": 167,
+  "status": "PARTIAL",
+  "port": "model.c:model_render_world / scene.c",
+  "what": "World model render pipeline pieces (project, clip, raster setup); ported with approximated shading",
+  "callers": "sub_420D80",
+  "impact": "Shading/lighting approximated (clamped key-light band), not engine-exact"
+ },
+ {
+  "addr": "00420CE0",
+  "name": "sub_420CE0",
+  "c_lines": 19,
+  "status": "PORTED",
+  "port": "obc.c:fmat_rotate_translation",
+  "what": "Rotate matrix translation by its rotation part",
+  "callers": "sub_420D80",
+  "impact": null
+ },
+ {
+  "addr": "004219A0",
+  "name": "sub_4219A0",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "00421AA0",
+  "name": "sub_421AA0",
+  "c_lines": 245,
+  "status": "PARTIAL",
+  "port": "model.c:model_render_world / scene.c",
+  "what": "World model render pipeline pieces (project, clip, raster setup); ported with approximated shading",
+  "callers": "sub_420D80",
+  "impact": "Shading/lighting approximated (clamped key-light band), not engine-exact"
+ },
+ {
+  "addr": "00421EC0",
+  "name": "sub_421EC0",
+  "c_lines": 70,
+  "status": "PARTIAL",
+  "port": "model.c:model_render_world / scene.c",
+  "what": "World model render pipeline pieces (project, clip, raster setup); ported with approximated shading",
+  "callers": "sub_420D80",
+  "impact": "Shading/lighting approximated (clamped key-light band), not engine-exact"
+ },
+ {
+  "addr": "004220A0",
+  "name": "sub_4220A0",
+  "c_lines": 43,
+  "status": "PARTIAL",
+  "port": "model.c:model_render_world / scene.c",
+  "what": "World model render pipeline pieces (project, clip, raster setup); ported with approximated shading",
+  "callers": "sub_420D80",
+  "impact": "Shading/lighting approximated (clamped key-light band), not engine-exact"
+ },
+ {
+  "addr": "00422130",
+  "name": "sub_422130",
+  "c_lines": 27,
+  "status": "PARTIAL",
+  "port": "model.c:model_render_world / scene.c",
+  "what": "World model render pipeline pieces (project, clip, raster setup); ported with approximated shading",
+  "callers": "sub_420D80",
+  "impact": "Shading/lighting approximated (clamped key-light band), not engine-exact"
+ },
+ {
+  "addr": "00422180",
+  "name": "sub_422180",
+  "c_lines": 147,
+  "status": "PARTIAL",
+  "port": "model.c:model_render_world / scene.c",
+  "what": "World model render pipeline pieces (project, clip, raster setup); ported with approximated shading",
+  "callers": "sub_420D80",
+  "impact": "Shading/lighting approximated (clamped key-light band), not engine-exact"
+ },
+ {
+  "addr": "004223D0",
+  "name": "sub_4223D0",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "00422420",
+  "name": "sub_422420",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "00422550",
+  "name": "sub_422550",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "0042257B",
+  "name": "sub_42257B",
+  "c_lines": 58,
+  "status": "PORTED",
+  "port": "inventory.c:inv_text_rec (text loader)",
+  "what": "Parse @N-indexed text file into string table",
+  "callers": "sub_427C2B DLL host table",
+  "impact": null
+ },
+ {
+  "addr": "0042278C",
+  "name": "sub_42278C",
+  "c_lines": 30,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "0042282E",
+  "name": "sub_42282E",
+  "c_lines": 25,
+  "status": "PORTED",
+  "port": "inventory.c:inv_text_rec (text loader)",
+  "what": "Parse @N-indexed text file into string table",
+  "callers": "sub_427C2B DLL host table",
+  "impact": null
+ },
+ {
+  "addr": "00422CA2",
+  "name": "sub_422CA2",
+  "c_lines": 76,
+  "status": "PORTED",
+  "port": "model_ome.c / obc.c",
+  "what": "OME/OBC struct record unpacker (switch by type)",
+  "callers": "sub_4228E0, sub_422E31",
+  "impact": null
+ },
+ {
+  "addr": "004233B1",
+  "name": "sub_4233B1",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "00423413",
+  "name": "sub_423413",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "00423429",
+  "name": "sub_423429",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "0042349F",
+  "name": "sub_42349F",
+  "c_lines": 29,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "0042358B",
+  "name": "sub_42358B",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "004235B4",
+  "name": "sub_4235B4",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "0042360D",
+  "name": "sub_42360D",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "004236E0",
+  "name": "sub_4236E0",
+  "c_lines": 24,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00423730",
+  "name": "sub_423730",
+  "c_lines": 872,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0042735E",
+  "name": "sub_42735E",
+  "c_lines": 44,
+  "status": "PORTED",
+  "port": "inventory.c:inventory_screen_open",
+  "what": "Init 100 OBnn inventory slots before opening inventory",
+  "callers": "process_input_command",
+  "impact": null
+ },
+ {
+  "addr": "00427B10",
+  "name": "sub_427B10",
+  "c_lines": 35,
+  "status": "SKIP",
+  "port": null,
+  "what": "LoadLibrary/GetProcAddress wrapper of LIEU DLLs; replaced by statically linked level ports",
+  "callers": "sub_4272B0, sub_42701B",
+  "impact": null
+ },
+ {
+  "addr": "00427BE5",
+  "name": "sub_427BE5",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "LoadLibrary/GetProcAddress wrapper of LIEU DLLs; replaced by statically linked level ports",
+  "callers": "sub_4272B0, sub_42701B",
+  "impact": null
+ },
+ {
+  "addr": "00427C2B",
+  "name": "sub_427C2B",
+  "c_lines": 223,
+  "status": "PORTED",
+  "port": "lieu_cb.c:lieu callback table",
+  "what": "Fill host-callback table handed to level DLL",
+  "callers": "sub_427B10",
+  "impact": null
+ },
+ {
+  "addr": "00428517",
+  "name": "sub_428517",
+  "c_lines": 30,
+  "status": "SKIP",
+  "port": null,
+  "what": "LoadLibrary/GetProcAddress wrapper of LIEU DLLs; replaced by statically linked level ports",
+  "callers": "sub_4272B0, sub_42701B",
+  "impact": null
+ },
+ {
+  "addr": "00429199",
+  "name": "decompress_lzw_rect_429199",
+  "c_lines": 163,
+  "status": "PORTED",
+  "port": "libsys/graphics/cif.c:cif_decompress_lzw",
+  "what": "LZW rect decompressor; port decodes whole CIF image",
+  "callers": "initialize_bitmap_buffer",
+  "impact": null
+ },
+ {
+  "addr": "0042A360",
+  "name": "draw_particle",
+  "c_lines": 126,
+  "status": "PORTED",
+  "port": "combat_damage.c (parry sparks)",
+  "what": "draw_particle: shaded line into bitmap, parry spark rays",
+  "callers": "render_parry_effects, sub_45AA40",
+  "impact": null
+ },
+ {
+  "addr": "0042A5E3",
+  "name": "sub_42A5E3",
+  "c_lines": 276,
+  "status": "MISSING",
+  "port": null,
+  "what": "Low-detail ('multiclip' game_state_flags) actor path: screen bbox plus scaled 128x128 fade sprite for far actors",
+  "callers": "update_game_hud",
+  "impact": "Only when level multiclip config nonzero; port always renders full 3D actor"
+ },
+ {
+  "addr": "0042B0A6",
+  "name": "sub_42B0A6",
+  "c_lines": 173,
+  "status": "MISSING",
+  "port": null,
+  "what": "Low-detail ('multiclip' game_state_flags) actor path: screen bbox plus scaled 128x128 fade sprite for far actors",
+  "callers": "update_game_hud",
+  "impact": "Only when level multiclip config nonzero; port always renders full 3D actor"
+ },
+ {
+  "addr": "0042B63D",
+  "name": "sub_42B63D",
+  "c_lines": 142,
+  "status": "MISSING",
+  "port": null,
+  "what": "Low-detail ('multiclip' game_state_flags) actor path: screen bbox plus scaled 128x128 fade sprite for far actors",
+  "callers": "update_game_hud",
+  "impact": "Only when level multiclip config nonzero; port always renders full 3D actor"
+ },
+ {
+  "addr": "0042BC7C",
+  "name": "sub_42BC7C",
+  "c_lines": 34,
+  "status": "MISSING",
+  "port": null,
+  "what": "Frame fade/crossfade between two buffers (64-step blend, palette-index darken) for world-tick transitions and dirty-rect blends",
+  "callers": "sub_42BE0E (script op 42), update_overlay_effects",
+  "impact": "Script op 42 world step is TODO in lieu_cb; scripted fade-ins/crossfades absent"
+ },
+ {
+  "addr": "0042BD44",
+  "name": "sub_42BD44",
+  "c_lines": 35,
+  "status": "MISSING",
+  "port": null,
+  "what": "Frame fade/crossfade between two buffers (64-step blend, palette-index darken) for world-tick transitions and dirty-rect blends",
+  "callers": "sub_42BE0E (script op 42), update_overlay_effects",
+  "impact": "Script op 42 world step is TODO in lieu_cb; scripted fade-ins/crossfades absent"
+ },
+ {
+  "addr": "0042D03F",
+  "name": "sub_42D03F",
+  "c_lines": 189,
+  "status": "MISSING",
+  "port": null,
+  "what": "Per-frame 32-particle blood spray with gravity, z-tested vs depth buffer",
+  "callers": "update_game_hud (case 0xA), play_sound_at_position",
+  "impact": "No blood particle spray on hits (TODO in combat_damage.c)"
+ },
+ {
+  "addr": "0042EA19",
+  "name": "sub_42EA19",
+  "c_lines": 132,
+  "status": "MISSING",
+  "port": null,
+  "what": "Frame fade/crossfade between two buffers (64-step blend, palette-index darken) for world-tick transitions and dirty-rect blends",
+  "callers": "sub_42BE0E (script op 42), update_overlay_effects",
+  "impact": "Script op 42 world step is TODO in lieu_cb; scripted fade-ins/crossfades absent"
+ },
+ {
+  "addr": "0042EE82",
+  "name": "sub_42EE82",
+  "c_lines": 122,
+  "status": "MISSING",
+  "port": null,
+  "what": "Frame fade/crossfade between two buffers (64-step blend, palette-index darken) for world-tick transitions and dirty-rect blends",
+  "callers": "sub_42BE0E (script op 42), update_overlay_effects",
+  "impact": "Script op 42 world step is TODO in lieu_cb; scripted fade-ins/crossfades absent"
+ },
+ {
+  "addr": "0042F31B",
+  "name": "sub_42F31B",
+  "c_lines": 41,
+  "status": "MISSING",
+  "port": null,
+  "what": "Underwater/flash render modes: rising bubbles, wavy full-screen distortion, palette flicker",
+  "callers": "sub_461468, update_overlay_effects, render_entity_with_ui",
+  "impact": "Levels with underwater config lack bubbles and wave distortion; render_mode_flag never set"
+ },
+ {
+  "addr": "0042F565",
+  "name": "sub_42F565",
+  "c_lines": 94,
+  "status": "MISSING",
+  "port": null,
+  "what": "Underwater/flash render modes: rising bubbles, wavy full-screen distortion, palette flicker",
+  "callers": "sub_461468, update_overlay_effects, render_entity_with_ui",
+  "impact": "Levels with underwater config lack bubbles and wave distortion; render_mode_flag never set"
+ },
+ {
+  "addr": "0042FA6D",
+  "name": "sub_42FA6D",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0042FADF",
+  "name": "render_fullscreen_effect",
+  "c_lines": 131,
+  "status": "MISSING",
+  "port": null,
+  "what": "Underwater/flash render modes: rising bubbles, wavy full-screen distortion, palette flicker",
+  "callers": "sub_461468, update_overlay_effects, render_entity_with_ui",
+  "impact": "Levels with underwater config lack bubbles and wave distortion; render_mode_flag never set"
+ },
+ {
+  "addr": "00430081",
+  "name": "sub_430081",
+  "c_lines": 96,
+  "status": "MISSING",
+  "port": null,
+  "what": "Underwater/flash render modes: rising bubbles, wavy full-screen distortion, palette flicker",
+  "callers": "sub_461468, update_overlay_effects, render_entity_with_ui",
+  "impact": "Levels with underwater config lack bubbles and wave distortion; render_mode_flag never set"
+ },
+ {
+  "addr": "0043057C",
+  "name": "sub_43057C",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "004305EF",
+  "name": "sub_4305EF",
+  "c_lines": 154,
+  "status": "MISSING",
+  "port": null,
+  "what": "Scaled transparent sprite blit for screen-space effect entity types 6-8",
+  "callers": "update_game_hud",
+  "impact": "Billboard/sprite effect entities (types 6-8) not drawn"
+ },
+ {
+  "addr": "00430D06",
+  "name": "close_font",
+  "c_lines": 10,
+  "status": "MISSING",
+  "port": null,
+  "what": "Cinematic subtitle (SBT) font load, render and cleanup",
+  "callers": "ls_init_movie, ls_play_movie",
+  "impact": "Movie subtitles not shown"
+ },
+ {
+  "addr": "004311BE",
+  "name": "close_sbt",
+  "c_lines": 21,
+  "status": "MISSING",
+  "port": null,
+  "what": "Cinematic subtitle (SBT) font load, render and cleanup",
+  "callers": "ls_init_movie, ls_play_movie",
+  "impact": "Movie subtitles not shown"
+ },
+ {
+  "addr": "00431216",
+  "name": "draw_sbt_32k",
+  "c_lines": 23,
+  "status": "MISSING",
+  "port": null,
+  "what": "Cinematic subtitle (SBT) font load, render and cleanup",
+  "callers": "ls_init_movie, ls_play_movie",
+  "impact": "Movie subtitles not shown"
+ },
+ {
+  "addr": "00431298",
+  "name": "ls_extern_sbt",
+  "c_lines": 101,
+  "status": "MISSING",
+  "port": null,
+  "what": "Cinematic subtitle (SBT) font load, render and cleanup",
+  "callers": "ls_init_movie, ls_play_movie",
+  "impact": "Movie subtitles not shown"
+ },
+ {
+  "addr": "004314A2",
+  "name": "clear_sbt_32k",
+  "c_lines": 5,
+  "status": "MISSING",
+  "port": null,
+  "what": "Cinematic subtitle (SBT) font load, render and cleanup",
+  "callers": "ls_init_movie, ls_play_movie",
+  "impact": "Movie subtitles not shown"
+ },
+ {
+  "addr": "004314CB",
+  "name": "my_read_timer",
+  "c_lines": 33,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00431595",
+  "name": "close_decompress",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0043176F",
+  "name": "WaitForSingleObject",
+  "c_lines": 99,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00431A04",
+  "name": "StartAddress",
+  "c_lines": 92,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00431D38",
+  "name": "cine_set_movie_correction_32k",
+  "c_lines": 55,
+  "status": "MISSING",
+  "port": null,
+  "what": "Movie colour correction (brightness/contrast/gamma) lookup tables",
+  "callers": "init_decompress, ls_set_movie_correction",
+  "impact": "Cinematic colour correction not applied; minor visual difference"
+ },
+ {
+  "addr": "0043213E",
+  "name": "unused_sub_43213E",
+  "c_lines": 38,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "00432241",
+  "name": "ls_set_movie_on_2",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "004322C8",
+  "name": "ls_set_movie_on_3",
+  "c_lines": 19,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00432478",
+  "name": "ls_set_movie_off",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "004324D0",
+  "name": "ls_movie_callback",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0043253A",
+  "name": "ls_set_restore_callback",
+  "c_lines": 77,
+  "status": "PARTIAL",
+  "port": "libsys/movie.c:ls_play_movie",
+  "what": "Real ls_play_movie (mislabelled): own CRH decoder; no fade, subtitles, correction, priority threads",
+  "callers": "menu trailer, level scripts",
+  "impact": "Missing end fade, subtitles, colour correction"
+ },
+ {
+  "addr": "00432742",
+  "name": "ls_is_movie_256_colours",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00432757",
+  "name": "ls_get_movie_size",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0043276C",
+  "name": "ls_set_movie_size",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Movie thread/timer/semaphore, video-mode switch and getter/setter glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00432799",
+  "name": "ls_set_movie_subtitles",
+  "c_lines": 10,
+  "status": "MISSING",
+  "port": null,
+  "what": "Cinematic subtitle (SBT) font load, render and cleanup",
+  "callers": "ls_init_movie, ls_play_movie",
+  "impact": "Movie subtitles not shown"
+ },
+ {
+  "addr": "004327B2",
+  "name": "ls_set_movie_correction",
+  "c_lines": 30,
+  "status": "MISSING",
+  "port": null,
+  "what": "Movie colour correction (brightness/contrast/gamma) lookup tables",
+  "callers": "init_decompress, ls_set_movie_correction",
+  "impact": "Cinematic colour correction not applied; minor visual difference"
+ },
+ {
+  "addr": "00432846",
+  "name": "unused_sub_432846",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code (no callers) or tiny memory-manager/tree-teardown helper replaced by free()",
+  "callers": "none/teardown",
+  "impact": null
+ },
+ {
+  "addr": "00432A3B",
+  "name": "cine_modify_rgb",
+  "c_lines": 55,
+  "status": "MISSING",
+  "port": null,
+  "what": "Movie colour correction (brightness/contrast/gamma) lookup tables",
+  "callers": "init_decompress, ls_set_movie_correction",
+  "impact": "Cinematic colour correction not applied; minor visual difference"
+ },
+ {
+  "addr": "00432BE1",
+  "name": "cine_get_hsi_value",
+  "c_lines": 40,
+  "status": "MISSING",
+  "port": null,
+  "what": "Movie colour correction (brightness/contrast/gamma) lookup tables",
+  "callers": "init_decompress, ls_set_movie_correction",
+  "impact": "Cinematic colour correction not applied; minor visual difference"
+ },
+ {
+  "addr": "00432D7D",
+  "name": "cine_get_rgb_value",
+  "c_lines": 72,
+  "status": "MISSING",
+  "port": null,
+  "what": "Movie colour correction (brightness/contrast/gamma) lookup tables",
+  "callers": "init_decompress, ls_set_movie_correction",
+  "impact": "Cinematic colour correction not applied; minor visual difference"
+ },
+ {
+  "addr": "004330DD",
+  "name": "cp_play_fade",
+  "c_lines": 115,
+  "status": "MISSING",
+  "port": null,
+  "what": "cp_play_fade: fade out last movie frame after playback",
+  "callers": "ls_play_movie",
+  "impact": "Movies end without fade-out"
+ },
+ {
+  "addr": "00434042",
+  "name": "sub_434042",
+  "c_lines": 24,
+  "status": "PORTED",
+  "port": "menu/persos.c (cheap shadow)",
+  "what": "Copy bone vertices for shadow triangle, flag clipped",
+  "callers": "sub_433670",
+  "impact": null
+ },
+ {
+  "addr": "00435560",
+  "name": "sub_435560",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "LoadLibrary/GetProcAddress wrapper of LIEU DLLs; replaced by statically linked level ports",
+  "callers": "sub_4272B0, sub_42701B",
+  "impact": null
+ },
+ {
+  "addr": "00435586",
+  "name": "sub_435586",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "LoadLibrary/GetProcAddress wrapper of LIEU DLLs; replaced by statically linked level ports",
+  "callers": "sub_4272B0, sub_42701B",
+  "impact": null
+ },
+ {
+  "addr": "004355AB",
+  "name": "sub_4355AB",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "LoadLibrary/GetProcAddress wrapper of LIEU DLLs; replaced by statically linked level ports",
+  "callers": "sub_4272B0, sub_42701B",
+  "impact": null
+ },
+ {
+  "addr": "004355E0",
+  "name": "sub_4355E0",
+  "c_lines": 50,
+  "status": "SKIP",
+  "port": null,
+  "what": "Ambient colour-light UI theme tint, only in 16-bit colour mode; port is 8-bit",
+  "callers": "update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00435A3C",
+  "name": "set_entity_texture",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "scene.c:scene_collect_tree",
+  "what": "Thunks to sub_4358D3 / initialize_effect_position lighting",
+  "callers": "render_entity_with_ui, update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00435B01",
+  "name": "sub_435B01",
+  "c_lines": 6,
+  "status": "PORTED",
+  "port": "scene.c:scene_collect_tree",
+  "what": "Thunks to sub_4358D3 / initialize_effect_position lighting",
+  "callers": "render_entity_with_ui, update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00435B34",
+  "name": "sub_435B34",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "scene.c:scene_collect_tree",
+  "what": "Thunks to sub_4358D3 / initialize_effect_position lighting",
+  "callers": "render_entity_with_ui, update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00435B5D",
+  "name": "sub_435B5D",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "scene.c:scene_collect_tree",
+  "what": "Thunks to sub_4358D3 / initialize_effect_position lighting",
+  "callers": "render_entity_with_ui, update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "004362E0",
+  "name": "sub_4362E0",
+  "c_lines": 105,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug/editor entity-pose or free-camera text overlay",
+  "callers": "process_input_command",
+  "impact": null
+ },
+ {
+  "addr": "004372AF",
+  "name": "sub_4372AF",
+  "c_lines": 51,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0043AA96",
+  "name": "sub_43AA96",
+  "c_lines": 31,
+  "status": "PORTED",
+  "port": "menu/menu.c redraw",
+  "what": "Menu screen bitmap refresh blit",
+  "callers": "sub_43A63D",
+  "impact": null
+ },
+ {
+  "addr": "00442D45",
+  "name": "sub_442D45",
+  "c_lines": 61,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "00442E59",
+  "name": "log_allocation",
+  "c_lines": 63,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "00443037",
+  "name": "system_release_all_opened_filse_443037",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "004432D7",
+  "name": "sub_4432D7",
+  "c_lines": 66,
+  "status": "PORTED",
+  "port": "lieu_cb.c:cb_free_anim",
+  "what": "FreeAnim script action (case 0x27)",
+  "callers": "sub_44A58B",
+  "impact": null
+ },
+ {
+  "addr": "00444170",
+  "name": "sub_444170",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug/editor entity-pose or free-camera text overlay",
+  "callers": "process_input_command",
+  "impact": null
+ },
+ {
+  "addr": "00444FF5",
+  "name": "sub_444FF5",
+  "c_lines": 7,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug/editor entity-pose or free-camera text overlay",
+  "callers": "process_input_command",
+  "impact": null
+ },
+ {
+  "addr": "0044CFD3",
+  "name": "sub_44CFD3",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0044D0B1",
+  "name": "sub_44D0B1",
+  "c_lines": 31,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0044D68C",
+  "name": "sub_44D68C",
+  "c_lines": 11,
+  "status": "MISSING",
+  "port": null,
+  "what": "Pause and resume all 50 sound channels around the pause screen (P key)",
+  "callers": "process_input_command",
+  "impact": "No pause screen or pause key in port"
+ },
+ {
+  "addr": "0044D6C9",
+  "name": "sub_44D6C9",
+  "c_lines": 11,
+  "status": "MISSING",
+  "port": null,
+  "what": "Pause and resume all 50 sound channels around the pause screen (P key)",
+  "callers": "process_input_command",
+  "impact": "No pause screen or pause key in port"
+ },
+ {
+  "addr": "0044D74B",
+  "name": "sub_44D74B",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0044DAE3",
+  "name": "sub_44DAE3",
+  "c_lines": 23,
+  "status": "PORTED",
+  "port": "sfx.c (k_names / voice recycle)",
+  "what": "Sound name to id lookup / free finished voice slots",
+  "callers": "get_animation_id, sub_461468",
+  "impact": null
+ },
+ {
+  "addr": "0044E0F9",
+  "name": "sub_44E0F9",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0044E13E",
+  "name": "sub_44E13E",
+  "c_lines": 54,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0044E37A",
+  "name": "sub_44E37A",
+  "c_lines": 20,
+  "status": "PORTED",
+  "port": "sfx.c (k_names / voice recycle)",
+  "what": "Sound name to id lookup / free finished voice slots",
+  "callers": "get_animation_id, sub_461468",
+  "impact": null
+ },
+ {
+  "addr": "0044E4BB",
+  "name": "sub_44E4BB",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "0044EC90",
+  "name": "sub_44EC90",
+  "c_lines": 106,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0044EFE0",
+  "name": "sub_44EFE0",
+  "c_lines": 46,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0044F0A0",
+  "name": "sub_44F0A0",
+  "c_lines": 28,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0044F0F0",
+  "name": "cp_uncompress_image",
+  "c_lines": 19,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0044F160",
+  "name": "cp_uncompress_composante",
+  "c_lines": 95,
+  "status": "PORTED",
+  "port": "libsys/movie_decoder.c:crh_next_frame_ex",
+  "what": "Movie video codec (bit reader, block decode); replaced by own CRH decoder",
+  "callers": "sub_44EC90, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0044F605",
+  "name": "sub_44F605",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory/file/sample-cache management, debug logging or buffer release; replaced by platform/malloc/sfx layer",
+  "callers": "various",
+  "impact": null
+ },
+ {
+  "addr": "00450AF9",
+  "name": "clear_primary_inventory",
+  "c_lines": 27,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "clear_weapons_inventory, reset_player_inventory",
+  "impact": null
+ },
+ {
+  "addr": "00452A60",
+  "name": "sub_452A60",
+  "c_lines": 26,
+  "status": "SKIP",
+  "port": null,
+  "what": "MMX 16bpp triangle test path gated by dword_4B70B0, which is never set (dead code).",
+  "callers": "create_entity_texture",
+  "impact": null
+ },
+ {
+  "addr": "00453C99",
+  "name": "clear_secondary_inventory",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "clear_weapons_inventory, reset_player_inventory",
+  "impact": null
+ },
+ {
+  "addr": "00453CED",
+  "name": "sub_453CED",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "clear_secondary_inventory",
+  "impact": null
+ },
+ {
+  "addr": "00453D4F",
+  "name": "sub_453D4F",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "clear_secondary_inventory, sub_453CED, sub_453D65",
+  "impact": null
+ },
+ {
+  "addr": "00453D65",
+  "name": "sub_453D65",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "sub_453CED",
+  "impact": null
+ },
+ {
+  "addr": "00453DDB",
+  "name": "sub_453DDB",
+  "c_lines": 29,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "clear_secondary_inventory",
+  "impact": null
+ },
+ {
+  "addr": "00453EC7",
+  "name": "sub_453EC7",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "sub_453DDB",
+  "impact": null
+ },
+ {
+  "addr": "00453EF0",
+  "name": "sub_453EF0",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "sub_453DDB",
+  "impact": null
+ },
+ {
+  "addr": "00453F49",
+  "name": "sub_453F49",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees entity/inventory object trees and bitmaps via the original allocator; port needs no equivalent.",
+  "callers": "sub_453DDB",
+  "impact": null
+ },
+ {
+  "addr": "00453FB0",
+  "name": "sub_453FB0",
+  "c_lines": 47,
+  "status": "SKIP",
+  "port": null,
+  "what": "Swaps pixels of two same-size bitmaps; helper for the in-game menu screen composition.",
+  "callers": "sub_43F8C7",
+  "impact": null
+ },
+ {
+  "addr": "004540AD",
+  "name": "sub_4540AD",
+  "c_lines": 64,
+  "status": "MISSING",
+  "port": null,
+  "what": "3x3 edge smoothing blend of 16bpp bitmaps (entity edge anti-alias); only reached via game-context vtable slot 288.",
+  "callers": "sub_4542FD",
+  "impact": "Entity silhouettes lack the original edge smoothing; cosmetic."
+ },
+ {
+  "addr": "004542FD",
+  "name": "sub_4542FD",
+  "c_lines": 53,
+  "status": "MISSING",
+  "port": null,
+  "what": "3x3 edge smoothing blend of 16bpp bitmaps (entity edge anti-alias); only reached via game-context vtable slot 288.",
+  "callers": "sub_427C2B",
+  "impact": "Entity silhouettes lack the original edge smoothing; cosmetic."
+ },
+ {
+  "addr": "00454644",
+  "name": "sub_454644",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thunks to ls_fill_rect / ls_clear_bmap for the game-context vtable.",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00454675",
+  "name": "sub_454675",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Thunks to ls_fill_rect / ls_clear_bmap for the game-context vtable.",
+  "callers": "sub_4130FB, sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00454690",
+  "name": "sub_454690",
+  "c_lines": 63,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "update_game_hud",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00454810",
+  "name": "sub_454810",
+  "c_lines": 146,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_446E19",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00454C30",
+  "name": "sub_454C30",
+  "c_lines": 27,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454690",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00454CB0",
+  "name": "sub_454CB0",
+  "c_lines": 77,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454E00",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00454E00",
+  "name": "sub_454E00",
+  "c_lines": 55,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454690",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "004552A0",
+  "name": "sub_4552A0",
+  "c_lines": 77,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "004553B0",
+  "name": "sub_4553B0",
+  "c_lines": 177,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "004555A0",
+  "name": "sub_4555A0",
+  "c_lines": 73,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "004556A0",
+  "name": "sub_4556A0",
+  "c_lines": 94,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "004557A0",
+  "name": "cine_clear_movie_background__",
+  "c_lines": 5,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0, sub_4557B0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "004557B0",
+  "name": "sub_4557B0",
+  "c_lines": 73,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00455840",
+  "name": "sub_455840",
+  "c_lines": 23,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00455890",
+  "name": "sub_455890",
+  "c_lines": 9,
+  "status": "MISSING",
+  "port": null,
+  "what": "CJR big-animation player: open/close .CJR+.OFF, per-frame chunk decoders, bounds, bonus-mode player drop motion.",
+  "callers": "sub_41CCB7, sub_44A58B, sub_454CB0",
+  "impact": "CJR big animations never play; LIEU op 17 is a TODO; effect type 12 draws nothing."
+ },
+ {
+  "addr": "00455E53",
+  "name": "sub_455E53",
+  "c_lines": 88,
+  "status": "PORTED",
+  "port": "scene.c:scene_draw_zone_overlay",
+  "what": "Debug overlay drawing SOL zone outlines with clipped projected lines.",
+  "callers": "update_overlay_effects",
+  "impact": null
+ },
+ {
+  "addr": "00456E6A",
+  "name": "sub_456E6A",
+  "c_lines": 61,
+  "status": "SKIP",
+  "port": null,
+  "what": "Debug draw of the 64x64 nav grid, invoked from process_menu debug key.",
+  "callers": "process_menu",
+  "impact": null
+ },
+ {
+  "addr": "00457565",
+  "name": "sub_457565",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_45783C",
+  "impact": null
+ },
+ {
+  "addr": "004575D3",
+  "name": "sub_4575D3",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_46D305",
+  "impact": null
+ },
+ {
+  "addr": "0045766F",
+  "name": "sub_45766F",
+  "c_lines": 40,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_4575D3, sub_45783C",
+  "impact": null
+ },
+ {
+  "addr": "0045775C",
+  "name": "sub_45775C",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_4575D3, sub_45783C",
+  "impact": null
+ },
+ {
+  "addr": "004577AB",
+  "name": "sub_4577AB",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_45783C",
+  "impact": null
+ },
+ {
+  "addr": "004577C9",
+  "name": "sub_4577C9",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_45783C",
+  "impact": null
+ },
+ {
+  "addr": "0045780C",
+  "name": "sub_45780C",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_45783C",
+  "impact": null
+ },
+ {
+  "addr": "0045783C",
+  "name": "sub_45783C",
+  "c_lines": 147,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_458C52",
+  "impact": null
+ },
+ {
+  "addr": "00457DD0",
+  "name": "sub_457DD0",
+  "c_lines": 214,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_load_dat_config",
+  "what": "Parses level .DAT: cameras, light, clipz, colorlight, flash, env, multiclip; port reads only ncamera/ambient/zbuffer/light.",
+  "callers": "sub_46D305",
+  "impact": "Clip-Z person/wave, coloured lights, flashes and env fades absent."
+ },
+ {
+  "addr": "00458A57",
+  "name": "finalize_render_data",
+  "c_lines": 42,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "create_model_render_data, sub_458C52",
+  "impact": null
+ },
+ {
+  "addr": "00458C52",
+  "name": "sub_458C52",
+  "c_lines": 61,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "sub_46D305",
+  "impact": null
+ },
+ {
+  "addr": "00458F3D",
+  "name": "sub_458F3D",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": "world.c:world_load_level_data",
+  "what": "3DS ASCII (.ASC) camera/zone parser building SOL limits; fallback only when cached .INF is absent. Port reads .INF.",
+  "callers": "scene_release_level_resources_46E4A8, sub_46D305",
+  "impact": null
+ },
+ {
+  "addr": "00459CD2",
+  "name": "sub_459CD2",
+  "c_lines": 48,
+  "status": "PORTED",
+  "port": "actor_move.c:sol_inside + nav_grid.c:classify_point",
+  "what": "Point-in-collision-zone test over SOL zone list.",
+  "callers": "sub_45619D",
+  "impact": null
+ },
+ {
+  "addr": "0045A7EF",
+  "name": "sub_45A7EF",
+  "c_lines": 42,
+  "status": "PORTED",
+  "port": "scene.c:scene_draw_zone_overlay",
+  "what": "Debug overlay drawing SOL zone outlines with clipped projected lines.",
+  "callers": "sub_455E53",
+  "impact": null
+ },
+ {
+  "addr": "0045A976",
+  "name": "sub_45A976",
+  "c_lines": 15,
+  "status": "PORTED",
+  "port": "scene.c:scene_draw_zone_overlay",
+  "what": "Debug overlay drawing SOL zone outlines with clipped projected lines.",
+  "callers": "DAE, sub_455E53",
+  "impact": null
+ },
+ {
+  "addr": "0045AA40",
+  "name": "sub_45AA40",
+  "c_lines": 104,
+  "status": "PORTED",
+  "port": "scene.c:scene_draw_zone_overlay",
+  "what": "Debug overlay drawing SOL zone outlines with clipped projected lines.",
+  "callers": "sub_459E80",
+  "impact": null
+ },
+ {
+  "addr": "0045AC76",
+  "name": "sub_45AC76",
+  "c_lines": 8,
+  "status": "PORTED",
+  "port": "scene.c:scene_draw_zone_overlay",
+  "what": "Debug overlay drawing SOL zone outlines with clipped projected lines.",
+  "callers": "sub_45AA40",
+  "impact": null
+ },
+ {
+  "addr": "0045B361",
+  "name": "config_load_dke_cfg_45B361",
+  "c_lines": 139,
+  "status": "PARTIAL",
+  "port": "main.c:load_dke_config",
+  "what": "Parses DKE.CFG; port lacks Brightness/Contrast/Saturation/Language/Detail keys and script var-name table.",
+  "callers": "ls_main",
+  "impact": "Detail/render_mode and display tuning from DKE.CFG ignored."
+ },
+ {
+  "addr": "0045B98E",
+  "name": "sub_45B98E",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "sub_45BA2C, sub_45C152",
+  "impact": null
+ },
+ {
+  "addr": "0045BA2C",
+  "name": "sub_45BA2C",
+  "c_lines": 22,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "sub_45BB9C",
+  "impact": null
+ },
+ {
+  "addr": "0045BB9C",
+  "name": "sub_45BB9C",
+  "c_lines": 154,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "process_menu",
+  "impact": null
+ },
+ {
+  "addr": "0045C152",
+  "name": "sub_45C152",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "sub_45C230",
+  "impact": null
+ },
+ {
+  "addr": "0045C230",
+  "name": "sub_45C230",
+  "c_lines": 109,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "sub_45BB9C",
+  "impact": null
+ },
+ {
+  "addr": "0045D427",
+  "name": "sub_45D427",
+  "c_lines": 8,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "0045D4D9",
+  "name": "sub_45D4D9",
+  "c_lines": 26,
+  "status": "SKIP",
+  "port": null,
+  "what": "Developer script-variable viewer / debug image drawer.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0045E157",
+  "name": "draw_selection_rectangle",
+  "c_lines": 53,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "render_entity_with_ui, sub_4762BF",
+  "impact": null
+ },
+ {
+  "addr": "0045E2CB",
+  "name": "sub_45E2CB",
+  "c_lines": 16,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "0045E383",
+  "name": "sub_45E383",
+  "c_lines": 16,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "render_entity_bounds, sub_433670",
+  "impact": null
+ },
+ {
+  "addr": "0045E43A",
+  "name": "render_selection_indicator",
+  "c_lines": 47,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "render_entity_with_ui, sub_4762BF",
+  "impact": null
+ },
+ {
+  "addr": "0045E56D",
+  "name": "check_entity_selection",
+  "c_lines": 374,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "render_entity_with_ui, sub_4762BF",
+  "impact": null
+ },
+ {
+  "addr": "0045F3D0",
+  "name": "sub_45F3D0",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Named-file cache (100 entries) in original memory manager; port loads files directly.",
+  "callers": "initialize_bitmap_buffer, sub_4755B5",
+  "impact": null
+ },
+ {
+  "addr": "0045F457",
+  "name": "sub_45F457",
+  "c_lines": 82,
+  "status": "SKIP",
+  "port": null,
+  "what": "Named-file cache (100 entries) in original memory manager; port loads files directly.",
+  "callers": "sub_427C2B, sub_46C930",
+  "impact": null
+ },
+ {
+  "addr": "0045F724",
+  "name": "sub_45F724",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Named-file cache (100 entries) in original memory manager; port loads files directly.",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "0045F7E6",
+  "name": "sub_45F7E6",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Named-file cache (100 entries) in original memory manager; port loads files directly.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0045F881",
+  "name": "sub_45F881",
+  "c_lines": 47,
+  "status": "SKIP",
+  "port": null,
+  "what": "Named-file cache (100 entries) in original memory manager; port loads files directly.",
+  "callers": "sub_45F457",
+  "impact": null
+ },
+ {
+  "addr": "0045F9D6",
+  "name": "sub_45F9D6",
+  "c_lines": 83,
+  "status": "SKIP",
+  "port": null,
+  "what": "Named-file cache (100 entries) in original memory manager; port loads files directly.",
+  "callers": "scene_release_level_resources_46E4A8, sub_45F881",
+  "impact": null
+ },
+ {
+  "addr": "0046034D",
+  "name": "sub_46034D",
+  "c_lines": 18,
+  "status": "MISSING",
+  "port": null,
+  "what": "P92 flying imp AI helpers (hit test on player, apply offset and animation); called from sub_45FD40.",
+  "callers": "sub_45FD40",
+  "impact": "Flying imp enemy (type 0x5C) has no AI."
+ },
+ {
+  "addr": "004603CB",
+  "name": "sub_4603CB",
+  "c_lines": 17,
+  "status": "MISSING",
+  "port": null,
+  "what": "P92 flying imp AI helpers (hit test on player, apply offset and animation); called from sub_45FD40.",
+  "callers": "sub_45FD40",
+  "impact": "Flying imp enemy (type 0x5C) has no AI."
+ },
+ {
+  "addr": "004608A0",
+  "name": "sub_4608A0",
+  "c_lines": 7,
+  "status": "PORTED",
+  "port": "anim2d.c:anim2d_load_camera",
+  "what": "Frees and reloads the camera 2D animation set (sub_4132F3 + sub_4130FB).",
+  "callers": "sub_427C2B, sub_4608C2",
+  "impact": null
+ },
+ {
+  "addr": "004608C2",
+  "name": "sub_4608C2",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Shows a still image full-screen in display mode 20; only referenced from game-context vtable.",
+  "callers": "ls_main, sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00461AF6",
+  "name": "sub_461AF6",
+  "c_lines": 35,
+  "status": "MISSING",
+  "port": null,
+  "what": "Clears per-entity +0xD88 flag for player and companions, or sets viewport state 2.",
+  "callers": "none (indirect/table)",
+  "impact": "Minor; stale flag state across scene resets."
+ },
+ {
+  "addr": "00465830",
+  "name": "sub_465830",
+  "c_lines": 32,
+  "status": "PORTED",
+  "port": "obc.c (obc_node_t prev links)",
+  "what": "Object tree utility: rebuild sibling back-links / flatten pending-child links.",
+  "callers": "sub_4658D4",
+  "impact": null
+ },
+ {
+  "addr": "004663F4",
+  "name": "sub_4663F4",
+  "c_lines": 16,
+  "status": "PORTED",
+  "port": "actor.c (E32(e,0xC04) = -1)",
+  "what": "Resets entity +0xC04 to -1 for type 1 entities.",
+  "callers": "sub_46E883",
+  "impact": null
+ },
+ {
+  "addr": "00466C25",
+  "name": "sub_466C25",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dirty-rectangle bookkeeping for entity redraw; port redraws every frame.",
+  "callers": "update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00466D0F",
+  "name": "sub_466D0F",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dirty-rectangle bookkeeping for entity redraw; port redraws every frame.",
+  "callers": "update_game_hud",
+  "impact": null
+ },
+ {
+  "addr": "00469AAC",
+  "name": "sub_469AAC",
+  "c_lines": 22,
+  "status": "PORTED",
+  "port": "obc.c (obc_node_t prev links)",
+  "what": "Object tree utility: rebuild sibling back-links / flatten pending-child links.",
+  "callers": "sub_4699D9",
+  "impact": null
+ },
+ {
+  "addr": "00469D30",
+  "name": "sub_469D30",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "CD / HDD path probing and insert-CD prompt (original media handling).",
+  "callers": "sub_469DCA, sub_469E34",
+  "impact": null
+ },
+ {
+  "addr": "00469D4E",
+  "name": "sub_469D4E",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "CD / HDD path probing and insert-CD prompt (original media handling).",
+  "callers": "sub_46A4D5",
+  "impact": null
+ },
+ {
+  "addr": "00469DCA",
+  "name": "sub_469DCA",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "CD / HDD path probing and insert-CD prompt (original media handling).",
+  "callers": "game_play_intro_469F32",
+  "impact": null
+ },
+ {
+  "addr": "00469FFF",
+  "name": "sub_469FFF",
+  "c_lines": 98,
+  "status": "SKIP",
+  "port": null,
+  "what": "CD / HDD path probing and insert-CD prompt (original media handling).",
+  "callers": "process_mainmenu_437EB7, sub_469E34",
+  "impact": null
+ },
+ {
+  "addr": "0046C599",
+  "name": "game_release_resources_46C599",
+  "c_lines": 152,
+  "status": "SKIP",
+  "port": null,
+  "what": "Shutdown cleanup of buffers, bitmaps and object lists; OS frees at exit.",
+  "callers": "ls_main, sub_43A63D",
+  "impact": null
+ },
+ {
+  "addr": "0046CE97",
+  "name": "sub_46CE97",
+  "c_lines": 30,
+  "status": "PORTED",
+  "port": "model.c (GRD ramp use)",
+  "what": "Loads .GRD shading ramp into palette/index buffers (display_pause_screen caller).",
+  "callers": "display_pause_screen",
+  "impact": null
+ },
+ {
+  "addr": "0046CF6D",
+  "name": "sub_46C930",
+  "c_lines": 40,
+  "status": "PORTED",
+  "port": "scene.c:scene_load_camera_backdrop",
+  "what": "Loads camera F backdrop (CIF) and palette.",
+  "callers": "sub_46F7B5",
+  "impact": null
+ },
+ {
+  "addr": "0046D0AF",
+  "name": "sub_46C930",
+  "c_lines": 10,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_load_camera_backdrop",
+  "what": "Loads camera Z-depth image into render_buffer2; port loads Z but leaves it unused.",
+  "callers": "sub_46D0AF, update_visual_effects",
+  "impact": "No depth occlusion of actors behind scenery."
+ },
+ {
+  "addr": "0046F89E",
+  "name": "sub_46F89E",
+  "c_lines": 76,
+  "status": "SKIP",
+  "port": null,
+  "what": "Finds darkest/brightest palette entries for 8bpp mode; port is 16/32-bit.",
+  "callers": "initialize_bitmap_buffer",
+  "impact": null
+ },
+ {
+  "addr": "00471BDF",
+  "name": "sub_471BDF",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Tiny helper: creature class letter to index.",
+  "callers": "sub_41AED1",
+  "impact": null
+ },
+ {
+  "addr": "0047306E",
+  "name": "sub_47306E",
+  "c_lines": 34,
+  "status": "MISSING",
+  "port": null,
+  "what": "Saves per-level object position and rotation into table 4DCDA0 (34 levels x 6 variants).",
+  "callers": "sub_4731C6",
+  "impact": "Dropped object positions not remembered across level changes."
+ },
+ {
+  "addr": "0047347E",
+  "name": "sub_47347E",
+  "c_lines": 29,
+  "status": "MISSING",
+  "port": null,
+  "what": "Saves per-level object position and rotation into table 4DCDA0 (34 levels x 6 variants).",
+  "callers": "process_menu",
+  "impact": "Dropped object positions not remembered across level changes."
+ },
+ {
+  "addr": "0047404E",
+  "name": "sub_472B47",
+  "c_lines": 99,
+  "status": "PARTIAL",
+  "port": "scene.c:scene_weapon_entity_attach",
+  "what": "Attaches object to entity (detaches previous, picks armeb chain, zeroes offsets); port covers sub_473756 form only.",
+  "callers": "sub_41AED1",
+  "impact": "Item equip path may miss detach of previous item."
+ },
+ {
+  "addr": "00474900",
+  "name": "sub_474900",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "CIF/GIF encoder (LZW) for saving images; dev/screenshot only.",
+  "callers": "sub_474997",
+  "impact": null
+ },
+ {
+  "addr": "00474969",
+  "name": "sub_474969",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "CIF/GIF encoder (LZW) for saving images; dev/screenshot only.",
+  "callers": "sub_474997",
+  "impact": null
+ },
+ {
+  "addr": "00474997",
+  "name": "sub_474997",
+  "c_lines": 87,
+  "status": "SKIP",
+  "port": null,
+  "what": "CIF/GIF encoder (LZW) for saving images; dev/screenshot only.",
+  "callers": "initialize_bitmap_buffer",
+  "impact": null
+ },
+ {
+  "addr": "004750CF",
+  "name": "initialize_bitmap_buffer",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": "libsys/graphics/image.c",
+  "what": "Image decode/palette load wrappers and region background reload; port draws whole backdrop each frame.",
+  "callers": "sub_4765DB",
+  "impact": null
+ },
+ {
+  "addr": "004755B5",
+  "name": "sub_4755B5",
+  "c_lines": 55,
+  "status": "SKIP",
+  "port": "libsys/graphics/image.c",
+  "what": "Image decode/palette load wrappers and region background reload; port draws whole backdrop each frame.",
+  "callers": "sub_46CF6D",
+  "impact": null
+ },
+ {
+  "addr": "00475E47",
+  "name": "sub_475E47",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frees object slots of other levels when heap is low (memory pressure).",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "004765DB",
+  "name": "sub_4765DB",
+  "c_lines": 39,
+  "status": "SKIP",
+  "port": "libsys/graphics/image.c",
+  "what": "Image decode/palette load wrappers and region background reload; port draws whole backdrop each frame.",
+  "callers": "sub_412B94",
+  "impact": null
+ },
+ {
+  "addr": "00476E86",
+  "name": "sub_476E86",
+  "c_lines": 33,
+  "status": "MISSING",
+  "port": null,
+  "what": "On level load marks object slots from other levels for removal and clears carried-over flags.",
+  "callers": "scene_load_savegame_level_43B9ED",
+  "impact": "Object slots may persist wrongly between levels."
+ },
+ {
+  "addr": "004774BC",
+  "name": "sub_4774BC",
+  "c_lines": 220,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Pointer-table sprite blit kernels (8bpp and 16bpp, plain/shaded/alpha); port has copy and colour-key only.",
+  "callers": "__cfltcvt_init",
+  "impact": "Alpha and shaded 2D blits not implemented."
+ },
+ {
+  "addr": "0047776C",
+  "name": "sub_47776C",
+  "c_lines": 387,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Pointer-table sprite blit kernels (8bpp and 16bpp, plain/shaded/alpha); port has copy and colour-key only.",
+  "callers": "__cfltcvt_init",
+  "impact": "Alpha and shaded 2D blits not implemented."
+ },
+ {
+  "addr": "00477BB0",
+  "name": "sub_477BB0",
+  "c_lines": 272,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Pointer-table sprite blit kernels (8bpp and 16bpp, plain/shaded/alpha); port has copy and colour-key only.",
+  "callers": "__cfltcvt_init",
+  "impact": "Alpha and shaded 2D blits not implemented."
+ },
+ {
+  "addr": "00477E28",
+  "name": "sub_477E28",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "Bounds-checking stub of a blit kernel wrapper; no callers.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "00478014",
+  "name": "sub_478014",
+  "c_lines": 15,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "check_entity_selection, create_entity_texture",
+  "impact": null
+ },
+ {
+  "addr": "00478030",
+  "name": "sub_478030",
+  "c_lines": 48,
+  "status": "PORTED",
+  "port": "model.c:model_render_world",
+  "what": "Entity model rasteriser with dirty-cell grid, face sort and compositing; port redraws whole frame with painter sort.",
+  "callers": "sub_478014",
+  "impact": null
+ },
+ {
+  "addr": "004781E4",
+  "name": "sub_4781E4",
+  "c_lines": 55,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Pointer-table sprite blit kernels (8bpp and 16bpp, plain/shaded/alpha); port has copy and colour-key only.",
+  "callers": "sub_418679",
+  "impact": "Alpha and shaded 2D blits not implemented."
+ },
+ {
+  "addr": "0047826B",
+  "name": "sub_47826B",
+  "c_lines": 45,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Pointer-table sprite blit kernels (8bpp and 16bpp, plain/shaded/alpha); port has copy and colour-key only.",
+  "callers": "sub_418679",
+  "impact": "Alpha and shaded 2D blits not implemented."
+ },
+ {
+  "addr": "004782DC",
+  "name": "sub_4782DC",
+  "c_lines": 220,
+  "status": "PARTIAL",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Pointer-table sprite blit kernels (8bpp and 16bpp, plain/shaded/alpha); port has copy and colour-key only.",
+  "callers": "sub_418679",
+  "impact": "Alpha and shaded 2D blits not implemented."
+ },
+ {
+  "addr": "004785BC",
+  "name": "BYTE1",
+  "c_lines": 358,
+  "status": "SKIP",
+  "port": null,
+  "what": "CIF/GIF encoder (LZW) for saving images; dev/screenshot only.",
+  "callers": "sub_474997",
+  "impact": null
+ },
+ {
+  "addr": "00478A20",
+  "name": "sub_478A20",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "CIF/GIF encoder (LZW) for saving images; dev/screenshot only.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "00478CCC",
+  "name": "sub_478CCC",
+  "c_lines": 64,
+  "status": "SKIP",
+  "port": null,
+  "what": "CIF/GIF encoder (LZW) for saving images; dev/screenshot only.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "00478DC0",
+  "name": "unused_sub_478DC0",
+  "c_lines": 2672,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused MMX routine.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047AAE0",
+  "name": "sub_47AAE0",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "MMX 16bpp triangle test path gated by dword_4B70B0, which is never set (dead code).",
+  "callers": "sub_452A60",
+  "impact": null
+ },
+ {
+  "addr": "0047AB00",
+  "name": "unused_sub_47AB00",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused thunk.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047AB30",
+  "name": "sub_47AB30",
+  "c_lines": 1855,
+  "status": "SKIP",
+  "port": null,
+  "what": "MMX 16bpp triangle test path gated by dword_4B70B0, which is never set (dead code).",
+  "callers": "sub_47AAE0, unused_sub_47AB00",
+  "impact": null
+ },
+ {
+  "addr": "0047CBF0",
+  "name": "ls_shut_down",
+  "c_lines": 37,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047CCD0",
+  "name": "ls_exit",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "lsys_update_event, process_parry_effects, sub_4804D0",
+  "impact": null
+ },
+ {
+  "addr": "0047CD00",
+  "name": "unused_ls_ex_to_long",
+  "c_lines": 39,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047CD90",
+  "name": "ls_mem_copy",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_open, select_language_version, sub_45F9D6",
+  "impact": null
+ },
+ {
+  "addr": "0047CDA0",
+  "name": "ls_str_upper",
+  "c_lines": 0,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_load_sound, ls_open, select_language_version, unused_ls_load_palette",
+  "impact": null
+ },
+ {
+  "addr": "0047CDB0",
+  "name": "ls_give_extension",
+  "c_lines": 57,
+  "status": "SKIP",
+  "port": null,
+  "what": "Extension helper for file names; port resolves paths in file_system.c.",
+  "callers": "ls_load_sound, unused_ls_load_palette",
+  "impact": null
+ },
+ {
+  "addr": "0047CE80",
+  "name": "ls_set_rectangle",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Rect/format/restore-callback helpers of DirectDraw bit move; replaced by port clipping.",
+  "callers": "ls_fast_bit_move",
+  "impact": null
+ },
+ {
+  "addr": "0047CEA0",
+  "name": "unused_ls_set_bmap_format",
+  "c_lines": 7,
+  "status": "SKIP",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Rect/format/restore-callback helpers of DirectDraw bit move; replaced by port clipping.",
+  "callers": "create_image_buffer, update_game_ui",
+  "impact": null
+ },
+ {
+  "addr": "0047D0E0",
+  "name": "ls_set_restore_callback",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Rect/format/restore-callback helpers of DirectDraw bit move; replaced by port clipping.",
+  "callers": "ls_bit_move, ls_main, ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0047D1F0",
+  "name": "ls_set_rectangle_3",
+  "c_lines": 83,
+  "status": "SKIP",
+  "port": "libsys/graphics/graphic.c:ls_bit_move",
+  "what": "Rect/format/restore-callback helpers of DirectDraw bit move; replaced by port clipping.",
+  "callers": "ls_bit_move",
+  "impact": null
+ },
+ {
+  "addr": "0047D320",
+  "name": "sub_47D320",
+  "c_lines": 6,
+  "status": "PORTED",
+  "port": "libsys/graphics/font.c",
+  "what": "Set text colour / style globals for draw_text.",
+  "callers": "draw_text, sub_45B98E, sub_47D330, sub_481A60",
+  "impact": null
+ },
+ {
+  "addr": "0047D340",
+  "name": "sub_47D340",
+  "c_lines": 10,
+  "status": "PORTED",
+  "port": "libsys/graphics/font.c",
+  "what": "Set text colour / style globals for draw_text.",
+  "callers": "render_text_with_style, sub_481A60",
+  "impact": null
+ },
+ {
+  "addr": "0047D350",
+  "name": "ls_duplicate_bmap",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "ls_duplicate_bmap; no callers.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047D7E0",
+  "name": "ls_draw_line",
+  "c_lines": 199,
+  "status": "SKIP",
+  "port": null,
+  "what": "Bresenham line/plot for wireframe debug rasteriser; port has scene_draw_line for overlays.",
+  "callers": "graphics_trinagle_rasteriser_drawlines",
+  "impact": null
+ },
+ {
+  "addr": "0047DA90",
+  "name": "ls_bit_move_256",
+  "c_lines": 90,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw 256-colour bit-move, lock and flip paths replaced by software surfaces.",
+  "callers": "ls_bit_move",
+  "impact": null
+ },
+ {
+  "addr": "0047DC10",
+  "name": "ls_fast_bit_move",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw 256-colour bit-move, lock and flip paths replaced by software surfaces.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047E3C0",
+  "name": "ls_point",
+  "c_lines": 34,
+  "status": "SKIP",
+  "port": null,
+  "what": "ls_point pixel read used by a rarely used effect; port reads buffers directly.",
+  "callers": "sub_482120",
+  "impact": null
+ },
+ {
+  "addr": "0047E4B0",
+  "name": "ls_plot",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "Bresenham line/plot for wireframe debug rasteriser; port has scene_draw_line for overlays.",
+  "callers": "ls_draw_line",
+  "impact": null
+ },
+ {
+  "addr": "0047E500",
+  "name": "ls_lock_rect",
+  "c_lines": 72,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw 256-colour bit-move, lock and flip paths replaced by software surfaces.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047E6E0",
+  "name": "ls_flip_bmap",
+  "c_lines": 57,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw 256-colour bit-move, lock and flip paths replaced by software surfaces.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047E7A0",
+  "name": "ls_get_bit_move_status",
+  "c_lines": 44,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw 256-colour bit-move, lock and flip paths replaced by software surfaces.",
+  "callers": "sub_42BE0E",
+  "impact": null
+ },
+ {
+  "addr": "0047E920",
+  "name": "ls_shut_memory_manager",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_shut_down, ls_shut_movie, sub_42BE0E",
+  "impact": null
+ },
+ {
+  "addr": "0047E9D0",
+  "name": "ls_find_heap",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_get_memory_name, ls_set_memory_name",
+  "impact": null
+ },
+ {
+  "addr": "0047EA10",
+  "name": "ls_max_block",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "register_image_buffer, sub_44D7C8",
+  "impact": null
+ },
+ {
+  "addr": "0047EA20",
+  "name": "ls_max_block_heap",
+  "c_lines": 44,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "register_image_buffer, sub_44D7C8",
+  "impact": null
+ },
+ {
+  "addr": "0047EAC0",
+  "name": "ls_max_memory",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_max_memory_heap, register_image_buffer, sub_406D74",
+  "impact": null
+ },
+ {
+  "addr": "0047EAD0",
+  "name": "ls_max_memory_heap",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "register_image_buffer, sub_406D74",
+  "impact": null
+ },
+ {
+  "addr": "0047EB40",
+  "name": "ls_set_memory_name",
+  "c_lines": 49,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047EC00",
+  "name": "ls_get_memory_name",
+  "c_lines": 38,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047EC60",
+  "name": "ls_enumerate_memory",
+  "c_lines": 30,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047EE60",
+  "name": "ls_release_heap_memory",
+  "c_lines": 55,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_release",
+  "impact": null
+ },
+ {
+  "addr": "0047EF50",
+  "name": "ls_select_memory_up_heap",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "ls_select_memory_down_heap",
+  "impact": null
+ },
+ {
+  "addr": "0047EF70",
+  "name": "ls_select_memory_down_heap",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "libsys memory manager / shutdown / string glue replaced by platform layer and malloc.",
+  "callers": "sub_42282E",
+  "impact": null
+ },
+ {
+  "addr": "0047EFC0",
+  "name": "unused_sub_47EFC0",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F050",
+  "name": "WORD2",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F060",
+  "name": "unused_sub_47F060",
+  "c_lines": 109,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F280",
+  "name": "unused_ls_load_palette",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F2E0",
+  "name": "unused_sub_47F2E0",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F310",
+  "name": "unused_sub_47F310",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F340",
+  "name": "unused_sub_47F340",
+  "c_lines": 49,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "unused_sub_47F470",
+  "impact": null
+ },
+ {
+  "addr": "0047F470",
+  "name": "unused_sub_47F470",
+  "c_lines": 22,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "unused_sub_47F4E0",
+  "impact": null
+ },
+ {
+  "addr": "0047F4E0",
+  "name": "unused_sub_47F4E0",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Unused or dead libsys helper (palette/IDA macro stubs).",
+  "callers": "initialize_resource, load_image_color_data",
+  "impact": null
+ },
+ {
+  "addr": "0047F550",
+  "name": "ls_set_palette",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Sets palette entry through DirectDraw; port converts palette itself.",
+  "callers": "unused_sub_47F060",
+  "impact": null
+ },
+ {
+  "addr": "0047F620",
+  "name": "ls_read_key",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard polling via Win32; replaced by platform events.",
+  "callers": "sub_45C230, unused_ls_wait_user_event",
+  "impact": null
+ },
+ {
+  "addr": "0047F650",
+  "name": "unused_ls_wait_no_key",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard polling via Win32; replaced by platform events.",
+  "callers": "rectangle_editor",
+  "impact": null
+ },
+ {
+  "addr": "0047F670",
+  "name": "ls_key_map",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard polling via Win32; replaced by platform events.",
+  "callers": "rectangle_editor, unused_ls_wait_no_key",
+  "impact": null
+ },
+ {
+  "addr": "0047F690",
+  "name": "ls_is_key_pressed",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard polling via Win32; replaced by platform events.",
+  "callers": "sub_48BE30, unused_ls_wait_no_key",
+  "impact": null
+ },
+ {
+  "addr": "0047F6C0",
+  "name": "ls_load_pcx_ex",
+  "c_lines": 83,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX loader for dev tools.",
+  "callers": "sub_48BE30",
+  "impact": null
+ },
+ {
+  "addr": "0047F880",
+  "name": "ls_read_pcx_line",
+  "c_lines": 39,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX loader for dev tools.",
+  "callers": "ls_load_pcx_ex",
+  "impact": null
+ },
+ {
+  "addr": "0047F8E0",
+  "name": "ls_load_pcx_pal",
+  "c_lines": 44,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX loader for dev tools.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047F990",
+  "name": "ls_save_pcx",
+  "c_lines": 97,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX screenshot saver (debug key).",
+  "callers": "capture_screen_region, process_input_event",
+  "impact": null
+ },
+ {
+  "addr": "0047FB70",
+  "name": "ls_write_pcx_line",
+  "c_lines": 62,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX screenshot saver (debug key).",
+  "callers": "ls_save_pcx",
+  "impact": null
+ },
+ {
+  "addr": "0047FCA0",
+  "name": "unused_ls_set_regulation",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frame regulation and timer glue; replaced by ls_tick/ls_delay.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047FCC0",
+  "name": "unused_ls_regulate",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frame regulation and timer glue; replaced by ls_tick/ls_delay.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047FCF0",
+  "name": "ls_read_timer",
+  "c_lines": 0,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frame regulation and timer glue; replaced by ls_tick/ls_delay.",
+  "callers": "render_sprite_time_based_effect, system_get_gametime",
+  "impact": null
+ },
+ {
+  "addr": "0047FD20",
+  "name": "unused_ls_wait_user_event",
+  "c_lines": 28,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frame regulation and timer glue; replaced by ls_tick/ls_delay.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047FD90",
+  "name": "ls_reset_last_event_timer",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frame regulation and timer glue; replaced by ls_tick/ls_delay.",
+  "callers": "none (indirect/table)",
+  "impact": null
+ },
+ {
+  "addr": "0047FDA0",
+  "name": "unused_ls_get_last_event_timer",
+  "c_lines": 7,
+  "status": "SKIP",
+  "port": null,
+  "what": "Frame regulation and timer glue; replaced by ls_tick/ls_delay.",
+  "callers": "ls_startup",
+  "impact": null
+ },
+ {
+  "addr": "0047FDE0",
+  "name": "ls_beep",
+  "c_lines": 0,
+  "status": "SKIP",
+  "port": null,
+  "what": "ls_beep; no-op.",
+  "callers": "process_mainmenu_437EB7, sub_440B92",
+  "impact": null
+ },
+ {
+  "addr": "0047FEC0",
+  "name": "ls_create_sound",
+  "c_lines": 36,
+  "status": "SKIP",
+  "port": "sfx.c",
+  "what": "Creates DirectSound buffer for a sample; sfx.c plays WAVs through host audio.",
+  "callers": "E048, play_entity_sound",
+  "impact": null
+ },
+ {
+  "addr": "0047FFE0",
+  "name": "unused_ls_wait_no_sound",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": "sfx.c",
+  "what": "Creates DirectSound buffer for a sample; sfx.c plays WAVs through host audio.",
+  "callers": "process_mainmenu_437EB7, process_menu",
+  "impact": null
+ },
+ {
+  "addr": "00480140",
+  "name": "unused_ls_get_sound_position",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code, unused_ prefix, no callers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004801A0",
+  "name": "unused_ls_get_sound_frequency",
+  "c_lines": 33,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code, unused_ prefix, no callers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00480200",
+  "name": "ls_set_sound_volume",
+  "c_lines": 33,
+  "status": "PORTED",
+  "port": "src/sfx.c:voice_volume",
+  "what": "Set sound-buffer volume; port mixer voice volume with master_vol",
+  "callers": "process_menu",
+  "impact": null
+ },
+ {
+  "addr": "00480260",
+  "name": "ls_resume_sound",
+  "c_lines": 23,
+  "status": "MISSING",
+  "port": null,
+  "what": "Pause/resume the sound buffers when the P key pause screen opens/closes",
+  "callers": "process_menu",
+  "impact": "In-game pause (P) does not silence sound or show the pause screen"
+ },
+ {
+  "addr": "004802B0",
+  "name": "ls_pause_sound",
+  "c_lines": 24,
+  "status": "MISSING",
+  "port": null,
+  "what": "Pause/resume the sound buffers when the P key pause screen opens/closes",
+  "callers": "process_menu",
+  "impact": "In-game pause (P) does not silence sound or show the pause screen"
+ },
+ {
+  "addr": "00480300",
+  "name": "sub_480300",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "sub_480370",
+  "impact": null
+ },
+ {
+  "addr": "00480370",
+  "name": "sub_480370",
+  "c_lines": 57,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004806F0",
+  "name": "lsi_get_profile_string",
+  "c_lines": 42,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004808F0",
+  "name": "win_init_instance",
+  "c_lines": 48,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00480A40",
+  "name": "lsys_update_event",
+  "c_lines": 33,
+  "status": "PORTED",
+  "port": "src/libsys/system.h:ls_update_events",
+  "what": "Pump window/input events",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00480AF0",
+  "name": "sub_480AF0",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "00480B20",
+  "name": "sub_480B20",
+  "c_lines": 45,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "sub_48AED0",
+  "impact": null
+ },
+ {
+  "addr": "00480C50",
+  "name": "sub_480C50",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "lsys_message",
+  "impact": null
+ },
+ {
+  "addr": "00480C60",
+  "name": "sub_480C60",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "sub_480E80",
+  "impact": null
+ },
+ {
+  "addr": "00480C90",
+  "name": "sub_480C90",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 window/paint/ini glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00480DF0",
+  "name": "sub_480DF0",
+  "c_lines": 38,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw palette upload; port palette.c/platform framebuffer",
+  "callers": "ls_set_palette",
+  "impact": null
+ },
+ {
+  "addr": "00480E80",
+  "name": "sub_480E80",
+  "c_lines": 79,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw palette upload; port palette.c/platform framebuffer",
+  "callers": "ls_convert_colour",
+  "impact": null
+ },
+ {
+  "addr": "00480FC0",
+  "name": "unused_sub_480FC0",
+  "c_lines": 65,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code, unused_ prefix, no callers",
+  "callers": "unused_sub_47F4E0",
+  "impact": null
+ },
+ {
+  "addr": "00481140",
+  "name": "unused_sub_481140",
+  "c_lines": 40,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dead code, unused_ prefix, no callers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00481250",
+  "name": "sub_481250",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Joystick (joyGetPosEx) read; joystick replaced by platform layer",
+  "callers": "update_status_display",
+  "impact": null
+ },
+ {
+  "addr": "00481290",
+  "name": "update_status_display",
+  "c_lines": 55,
+  "status": "SKIP",
+  "port": null,
+  "what": "Joystick (joyGetPosEx) read; joystick replaced by platform layer",
+  "callers": "update_status_display_with_throttling",
+  "impact": null
+ },
+ {
+  "addr": "00481390",
+  "name": "ls_update_event",
+  "c_lines": 12,
+  "status": "PORTED",
+  "port": "src/libsys/system.h:ls_update_events",
+  "what": "Pump window/input events",
+  "callers": "process_input_command",
+  "impact": null
+ },
+ {
+  "addr": "004813C0",
+  "name": "sub_4813C0",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "ls_main",
+  "impact": null
+ },
+ {
+  "addr": "004813E0",
+  "name": "ls_error",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "render_entity_bounds",
+  "impact": null
+ },
+ {
+  "addr": "00481430",
+  "name": "sub_481430",
+  "c_lines": 38,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "log_message",
+  "impact": null
+ },
+ {
+  "addr": "004814D0",
+  "name": "ls_message",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "log_message",
+  "impact": null
+ },
+ {
+  "addr": "00481550",
+  "name": "ls_copy_file",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original file-manager copy/write/close helpers, replaced by stdio",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00481770",
+  "name": "ls_write",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original file-manager copy/write/close helpers, replaced by stdio",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004817E0",
+  "name": "ls_load_file",
+  "c_lines": 24,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "sub_41333A",
+  "impact": null
+ },
+ {
+  "addr": "004819B0",
+  "name": "ls_delete_file",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original file-manager copy/write/close helpers, replaced by stdio",
+  "callers": "close_font",
+  "impact": null
+ },
+ {
+  "addr": "004819E0",
+  "name": "ls_rename_file",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dev text-entry prompt (debug level/perso cheats); not shipped gameplay",
+  "callers": "sub_481A60",
+  "impact": null
+ },
+ {
+  "addr": "00481A60",
+  "name": "sub_481A60",
+  "c_lines": 47,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dev text-entry prompt (debug level/perso cheats); not shipped gameplay",
+  "callers": "render_text_with_style",
+  "impact": null
+ },
+ {
+  "addr": "00481BE0",
+  "name": "render_text_with_style",
+  "c_lines": 132,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dev text-entry prompt (debug level/perso cheats); not shipped gameplay",
+  "callers": "display_text_message",
+  "impact": null
+ },
+ {
+  "addr": "00481F70",
+  "name": "sub_481F70",
+  "c_lines": 51,
+  "status": "SKIP",
+  "port": null,
+  "what": "Dev text-entry prompt (debug level/perso cheats); not shipped gameplay",
+  "callers": "sub_481A60",
+  "impact": null
+ },
+ {
+  "addr": "00482120",
+  "name": "sub_482120",
+  "c_lines": 52,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "sub_4822E0",
+  "impact": null
+ },
+ {
+  "addr": "00482370",
+  "name": "sub_482370",
+  "c_lines": 121,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "sub_4822E0",
+  "impact": null
+ },
+ {
+  "addr": "00482470",
+  "name": "sub_482470",
+  "c_lines": 45,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "sub_482560",
+  "impact": null
+ },
+ {
+  "addr": "004825B0",
+  "name": "sub_4825B0",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "ls_shut_down",
+  "impact": null
+ },
+ {
+  "addr": "00482630",
+  "name": "ls_get_mouse",
+  "c_lines": 45,
+  "status": "PORTED",
+  "port": "src/libsys/system.h motion_x/mouse_left",
+  "what": "Mouse position/buttons/delta; platform layer fills system_t",
+  "callers": "sub_4062A9",
+  "impact": null
+ },
+ {
+  "addr": "00482710",
+  "name": "ls_get_mouse_delta",
+  "c_lines": 36,
+  "status": "PORTED",
+  "port": "src/libsys/system.h motion_x/mouse_left",
+  "what": "Mouse position/buttons/delta; platform layer fills system_t",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00482860",
+  "name": "sub_482860",
+  "c_lines": 62,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "lsi_remap_bmap",
+  "impact": null
+ },
+ {
+  "addr": "00482950",
+  "name": "lsi_remap_bmap_depth",
+  "c_lines": 147,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "sub_4867B0",
+  "impact": null
+ },
+ {
+  "addr": "00482B90",
+  "name": "ls_fast_get_nearest_colour",
+  "c_lines": 204,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "lsi_remap_bmap",
+  "impact": null
+ },
+ {
+  "addr": "00482F20",
+  "name": "ls_init_fast_nearest_colour",
+  "c_lines": 0,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004839B0",
+  "name": "lsi_remap_bmap_888x555",
+  "c_lines": 131,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "lsi_remap_bmap",
+  "impact": null
+ },
+ {
+  "addr": "00483CF0",
+  "name": "lsi_remap_bmap_888x565",
+  "c_lines": 130,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "lsi_remap_bmap",
+  "impact": null
+ },
+ {
+  "addr": "00484050",
+  "name": "ls_change_remap_colour",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00484060",
+  "name": "ls_get_colour",
+  "c_lines": 35,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "sub_480300",
+  "impact": null
+ },
+ {
+  "addr": "00484140",
+  "name": "ls_shut_graphic_system",
+  "c_lines": 19,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "ls_shut_down",
+  "impact": null
+ },
+ {
+  "addr": "00484300",
+  "name": "update_display_buffer",
+  "c_lines": 0,
+  "status": "SKIP",
+  "port": null,
+  "what": "Empty thunk (display refresh no-op in pause screen path)",
+  "callers": "display_pause_screen",
+  "impact": null
+ },
+ {
+  "addr": "00484310",
+  "name": "sub_484310",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "ls_set_movie_on",
+  "impact": null
+ },
+ {
+  "addr": "00484350",
+  "name": "ls_read_mac_word",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "ls_load_params",
+  "impact": null
+ },
+ {
+  "addr": "00484370",
+  "name": "ls_read_mac_long",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "ls_load_lbm_pal",
+  "impact": null
+ },
+ {
+  "addr": "004843A0",
+  "name": "ls_read_pc_word",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "sub_41333A",
+  "impact": null
+ },
+ {
+  "addr": "004843C0",
+  "name": "ls_read_pc_long",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "sub_41333A",
+  "impact": null
+ },
+ {
+  "addr": "004845D0",
+  "name": "sub_4845D0",
+  "c_lines": 111,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4843F0",
+  "impact": null
+ },
+ {
+  "addr": "00484770",
+  "name": "sub_484770",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004847A0",
+  "name": "sub_4847A0",
+  "c_lines": 29,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4843F0",
+  "impact": null
+ },
+ {
+  "addr": "004847F0",
+  "name": "sub_4847F0",
+  "c_lines": 52,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4843F0",
+  "impact": null
+ },
+ {
+  "addr": "00484890",
+  "name": "sub_484890",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004848D0",
+  "name": "sub_4848D0",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4847A0",
+  "impact": null
+ },
+ {
+  "addr": "00484920",
+  "name": "sub_484920",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4847A0",
+  "impact": null
+ },
+ {
+  "addr": "00484970",
+  "name": "sub_484970",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4847A0",
+  "impact": null
+ },
+ {
+  "addr": "004849C0",
+  "name": "sub_4849C0",
+  "c_lines": 54,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4847A0",
+  "impact": null
+ },
+ {
+  "addr": "00484A70",
+  "name": "sub_484A70",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "CPU feature detection and display-mode enumeration at startup",
+  "callers": "sub_4843F0",
+  "impact": null
+ },
+ {
+  "addr": "00484AC0",
+  "name": "ls_gif_decompress_ex",
+  "c_lines": 111,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "ls_decompress_gif_ex",
+  "impact": null
+ },
+ {
+  "addr": "00484D00",
+  "name": "ls_gif_load_pal",
+  "c_lines": 46,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "ls_decompress_gif_pal",
+  "impact": null
+ },
+ {
+  "addr": "00484E80",
+  "name": "ls_decompress_gif_ex",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00484EB0",
+  "name": "ls_decompress_gif",
+  "c_lines": 39,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "initialize_bitmap_buffer",
+  "impact": null
+ },
+ {
+  "addr": "00484F20",
+  "name": "ls_load_gif_pal",
+  "c_lines": 30,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "load_image_color_data",
+  "impact": null
+ },
+ {
+  "addr": "00484F80",
+  "name": "ls_decompress_gif_pal",
+  "c_lines": 7,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "sub_4755B5",
+  "impact": null
+ },
+ {
+  "addr": "00484FA0",
+  "name": "ls_direct_sound_error",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "lsi_init_cooporative_sound",
+  "impact": null
+ },
+ {
+  "addr": "00484FC0",
+  "name": "lsi_init_cooporative_sound",
+  "c_lines": 22,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00485220",
+  "name": "lsys_load_sound",
+  "c_lines": 105,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "ls_load_sound",
+  "impact": null
+ },
+ {
+  "addr": "004853E0",
+  "name": "lsys_set_sound_volume",
+  "c_lines": 17,
+  "status": "PORTED",
+  "port": "src/sfx.c:voice_volume",
+  "what": "Set sound-buffer volume; port mixer voice volume with master_vol",
+  "callers": "ls_set_sound_volume",
+  "impact": null
+ },
+ {
+  "addr": "00485420",
+  "name": "lsys_set_sound_frequency",
+  "c_lines": 15,
+  "status": "PORTED",
+  "port": "src/sfx.c:voice_apply",
+  "what": "Per-buffer pitch/frequency; port sets mixer voice rate",
+  "callers": "ls_play_sound",
+  "impact": null
+ },
+ {
+  "addr": "00485460",
+  "name": "lsys_set_sound_pan",
+  "c_lines": 37,
+  "status": "PORTED",
+  "port": "src/sfx.c:voice_apply (sub_44D06F pan)",
+  "what": "Clamp and apply DirectSound pan; port mixer pan",
+  "callers": "sub_44D06F",
+  "impact": null
+ },
+ {
+  "addr": "004854E0",
+  "name": "lsys_play_sound",
+  "c_lines": 22,
+  "status": "PORTED",
+  "port": "src/sfx.c:mixer voices",
+  "what": "DirectSound buffer play/stop/status/position; software mixer voices replace it",
+  "callers": "ls_play_sound",
+  "impact": null
+ },
+ {
+  "addr": "00485520",
+  "name": "lsys_stop_sound",
+  "c_lines": 18,
+  "status": "PORTED",
+  "port": "src/sfx.c:mixer voices",
+  "what": "DirectSound buffer play/stop/status/position; software mixer voices replace it",
+  "callers": "ls_stop_sound",
+  "impact": null
+ },
+ {
+  "addr": "00485580",
+  "name": "lsys_get_sound_status",
+  "c_lines": 15,
+  "status": "PORTED",
+  "port": "src/sfx.c:mixer voices",
+  "what": "DirectSound buffer play/stop/status/position; software mixer voices replace it",
+  "callers": "ls_get_sound_status",
+  "impact": null
+ },
+ {
+  "addr": "004855D0",
+  "name": "lsys_get_sound_position",
+  "c_lines": 15,
+  "status": "PORTED",
+  "port": "src/sfx.c:mixer voices",
+  "what": "DirectSound buffer play/stop/status/position; software mixer voices replace it",
+  "callers": "my_read_timer",
+  "impact": null
+ },
+ {
+  "addr": "00485600",
+  "name": "lsys_set_sound_position",
+  "c_lines": 22,
+  "status": "PORTED",
+  "port": "src/sfx.c:mixer voices",
+  "what": "DirectSound buffer play/stop/status/position; software mixer voices replace it",
+  "callers": "ls_stop_sound",
+  "impact": null
+ },
+ {
+  "addr": "00485660",
+  "name": "lsys_beep",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00485670",
+  "name": "lsys_set_sound_format",
+  "c_lines": 48,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "ls_main",
+  "impact": null
+ },
+ {
+  "addr": "00485740",
+  "name": "lsys_lock_sound",
+  "c_lines": 37,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "sub_42D81F",
+  "impact": null
+ },
+ {
+  "addr": "004857C0",
+  "name": "lsys_unlock_sound",
+  "c_lines": 31,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "sub_42D81F",
+  "impact": null
+ },
+ {
+  "addr": "00485A10",
+  "name": "ls_extract_volume_and_directory",
+  "c_lines": 266,
+  "status": "SKIP",
+  "port": null,
+  "what": "Path/CD-volume resolution; replaced by ls_resolve_path",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00485C20",
+  "name": "sub_485C20",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "Path/CD-volume resolution; replaced by ls_resolve_path",
+  "callers": "game_set_game_path_485CC0",
+  "impact": null
+ },
+ {
+  "addr": "00485C90",
+  "name": "sub_485C90",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Path/CD-volume resolution; replaced by ls_resolve_path",
+  "callers": "lsys_is_path_exist",
+  "impact": null
+ },
+ {
+  "addr": "00485CC0",
+  "name": "game_set_game_path_485CC0",
+  "c_lines": 34,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_get_base_path",
+  "what": "Derive game root path from module path",
+  "callers": "ls_main",
+  "impact": null
+ },
+ {
+  "addr": "00485DC0",
+  "name": "sub_485DC0",
+  "c_lines": 139,
+  "status": "SKIP",
+  "port": null,
+  "what": "Path/CD-volume resolution; replaced by ls_resolve_path",
+  "callers": "sub_48C5D0",
+  "impact": null
+ },
+ {
+  "addr": "004863B0",
+  "name": "lsi_get_clean_path",
+  "c_lines": 45,
+  "status": "SKIP",
+  "port": null,
+  "what": "Path/CD-volume resolution; replaced by ls_resolve_path",
+  "callers": "sub_485DC0",
+  "impact": null
+ },
+ {
+  "addr": "00486470",
+  "name": "sub_486470",
+  "c_lines": 31,
+  "status": "PORTED",
+  "port": "src/libsys/movie.c",
+  "what": "Scaled blit of movie frame to screen (nearest-neighbour)",
+  "callers": "sub_486580",
+  "impact": null
+ },
+ {
+  "addr": "00486580",
+  "name": "sub_486580",
+  "c_lines": 96,
+  "status": "PORTED",
+  "port": "src/libsys/movie.c",
+  "what": "Scaled blit of movie frame to screen (nearest-neighbour)",
+  "callers": "cp_play_fade",
+  "impact": null
+ },
+ {
+  "addr": "004866F0",
+  "name": "sub_4866F0",
+  "c_lines": 64,
+  "status": "PORTED",
+  "port": "src/libsys/graphics/cif.c:cif_load",
+  "what": "Load CIF/RLE image into a bitmap",
+  "callers": "sub_4867B0",
+  "impact": null
+ },
+ {
+  "addr": "004867B0",
+  "name": "sub_4867B0",
+  "c_lines": 167,
+  "status": "PORTED",
+  "port": "src/libsys/graphics/cif.c:cif_load",
+  "what": "Load CIF/RLE image into a bitmap",
+  "callers": "sub_444B10",
+  "impact": null
+ },
+ {
+  "addr": "00486B60",
+  "name": "sub_486B60",
+  "c_lines": 141,
+  "status": "SKIP",
+  "port": null,
+  "what": "TGA screenshot save bound to a debug key in cinematic player",
+  "callers": "sub_44EC90",
+  "impact": null
+ },
+ {
+  "addr": "00486F80",
+  "name": "sub_486F80",
+  "c_lines": 47,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "sub_487050",
+  "impact": null
+ },
+ {
+  "addr": "00487050",
+  "name": "sub_487050",
+  "c_lines": 57,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "sub_487200",
+  "impact": null
+ },
+ {
+  "addr": "00487200",
+  "name": "sub_487200",
+  "c_lines": 36,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "sub_44D23D",
+  "impact": null
+ },
+ {
+  "addr": "004872F0",
+  "name": "lsys_get_memory",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "ls_get_heap",
+  "impact": null
+ },
+ {
+  "addr": "00487350",
+  "name": "sub_487350",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "ls_release_heap",
+  "impact": null
+ },
+ {
+  "addr": "00487410",
+  "name": "system_check_memory_487410",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "load_configuration",
+  "impact": null
+ },
+ {
+  "addr": "004874E0",
+  "name": "sub_4874E0",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "ls_mem_copy",
+  "impact": null
+ },
+ {
+  "addr": "00487500",
+  "name": "lsys_str_upper",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00487520",
+  "name": "sub_487520",
+  "c_lines": 32,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "lsi_open_stat_app",
+  "impact": null
+ },
+ {
+  "addr": "004875F0",
+  "name": "ls_get_module_name",
+  "c_lines": 27,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "ls_main",
+  "impact": null
+ },
+ {
+  "addr": "00487680",
+  "name": "sub_487680",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Original memory manager / string / module helpers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004878F0",
+  "name": "lsys_stop_cd",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "CD audio control; stub in cd.c",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004879D0",
+  "name": "lsys_shut_cd_system",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "CD audio control; stub in cd.c",
+  "callers": "ls_shut_down",
+  "impact": null
+ },
+ {
+  "addr": "00487A00",
+  "name": "sub_487A00",
+  "c_lines": 32,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "sub_4804D0",
+  "impact": null
+ },
+ {
+  "addr": "00487B50",
+  "name": "lsys_get_click_mouse",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "lsys_get_mouse_delta",
+  "impact": null
+ },
+ {
+  "addr": "00487B60",
+  "name": "lsys_set_click_mouse",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00487B70",
+  "name": "lsys_get_mouse",
+  "c_lines": 24,
+  "status": "PORTED",
+  "port": "src/libsys/system.h motion_x/mouse_left",
+  "what": "Mouse position/buttons/delta; platform layer fills system_t",
+  "callers": "ls_get_mouse",
+  "impact": null
+ },
+ {
+  "addr": "00487BE0",
+  "name": "sub_487BE0",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "ls_set_mouse",
+  "impact": null
+ },
+ {
+  "addr": "00487C20",
+  "name": "lsys_set_mouse_range",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "ls_set_mouse_range",
+  "impact": null
+ },
+ {
+  "addr": "00487C50",
+  "name": "lsys_get_mouse_delta",
+  "c_lines": 32,
+  "status": "PORTED",
+  "port": "src/libsys/system.h motion_x/mouse_left",
+  "what": "Mouse position/buttons/delta; platform layer fills system_t",
+  "callers": "ls_get_mouse_delta",
+  "impact": null
+ },
+ {
+  "addr": "00487D20",
+  "name": "sub_487D20",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "lsys_update_event",
+  "impact": null
+ },
+ {
+  "addr": "00487D30",
+  "name": "sub_487D30",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00487D60",
+  "name": "lsys_key_map",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "ls_key_map",
+  "impact": null
+ },
+ {
+  "addr": "00487D80",
+  "name": "lsys_read_key",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "ls_read_key",
+  "impact": null
+ },
+ {
+  "addr": "00487DF0",
+  "name": "lsys_key_pressed",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00487E00",
+  "name": "sub_487E00",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "sub_4804D0",
+  "impact": null
+ },
+ {
+  "addr": "00487F30",
+  "name": "ls_shut_system",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "ls_shut_down",
+  "impact": null
+ },
+ {
+  "addr": "00487F40",
+  "name": "lsys_exit",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Keyboard/mouse/exit Win32 glue replaced by platform layer",
+  "callers": "ls_exit",
+  "impact": null
+ },
+ {
+  "addr": "004880C0",
+  "name": "sub_4880C0",
+  "c_lines": 38,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "ls_shut_system",
+  "impact": null
+ },
+ {
+  "addr": "00488220",
+  "name": "sub_488220",
+  "c_lines": 43,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00488290",
+  "name": "sub_488290",
+  "c_lines": 45,
+  "status": "SKIP",
+  "port": null,
+  "what": "Buffer/file writer helpers for saver tools",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00488390",
+  "name": "sub_488390",
+  "c_lines": 27,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004883F0",
+  "name": "sub_4883F0",
+  "c_lines": 34,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "ls_random",
+  "impact": null
+ },
+ {
+  "addr": "00488460",
+  "name": "sub_488460",
+  "c_lines": 33,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c:ls_read_*",
+  "what": "Endian-aware word/long readers; port reads little-endian directly",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "004884D0",
+  "name": "sub_4884D0",
+  "c_lines": 27,
+  "status": "SKIP",
+  "port": null,
+  "what": "Buffer/file writer helpers for saver tools",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00488530",
+  "name": "sub_488530",
+  "c_lines": 36,
+  "status": "SKIP",
+  "port": null,
+  "what": "Buffer/file writer helpers for saver tools",
+  "callers": "ls_random",
+  "impact": null
+ },
+ {
+  "addr": "004885C0",
+  "name": "sub_4885C0",
+  "c_lines": 42,
+  "status": "SKIP",
+  "port": null,
+  "what": "Buffer/file writer helpers for saver tools",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00488A30",
+  "name": "sub_488A30",
+  "c_lines": 28,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "lsys_bit_move_256",
+  "impact": null
+ },
+ {
+  "addr": "00488AA0",
+  "name": "sub_488AA0",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "lsys_message",
+  "impact": null
+ },
+ {
+  "addr": "00488AD0",
+  "name": "graphics_fill_image_488AD0",
+  "c_lines": 39,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "graphics_draw_image_events_488B90",
+  "impact": null
+ },
+ {
+  "addr": "00488B60",
+  "name": "sub_488B60",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "graphics_fill_image_488AD0",
+  "impact": null
+ },
+ {
+  "addr": "00488B90",
+  "name": "graphics_draw_image_events_488B90",
+  "c_lines": 31,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00488C60",
+  "name": "graphics_create_surface_488C60",
+  "c_lines": 89,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00488DC0",
+  "name": "sub_488DC0",
+  "c_lines": 76,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "graphics_create_surface_488C60",
+  "impact": null
+ },
+ {
+  "addr": "00489110",
+  "name": "sub_489110",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "ls_free_bmap",
+  "impact": null
+ },
+ {
+  "addr": "00489440",
+  "name": "graphics_draw_image_489440",
+  "c_lines": 45,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "ls_lock_rect",
+  "impact": null
+ },
+ {
+  "addr": "004894E0",
+  "name": "graphics_draw_image_fullscreen_4894E0",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "00489500",
+  "name": "sub_489500",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "ls_unlock_bmap",
+  "impact": null
+ },
+ {
+  "addr": "00489590",
+  "name": "sub_489590",
+  "c_lines": 47,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "ls_get_colour",
+  "impact": null
+ },
+ {
+  "addr": "00489620",
+  "name": "sub_489620",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw surface create/lock/blit glue",
+  "callers": "sub_489590",
+  "impact": null
+ },
+ {
+  "addr": "0048A1B0",
+  "name": "lsys_set_timer",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 timer glue; ls_tick in platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048A1C0",
+  "name": "lsys_free_timer",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 timer glue; ls_tick in platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048A210",
+  "name": "lsys_read_timer",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 timer glue; ls_tick in platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048A220",
+  "name": "lsys_pause_timer",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 timer glue; ls_tick in platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048A240",
+  "name": "lsys_resume_timer",
+  "c_lines": 19,
+  "status": "SKIP",
+  "port": null,
+  "what": "Win32 timer glue; ls_tick in platform layer",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048A270",
+  "name": "ls_wave_error",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "sub_486F80",
+  "impact": null
+ },
+ {
+  "addr": "0048A280",
+  "name": "sub_48A280",
+  "c_lines": 44,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "sub_48A330",
+  "impact": null
+ },
+ {
+  "addr": "0048A330",
+  "name": "sub_48A330",
+  "c_lines": 54,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "sub_48A490",
+  "impact": null
+ },
+ {
+  "addr": "0048A490",
+  "name": "sub_48A490",
+  "c_lines": 49,
+  "status": "PORTED",
+  "port": "src/libsys/audio/wav.c",
+  "what": "WAV file/memory RIFF parsing and sound load",
+  "callers": "ls_load_sound",
+  "impact": null
+ },
+ {
+  "addr": "0048A560",
+  "name": "get_dx_version",
+  "c_lines": 194,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048A910",
+  "name": "lsys_message",
+  "c_lines": 50,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "sub_481430",
+  "impact": null
+ },
+ {
+  "addr": "0048AAF0",
+  "name": "sys_get_error_code_48AAF0",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "Error/log message boxes, DX version, ls1.cfg log: diagnostics",
+  "callers": "sub_480CF0",
+  "impact": null
+ },
+ {
+  "addr": "0048ABB0",
+  "name": "ls_init_graphic_system_ex",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "ls_init_graphic_system",
+  "impact": null
+ },
+ {
+  "addr": "0048ABC0",
+  "name": "ls_shut_graphic_system_ex",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048AC20",
+  "name": "lsys_init_graphic_system",
+  "c_lines": 35,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048ACA0",
+  "name": "sub_48ACA0",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_48ACE0",
+  "impact": null
+ },
+ {
+  "addr": "0048ACE0",
+  "name": "sub_48ACE0",
+  "c_lines": 14,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_48AED0",
+  "impact": null
+ },
+ {
+  "addr": "0048AD40",
+  "name": "sub_48AD40",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_48AED0",
+  "impact": null
+ },
+ {
+  "addr": "0048AD90",
+  "name": "sub_48AD90",
+  "c_lines": 38,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_48AED0",
+  "impact": null
+ },
+ {
+  "addr": "0048AE50",
+  "name": "lsi_is_displaymode_palettized",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_480CF0",
+  "impact": null
+ },
+ {
+  "addr": "0048AFB0",
+  "name": "update_display_buffer_0",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048AFD0",
+  "name": "sub_48AFD0",
+  "c_lines": 34,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_484310",
+  "impact": null
+ },
+ {
+  "addr": "0048B090",
+  "name": "sub_48B090",
+  "c_lines": 78,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048B1D0",
+  "name": "lsi_extract_field",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_48B200",
+  "impact": null
+ },
+ {
+  "addr": "0048B200",
+  "name": "sub_48B200",
+  "c_lines": 85,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "lsi_is_displaymode_palettized",
+  "impact": null
+ },
+ {
+  "addr": "0048B3F0",
+  "name": "lsys_get_filedate",
+  "c_lines": 12,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "ls_get_filedate",
+  "impact": null
+ },
+ {
+  "addr": "0048B440",
+  "name": "lsys_close",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "ls_close",
+  "impact": null
+ },
+ {
+  "addr": "0048B450",
+  "name": "lsys_read",
+  "c_lines": 29,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "ls_read",
+  "impact": null
+ },
+ {
+  "addr": "0048B4E0",
+  "name": "lsys_write",
+  "c_lines": 31,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "ls_write",
+  "impact": null
+ },
+ {
+  "addr": "0048B580",
+  "name": "lsys_seek",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "ls_seek",
+  "impact": null
+ },
+ {
+  "addr": "0048B5A0",
+  "name": "lsys_delete",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048B5C0",
+  "name": "lsys_rename",
+  "c_lines": 5,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048B5E0",
+  "name": "lsys_init_mouse_system_",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectDraw video-mode setup/pixel-format glue",
+  "callers": "sub_482200",
+  "impact": null
+ },
+ {
+  "addr": "0048B6D0",
+  "name": "start_pass_upsample",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048B6F0",
+  "name": "sub_48B6F0",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "sub_482200",
+  "impact": null
+ },
+ {
+  "addr": "0048B750",
+  "name": "sub_48B750",
+  "c_lines": 136,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "sub_48BE30",
+  "impact": null
+ },
+ {
+  "addr": "0048BC40",
+  "name": "LOBYTE",
+  "c_lines": 77,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048BE30",
+  "name": "ls_load_pcx_ex",
+  "c_lines": 29,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "sub_4822E0",
+  "impact": null
+ },
+ {
+  "addr": "0048BEB0",
+  "name": "sub_48BEB0",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Display-depth bitmap remap and image-dispatch; port uses 32-bit XRGB pipeline",
+  "callers": "lsi_remap_bmap",
+  "impact": null
+ },
+ {
+  "addr": "0048BEC0",
+  "name": "ls_gif_decoder",
+  "c_lines": 272,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "ls_gif_decompress_ex",
+  "impact": null
+ },
+ {
+  "addr": "0048C570",
+  "name": "ls_gif_clip_outline",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "GIF decoder; shipped data uses pre-converted CIF files",
+  "callers": "ls_gif_decoder",
+  "impact": null
+ },
+ {
+  "addr": "0048C920",
+  "name": "lsys_is_path_exist",
+  "c_lines": 18,
+  "status": "PORTED",
+  "port": "src/libsys/file_system.c",
+  "what": "File close/read/write/seek/delete/rename/exists/load wrappers",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048C9F0",
+  "name": "ls_load_lbm_pal",
+  "c_lines": 42,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048CA80",
+  "name": "ls_load_params",
+  "c_lines": 89,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "ls_load_lbm_ex",
+  "impact": null
+ },
+ {
+  "addr": "0048CB80",
+  "name": "ls_iff_set_word",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "ls_load_lbm_ex",
+  "impact": null
+ },
+ {
+  "addr": "0048CBD0",
+  "name": "ls_load_params",
+  "c_lines": 198,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "sub_48BE30",
+  "impact": null
+ },
+ {
+  "addr": "0048CEA0",
+  "name": "ls_save_lbm_pal",
+  "c_lines": 96,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048D1E0",
+  "name": "ls_save_lbm",
+  "c_lines": 127,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048D4B0",
+  "name": "build_plane_line",
+  "c_lines": 35,
+  "status": "SKIP",
+  "port": null,
+  "what": "PCX/LBM/JPEG loader or saver for dev tools; not used by CIF data path",
+  "callers": "ls_save_lbm",
+  "impact": null
+ },
+ {
+  "addr": "0048D510",
+  "name": "lock_stream_sound_2",
+  "c_lines": 21,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "StartAddress",
+  "impact": null
+ },
+ {
+  "addr": "0048D550",
+  "name": "unlock_stream_sound_2",
+  "c_lines": 18,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "StartAddress",
+  "impact": null
+ },
+ {
+  "addr": "0048D590",
+  "name": "ls_init_sound_stream",
+  "c_lines": 59,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "init_decompress",
+  "impact": null
+ },
+ {
+  "addr": "0048D690",
+  "name": "sub_48D690",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "ls_play_movie",
+  "impact": null
+ },
+ {
+  "addr": "0048D6B0",
+  "name": "sub_48D6B0",
+  "c_lines": 17,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "decompress_anim",
+  "impact": null
+ },
+ {
+  "addr": "0048D6E0",
+  "name": "sub_48D6E0",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "decompress_anim",
+  "impact": null
+ },
+ {
+  "addr": "0048DA70",
+  "name": "audio_create_buffer_48DA70",
+  "c_lines": 76,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "ls_main",
+  "impact": null
+ },
+ {
+  "addr": "0048DC00",
+  "name": "audio_releasse_48DC00",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "ls_main",
+  "impact": null
+ },
+ {
+  "addr": "0048E2D0",
+  "name": "sub_48E2D0",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "DirectSound/stream buffer glue replaced by platform audio",
+  "callers": "sub_48E080",
+  "impact": null
+ },
+ {
+  "addr": "0048E491",
+  "name": "sub_48E8AE",
+  "c_lines": 10,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48E3A8",
+  "impact": null
+ },
+ {
+  "addr": "0048E8A2",
+  "name": "sub_48E8A2",
+  "c_lines": 9,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48E6EB",
+  "impact": null
+ },
+ {
+  "addr": "0048E953",
+  "name": "JUMPOUT",
+  "c_lines": 6,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48E6EB",
+  "impact": null
+ },
+ {
+  "addr": "0048EA83",
+  "name": "__OFSUB__",
+  "c_lines": 13,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48E6EB",
+  "impact": null
+ },
+ {
+  "addr": "0048F03C",
+  "name": "sub_48F03C",
+  "c_lines": 19,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48F06F",
+  "impact": null
+ },
+ {
+  "addr": "0048F06F",
+  "name": "sub_48F06F",
+  "c_lines": 31,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48F0B6",
+  "impact": null
+ },
+ {
+  "addr": "0048F11B",
+  "name": "sub_48F11B",
+  "c_lines": 9,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048F138",
+  "name": "sub_48F138",
+  "c_lines": 22,
+  "status": "PORTED",
+  "port": "src/music.c",
+  "what": "MOD tracker internals (effects, state reset, format probe)",
+  "callers": "sub_48E080",
+  "impact": null
+ },
+ {
+  "addr": "0048F2B0",
+  "name": "set_render_mode",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Tiny setter/release thunk on render context",
+  "callers": "render_entity_with_ui",
+  "impact": null
+ },
+ {
+  "addr": "0048F390",
+  "name": "sub_48F390",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Tiny setter/release thunk on render context",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "0048F3B4",
+  "name": "sub_48F3B4",
+  "c_lines": 18,
+  "status": "PORTED",
+  "port": "src/obc.c:fmat_* + src/model.c",
+  "what": "Fixed-point Q14 matrix/vector transform helpers inlined in port",
+  "callers": "sub_420D80",
+  "impact": null
+ },
+ {
+  "addr": "0048F4B4",
+  "name": "sub_48F4B4",
+  "c_lines": 12,
+  "status": "PORTED",
+  "port": "src/obc.c:fmat_* + src/model.c",
+  "what": "Fixed-point Q14 matrix/vector transform helpers inlined in port",
+  "callers": "render_entity_bounds",
+  "impact": null
+ },
+ {
+  "addr": "0048F53C",
+  "name": "sub_48F53C",
+  "c_lines": 16,
+  "status": "PORTED",
+  "port": "src/obc.c:fmat_* + src/model.c",
+  "what": "Fixed-point Q14 matrix/vector transform helpers inlined in port",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048F5B0",
+  "name": "sub_48F5B0",
+  "c_lines": 21,
+  "status": "PORTED",
+  "port": "src/obc.c:fmat_* + src/model.c",
+  "what": "Fixed-point Q14 matrix/vector transform helpers inlined in port",
+  "callers": "",
+  "impact": null
+ },
+ {
+  "addr": "0048FCD0",
+  "name": "sub_48FCD0",
+  "c_lines": 28,
+  "status": "PARTIAL",
+  "port": "src/model.c",
+  "what": "Per-axis 8.8 scale of model matrix (default 256) not applied in port renderer",
+  "callers": "sub_498330",
+  "impact": "Scaled models would render at unit size; most use 256"
+ },
+ {
+  "addr": "0048FDA0",
+  "name": "sub_48FDA0",
+  "c_lines": 26,
+  "status": "PORTED",
+  "port": "src/scene.c / src/model.c",
+  "what": "High-precision vector rotate by camera matrix, inlined",
+  "callers": "sub_48FFB0",
+  "impact": null
+ },
+ {
+  "addr": "0048FEB0",
+  "name": "sub_48FEB0",
+  "c_lines": 70,
+  "status": "PORTED",
+  "port": "src/obc.c:fmat_* + src/model.c",
+  "what": "Fixed-point Q14 matrix/vector transform helpers inlined in port",
+  "callers": "sub_498330",
+  "impact": null
+ },
+ {
+  "addr": "0048FFB0",
+  "name": "sub_48FFB0",
+  "c_lines": 9,
+  "status": "PORTED",
+  "port": "src/scene.c / src/model.c",
+  "what": "High-precision vector rotate by camera matrix, inlined",
+  "callers": "sub_420D80",
+  "impact": null
+ },
+ {
+  "addr": "004902C0",
+  "name": "sub_4902C0",
+  "c_lines": 52,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_493340",
+  "impact": "low"
+ },
+ {
+  "addr": "00490520",
+  "name": "sub_490520",
+  "c_lines": 61,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Per-face light intensity from normal dot light direction; port computes shade 0..63 per vertex",
+  "callers": "sub_498330",
+  "impact": null
+ },
+ {
+  "addr": "00490690",
+  "name": "sub_490690",
+  "c_lines": 25,
+  "status": "PORTED",
+  "port": "src/model.c:model_from_atoms",
+  "what": "Quad as two triangles dispatch wrappers; port splits quads to triangles at model build",
+  "callers": "table:004B2104o",
+  "impact": null
+ },
+ {
+  "addr": "00490700",
+  "name": "sub_490700",
+  "c_lines": 25,
+  "status": "PORTED",
+  "port": "src/model.c:model_from_atoms",
+  "what": "Quad as two triangles dispatch wrappers; port splits quads to triangles at model build",
+  "callers": "table:004B2100o",
+  "impact": null
+ },
+ {
+  "addr": "00490770",
+  "name": "sub_490770",
+  "c_lines": 13,
+  "status": "PORTED",
+  "port": "src/model.c:model_from_atoms",
+  "what": "Quad as two triangles dispatch wrappers; port splits quads to triangles at model build",
+  "callers": "table:004B20ECo",
+  "impact": null
+ },
+ {
+  "addr": "004907B0",
+  "name": "sub_4907B0",
+  "c_lines": 17,
+  "status": "PORTED",
+  "port": "src/model.c:model_from_atoms",
+  "what": "Quad as two triangles dispatch wrappers; port splits quads to triangles at model build",
+  "callers": "table:004B20E4o",
+  "impact": null
+ },
+ {
+  "addr": "00490820",
+  "name": "sub_490820",
+  "c_lines": 27,
+  "status": "PORTED",
+  "port": "src/model.c:model_from_atoms",
+  "what": "Quad as two triangles dispatch wrappers; port splits quads to triangles at model build",
+  "callers": "table:004B20E0o",
+  "impact": null
+ },
+ {
+  "addr": "00490898",
+  "name": "sub_490898",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "table:standard_palette_datao",
+  "impact": null
+ },
+ {
+  "addr": "004908B7",
+  "name": "sub_4908B7",
+  "c_lines": 400,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_490B05",
+  "impact": null
+ },
+ {
+  "addr": "00490B05",
+  "name": "sub_490B05",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "table:004B2090o",
+  "impact": null
+ },
+ {
+  "addr": "00490B86",
+  "name": "sub_490B86",
+  "c_lines": 32,
+  "status": "PORTED",
+  "port": "src/model.c:model_from_atoms",
+  "what": "Quad as two triangles dispatch wrappers; port splits quads to triangles at model build",
+  "callers": "table:004B20D0o",
+  "impact": null
+ },
+ {
+  "addr": "00490C30",
+  "name": "sub_490C30",
+  "c_lines": 30,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Flat-colour/untextured-flat triangle fill kernel; port draws every face through the shaded gouraud kernel",
+  "callers": "sub_490C5E",
+  "impact": "Flat-shaded faces get gouraud ramp instead; small visual differences"
+ },
+ {
+  "addr": "00490C5E",
+  "name": "sub_490C5E",
+  "c_lines": 802,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Flat-colour/untextured-flat triangle fill kernel; port draws every face through the shaded gouraud kernel",
+  "callers": "table:004B20A0o",
+  "impact": "Flat-shaded faces get gouraud ramp instead; small visual differences"
+ },
+ {
+  "addr": "00491420",
+  "name": "sub_491420",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Fatal \"libsys3d null pointer\" error stub for unused primitive-table slots",
+  "callers": ".text:004544B5p",
+  "impact": null
+ },
+ {
+  "addr": "004917B0",
+  "name": "validate_scale_parameters",
+  "c_lines": 54,
+  "status": "PORTED",
+  "port": "src/scene.c:scene_project_world",
+  "what": "Projects camera-space point to screen with on-screen test; port projection does same maths",
+  "callers": "calculate_scale_factor",
+  "impact": null
+ },
+ {
+  "addr": "00491DD0",
+  "name": "initialize_object",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Lock/unlock bmap and compute pixel pointer; platform framebuffer replaces bmap locking",
+  "callers": "ensure_object_initialization",
+  "impact": null
+ },
+ {
+  "addr": "00491E00",
+  "name": "deinitialize_object",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Lock/unlock bmap and compute pixel pointer; platform framebuffer replaces bmap locking",
+  "callers": "ensure_object_deinitialization",
+  "impact": null
+ },
+ {
+  "addr": "00491E90",
+  "name": "sub_491E90",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "Exit cleanup: free bmap and ls_shut_down; platform layer handles shutdown",
+  "callers": "ls_main:loc_461456p",
+  "impact": null
+ },
+ {
+  "addr": "00491F00",
+  "name": "sub_491F00",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Releases 16-bit gouraud LUT at exit; process teardown frees it",
+  "callers": "game_release_resources_46C599",
+  "impact": null
+ },
+ {
+  "addr": "00492AC0",
+  "name": "sub_492AC0",
+  "c_lines": 96,
+  "status": "PARTIAL",
+  "port": "src/actor.c:actor_blend_pose",
+  "what": "Double-precision 3x3 matrix inverse/multiply/Euler helpers for slerp pose blend; port lacks that blend branch",
+  "callers": "sub_41560C",
+  "impact": "Clips with CAN flag 0x800 get plain angle lerp; wrong rotation paths or pops"
+ },
+ {
+  "addr": "00492BF0",
+  "name": "sub_492BF0",
+  "c_lines": 42,
+  "status": "PARTIAL",
+  "port": "src/actor.c:actor_blend_pose",
+  "what": "Double-precision 3x3 matrix inverse/multiply/Euler helpers for slerp pose blend; port lacks that blend branch",
+  "callers": "sub_41553F",
+  "impact": "Clips with CAN flag 0x800 get plain angle lerp; wrong rotation paths or pops"
+ },
+ {
+  "addr": "00492CF0",
+  "name": "sub_492CF0",
+  "c_lines": 28,
+  "status": "PARTIAL",
+  "port": "src/actor.c:actor_blend_pose",
+  "what": "Double-precision 3x3 matrix inverse/multiply/Euler helpers for slerp pose blend; port lacks that blend branch",
+  "callers": "sub_41560C",
+  "impact": "Clips with CAN flag 0x800 get plain angle lerp; wrong rotation paths or pops"
+ },
+ {
+  "addr": "00492DA0",
+  "name": "sub_492DA0",
+  "c_lines": 36,
+  "status": "PARTIAL",
+  "port": "src/actor.c:actor_blend_pose",
+  "what": "Double-precision 3x3 matrix inverse/multiply/Euler helpers for slerp pose blend; port lacks that blend branch",
+  "callers": "sub_492F30",
+  "impact": "Clips with CAN flag 0x800 get plain angle lerp; wrong rotation paths or pops"
+ },
+ {
+  "addr": "00492EB0",
+  "name": "sub_492EB0",
+  "c_lines": 23,
+  "status": "PARTIAL",
+  "port": "src/actor.c:actor_blend_pose",
+  "what": "Double-precision 3x3 matrix inverse/multiply/Euler helpers for slerp pose blend; port lacks that blend branch",
+  "callers": "sub_415021",
+  "impact": "Clips with CAN flag 0x800 get plain angle lerp; wrong rotation paths or pops"
+ },
+ {
+  "addr": "00492F30",
+  "name": "sub_492F30",
+  "c_lines": 61,
+  "status": "PARTIAL",
+  "port": "src/actor.c:actor_blend_pose",
+  "what": "Double-precision 3x3 matrix inverse/multiply/Euler helpers for slerp pose blend; port lacks that blend branch",
+  "callers": "sub_41560C",
+  "impact": "Clips with CAN flag 0x800 get plain angle lerp; wrong rotation paths or pops"
+ },
+ {
+  "addr": "004930F0",
+  "name": "sub_4930F0",
+  "c_lines": 74,
+  "status": "PORTED",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Triangle/quad submit packing vertex attributes into rasterizer table; port calls fill kernel directly",
+  "callers": "sub_4184C0",
+  "impact": null
+ },
+ {
+  "addr": "004931E0",
+  "name": "sub_4931E0",
+  "c_lines": 89,
+  "status": "PORTED",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Triangle/quad submit packing vertex attributes into rasterizer table; port calls fill kernel directly",
+  "callers": "sub_4184C0",
+  "impact": null
+ },
+ {
+  "addr": "00493300",
+  "name": "sub_493300",
+  "c_lines": 22,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_4204BF",
+  "impact": "low"
+ },
+ {
+  "addr": "00493340",
+  "name": "sub_493340",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_427C2B",
+  "impact": "low"
+ },
+ {
+  "addr": "004933D0",
+  "name": "sub_4933D0",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_427C2B",
+  "impact": "low"
+ },
+ {
+  "addr": "00493460",
+  "name": "sub_493460",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_427C2B",
+  "impact": "low"
+ },
+ {
+  "addr": "004934F0",
+  "name": "sub_4934F0",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_42BE0E",
+  "impact": "low"
+ },
+ {
+  "addr": "00493540",
+  "name": "sub_493540",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_4938E0",
+  "impact": "low"
+ },
+ {
+  "addr": "00493590",
+  "name": "sub_493590",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_493C10",
+  "impact": "low"
+ },
+ {
+  "addr": "004935E0",
+  "name": "sub_4935E0",
+  "c_lines": 23,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_493C10",
+  "impact": "low"
+ },
+ {
+  "addr": "00493630",
+  "name": "sub_493630",
+  "c_lines": 50,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_427C2B",
+  "impact": "low"
+ },
+ {
+  "addr": "00493740",
+  "name": "sub_493740",
+  "c_lines": 50,
+  "status": "SKIP",
+  "port": null,
+  "what": "Matrix/rotation helper in the INVENT.DLL host-API table; inventory.c does its own object rotation",
+  "callers": "sub_427C2B",
+  "impact": "low"
+ },
+ {
+  "addr": "004938E0",
+  "name": "LODWORD",
+  "c_lines": 162,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_batch / src/inventory.c",
+  "what": "Host-API draw-object-with-bounds/light into bmap; port renders item models directly",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00493C10",
+  "name": "sub_493C10",
+  "c_lines": 165,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_batch / src/inventory.c",
+  "what": "Host-API draw-object-with-bounds/light into bmap; port renders item models directly",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00493FD0",
+  "name": "sub_493FD0",
+  "c_lines": 11,
+  "status": "SKIP",
+  "port": null,
+  "what": "Host-API clear-rect (ls_fill_rect) for INVENT.DLL; port clears via platform blit",
+  "callers": "sub_427C2B",
+  "impact": null
+ },
+ {
+  "addr": "00494510",
+  "name": "sub_494510",
+  "c_lines": 22,
+  "status": "SKIP",
+  "port": null,
+  "what": "Aligns 16KB display/palette shade buffers in static memory; port holds GRD in plain arrays",
+  "callers": "sub_46CE97",
+  "impact": null
+ },
+ {
+  "addr": "004953D0",
+  "name": "sub_4953D0",
+  "c_lines": 68,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Flat-colour/untextured-flat triangle fill kernel; port draws every face through the shaded gouraud kernel",
+  "callers": "sub_4954B0",
+  "impact": "Flat-shaded faces get gouraud ramp instead; small visual differences"
+ },
+ {
+  "addr": "004954B0",
+  "name": "sub_4954B0",
+  "c_lines": 253,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Flat-colour/untextured-flat triangle fill kernel; port draws every face through the shaded gouraud kernel",
+  "callers": "sub_490C5E",
+  "impact": "Flat-shaded faces get gouraud ramp instead; small visual differences"
+ },
+ {
+  "addr": "00495AC8",
+  "name": "HIWORD",
+  "c_lines": 54,
+  "status": "PORTED",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Opaque inner pixel loop of textured/ramp gouraud kernel; ported as affine per-pixel loop",
+  "callers": "sub_495BFA",
+  "impact": null
+ },
+ {
+  "addr": "00495B56",
+  "name": "JUMPOUT",
+  "c_lines": 60,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Colour-key transparent (flag 0x200) pixel-loop variant of textured kernels; port has no index-0 skip",
+  "callers": "sub_495BFA",
+  "impact": "Transparent texel faces (grates, leaves, hair cards) draw opaque black/solid"
+ },
+ {
+  "addr": "00496738",
+  "name": "BYTE1",
+  "c_lines": 50,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Colour-key transparent (flag 0x200) pixel-loop variant of textured kernels; port has no index-0 skip",
+  "callers": "sub_496833",
+  "impact": "Transparent texel faces (grates, leaves, hair cards) draw opaque black/solid"
+ },
+ {
+  "addr": "004967B1",
+  "name": "JUMPOUT",
+  "c_lines": 49,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Colour-key transparent (flag 0x200) pixel-loop variant of textured kernels; port has no index-0 skip",
+  "callers": "sub_496833",
+  "impact": "Transparent texel faces (grates, leaves, hair cards) draw opaque black/solid"
+ },
+ {
+  "addr": "00496833",
+  "name": "sub_496833",
+  "c_lines": 941,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Textured kernel variants (palette-offset lit / unlit texel) ; port has one lit affine textured kernel",
+  "callers": "table:004C76ACo",
+  "impact": "Unlit or palette-tinted texture modes render with standard GRD shading"
+ },
+ {
+  "addr": "00497188",
+  "name": "BYTE1",
+  "c_lines": 97,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Colour-key transparent (flag 0x200) pixel-loop variant of textured kernels; port has no index-0 skip",
+  "callers": "sub_4972E0",
+  "impact": "Transparent texel faces (grates, leaves, hair cards) draw opaque black/solid"
+ },
+ {
+  "addr": "00497266",
+  "name": "JUMPOUT",
+  "c_lines": 48,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Colour-key transparent (flag 0x200) pixel-loop variant of textured kernels; port has no index-0 skip",
+  "callers": "sub_4972E0",
+  "impact": "Transparent texel faces (grates, leaves, hair cards) draw opaque black/solid"
+ },
+ {
+  "addr": "004972E0",
+  "name": "sub_4972E0",
+  "c_lines": 936,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Textured kernel variants (palette-offset lit / unlit texel) ; port has one lit affine textured kernel",
+  "callers": "table:004C76A8o",
+  "impact": "Unlit or palette-tinted texture modes render with standard GRD shading"
+ },
+ {
+  "addr": "00497C20",
+  "name": "LOBYTE",
+  "c_lines": 87,
+  "status": "PORTED",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Opaque inner pixel loop of textured/ramp gouraud kernel; ported as affine per-pixel loop",
+  "callers": "sub_497CD9",
+  "impact": null
+ },
+ {
+  "addr": "004982F0",
+  "name": "sub_4982F0",
+  "c_lines": 12,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Flat-colour/untextured-flat triangle fill kernel; port draws every face through the shaded gouraud kernel",
+  "callers": "table:004C768Co",
+  "impact": "Flat-shaded faces get gouraud ramp instead; small visual differences"
+ },
+ {
+  "addr": "00498330",
+  "name": "sub_498330",
+  "c_lines": 409,
+  "status": "PARTIAL",
+  "port": "src/model.c:model_render_world",
+  "what": "Polygon clip against view frustum/near plane producing new vertices; port only culls and clamps to bbox",
+  "callers": "sub_4938E0",
+  "impact": "Triangles crossing near plane are dropped instead of clipped; edge popping"
+ },
+ {
+  "addr": "00498C68",
+  "name": "sub_498C68",
+  "c_lines": 15,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Quicksort of polygons by depth (painter order); port sorts faces by summed camera depth",
+  "callers": "sub_494560",
+  "impact": null
+ },
+ {
+  "addr": "00498C84",
+  "name": "sub_498C84",
+  "c_lines": 48,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Quicksort of polygons by depth (painter order); port sorts faces by summed camera depth",
+  "callers": "sub_498C68",
+  "impact": null
+ },
+ {
+  "addr": "00498F30",
+  "name": "sub_498F30",
+  "c_lines": 36,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00498FD0",
+  "name": "sub_498FD0",
+  "c_lines": 117,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499170",
+  "name": "sub_499170",
+  "c_lines": 117,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499310",
+  "name": "sub_499310",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499360",
+  "name": "sub_499360",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "004993C0",
+  "name": "sub_4993C0",
+  "c_lines": 12,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499410",
+  "name": "sub_499410",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499470",
+  "name": "sub_499470",
+  "c_lines": 120,
+  "status": "SKIP",
+  "port": null,
+  "what": "Pixel/line/wireframe outline primitives (debug render modes); game faces are filled",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499630",
+  "name": "sub_499630",
+  "c_lines": 215,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Vertex transform/project/light stage and projection setup; port does rotate, perspective divide, per-vertex shade",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499990",
+  "name": "sub_499990",
+  "c_lines": 73,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Vertex transform/project/light stage and projection setup; port does rotate, perspective divide, per-vertex shade",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499AD0",
+  "name": "sub_499AD0",
+  "c_lines": 43,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Vertex transform/project/light stage and projection setup; port does rotate, perspective divide, per-vertex shade",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499C20",
+  "name": "sub_499C20",
+  "c_lines": 44,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Vertex transform/project/light stage and projection setup; port does rotate, perspective divide, per-vertex shade",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "00499CE0",
+  "name": "sub_499CE0",
+  "c_lines": 462,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Vertex transform/project/light stage and projection setup; port does rotate, perspective divide, per-vertex shade",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "0049A790",
+  "name": "sub_49A790",
+  "c_lines": 37,
+  "status": "PARTIAL",
+  "port": "src/model.c:model_render_world",
+  "what": "Edge-plane intersection vertex interpolation used by clipper; not ported",
+  "callers": "sub_499CE0",
+  "impact": "Same as clipper: no clipped geometry"
+ },
+ {
+  "addr": "0049A950",
+  "name": "sub_49A950",
+  "c_lines": 52,
+  "status": "PORTED",
+  "port": "src/model.c:model_render_world",
+  "what": "Vertex transform/project/light stage and projection setup; port does rotate, perspective divide, per-vertex shade",
+  "callers": "sub_4945F0",
+  "impact": null
+ },
+ {
+  "addr": "0049AA40",
+  "name": "sub_49AA40",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C77CCo",
+  "impact": null
+ },
+ {
+  "addr": "0049AAB0",
+  "name": "sub_49AAB0",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C77C4o",
+  "impact": null
+ },
+ {
+  "addr": "0049AB20",
+  "name": "sub_49AB20",
+  "c_lines": 25,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C77C0o",
+  "impact": null
+ },
+ {
+  "addr": "0049AB90",
+  "name": "sub_49AB90",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C77ACo",
+  "impact": null
+ },
+ {
+  "addr": "0049ABD0",
+  "name": "sub_49ABD0",
+  "c_lines": 20,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C77A4o",
+  "impact": null
+ },
+ {
+  "addr": "0049AC50",
+  "name": "sub_49AC50",
+  "c_lines": 13,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C77A0o",
+  "impact": null
+ },
+ {
+  "addr": "0049AC90",
+  "name": "sub_49AC90",
+  "c_lines": 9,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:off_4C7748o",
+  "impact": null
+ },
+ {
+  "addr": "0049ACC0",
+  "name": "sub_49ACC0",
+  "c_lines": 107,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "sub_49AE30",
+  "impact": null
+ },
+ {
+  "addr": "0049AE30",
+  "name": "sub_49AE30",
+  "c_lines": 28,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C7750o",
+  "impact": null
+ },
+ {
+  "addr": "0049AEB0",
+  "name": "sub_49AEB0",
+  "c_lines": 35,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C7790o",
+  "impact": null
+ },
+ {
+  "addr": "0049AF50",
+  "name": "HIWORD",
+  "c_lines": 55,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49B086",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049AFE0",
+  "name": "JUMPOUT",
+  "c_lines": 61,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49B086",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049B086",
+  "name": "sub_49B086",
+  "c_lines": 1126,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "16-bit-colour twin of 8-bit textured/ramp kernel; port shades palette+GRD into RGBA32",
+  "callers": "table:004C778Co",
+  "impact": "Colour-depth path absent; visually equal to 8-bit path"
+ },
+ {
+  "addr": "0049BBB8",
+  "name": "BYTE1",
+  "c_lines": 45,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49BCC8",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049BC39",
+  "name": "JUMPOUT",
+  "c_lines": 53,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49BCC8",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049BCC8",
+  "name": "sub_49BCC8",
+  "c_lines": 941,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "16-bit-colour twin of 8-bit textured/ramp kernel; port shades palette+GRD into RGBA32",
+  "callers": "table:004C7784o",
+  "impact": "Colour-depth path absent; visually equal to 8-bit path"
+ },
+ {
+  "addr": "0049C620",
+  "name": "BYTE1",
+  "c_lines": 50,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49C727",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049C6A0",
+  "name": "JUMPOUT",
+  "c_lines": 47,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49C727",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049C727",
+  "name": "sub_49C727",
+  "c_lines": 936,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "16-bit-colour twin of 8-bit textured/ramp kernel; port shades palette+GRD into RGBA32",
+  "callers": "table:004C7780o",
+  "impact": "Colour-depth path absent; visually equal to 8-bit path"
+ },
+ {
+  "addr": "0049D064",
+  "name": "BYTE1",
+  "c_lines": 67,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "Inner pixel-loop pieces of 16-bit kernels (opaque / transparent); port uses RGBA32 path",
+  "callers": "sub_49D110",
+  "impact": "Transparency variant missing as for 8-bit"
+ },
+ {
+  "addr": "0049D110",
+  "name": "__OFSUB__",
+  "c_lines": 748,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "16-bit-colour twin of 8-bit textured/ramp kernel; port shades palette+GRD into RGBA32",
+  "callers": "table:004C776Co",
+  "impact": "Colour-depth path absent; visually equal to 8-bit path"
+ },
+ {
+  "addr": "0049D720",
+  "name": "sub_49D720",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "table:004C7764o",
+  "impact": null
+ },
+ {
+  "addr": "0049D768",
+  "name": "sub_49D768",
+  "c_lines": 30,
+  "status": "SKIP",
+  "port": null,
+  "what": "16-bit twins of pixel/line/flat/quad wrappers in primitive table; port renders RGBA32 directly",
+  "callers": "sub_49D796",
+  "impact": null
+ },
+ {
+  "addr": "0049D796",
+  "name": "sub_49D796",
+  "c_lines": 729,
+  "status": "PARTIAL",
+  "port": "src/model.c:fill_tri_shaded",
+  "what": "16-bit-colour twin of 8-bit textured/ramp kernel; port shades palette+GRD into RGBA32",
+  "callers": "table:004C7760o",
+  "impact": "Colour-depth path absent; visually equal to 8-bit path"
+ },
+ {
+  "addr": "0049DFCC",
+  "name": "sub_49DFCC",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "Tiny CRT init thunk",
+  "callers": "__cfltcvt_init_0",
+  "impact": null
+ },
+ {
+  "addr": "0049DFEB",
+  "name": "sub_49DFEB",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "Tiny CRT init thunk",
+  "callers": ".text:00498C60j",
+  "impact": null
+ },
+ {
+  "addr": "0049DFF3",
+  "name": "sub_49DFF3",
+  "c_lines": 71,
+  "status": "SKIP",
+  "port": null,
+  "what": "3DF (3dfx Glide) texture file loader/converter; hardware path unused by software port",
+  "callers": "sub_49E200",
+  "impact": null
+ },
+ {
+  "addr": "0049E1C0",
+  "name": "convert_3dfinfo_to_texinfo",
+  "c_lines": 24,
+  "status": "SKIP",
+  "port": null,
+  "what": "3DF (3dfx Glide) texture file loader/converter; hardware path unused by software port",
+  "callers": "__cfltcvt_init_0",
+  "impact": null
+ },
+ {
+  "addr": "0049E200",
+  "name": "sub_49E200",
+  "c_lines": 33,
+  "status": "SKIP",
+  "port": null,
+  "what": "3DF (3dfx Glide) texture file loader/converter; hardware path unused by software port",
+  "callers": "__cfltcvt_init_0",
+  "impact": null
+ },
+ {
+  "addr": "0049E2A4",
+  "name": "sub_49E2A4",
+  "c_lines": 798,
+  "status": "SKIP",
+  "port": null,
+  "what": "3DF (3dfx Glide) texture file loader/converter; hardware path unused by software port",
+  "callers": "sub_49E200",
+  "impact": null
+ },
+ {
+  "addr": "0049E9B0",
+  "name": "sub_49E9B0",
+  "c_lines": 15,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "__cinit",
+  "impact": null
+ },
+ {
+  "addr": "0049EB20",
+  "name": "sqrt_function",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "sqrt / fp math thunk; libm replaces it",
+  "callers": "is_point_in_view_cone",
+  "impact": null
+ },
+ {
+  "addr": "0049FAA0",
+  "name": "sub_49FAA0",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "sqrt / fp math thunk; libm replaces it",
+  "callers": "sub_41FF00",
+  "impact": null
+ },
+ {
+  "addr": "0049FAAA",
+  "name": "sub_49FAAA",
+  "c_lines": 5,
+  "status": "SKIP",
+  "port": null,
+  "what": "sqrt / fp math thunk; libm replaces it",
+  "callers": "sub_41FF00",
+  "impact": null
+ },
+ {
+  "addr": "004A2040",
+  "name": "sub_4A2040",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "lsys_delete/lsys_rename file wrappers; platform file_system replaces them",
+  "callers": "lsys_delete",
+  "impact": null
+ },
+ {
+  "addr": "004A2080",
+  "name": "sub_4A2080",
+  "c_lines": 16,
+  "status": "SKIP",
+  "port": null,
+  "what": "lsys_delete/lsys_rename file wrappers; platform file_system replaces them",
+  "callers": "lsys_rename",
+  "impact": null
+ },
+ {
+  "addr": "004A4FE0",
+  "name": "sub_4A4FE0",
+  "c_lines": 137,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "_localtime",
+  "impact": null
+ },
+ {
+  "addr": "004A9B30",
+  "name": "sub_4A9B30",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "__fltin",
+  "impact": null
+ },
+ {
+  "addr": "004A9B50",
+  "name": "sub_4A9B50",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "sub_4A9C80",
+  "impact": null
+ },
+ {
+  "addr": "004A9C00",
+  "name": "sub_4A9C00",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "__fassign",
+  "impact": null
+ },
+ {
+  "addr": "004A9C80",
+  "name": "sub_4A9C80",
+  "c_lines": 10,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "__fassign",
+  "impact": null
+ },
+ {
+  "addr": "004A9E80",
+  "name": "sub_4A9E80",
+  "c_lines": 6,
+  "status": "SKIP",
+  "port": null,
+  "what": "MSVC C runtime float/time/math-error helper",
+  "callers": "__umatherr",
+  "impact": null
+ }
+]
