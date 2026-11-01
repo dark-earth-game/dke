@@ -49,6 +49,9 @@ i32  effect_place_creature(i32 type, i32 x, i32 y, i32 z, i32 a, i32 b);
 
 /* sub_40636D @ 0x40636D: refresh every used slot's clock (+0x9C). */
 void effect_sync_time(i32 t);
+/* 0x4064C3 / 0x4067EA: pause time compensation of the slot clocks. */
+void effect_shift_time(i32 delta);
+void effect_rebase_time(i32 now);
 
 /* sub_446E19 op 31 @ 0x448656: world x / z (+0xAC / +0xB4) of a used slot. */
 i32  effect_slot_xz(i32 slot, i32 *x, i32 *z);

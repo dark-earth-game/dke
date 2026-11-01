@@ -31,5 +31,6 @@ const c8 *dlg_lang_code(i32 id);
 
 /* Reset queue + active line (on level enter/exit). */
 void dlg_reset(void);
+void dlg_time_shift(i32 delta);   /* pause time compensation (world_timer) */
 
 #endif /* DKE_DIALOGUE_H */

@@ -190,6 +190,17 @@ static void timers_init_once(void) {
 
 i32 lieu_timer_count(void) { return g_timer_count; }
 
+/* 0x4064C3: object_timers[4k] (the start stamp) += time_delta, so a timer
+ * armed before a pause keeps its remaining time. 0x4067EA instead rebases it
+ * to (current_game_time - start): `rebase` = 1. */
+void lieu_timers_shift(i32 delta, i32 rebase, u32 now) {
+    timers_init_once();
+    for (i32 k = 0; k < g_timer_count; k++) {
+        if (rebase) g_timers[k].start = now - g_timers[k].start;
+        else        g_timers[k].start += (u32)delta;
+    }
+}
+
 /* Drop slot `i` and compact the table (asm 0x449A6D..0x449ACF). */
 static void timer_drop(i32 i) {
     for (i32 j = i; j < LA_TIMER_MAX - 1; j++) g_timers[j] = g_timers[j + 1];

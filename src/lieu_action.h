@@ -162,6 +162,7 @@ i32 lieu_action_count(i32 pile);
 void lieu_timer_add(i32 event_id, i32 duration_ms, u32 now_ms);
 void lieu_timer_remove(i32 event_id);
 i32  lieu_timer_count(void);
+void lieu_timers_shift(i32 delta, i32 rebase, u32 now);   /* pause time compensation */
 
 /*
  * Dispatch one head action (the 40-case switch of sub_44A58B @ 0x44A58B).

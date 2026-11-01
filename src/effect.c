@@ -343,6 +343,17 @@ void effect_sync_time(i32 t) {
         if (F(&g_slot[i], 0x70)) F(&g_slot[i], 0x9C) = t;
 }
 
+/* 0x4064C3: game_structures_time_values[slot] += time_delta. */
+void effect_shift_time(i32 delta) {
+    for (i32 i = 0; i < EFFECT_SLOTS; i++)
+        if (F(&g_slot[i], 0x70)) F(&g_slot[i], 0x9C) += delta;
+}
+/* 0x4067EA: the slot's clock becomes (current_game_time - value). */
+void effect_rebase_time(i32 now) {
+    for (i32 i = 0; i < EFFECT_SLOTS; i++)
+        if (F(&g_slot[i], 0x70)) F(&g_slot[i], 0x9C) = now - F(&g_slot[i], 0x9C);
+}
+
 i32 effect_slot_xz(i32 slot, i32 *x, i32 *z) {
     if (slot < 0 || slot >= EFFECT_SLOTS || !F(&g_slot[slot], 0x70)) return 0;
     if (x) *x = F(&g_slot[slot], 0xAC);

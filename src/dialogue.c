@@ -98,6 +98,11 @@ static i32 dlg_lookup(const c8 *code, c8 *out, i32 outmax) {
     return 0;
 }
 
+/* 0x4064C3: world_timer += time_delta (the line's display timer). */
+void dlg_time_shift(i32 delta) {
+    if (g_duration_ms) g_start_ms += (u32)delta;
+}
+
 void dlg_reset(void) {
     g_active[0] = '\0';
     g_start_ms = 0;
