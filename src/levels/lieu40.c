@@ -24,8 +24,8 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x78C5 */
-    if (ST(ST_HERO) == 4 && ST(0x64) == 0) {
-        ST(0x64) = 1;
+    if (ST(ST_HERO) == 4 && ST(L40_DEATH_HANDLED) == 0) {
+        ST(L40_DEATH_HANDLED) = 1;
         /* 0x78F2 */
         if (CB->divers(DV_PERSONA_PRESENT, P_ARKHAN0, 0)) {
             CB->divers(DV_HP, P_ARKHAN0, 0);
@@ -84,7 +84,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(41, -1);
 
     /* 0x8D2A */
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L40_DEATH_ENDING_BYPASS) == 1) {
         l40_trig00();   /* 0x10008E69: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

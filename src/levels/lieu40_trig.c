@@ -84,7 +84,7 @@ void l40_trig00(void) {
     if (ST(ST_LEVEL) == 41) {
         CB->pos_perso(P_ARKHAN3, 2378, -1443, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 1, 0);
     }
-    ST(0x64) = 0;
+    ST(L40_DEATH_HANDLED) = 0;
     CB->ajoute_zone(5, 6269, -1469, 220, 1433, 0);
     CB->ajoute_zone(6, 2283, -1793, 185, 160, 0);
     CB->ajoute_zone(7, 2359, -1179, 160, 172, 0);
@@ -225,10 +225,10 @@ static void trig17(void) {
 static void trig41(void) {
     CB->divers(DV_MUSIC, 1, 1);
     /* 0x76E3 */
-    if (ST(0x4F8) == 0) {
+    if (ST(L40_ENTRY_CUTSCENE_DONE) == 0) {
         CB->change_camera(4, CAM_LOCKED);
         CB->divers_empile(DV_SCREEN, 3, 0);
-        ST(0x4F8) = 1;
+        ST(L40_ENTRY_CUTSCENE_DONE) = 1;
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP03ATT99");
         CB->animation("P03ATT99");
