@@ -14,7 +14,7 @@
  * identical to LIEU03's. tick_body (sub_100077F7) is level-99 specific.
  *
  * LIEU99 is a developer test room (see lieu99_trig.c): the scene phase
- * ST(0x100) runs 0 -> 1 -> 2 -> 0 as the event timers 0/1 fire, each phase
+ * ST(L99_SCENE_PHASE) runs 0 -> 1 -> 2 -> 0 as the event timers 0/1 fire, each phase
  * dispatching a fixed cast and a camera.
  */
 
@@ -26,10 +26,10 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x7802 — phase 0 */
-    if (ST(0x100) == 0) {
+    if (ST(L99_SCENE_PHASE) == 0) {
         /* 0x780F */
-        if (!CB->on_joindre(ST(ST_HERO)) && ST(0x64) == 0) {
-            ST(0x64) = 1;
+        if (!CB->on_joindre(ST(ST_HERO)) && ST(L99_PHASE_STEP) == 0) {
+            ST(L99_PHASE_STEP) = 1;
             lieu_action_register("L16D300A", 2, "SG02DIA02", NULL);
             lieu_action_register("L16D301", P_MAOR, "SP17DIA56", "SP17ARR01_10");
             lieu_action_register("L16D304A", 2, "SG00DIA04", NULL);
@@ -47,9 +47,9 @@ static void tick_body(void) {
             CB->evenement(0, 2000);
         }
         /* 0x798D */
-        if (CB->divers(DV_DESC_POS, ST(ST_HERO), 3) > 750 && ST(0x68) == 0) {
+        if (CB->divers(DV_DESC_POS, ST(ST_HERO), 3) > 750 && ST(L99_MAOR_LOOK_DONE) == 0) {
             CB->select_pile(1, 2);
-            ST(0x68) = 1;
+            ST(L99_MAOR_LOOK_DONE) = 1;
             CB->divers(DV_LOOK_AT_PLAYER, P_MAOR, 1);
             CB->select_pile(0, 1);
         }
@@ -58,11 +58,11 @@ static void tick_body(void) {
             ST(V_EVENT_0) = 0;
             CB->select_pile(2, 2);
             CB->divers_empile(DV_SCREEN, 5, 0);
-            if (ST(0x70) == 0) {
-                ST(0x70) = 1;
+            if (ST(L99_CINE_TOGGLE) == 0) {
+                ST(L99_CINE_TOGGLE) = 1;
                 CB->cinematique("SC01_500");
             } else {
-                ST(0x70) = 0;
+                ST(L99_CINE_TOGGLE) = 0;
                 CB->cinematique("SC02_500");
             }
             CB->pos_perso(P_MAOR, -1, -1, -1, 4, "", -1, 0);
@@ -77,9 +77,9 @@ static void tick_body(void) {
         /* 0x7B61 */
         if (ST(V_EVENT_1) == 1) {
             ST(V_EVENT_1) = 0;
-            ST(0x100) = 1;
-            ST(0x64) = 0;
-            ST(0x68) = 0;
+            ST(L99_SCENE_PHASE) = 1;
+            ST(L99_PHASE_STEP) = 0;
+            ST(L99_MAOR_LOOK_DONE) = 0;
             CB->divers(DV_MUSIC, 1, 4);
             CB->divers(DV_MUSIC, 2, 0);
             CB->divers_empile(DV_SCREEN, 3, 0);
@@ -89,21 +89,21 @@ static void tick_body(void) {
         }
     }
     /* 0x7C10 — phase 1 */
-    if (ST(0x100) == 1) {
+    if (ST(L99_SCENE_PHASE) == 1) {
         /* 0x7C22 */
-        if (ST(0x64) == 0) {
-            ST(0x64) = 1;
+        if (ST(L99_PHASE_STEP) == 0) {
+            ST(L99_PHASE_STEP) = 1;
             CB->evenement(0, 10000);
         }
         /* 0x7C4A */
         if (ST(V_EVENT_0) == 1) {
             ST(V_EVENT_0) = 0;
             CB->divers_empile(DV_SCREEN, 5, 0);
-            if (ST(0x70) == 0) {
-                ST(0x70) = 1;
+            if (ST(L99_CINE_TOGGLE) == 0) {
+                ST(L99_CINE_TOGGLE) = 1;
                 CB->cinematique("SC01_500");
             } else {
-                ST(0x70) = 0;
+                ST(L99_CINE_TOGGLE) = 0;
                 CB->cinematique("SC02_500");
             }
             CB->divers_empile(DV_CINEMATIC, 0, 0);
@@ -113,7 +113,7 @@ static void tick_body(void) {
             CB->pos_perso(2, 800, -1556, 0xC499, 1, "ar", 1, 0);
             CB->divers_empile(DV_USE_ITEM, 24, 0);
             CB->pos_perso(P_LEONA, 1230, -1717, 0, 1, "P14ARR01", 3, 0);
-            if (ST(0x70) != 0) {
+            if (ST(L99_CINE_TOGGLE) != 0) {
                 CB->pos_perso(P_MALROT2, 1287, -1524, 0x8585, 1, "P62ATT02", 2, 0);
             } else {
                 CB->pos_perso(P_MALROT2, 1287, -1524, 0x8585, 1, "P62ATT04", 2, 0);
@@ -124,9 +124,9 @@ static void tick_body(void) {
         if (ST(V_EVENT_1) == 1) {
             CB->select_pile(0, 2);
             ST(V_EVENT_1) = 0;
-            ST(0x100) = 2;
-            ST(0x64) = 0;
-            ST(0x68) = 0;
+            ST(L99_SCENE_PHASE) = 2;
+            ST(L99_PHASE_STEP) = 0;
+            ST(L99_MAOR_LOOK_DONE) = 0;
             CB->divers(DV_MUSIC, 2, 4);
             CB->divers(DV_MUSIC, 3, 0);
             CB->divers_empile(DV_SCREEN, 3, 0);
@@ -137,18 +137,18 @@ static void tick_body(void) {
         }
     }
     /* 0x7EC1 — phase 2 */
-    if (ST(0x100) == 2) {
+    if (ST(L99_SCENE_PHASE) == 2) {
         /* 0x7ED3 */
-        if (CB->distance(1, 3) < 400 && ST(0x74) == 0 && CB->divers(DV_PERSONA_PRESENT, P_LEONA, 0) && CB->on_joindre(ST(ST_HERO))) {
+        if (CB->distance(1, 3) < 400 && ST(L99_LEONA_LOOK_DONE) == 0 && CB->divers(DV_PERSONA_PRESENT, P_LEONA, 0) && CB->on_joindre(ST(ST_HERO))) {
             CB->select_pile(2, 2);
-            ST(0x74) = 1;
+            ST(L99_LEONA_LOOK_DONE) = 1;
             CB->divers(DV_LOOK_AT_PLAYER, P_LEONA, 1);
             CB->select_pile(0, 1);
         }
         /* 0x7F6B */
-        if (CB->distance(1, 2) < 250 && ST(0x64) == 0 && CB->divers(DV_PERSONA_PRESENT, P_MALROT2, 0) && CB->on_joindre(ST(ST_HERO))) {
+        if (CB->distance(1, 2) < 250 && ST(L99_PHASE_STEP) == 0 && CB->divers(DV_PERSONA_PRESENT, P_MALROT2, 0) && CB->on_joindre(ST(ST_HERO))) {
             CB->select_pile(2, 2);
-            ST(0x64) = 1;
+            ST(L99_PHASE_STEP) = 1;
             CB->divers(DV_LOOK_AT_PLAYER, P_MALROT2, 1);
             CB->animation("SP62ARR01");
             CB->joindre(P_MALROT2, 0, 0, 0, ST(ST_HERO));
@@ -156,19 +156,19 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x8036 */
-        if (!CB->on_joindre(P_MALROT2) && !CB->on_joindre(ST(ST_HERO)) && ST(0x64) == 1) {
-            ST(0x64) = 2;
+        if (!CB->on_joindre(P_MALROT2) && !CB->on_joindre(ST(ST_HERO)) && ST(L99_PHASE_STEP) == 1) {
+            ST(L99_PHASE_STEP) = 2;
             CB->joindre(ST(ST_HERO), 0, 0, 0, P_MALROT2);
             CB->animation("Sar_50");
             lieu_action_register("L18D184", 2, "Sar", NULL);
             lieu_action_register("L18D187", P_MALROT2, "SP62ATT60", "SP62ARR01");
             CB->divers(DV_LOOK_AT_PLAYER, P_MALROT2, 0);
             lieu_pre_scene(ST(ST_HERO), P_MALROT2, 24, 1, 2);
-            CB->modify_var(&ST(0x6C), 1);
+            CB->modify_var(&ST(L99_MALROT2_SCENE_REQ), 1);
         }
         /* 0x8111 */
-        if (ST(0x6C) == 1) {
-            ST(0x6C) = 0;
+        if (ST(L99_MALROT2_SCENE_REQ) == 1) {
+            ST(L99_MALROT2_SCENE_REQ) = 0;
             CB->animation("P62ACT01");
             CB->animation("P62ARR01");
             CB->dialogue("L18D189", P_MALROT2);
@@ -188,11 +188,11 @@ static void tick_body(void) {
         if (ST(V_EVENT_0) == 1) {
             ST(V_EVENT_0) = 0;
             CB->divers_empile(DV_SCREEN, 5, 0);
-            if (ST(0x70) == 0) {
-                ST(0x70) = 1;
+            if (ST(L99_CINE_TOGGLE) == 0) {
+                ST(L99_CINE_TOGGLE) = 1;
                 CB->cinematique("SC01_500");
             } else {
-                ST(0x70) = 0;
+                ST(L99_CINE_TOGGLE) = 0;
                 CB->cinematique("SC02_500");
             }
             CB->divers(DV_USE_ITEM, 0, 0);
@@ -208,11 +208,11 @@ static void tick_body(void) {
         /* 0x8340 */
         if (ST(V_EVENT_1) == 1) {
             ST(V_EVENT_1) = 0;
-            ST(0x100) = 0;
-            ST(0x64) = 0;
-            ST(0x68) = 0;
-            ST(0x6C) = 0;
-            ST(0x74) = 0;
+            ST(L99_SCENE_PHASE) = 0;
+            ST(L99_PHASE_STEP) = 0;
+            ST(L99_MAOR_LOOK_DONE) = 0;
+            ST(L99_MALROT2_SCENE_REQ) = 0;
+            ST(L99_LEONA_LOOK_DONE) = 0;
             CB->divers(DV_MUSIC, 3, 4);
             CB->divers(DV_MUSIC, 1, 0);
             CB->divers_empile(DV_SCREEN, 3, 0);
@@ -258,7 +258,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L99_DEATH_ENDING_BYPASS) == 1) {
         l99_trig00();   /* 0x100090A9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

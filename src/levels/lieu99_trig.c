@@ -7,7 +7,7 @@
  * its original address. Handlers call the engine only through g_lieu_cb.
  *
  * LIEU99 is a developer test room: trigger 0 does not read
- * ST_START_POINT(99) (0xAEC). It reads the scene-phase slot ST(0x100),
+ * ST_START_POINT(99) (0xAEC). It reads the scene-phase slot ST(L99_SCENE_PHASE),
  * clears it first, so only the phase-0 block is reachable from INIT.
  */
 
@@ -48,9 +48,9 @@ static void trig_noop(void) {
 void l99_trig00(void) {
     CB->vire_col(0x20, 0);
     CB->vire_col(0x21, 0);
-    ST(0x100) = 0;
+    ST(L99_SCENE_PHASE) = 0;
     /* 0x7424 */
-    if (ST(0x100) == 0) {
+    if (ST(L99_SCENE_PHASE) == 0) {
         CB->divers(DV_SCREEN, 1, 0);
         CB->divers(DV_MUSIC, 1, 0);
         CB->change_camera(7, CAM_LOCKED);
@@ -59,7 +59,7 @@ void l99_trig00(void) {
         CB->pos_perso(P_BOGDARAN, 968, -1070, 0xC0A5, 1, "P08ARR01", 3, 0);
     }
     /* 0x74D4 */
-    if (ST(0x100) == 1) {
+    if (ST(L99_SCENE_PHASE) == 1) {
         CB->divers(DV_MUSIC, 2, 0);
         CB->change_camera(4, CAM_LOCKED);
         CB->pos_perso(2, 112, -3133, 0xC000, 1, "ar", 1, 0);
@@ -67,7 +67,7 @@ void l99_trig00(void) {
         CB->pos_perso(P_ZED27, 21, -1764, 0xC000, 1, "P27GAR02", 3, 0);
     }
     /* 0x7577 */
-    if (ST(0x100) == 2) {
+    if (ST(L99_SCENE_PHASE) == 2) {
         CB->divers(DV_MUSIC, 3, 0);
         CB->change_camera(3, CAM_LOCKED);
         CB->pos_perso(2, 800, -1556, 0xC499, 1, "ar", 1, 0);
@@ -75,23 +75,23 @@ void l99_trig00(void) {
         CB->pos_perso(P_LEONA, 1230, -1717, 0, 1, "P14ARR01", 3, 0);
         CB->pos_perso(P_MALROT2, 1287, -1524, 0x8585, 1, "P62ATT02", 2, 0);
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x74) = 0;
+    ST(L99_PHASE_STEP) = 0;
+    ST(L99_MAOR_LOOK_DONE) = 0;
+    ST(L99_MALROT2_SCENE_REQ) = 0;
+    ST(L99_CINE_TOGGLE) = 0;
+    ST(L99_LEONA_LOOK_DONE) = 0;
 }
 
 /* trigger 41 — sub_1000766A — phase-change zone: run the entry sequence of the current phase */
 static void trig41(void) {
     CB->bloque(BLOQUE_ALL);
     /* 0x767B */
-    if (ST(0x100) == 0) {
+    if (ST(L99_SCENE_PHASE) == 0) {
         CB->divers_empile(DV_MUSIC, 1, 1);
         CB->joindre(-ST(ST_HERO), 946, -931, 0xAE1E, -1);
         CB->animation("Sar_50");
         CB->select_pile(2, 2);
-        ST(0x70) = 1;
+        ST(L99_CINE_TOGGLE) = 1;
         CB->cinematique("SC01_500");
         CB->divers_empile(DV_SCREEN, 3, 0);
         lieu_action_register("L05D110A", P_BOGDARAN, "SP08DIA60", "SP08ARR03_20");
@@ -101,12 +101,12 @@ static void trig41(void) {
         CB->select_pile(0, 1);
     }
     /* 0x776C */
-    if (ST(0x100) == 1) {
+    if (ST(L99_SCENE_PHASE) == 1) {
         CB->divers_empile(DV_MUSIC, 2, 1);
         CB->divers_empile(DV_CINEMATIC, 1, 2);
     }
     /* 0x77A2 */
-    if (ST(0x100) == 2) {
+    if (ST(L99_SCENE_PHASE) == 2) {
         CB->divers_empile(DV_MUSIC, 3, 1);
         CB->joindre(ST(ST_HERO), 1115, -1556, -1, -1);
         CB->select_pile(0, 1);
