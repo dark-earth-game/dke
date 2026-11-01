@@ -66,11 +66,11 @@ static void trig02(void) {
         CB->bloque(BLOQUE_ALL);
         g_dest_room = 28;
         /* 0x95AA */
-        if (ST(0xB38) == 0) {
+        if (ST(L27_LORY_STAGE) == 0) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0x95CE */
-        if (ST(0xB38) != 0) {
+        if (ST(L27_LORY_STAGE) != 0) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         /* 0x95F2 */
@@ -99,11 +99,11 @@ static void trig03(void) {
         CB->bloque(BLOQUE_ALL);
         g_dest_room = 29;
         /* 0x96C1 */
-        if (ST(0xB38) == 0) {
+        if (ST(L27_LORY_STAGE) == 0) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0x96E5 */
-        if (ST(0xB38) != 0) {
+        if (ST(L27_LORY_STAGE) != 0) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         /* 0x9709 */
@@ -125,8 +125,8 @@ static void trig03(void) {
         return;
     }
     /* 0x978C */
-    if (ST(0xB58) == 5 || ST(0xB58) == 10) {
-        ST(0xB58) = 10;
+    if (ST(L27_PHEDORIA_STAGE) == 5 || ST(L27_PHEDORIA_STAGE) == 10) {
+        ST(L27_PHEDORIA_STAGE) = 10;
         CB->change_piece(29, 0);
         return;
     }
@@ -139,11 +139,11 @@ static void trig06(void) {
         CB->bloque(BLOQUE_ALL);
         g_dest_room = 20;
         /* 0x9847 */
-        if (ST(0xB38) == 0) {
+        if (ST(L27_LORY_STAGE) == 0) {
             CB->divers_empile(DV_MUSIC, 1, 4);
         }
         /* 0x986B */
-        if (ST(0xB38) != 0) {
+        if (ST(L27_LORY_STAGE) != 0) {
             CB->divers_empile(DV_MUSIC, 2, 4);
         }
         /* 0x988F */
@@ -180,8 +180,8 @@ static void trig08(void) {
         CB->joindre(-P_PHEDORIA, 0, 0, 0, ST(ST_HERO));
         CB->select_pile(1, 1);
         CB->joindre(-P_LORY, 0, 0, 0, ST(ST_HERO));
-        /* 0x9A11: `if (ST(0x950) == 0) {}` - empty in the original, both paths continue */
-        if (ST(0x950) == 0) {
+        /* 0x9A11: `if (ST(L27_ZONE_SEEN) == 0) {}` - empty in the original, both paths continue */
+        if (ST(L27_ZONE_SEEN) == 0) {
         }
         /* 0x9A18 */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -207,37 +207,37 @@ static void trig08(void) {
         }
         CB->dialogue("L20D34", P_LORY);
         /* 0x9AFB */
-        if (ST(0x70) == 0) {
+        if (ST(L27_LORY_PATH_STEP) == 0) {
             CB->joindre(-P_LORY, 6468, -4952, 0xE87B, -1);
         }
         /* 0x9B26 */
-        if (ST(0x70) == 1) {
+        if (ST(L27_LORY_PATH_STEP) == 1) {
             CB->joindre(-P_LORY, 6680, -4480, 0xC000, -1);
         }
         /* 0x9B51 */
-        if (ST(0x70) == 2) {
+        if (ST(L27_LORY_PATH_STEP) == 2) {
             CB->joindre(-P_LORY, 7437, -4472, 0xBD8A, -1);
         }
         CB->select_pile(2, 1);
         /* 0x9B8C */
-        if (ST(0x74) == 0) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 0) {
             CB->joindre(-P_PHEDORIA, 6468, -4952, 0xE87B, -1);
         }
         /* 0x9BB7 */
-        if (ST(0x74) == 1) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 1) {
             CB->joindre(-P_PHEDORIA, 6680, -4824, 0xC000, -1);
         }
         /* 0x9BE2 */
-        if (ST(0x74) == 2) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 2) {
             CB->joindre(-P_PHEDORIA, 7434, -4607, 0xFED8, -1);
         }
-        ST(0x950) = 1;
+        ST(L27_ZONE_SEEN) = 1;
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
         CB->select_pile(0, 1);
         return;
         /* 0x9C3E: unreachable in the original (the jmp at 0x9C39 skips it); kept for fidelity */
-        if (ST(0x950) == 1) {
+        if (ST(L27_ZONE_SEEN) == 1) {
         }
         /* 0x9C4A */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -249,28 +249,28 @@ static void trig08(void) {
         }
         CB->dialogue("L20D37", P_LORY);
         /* 0x9CB9 */
-        if (ST(0x70) == 0) {
+        if (ST(L27_LORY_PATH_STEP) == 0) {
             CB->joindre(-P_LORY, 6468, -4952, 0xE87B, -1);
         }
         /* 0x9CE4 */
-        if (ST(0x70) == 1) {
+        if (ST(L27_LORY_PATH_STEP) == 1) {
             CB->joindre(-P_LORY, 6680, -4480, 0xC000, -1);
         }
         /* 0x9D0F */
-        if (ST(0x70) == 2) {
+        if (ST(L27_LORY_PATH_STEP) == 2) {
             CB->joindre(-P_LORY, 7437, -4472, 0xBD8A, -1);
         }
         CB->select_pile(2, 1);
         /* 0x9D4A */
-        if (ST(0x74) == 0) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 0) {
             CB->joindre(-P_PHEDORIA, 6468, -4952, 0xE87B, -1);
         }
         /* 0x9D75 */
-        if (ST(0x74) == 1) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 1) {
             CB->joindre(-P_PHEDORIA, 6680, -4824, 0xC000, -1);
         }
         /* 0x9DA0 */
-        if (ST(0x74) == 2) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 2) {
             CB->joindre(-P_PHEDORIA, 7434, -4607, 0xFED8, -1);
         }
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -320,8 +320,8 @@ static void trig09(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->select_pile(2, 1);
         CB->joindre(-P_PHEDORIA, 0, 0, 0, ST(ST_HERO));
-        /* 0xA0EE: `if (ST(0x950) == 0) {}` - empty in the original, both paths continue */
-        if (ST(0x950) == 0) {
+        /* 0xA0EE: `if (ST(L27_ZONE_SEEN) == 0) {}` - empty in the original, both paths continue */
+        if (ST(L27_ZONE_SEEN) == 0) {
         }
         /* 0xA0FA */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -347,24 +347,24 @@ static void trig09(void) {
         }
         CB->dialogue("L20D43", P_PHEDORIA);
         /* 0xA1DD */
-        if (ST(0x74) == 0) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 0) {
             CB->joindre(-P_PHEDORIA, 6468, -4952, 0xE87B, -1);
         }
         /* 0xA208 */
-        if (ST(0x74) == 1) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 1) {
             CB->joindre(-P_PHEDORIA, 6680, -4824, 0xC000, -1);
         }
         /* 0xA233 */
-        if (ST(0x74) == 2) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 2) {
             CB->joindre(-P_PHEDORIA, 7434, -4607, 0xFED8, -1);
         }
-        ST(0x950) = 1;
+        ST(L27_ZONE_SEEN) = 1;
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
         CB->select_pile(0, 1);
         return;
         /* 0xA28F: unreachable in the original (the jmp at 0xA28A skips it); kept for fidelity */
-        if (ST(0x950) == 1) {
+        if (ST(L27_ZONE_SEEN) == 1) {
         }
         /* 0xA29B */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -376,15 +376,15 @@ static void trig09(void) {
         }
         CB->dialogue("L20D46", P_PHEDORIA);
         /* 0xA30A */
-        if (ST(0x74) == 0) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 0) {
             CB->joindre(-P_PHEDORIA, 6468, -4952, 0xE87B, -1);
         }
         /* 0xA335 */
-        if (ST(0x74) == 1) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 1) {
             CB->joindre(-P_PHEDORIA, 6680, -4824, 0xC000, -1);
         }
         /* 0xA360 */
-        if (ST(0x74) == 2) {
+        if (ST(L27_PHEDORIA_PATH_STEP) == 2) {
             CB->joindre(-P_PHEDORIA, 7434, -4607, 0xFED8, -1);
         }
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -394,7 +394,7 @@ static void trig09(void) {
     }
     /* 0xA3B6 */
     if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && ST(ST_VIE(P_PHEDORIA)) != VIE_DEAD && CB->direction_perso(P_PHEDORIA)) {
-        ST(0x874) = 5;
+        ST(L27_PHEDORIA_HOSTILE) = 5;
         CB->bloque(BLOQUE_ALL);
         CB->evenement(2, -1);
         CB->select_pile(1, 1);
@@ -411,7 +411,7 @@ static void trig09(void) {
     /* 0xA4E9 */
     if (ST(V_PLAYER_STRIKE) >= 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_VIE(P_PHEDORIA)) != VIE_DEAD && CB->direction_perso(P_PHEDORIA)) {
         ST(V_PLAYER_STRIKE) = -1;
-        ST(0x874) = 5;
+        ST(L27_PHEDORIA_HOSTILE) = 5;
         CB->bloque(BLOQUE_ALL);
         CB->evenement(2, -1);
         CB->select_pile(1, 1);
@@ -506,7 +506,7 @@ static void trig16(void) {
                 CB->dialogue("L27D05A", P_ARKHAN2);
                 CB->dialogue("L27D05B", P_ARKHAN2);
                 /* 0xA999 */
-                if (ST(0xB10) > 0) {
+                if (ST(L27_RYLSADHAR_STAGE) > 0) {
                     CB->dialogue("L27D05C", P_ARKHAN3);
                 }
             }
@@ -515,7 +515,7 @@ static void trig16(void) {
                 CB->dialogue("L27D06A", P_ARKHAN3);
                 CB->dialogue("L27D06B", P_ARKHAN3);
                 /* 0xA9ED */
-                if (ST(0xB10) > 0) {
+                if (ST(L27_RYLSADHAR_STAGE) > 0) {
                     CB->dialogue("L27D06C", P_ARKHAN3);
                 }
             }
@@ -565,7 +565,7 @@ static void trig17(void) {
             ST(ST_SCRIPT_BUSY) = 1;
             CB->bloque(BLOQUE_ALL);
             /* 0xABCF */
-            if (ST(0xF34) == 0) {
+            if (ST(L27_ZONE17_STAGE) == 0) {
                 /* 0xABE1 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     CB->dialogue("L27D09A", P_ARKHAN2);
@@ -577,7 +577,7 @@ static void trig17(void) {
                 }
             }
             /* 0xAC35 */
-            if (ST(0xF34) == 1) {
+            if (ST(L27_ZONE17_STAGE) == 1) {
                 /* 0xAC47 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     CB->dialogue("L27D11", P_ARKHAN2);
@@ -799,11 +799,11 @@ static void trig19(void) {
 /* trigger 32 - trig32_1000B51C */
 static void trig32(void) {
     /* 0xB52E */
-    if (ST(0xB38) == 0) {
+    if (ST(L27_LORY_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 4);
     }
     /* 0xB552 */
-    if (ST(0xB38) != 0) {
+    if (ST(L27_LORY_STAGE) != 0) {
         CB->divers(DV_MUSIC, 2, 4);
     }
     ST(ST_LEVEL) = 27;
@@ -1072,7 +1072,7 @@ static void trig40(void) {
 static void trig41(void) {
     CB->bruitage("L27AMB1", -1, -1);
     /* 0x80FD */
-    if (ST(0xC48) == 100) {
+    if (ST(L27_STORY_MARK_C48) == 100) {
         CB->bloque(BLOQUE_ALL);
         CB->change_camera(2, CAM_LOCKED);
         CB->animation("SP36ATA04");
@@ -1085,16 +1085,16 @@ static void trig41(void) {
     /* 0x8174 */
     if (ST(V_EVENT_17) != 2) {
         /* 0x8186 */
-        if (ST(0xB38) == 0) {
+        if (ST(L27_LORY_STAGE) == 0) {
             CB->divers(DV_MUSIC, 1, 1);
         }
         /* 0x81AA */
-        if (ST(0xB38) != 0) {
+        if (ST(L27_LORY_STAGE) != 0) {
             CB->divers(DV_MUSIC, 2, 1);
         }
     }
     /* 0x81CE */
-    if (ST(0xB58) == 5) {
+    if (ST(L27_PHEDORIA_STAGE) == 5) {
         CB->select_pile(2, 1);
         CB->joindre(-P_PHEDORIA, 6468, -4952, 0xE87B, -1);
         CB->select_pile(1, 1);
@@ -1110,7 +1110,7 @@ static void trig41(void) {
         CB->play_anim(0, 0);
         CB->combat(P_KONKALITE4, 4);
         CB->evenement(0x21, 2000);
-        ST(0x88) = 1;
-        ST(0x84) = ST(ST_GAME_TIME);
+        ST(L27_KONKALITE_SCENE_ON) = 1;
+        ST(L27_KONKALITE_SCENE_TIME) = ST(ST_GAME_TIME);
     }
 }
