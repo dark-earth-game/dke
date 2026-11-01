@@ -46,11 +46,11 @@ void gamecfg_load(void) {
     if (!f) return;
     gamecfg_t *c = &g_gamecfg;
     i32 v;
-    if (rd(f, &v)) c->brightness = (i8)v;
+    if (rd(f, &v)) { c->brightness = (i8)v; c->colour_chosen = 1; }
     if (rd(f, &v)) c->contrast   = (i8)v;
     if (rd(f, &v)) c->saturation = (i8)v;
     if (rd(f, &v)) c->shadows = v;
-    if (rd(f, &v)) c->render_mode = v;
+    if (rd(f, &v)) c->render_mode = (v >= 0 && v < 6) ? v : 5;   /* dword_4B7228[v] is 0xF for 0..5 */
     if (rd(f, &v)) g_music_option = v;
     if (rd(f, &v)) sfx_set_master(v);
     if (rd(f, &v)) c->subtitles = (i8)v;
@@ -60,7 +60,7 @@ void gamecfg_load(void) {
     if (rd(f, &v)) c->movie_size = (v == 0 || v > 0x280) ? 0x280 : v;
     if (rd(f, &v)) g_control_scheme = v;
     fclose(f);
-    print("gamecfg: loaded %s (music %d, sfx %d)\n", path, g_music_option, sfx_get_master());
+    print("gamecfg: loaded %s (music %d, sfx %d, colour %d/%d/%d)\n", path, g_music_option, sfx_get_master(), c->brightness, c->contrast, c->saturation);
 }
 
 void gamecfg_save(void) {

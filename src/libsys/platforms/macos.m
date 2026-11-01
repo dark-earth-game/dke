@@ -1,3 +1,4 @@
+#include "gamma.h"
 #include <Cocoa/Cocoa.h>
 #include <AudioToolbox/AudioQueue.h>
 #include <mach-o/dyld.h>
@@ -555,6 +556,7 @@ void ls_set_title(system_t *system, c8 *title) {
 
 void ls_blit(system_t *system, u32 *front_buffer) {
     memcpy(surface, (u8*)front_buffer, system->width * system->height * system->bpp);
+    gamma_apply_pixels((u32 *)surface, system->width * system->height);   /* gamma.h */
 }
 
 void ls_flip(system_t *system) {

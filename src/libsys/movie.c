@@ -1,3 +1,4 @@
+#include "gamma.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -189,7 +190,7 @@ void ls_shut_movie(void) {
  *   cine_clear_movie_background → front_buffer zeroed after playback
  *   cp_restore_screen thread → not needed; blit+flip per frame is synchronous
  */
-void ls_play_movie(const c8 *path) {
+static void play_movie_impl(const c8 *path) {
     if (!path || !path[0]) {
         printf("ls_play_movie: null/empty path\n");
         return;
@@ -374,4 +375,11 @@ void ls_play_movie(const c8 *path) {
     free(audio_pcm);
     crh_close(&r);
     printf("ls_play_movie: done (%u frames)\n", (u32)r.frame_count);
+}
+
+/* The colour correction (gamma.h) does not apply to movies. */
+void ls_play_movie(const c8 *path) {
+    gamma_bypass(1);
+    play_movie_impl(path);
+    gamma_bypass(0);
 }

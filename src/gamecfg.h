@@ -22,6 +22,8 @@ typedef struct {
     i32 subtitles;       /* byte_4B60AC: show dialogue subtitles */
     i32 voices;          /* byte_4B60B0: play dialogue voices */
     i32 movie_size;      /* dword_4B4770: 1..640, 640 when 0 or out of range */
+    b8  colour_chosen;   /* port: the player's colour settings exist (DKEGAME.CFG or the picker);
+                          * until then the screen is shown uncorrected, see gamma.h */
 } gamecfg_t;
 
 extern gamecfg_t g_gamecfg;

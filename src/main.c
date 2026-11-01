@@ -25,6 +25,7 @@
 #include "game_init.h"
 #include "menu/menu.h"
 #include "gamecfg.h"
+#include "gamma.h"
 #include "scene.h"
 #include "libsys/graphics/graphic.h"
 
@@ -100,7 +101,10 @@ void load_configuration(state_t *state) {
  * // comments
  * Key : Value
  * Ends at CONEX_SAID_END_OF_FILE
+ * Brightness, Contrast, Saturation, Shadow and Detail also seed the player's
+ * settings (g_gamecfg); DKEGAME.CFG overrides them afterwards.
  */
+// 0045B361
 void load_dke_config(state_t *state) {
     c8 *config_path[256];
     sprintf((char *)config_path, "%s/DKE.CFG", state->game_path);
@@ -140,15 +144,23 @@ void load_dke_config(state_t *state) {
                     }
                     else if (strcmp(key, "Brightness") == 0) {
                         state->brightness = value;
+                        g_gamecfg.brightness = (i8)value;     /* rgb_brightness_slider_control */
                     }
                     else if (strcmp(key, "Contrast") == 0) {
                         state->contrast = value;
+                        g_gamecfg.contrast = (i8)value;       /* rgb_contrast_slider_control */
+                    }
+                    else if (strcmp(key, "Saturation") == 0) {
+                        g_gamecfg.saturation = (i8)value;     /* rgb_saturation_slider_control */
                     }
                     else if (strcmp(key, "Shadow") == 0) {
                         state->shadow = value;
+                        g_gamecfg.shadows = value;            /* dword_4B7240 */
                     }
                     else if (strcmp(key, "Detail") == 0) {
                         state->detail = value;
+                        /* render_mode = dword_4B7228[value]: 0xF for 0..5 */
+                        g_gamecfg.render_mode = (value >= 0 && value < 6) ? value : 5;   /* dword_4B721C */
                     }
                     else if (strcmp(key, "Language") == 0) {
                         state->language_id = value;
@@ -347,11 +359,14 @@ i32 ls_main(system_t *system, c8 **argv) {
             if (f) {
                 i32 w = state->graphic.width, h = state->graphic.height;
                 fprintf(f, "P6\n%d %d\n255\n", w, h);
+                u32 *shot = (u32 *)malloc((size_t)w * h * sizeof(u32));
+                if (shot) gamma_copy_pixels(shot, state->graphic.front_buffer, w * h);
                 for (i32 i = 0; i < w * h; i++) {
-                    u32 p = state->graphic.front_buffer[i];
+                    u32 p = shot ? shot[i] : state->graphic.front_buffer[i];
                     u8 rgb[3] = { (u8)p, (u8)(p >> 8), (u8)(p >> 16) };
                     fwrite(rgb, 1, 3, f);
                 }
+                free(shot);
                 fclose(f);
             }
         }

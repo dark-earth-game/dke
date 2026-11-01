@@ -30,6 +30,7 @@
 #include "music.h"
 #include "sfx.h"
 #include "gamecfg.h"
+#include "gamma.h"
 #include "screen_fx.h"
 #include "libsys/common.h"
 #include "libsys/system.h"
@@ -124,10 +125,13 @@ static void shot(system_t *sys) {
     if (!f) return;
     i32 fw = state->graphic.width, fh = state->graphic.height;
     fprintf(f, "P6\n%d %d\n255\n", fw, fh);
+    u32 *cfb = (u32 *)malloc((size_t)fw * fh * sizeof(u32));   /* as shown: colour corrected */
+    if (cfb) gamma_copy_pixels(cfb, state->graphic.front_buffer, fw * fh);
     for (i32 i = 0; i < fw * fh; i++) {
-        u32 p = state->graphic.front_buffer[i];
+        u32 p = cfb ? cfb[i] : state->graphic.front_buffer[i];
         fputc((u8)p, f); fputc((u8)(p >> 8), f); fputc((u8)(p >> 16), f);
     }
+    free(cfb);
     fclose(f);
     (void)sys;
 }

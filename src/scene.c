@@ -42,6 +42,7 @@
  *   IM%02d.OME              — per-level overlay image (TODO)
  */
 
+#include "gamma.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -3603,12 +3604,15 @@ i32 scene_render(system_t *sys) {
                 u32 *fb = state->graphic.front_buffer;
                 i32 w = state->graphic.width, h = state->graphic.height;
                 fprintf(f, "P6\n%d %d\n255\n", w, h);
+                u32 *cfb = (u32 *)malloc((size_t)w * h * sizeof(u32));   /* as shown: colour corrected */
+                if (cfb) { gamma_copy_pixels(cfb, fb, w * h); fb = cfb; }
                 for (i32 i = 0; i < w * h; i++) {
                     u32 p = fb[i];
                     fputc((u8)(p & 0xFF), f);
                     fputc((u8)((p >> 8) & 0xFF), f);
                     fputc((u8)((p >> 16) & 0xFF), f);
                 }
+                free(cfb);
                 fclose(f);
                 print("scene: DKE_SHOT wrote frame %d\n", want);
             }

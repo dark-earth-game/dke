@@ -1,3 +1,4 @@
+#include "gamma.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdlib.h>
@@ -91,6 +92,7 @@ void ls_blit(system_t *system, u32 *front_buffer) {
     if (!surface || !front_buffer) return;
     memcpy(surface, (u8 *)front_buffer,
            (size_t)(system->width * system->height * system->bpp));
+    gamma_apply_pixels((u32 *)surface, system->width * system->height);   /* gamma.h */
 }
 
 void ls_flip(system_t *system) {
