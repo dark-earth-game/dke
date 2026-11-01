@@ -27,20 +27,20 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x786D */
-    if (ST(0x70) == 0 && ST(ST_LOCKED_CAMERA) == 0) {
-        ST(0x70) = 1;
+    if (ST(L13_AMBIENT_ANIM_ON) == 0 && ST(ST_LOCKED_CAMERA) == 0) {
+        ST(L13_AMBIENT_ANIM_ON) = 1;
         CB->play_anim(5, 1);
     }
     /* 0x78AA */
-    if (ST(0x70) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
-        ST(0x70) = 0;
+    if (ST(L13_AMBIENT_ANIM_ON) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
+        ST(L13_AMBIENT_ANIM_ON) = 0;
     }
     /* 0x78DA */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         CB->select_pile(1, 1);
         /* 0x790B */
-        if (ST(0xC90) == 0) {
+        if (ST(L13_PUZZLE_SOLVED) == 0) {
             CB->bruitage("L13B01", 2147, 5160);
             /* 0x7932 */
             if (ST(ST_HERO) == P_ARKHAN2) {
@@ -56,7 +56,7 @@ static void tick_body(void) {
             return;
         } else {
             /* 0x79A4 */
-            if (ST(0xD54) == 1) {
+            if (ST(L13_REPLY_STAGE) == 1) {
                 CB->bruitage("L13B02", 2147, 5160);
                 /* 0x79CB */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -84,7 +84,7 @@ static void tick_body(void) {
                 return;
             }
             /* 0x7AAC */
-            if (ST(0xD54) == 2) {
+            if (ST(L13_REPLY_STAGE) == 2) {
                 CB->bruitage("L13B03", 2147, 5160);
                 /* 0x7AD3 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -107,29 +107,29 @@ static void tick_body(void) {
         ST(V_EVENT_1) = 0;
         CB->select_pile(1, 1);
         /* 0x7B87 */
-        if (ST(0x64) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
+        if (ST(L13_CLIMB_VARIANT) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
             CB->play_anim(1, 0);
             CB->select_pile(0, 1);
             return;
         }
         /* 0x7BC7 */
-        if (ST(0x64) == 2 && ST(ST_LOCKED_CAMERA) == 3) {
+        if (ST(L13_CLIMB_VARIANT) == 2 && ST(ST_LOCKED_CAMERA) == 3) {
             CB->play_anim(2, 1);
             CB->select_pile(2, 1);
             CB->play_anim(1, 0);
             CB->select_pile(0, 1);
-            ST(0xC90) = 1;
+            ST(L13_PUZZLE_SOLVED) = 1;
             return;
         }
     }
     /* 0x7C36 */
-    if (ST(0x68) == 0 && ST(0xC90) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
-        ST(0x68) = 1;
+    if (ST(L13_PUZZLE_ANIM_ON) == 0 && ST(L13_PUZZLE_SOLVED) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
+        ST(L13_PUZZLE_ANIM_ON) = 1;
         CB->play_anim(2, 1);
     }
     /* 0x7C85 */
-    if (ST(0x68) == 1 && ST(ST_LOCKED_CAMERA) != 3) {
-        ST(0x68) = 0;
+    if (ST(L13_PUZZLE_ANIM_ON) == 1 && ST(ST_LOCKED_CAMERA) != 3) {
+        ST(L13_PUZZLE_ANIM_ON) = 0;
     }
     /* 0x7CB5 */
     if (ST(V_EVENT_2) == 1) {
@@ -208,7 +208,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L13_ENDING_OVERRIDE) == 1) {
         l13_trig00();   /* 0x1000B3E9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
