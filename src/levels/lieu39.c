@@ -76,12 +76,12 @@ static void tick_body(void) {
     /* 0x18A0 */
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
-        ST(0x88) = 0;
+        ST(L39_FIGHT_EVENT_PENDING) = 0;
         /* 0x18D0 */
-        if (ST(0xD88) == 10) {
+        if (ST(L39_LEONA_STATE) == 10) {
             /* 0x18E2 */
             if (ST(ST_LOCKED_CAMERA) == 2) {
-                ST(0xD88) = 210;
+                ST(L39_LEONA_STATE) = 210;
             } else {
                 CB->select_pile(1, 1);
                 CB->bloque(BLOQUE_ALL);
@@ -95,10 +95,10 @@ static void tick_body(void) {
             }
         }
         /* 0x1995 */
-        if (ST(0xD88) == 2) {
+        if (ST(L39_LEONA_STATE) == 2) {
             /* 0x19A7 */
             if (ST(ST_LOCKED_CAMERA) == 2) {
-                ST(0xD88) = 202;
+                ST(L39_LEONA_STATE) = 202;
             } else {
                 CB->select_pile(1, 1);
                 CB->bloque(BLOQUE_ALL);
@@ -111,10 +111,10 @@ static void tick_body(void) {
             }
         }
         /* 0x1A62 */
-        if (ST(0xD88) == 1) {
+        if (ST(L39_LEONA_STATE) == 1) {
             /* 0x1A74 */
             if (ST(ST_LOCKED_CAMERA) == 2) {
-                ST(0xD88) = 201;
+                ST(L39_LEONA_STATE) = 201;
             } else {
                 CB->select_pile(1, 1);
                 CB->bloque(BLOQUE_ALL);
@@ -130,8 +130,8 @@ static void tick_body(void) {
     /* 0x1B2F */
     if (ST(ST_VIE(P_LEONA)) != VIE_DEAD && ST(ST_LOCKED_CAMERA) == 1) {
         /* 0x1B53 */
-        if (ST(0xD88) == 210) {
-            ST(0xD88) = 10;
+        if (ST(L39_LEONA_STATE) == 210) {
+            ST(L39_LEONA_STATE) = 10;
             CB->select_pile(1, 1);
             CB->bloque(BLOQUE_ALL);
             CB->joindre(P_LEONA, 0, 0, 0, ST(ST_HERO));
@@ -143,8 +143,8 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x1C04 */
-        if (ST(0xD88) == 202) {
-            ST(0xD88) = 2;
+        if (ST(L39_LEONA_STATE) == 202) {
+            ST(L39_LEONA_STATE) = 2;
             CB->select_pile(1, 1);
             CB->bloque(BLOQUE_ALL);
             CB->joindre(P_LEONA, 0, 0, 0, ST(ST_HERO));
@@ -155,8 +155,8 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x1CBD */
-        if (ST(0xD88) == 201) {
-            ST(0xD88) = 1;
+        if (ST(L39_LEONA_STATE) == 201) {
+            ST(L39_LEONA_STATE) = 1;
             CB->select_pile(1, 1);
             CB->bloque(BLOQUE_ALL);
             CB->joindre(P_LEONA, 0, 0, 0, ST(ST_HERO));
@@ -168,21 +168,21 @@ static void tick_body(void) {
         }
     }
     /* 0x1D76 - ambience follows the camera */
-    if (ST(0xD8C) == 0 && ST(ST_LOCKED_CAMERA) == 2) {
+    if (ST(L39_AMBIENCE_CAM2) == 0 && ST(ST_LOCKED_CAMERA) == 2) {
         CB->bruitage("L38AMB1", -1, -1);
-        ST(0xD8C) = 1;
+        ST(L39_AMBIENCE_CAM2) = 1;
     }
     /* 0x1DBB */
-    if (ST(0xD8C) == 1 && (ST(ST_LOCKED_CAMERA) == 0 || ST(ST_LOCKED_CAMERA) == 1)) {
+    if (ST(L39_AMBIENCE_CAM2) == 1 && (ST(ST_LOCKED_CAMERA) == 0 || ST(ST_LOCKED_CAMERA) == 1)) {
         CB->bruitage("L39AMB1", -1, -1);
-        ST(0xD8C) = 0;
+        ST(L39_AMBIENCE_CAM2) = 0;
     }
     /* 0x1E12 */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         /* 0x1E33 */
-        if (ST(0x70) == 0) {
-            ST(0x70) = 1;
+        if (ST(L39_LEONA_CRY_STAGE) == 0) {
+            ST(L39_LEONA_CRY_STAGE) = 1;
             CB->select_pile(1, 1);
             CB->stop_joindre(P_LEONA);
             lieu_action_register("L39D04", P_LEONA, "SP14GAR03", "SP14GAR03");
@@ -193,11 +193,11 @@ static void tick_body(void) {
             return;
         }
         /* 0x1EBB */
-        if (ST(0x70) == 1) {
+        if (ST(L39_LEONA_CRY_STAGE) == 1) {
             CB->select_pile(1, 1);
             CB->stop_joindre(P_LEONA);
             ST(V_ENGAGED_PERSONA) = P_LEONA;
-            ST(0xD88) = 10;
+            ST(L39_LEONA_STATE) = 10;
             lieu_action_register("L39D108", P_LEONA, "SP14GAR03", "SP14GAR03");
             CB->combat(P_LEONA, 4);
             CB->animation("Sar_50");
@@ -216,11 +216,11 @@ static void tick_body(void) {
         CB->select_pile(1, 2);
         CB->combat(P_LEONA, -1);
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0xD88) = 10;
+        ST(L39_LEONA_STATE) = 10;
         CB->select_pile(0, 1);
     }
     /* 0x1FF8 */
-    if (ST(ST_LOCKED_CAMERA) != 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(0xD88) == 10 && ST(0x88) == 0) {
+    if (ST(ST_LOCKED_CAMERA) != 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(L39_LEONA_STATE) == 10 && ST(L39_FIGHT_EVENT_PENDING) == 0) {
         CB->select_pile(1, 2);
         CB->combat(P_LEONA, 4);
         ST(V_ENGAGED_PERSONA) = P_LEONA;
@@ -257,7 +257,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L39_DEATH_ENDING_SKIP) == 1) {
         l39_trig00();   /* 0x1000D089: call sub_10001073 -> trig00_10001200 */
         return 0;
     }

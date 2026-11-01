@@ -49,7 +49,7 @@ void l39_trig00(void) {
     /* 0x1212 */
     if (ST(ST_START_POINT(39)) == 1) {
         ST(ST_LEVEL) = 38;
-        ST(0xD5C) = 1;
+        ST(L39_ENTRY_SIDE) = 1;
         ST(ST_HERO) = P_ARKHAN3;
     }
     ST(V_EVENT_0) = 0;
@@ -71,11 +71,11 @@ void l39_trig00(void) {
     CB->ajoute_zone(7, 1454, 1002, 163, 117, 0);
     CB->ajoute_zone(8, 1422, 1330, 190, 190, 0);
     /* 0x13BC */
-    if (ST(0xD5C) == 1) {
+    if (ST(L39_ENTRY_SIDE) == 1) {
         CB->pos_perso(ST(ST_HERO), 1196, 827, 0xF439, 1, "ar", 1, 0);
     }
     /* 0x13F9 */
-    if (ST(0xD5C) == 2) {
+    if (ST(L39_ENTRY_SIDE) == 2) {
         CB->pos_perso(ST(ST_HERO), 395, 1585, 0xC6E6, 1, "ar", 1, 0);
     }
     /* 0x1436 */
@@ -85,11 +85,11 @@ void l39_trig00(void) {
         CB->pos_perso(P_LEONA, CB->divers(DV_DESC_POS, P_LEONA, 0), CB->divers(DV_DESC_POS, P_LEONA, 1), CB->divers(DV_DESC_POS, P_LEONA, 2), 2, "P14CAD", 2, 1);
     }
     CB->bruitage("L39AMB1", -1, -1);
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x88) = 0;
+    ST(L39_LEONA_GUARD_UP) = 0;
+    ST(L39_DIALOGUE_PICK) = 0;
+    ST(L39_ARKHAN3_GESTURE) = 0;
+    ST(L39_LEONA_CRY_STAGE) = 0;
+    ST(L39_FIGHT_EVENT_PENDING) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_LAST_WEAPON) = 0;
@@ -98,8 +98,8 @@ void l39_trig00(void) {
 /* trigger 41 - trig41_10001530 */
 static void trig41(void) {
     /* 0x1542 */
-    if (ST(0xD88) == 0) {
-        ST(0xD88) = 1;
+    if (ST(L39_LEONA_STATE) == 0) {
+        ST(L39_LEONA_STATE) = 1;
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP14ATT01_250");
@@ -114,7 +114,7 @@ static void trig41(void) {
     }
     /* 0x1613 */
     if (ST(ST_VIE(P_LEONA)) != VIE_DEAD) {
-        ST(0x88) = 1;
+        ST(L39_FIGHT_EVENT_PENDING) = 1;
         CB->evenement(1, 1000);
     }
 }
@@ -124,8 +124,8 @@ static void trig02(void) {
     /* 0x2095 */
     if (ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_LEONA)) != VIE_DEAD) {
         /* 0x20B6 */
-        if (ST(0x64) == 0 && ST(ST_COMBAT_STANCE) == 1 && CB->direction_perso(P_LEONA)) {
-            ST(0x64) = 1;
+        if (ST(L39_LEONA_GUARD_UP) == 0 && ST(ST_COMBAT_STANCE) == 1 && CB->direction_perso(P_LEONA)) {
+            ST(L39_LEONA_GUARD_UP) = 1;
             CB->select_pile(1, 1);
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_LEONA);
@@ -137,8 +137,8 @@ static void trig02(void) {
             return;
         }
         /* 0x216D */
-        if (ST(0x64) == 1 && ST(ST_COMBAT_STANCE) == 0) {
-            ST(0x64) = 0;
+        if (ST(L39_LEONA_GUARD_UP) == 1 && ST(ST_COMBAT_STANCE) == 0) {
+            ST(L39_LEONA_GUARD_UP) = 0;
             CB->select_pile(1, 1);
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_LEONA);
@@ -189,7 +189,7 @@ static void trig02(void) {
         /* 0x24B0 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0x24C2 */
-            if (ST(0xD88) == 1) {
+            if (ST(L39_LEONA_STATE) == 1) {
                 /* 0x24D4 */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L39D06A", P_ARKHAN2, "SG02DIA01", NULL);
@@ -216,7 +216,7 @@ static void trig02(void) {
                 lieu_action_register("L39D11A", P_LEONA, "SP14DIA54", "SP14ARR01");
                 lieu_action_register("L39D11B", P_LEONA, "SP14DIA55", "SP14ARR01");
                 lieu_action_register("L39D11C", P_LEONA, "SP14DIA58", "SP14ARR01");
-                ST(0xD88) = 2;
+                ST(L39_LEONA_STATE) = 2;
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -226,9 +226,9 @@ static void trig02(void) {
             /* 0x26B0 */
             if (ST(ST_PLAYER_WEAPON) == 0 || ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON) || CB->divers(DV_CAN_FIGHT, 0, 2)) {
                 /* 0x26F3 */
-                if (ST(0xD88) == 2) {
+                if (ST(L39_LEONA_STATE) == 2) {
                     /* 0x2705 */
-                    if (ST(0xD90) == 0) {
+                    if (ST(L39_ARKHAN2_TALK) == 0) {
                         /* 0x2717 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D18A", P_ARKHAN2, "SG02DIA02", NULL);
@@ -248,18 +248,18 @@ static void trig02(void) {
                         lieu_action_register("L39D23B", P_ARKHAN2, "SG02DIA07", NULL);
                         lieu_action_register("L39D23C", P_ARKHAN2, "SG02DIA01", NULL);
                         /* 0x284C */
-                        if (ST(0x32C) != 0) {
+                        if (ST(L39_FATHER_INFECTED) != 0) {
                             lieu_action_register("L39D24", P_ARKHAN2, "SG02DIA04", NULL);
                         }
                         /* 0x2874 */
-                        if (ST(0x330) != 0) {
+                        if (ST(L39_ZED_INFECTED) != 0) {
                             lieu_action_register("L39D25", P_ARKHAN2, "SG02DIA04", NULL);
                         }
                         lieu_action_register("L39D26A", P_ARKHAN2, "SG02DIA08", NULL);
                         lieu_action_register("L39D26B", P_ARKHAN2, "SG02DIA09", NULL);
                         lieu_action_register("L39D26C", P_ARKHAN2, "SG02DIA05", NULL);
                         lieu_action_register("L39D26D", P_ARKHAN2, "SG02DIA04", NULL);
-                        ST(0xD90) = 1;
+                        ST(L39_ARKHAN2_TALK) = 1;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -267,13 +267,13 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x2942 */
-                    if (ST(0xD90) == 1) {
+                    if (ST(L39_ARKHAN2_TALK) == 1) {
                         /* 0x2954 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D33A", P_ARKHAN2, "SG02DIA07", NULL);
                             lieu_action_register("L39D33B", P_ARKHAN2, "SG02DIA06", NULL);
                             /* 0x2992 */
-                            if (ST(0xB10) != 2) {
+                            if (ST(L39_NOTES_QUEST) != 2) {
                                 lieu_action_register("L39D34A", P_ARKHAN2, "SG02DIA01", NULL);
                                 lieu_action_register("L39D34B", P_ARKHAN2, "SG02DIA04", NULL);
                             }
@@ -283,7 +283,7 @@ static void trig02(void) {
                             lieu_action_register("L39D35A", P_ARKHAN2, "SG02DIA07", NULL);
                             lieu_action_register("L39D35B", P_ARKHAN2, "SG02DIA06", NULL);
                             /* 0x2A0E */
-                            if (ST(0xB10) != 2) {
+                            if (ST(L39_NOTES_QUEST) != 2) {
                                 lieu_action_register("L39D36A", P_ARKHAN2, "SG02DIA01", NULL);
                                 lieu_action_register("L39D36B", P_ARKHAN2, "SG02DIA04", NULL);
                             }
@@ -291,7 +291,7 @@ static void trig02(void) {
                         lieu_action_register("L39D37A", P_LEONA, "SP14DIA54", "SP14ARR01");
                         lieu_action_register("L39D37B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D37C", P_LEONA, "SP14DIA50", "SP14ARR01");
-                        ST(0xD90) = 2;
+                        ST(L39_ARKHAN2_TALK) = 2;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -299,14 +299,14 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x2AE5 */
-                    if (ST(0xD90) == 2) {
+                    if (ST(L39_ARKHAN2_TALK) == 2) {
                         lieu_action_register("L39D40A", P_ARKHAN2, "SG02DIA08", NULL);
                         lieu_action_register("L39D41A", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D41B", P_LEONA, "SP14DIA51", "SP14ARR01");
                         lieu_action_register("L39D41C", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D41D", P_LEONA, "SP14DIA54", "SP14ARR01");
                         lieu_action_register("L39D41E", P_LEONA, "SP14DIA55", "SP14ARR01");
-                        ST(0xD90) = 3;
+                        ST(L39_ARKHAN2_TALK) = 3;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -314,7 +314,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x2BD8 */
-                    if (ST(0xD90) == 3) {
+                    if (ST(L39_ARKHAN2_TALK) == 3) {
                         /* 0x2BEA */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D43A", P_ARKHAN2, "SG02DIA07", NULL);
@@ -331,7 +331,7 @@ static void trig02(void) {
                         lieu_action_register("L39D45D", P_LEONA, "SP14DIA55", "SP14ARR01");
                         lieu_action_register("L39D45E", P_LEONA, "SP14DIA54", "SP14ARR01");
                         lieu_action_register("L39D45F", P_LEONA, "SP14DIA50", "SP14ARR01");
-                        ST(0xD90) = 4;
+                        ST(L39_ARKHAN2_TALK) = 4;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -339,7 +339,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x2D4A */
-                    if (ST(0xD90) == 4) {
+                    if (ST(L39_ARKHAN2_TALK) == 4) {
                         lieu_action_register("L39D46A", P_ARKHAN2, "SG02DIA09", NULL);
                         lieu_action_register("L39D46B", P_ARKHAN2, "SG02DIA02", NULL);
                         lieu_action_register("L39D47A", P_LEONA, "SP14DIA55", "SP14ARR01");
@@ -351,15 +351,15 @@ static void trig02(void) {
                         lieu_action_register("L39D47G", P_LEONA, "SP14DIA51", "SP14ARR01");
                         lieu_action_register("L39D47H", P_LEONA, "SP14DIA53", "SP14ARR01");
                         /* 0x2E50 */
-                        if (ST(0x32C) != 0) {
+                        if (ST(L39_FATHER_INFECTED) != 0) {
                             lieu_action_register("L39D48", P_ARKHAN2, "SG02DIA03", NULL);
                         }
                         /* 0x2E78 */
-                        if (ST(0x330) != 0) {
+                        if (ST(L39_ZED_INFECTED) != 0) {
                             lieu_action_register("L39D49", P_ARKHAN2, "SG02DIA03", NULL);
                         }
                         lieu_action_register("L39D50", P_ARKHAN2, "SG02DIA04", NULL);
-                        ST(0xD90) = 5;
+                        ST(L39_ARKHAN2_TALK) = 5;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -367,7 +367,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x2F04 */
-                    if (ST(0xD90) == 5) {
+                    if (ST(L39_ARKHAN2_TALK) == 5) {
                         /* 0x2F16 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D55A", P_ARKHAN2, "SG02DIA01", NULL);
@@ -388,14 +388,14 @@ static void trig02(void) {
                         lieu_action_register("L39D59B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D59C", P_LEONA, "SP14DIA58", "SP14ARR01");
                         /* 0x3070 */
-                        if (ST(0x32C) != 0) {
+                        if (ST(L39_FATHER_INFECTED) != 0) {
                             lieu_action_register("L39D60", P_LEONA, "SP14DIA51", "SP14ARR01");
                         }
                         /* 0x309B */
-                        if (ST(0x330) != 0) {
+                        if (ST(L39_ZED_INFECTED) != 0) {
                             lieu_action_register("L39D61", P_LEONA, "SP14DIA51", "SP14ARR01");
                         }
-                        ST(0xD90) = 6;
+                        ST(L39_ARKHAN2_TALK) = 6;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -403,7 +403,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x3114 */
-                    if (ST(0xD90) == 6) {
+                    if (ST(L39_ARKHAN2_TALK) == 6) {
                         /* 0x3126 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D64A", P_ARKHAN2, "SG02DIA03", NULL);
@@ -439,7 +439,7 @@ static void trig02(void) {
                         }
                         lieu_action_register("L39D71A", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D71B", P_LEONA, "SP14DIA58", "SP14ARR01");
-                        ST(0xD90) = 7;
+                        ST(L39_ARKHAN2_TALK) = 7;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -447,7 +447,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x33D7 */
-                    if (ST(0xD90) == 7) {
+                    if (ST(L39_ARKHAN2_TALK) == 7) {
                         /* 0x33E9 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D75A", P_ARKHAN2, "SG02DIA09", NULL);
@@ -464,7 +464,7 @@ static void trig02(void) {
                         lieu_action_register("L39D78", P_ARKHAN2, "SG02DIA08", NULL);
                         lieu_action_register("L39D79A", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D79B", P_LEONA, "SP14DIA50", "SP14ARR01");
-                        ST(0xD90) = 8;
+                        ST(L39_ARKHAN2_TALK) = 8;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -472,7 +472,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x3549 */
-                    if (ST(0xD90) == 8) {
+                    if (ST(L39_ARKHAN2_TALK) == 8) {
                         /* 0x355B */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D82", P_ARKHAN2, "SG02DIA06", NULL);
@@ -490,7 +490,7 @@ static void trig02(void) {
                         lieu_action_register("L39D84G", P_LEONA, "SP14DIA55", "SP14ARR01");
                         lieu_action_register("L39D84H", P_LEONA, "SP14DIA54", "SP14ARR01");
                         lieu_action_register("L39D84I", P_LEONA, "SP14DIA53", "SP14ARR01");
-                        ST(0xD90) = 9;
+                        ST(L39_ARKHAN2_TALK) = 9;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -498,7 +498,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x36DA */
-                    if (ST(0xD90) == 9) {
+                    if (ST(L39_ARKHAN2_TALK) == 9) {
                         /* 0x36EC */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L39D86A", P_ARKHAN2, "SG02DIA01", NULL);
@@ -510,17 +510,17 @@ static void trig02(void) {
                             lieu_action_register("L39D87B", P_ARKHAN2, "SG02DIA02", NULL);
                             lieu_action_register("L39D87C", P_ARKHAN2, "SG02DIA06", NULL);
                         }
-                        ST(0x68) = CB->random(3);
+                        ST(L39_DIALOGUE_PICK) = CB->random(3);
                         /* 0x378F */
-                        if (ST(0x68) == 0) {
+                        if (ST(L39_DIALOGUE_PICK) == 0) {
                             lieu_action_register("L39D88", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         /* 0x37B7 */
-                        if (ST(0x68) == 1) {
+                        if (ST(L39_DIALOGUE_PICK) == 1) {
                             lieu_action_register("L39D89", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         /* 0x37DF */
-                        if (ST(0x68) == 2) {
+                        if (ST(L39_DIALOGUE_PICK) == 2) {
                             lieu_action_register("L39D90", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -530,7 +530,7 @@ static void trig02(void) {
                         return;
                     }
                 }
-            } else if (ST(0xD88) != 2) {
+            } else if (ST(L39_LEONA_STATE) != 2) {
                 lieu_action_register("L39D95", P_ARKHAN2, "SG02PRE80", "SG02PRE81");
                 lieu_action_register("L39D96", P_LEONA, "SP14DIA50", "SP14ARR01");
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -552,7 +552,7 @@ static void trig02(void) {
                 lieu_action_register("L39D99", P_ARKHAN2, "SG02PRE80", "SG02PRE81");
                 lieu_action_register("L39D100", P_LEONA, "SP14DIA50", "SP14ARR01");
                 /* 0x3A00 */
-                if (ST(0xB10) != 2) {
+                if (ST(L39_NOTES_QUEST) != 2) {
                     lieu_action_register("L39D101", P_LEONA, "SP14DIA50", "SP14ARR01");
                 }
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -574,7 +574,7 @@ static void trig02(void) {
         /* 0x3AF4 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0x3B06 */
-            if (ST(0xD88) == 1) {
+            if (ST(L39_LEONA_STATE) == 1) {
                 /* 0x3B18 */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L39D12", P_ARKHAN3, "SG03DIA04", NULL);
@@ -596,7 +596,7 @@ static void trig02(void) {
                 }
                 lieu_action_register("L39D17A", P_LEONA, "SP14DIA58", "SP14ARR01");
                 lieu_action_register("L39D17B", P_LEONA, "SP14DIA57", "SP14ARR01");
-                ST(0xD88) = 2;
+                ST(L39_LEONA_STATE) = 2;
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -606,15 +606,15 @@ static void trig02(void) {
             /* 0x3C83 */
             if (ST(ST_PLAYER_WEAPON) == 0 || ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON) || CB->divers(DV_CAN_FIGHT, 0, 2)) {
                 /* 0x3CC6 */
-                if (ST(0xD88) == 2 && ST(ST_SPECIAL_MODE) == 1) {
+                if (ST(L39_LEONA_STATE) == 2 && ST(ST_SPECIAL_MODE) == 1) {
                     /* 0x3CE7 */
-                    if (ST(0x6C) == 1) {
-                        ST(0x6C) = 0;
+                    if (ST(L39_ARKHAN3_GESTURE) == 1) {
+                        ST(L39_ARKHAN3_GESTURE) = 0;
                         CB->animation("SP14GAR27");
                         CB->animation("SP14ARR01");
                     }
                     /* 0x3D1B */
-                    if (ST(0xD94) == 0) {
+                    if (ST(L39_ARKHAN3_TALK) == 0) {
                         lieu_action_register("L39D27", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D20A", P_LEONA, "SP14DIA51", "SP14ARR01");
                         lieu_action_register("L39D20B", P_LEONA, "SP14DIA54", "SP14ARR01");
@@ -626,11 +626,11 @@ static void trig02(void) {
                         lieu_action_register("L39D29B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D29C", P_ARKHAN3, "SG03DIA04", NULL);
                         /* 0x3E12 */
-                        if (ST(0x32C) != 0) {
+                        if (ST(L39_FATHER_INFECTED) != 0) {
                             lieu_action_register("L39D30", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         /* 0x3E3A */
-                        if (ST(0x330) != 0) {
+                        if (ST(L39_ZED_INFECTED) != 0) {
                             lieu_action_register("L39D31", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         lieu_action_register("L39D32A", P_ARKHAN3, "SG03DIA04", NULL);
@@ -638,7 +638,7 @@ static void trig02(void) {
                         lieu_action_register("L39D32C", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D32D", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D32E", P_ARKHAN3, "SG03DIA04", NULL);
-                        ST(0xD94) = 1;
+                        ST(L39_ARKHAN3_TALK) = 1;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -646,19 +646,19 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x3F1E */
-                    if (ST(0xD94) == 1) {
+                    if (ST(L39_ARKHAN3_TALK) == 1) {
                         lieu_action_register("L39D38A", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D38B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D38C", P_ARKHAN3, "SG03DIA04", NULL);
                         /* 0x3F72 */
-                        if (ST(0xB10) != 2) {
+                        if (ST(L39_NOTES_QUEST) != 2) {
                             lieu_action_register("L39D39A", P_ARKHAN3, "SG03DIA04", NULL);
                             lieu_action_register("L39D39B", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         lieu_action_register("L39D37A", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D37B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D37C", P_LEONA, "SP14DIA53", "SP14ARR01");
-                        ST(0xD94) = 2;
+                        ST(L39_ARKHAN3_TALK) = 2;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -666,14 +666,14 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x4049 */
-                    if (ST(0xD94) == 2) {
+                    if (ST(L39_ARKHAN3_TALK) == 2) {
                         lieu_action_register("L39D42A", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D41A", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D41B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D41C", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D41D", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D41E", P_LEONA, "SP14DIA53", "SP14ARR01");
-                        ST(0xD94) = 3;
+                        ST(L39_ARKHAN3_TALK) = 3;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -681,7 +681,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x413C */
-                    if (ST(0xD94) == 3) {
+                    if (ST(L39_ARKHAN3_TALK) == 3) {
                         lieu_action_register("L39D109", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D45A", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D45B", P_LEONA, "SP14DIA53", "SP14ARR01");
@@ -689,7 +689,7 @@ static void trig02(void) {
                         lieu_action_register("L39D45D", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D45E", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D45F", P_LEONA, "SP14DIA53", "SP14ARR01");
-                        ST(0xD94) = 4;
+                        ST(L39_ARKHAN3_TALK) = 4;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -697,7 +697,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x4248 */
-                    if (ST(0xD94) == 4) {
+                    if (ST(L39_ARKHAN3_TALK) == 4) {
                         lieu_action_register("L39D51A", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D51B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D47A", P_LEONA, "SP14DIA50", "SP14ARR01");
@@ -709,15 +709,15 @@ static void trig02(void) {
                         lieu_action_register("L39D47G", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D47H", P_LEONA, "SP14DIA53", "SP14ARR01");
                         /* 0x434E */
-                        if (ST(0x32C) != 0) {
+                        if (ST(L39_FATHER_INFECTED) != 0) {
                             lieu_action_register("L39D52", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         /* 0x4376 */
-                        if (ST(0x330) != 0) {
+                        if (ST(L39_ZED_INFECTED) != 0) {
                             lieu_action_register("L39D53", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         lieu_action_register("L39D54", P_ARKHAN3, "SG03DIA04", NULL);
-                        ST(0xD94) = 5;
+                        ST(L39_ARKHAN3_TALK) = 5;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -725,7 +725,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x4402 */
-                    if (ST(0xD94) == 5) {
+                    if (ST(L39_ARKHAN3_TALK) == 5) {
                         lieu_action_register("L39D62A", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D62B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D57A", P_LEONA, "SP14DIA50", "SP14ARR01");
@@ -738,14 +738,14 @@ static void trig02(void) {
                         lieu_action_register("L39D59B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D59C", P_LEONA, "SP14DIA50", "SP14ARR01");
                         /* 0x451E */
-                        if (ST(0x32C) != 0) {
+                        if (ST(L39_FATHER_INFECTED) != 0) {
                             lieu_action_register("L39D60", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         /* 0x4549 */
-                        if (ST(0x330) != 0) {
+                        if (ST(L39_ZED_INFECTED) != 0) {
                             lieu_action_register("L39D61", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
-                        ST(0xD94) = 6;
+                        ST(L39_ARKHAN3_TALK) = 6;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -753,7 +753,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x45C2 */
-                    if (ST(0xD94) == 6) {
+                    if (ST(L39_ARKHAN3_TALK) == 6) {
                         lieu_action_register("L39D72", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D66A", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D66B", P_LEONA, "SP14DIA53", "SP14ARR01");
@@ -770,7 +770,7 @@ static void trig02(void) {
                         lieu_action_register("L39D74B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D71A", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D71B", P_LEONA, "SP14DIA50", "SP14ARR01");
-                        ST(0xD94) = 7;
+                        ST(L39_ARKHAN3_TALK) = 7;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -778,7 +778,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x47A3 */
-                    if (ST(0xD94) == 7) {
+                    if (ST(L39_ARKHAN3_TALK) == 7) {
                         lieu_action_register("L39D80A", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D80B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D77A", P_LEONA, "SP14DIA50", "SP14ARR01");
@@ -788,7 +788,7 @@ static void trig02(void) {
                         lieu_action_register("L39D81", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D79A", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D79B", P_LEONA, "SP14DIA50", "SP14ARR01");
-                        ST(0xD94) = 8;
+                        ST(L39_ARKHAN3_TALK) = 8;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -796,7 +796,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x48DB */
-                    if (ST(0xD94) == 8) {
+                    if (ST(L39_ARKHAN3_TALK) == 8) {
                         lieu_action_register("L39D85", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D84A", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D84B", P_LEONA, "SP14DIA53", "SP14ARR01");
@@ -807,7 +807,7 @@ static void trig02(void) {
                         lieu_action_register("L39D84G", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D84H", P_LEONA, "SP14DIA50", "SP14ARR01");
                         lieu_action_register("L39D84I", P_LEONA, "SP14DIA53", "SP14ARR01");
-                        ST(0xD94) = 9;
+                        ST(L39_ARKHAN3_TALK) = 9;
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
                         CB->animation("Sar_50");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -815,19 +815,19 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x4A32 */
-                    if (ST(0xD94) == 9) {
+                    if (ST(L39_ARKHAN3_TALK) == 9) {
                         lieu_action_register("LCOD65", P_ARKHAN3, "SG03DIA04", NULL);
-                        ST(0x68) = CB->random(3);
+                        ST(L39_DIALOGUE_PICK) = CB->random(3);
                         /* 0x4A6B */
-                        if (ST(0x68) == 0) {
+                        if (ST(L39_DIALOGUE_PICK) == 0) {
                             lieu_action_register("L39D88", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         /* 0x4A93 */
-                        if (ST(0x68) == 1) {
+                        if (ST(L39_DIALOGUE_PICK) == 1) {
                             lieu_action_register("L39D89", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         /* 0x4ABB */
-                        if (ST(0x68) == 2) {
+                        if (ST(L39_DIALOGUE_PICK) == 2) {
                             lieu_action_register("L39D90", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -840,8 +840,8 @@ static void trig02(void) {
                 /* 0x4B25 */
                 if (ST(ST_SPECIAL_MODE) == 0) {
                     /* 0x4B34 */
-                    if (ST(0x6C) == 0) {
-                        ST(0x6C) = 1;
+                    if (ST(L39_ARKHAN3_GESTURE) == 0) {
+                        ST(L39_ARKHAN3_GESTURE) = 1;
                         lieu_action_register("L39D92", P_ARKHAN3, "SG03DIA04", NULL);
                         CB->animation("SP14GAR26");
                         lieu_action_register("L39D93", P_LEONA, "P14GAR03", "SP14GAR03");
@@ -852,8 +852,8 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x4BC8 */
-                    if (ST(0x6C) == 1) {
-                        ST(0x6C) = 0;
+                    if (ST(L39_ARKHAN3_GESTURE) == 1) {
+                        ST(L39_ARKHAN3_GESTURE) = 0;
                         lieu_action_register("LCOD22B", P_ARKHAN3, "SG03DIA04", NULL);
                         CB->animation("SP14GAR27");
                         lieu_action_register("L39D94", P_LEONA, "P14ARR01", "SP14ARR01");
@@ -864,7 +864,7 @@ static void trig02(void) {
                         return;
                     }
                 }
-            } else if (ST(0xD88) != 2) {
+            } else if (ST(L39_LEONA_STATE) != 2) {
                 lieu_action_register("L39D104", P_ARKHAN3, "SG03PRE80", "SG03PRE81");
                 lieu_action_register("L39D96", P_LEONA, "SP14DIA50", "SP14ARR01");
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -886,7 +886,7 @@ static void trig02(void) {
                 lieu_action_register("L39D106", P_ARKHAN3, "SG03PRE80", "SG03PRE81");
                 lieu_action_register("L39D100", P_LEONA, "SP14DIA50", "SP14ARR01");
                 /* 0x4E16 */
-                if (ST(0xB10) != 2) {
+                if (ST(L39_NOTES_QUEST) != 2) {
                     lieu_action_register("L39D101", P_LEONA, "SP14DIA50", "SP14ARR01");
                 }
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -954,7 +954,7 @@ static void trig02(void) {
         CB->bloque(BLOQUE_ALL);
         CB->stop_joindre(-P_LEONA);
         /* 0x5191 */
-        if (ST(0x6C) == 0) {
+        if (ST(L39_ARKHAN3_GESTURE) == 0) {
             CB->animation("SP14GAR26");
         }
         lieu_action_register("L39D108", P_LEONA, "SP14GAR03", "SP14GAR03");
@@ -968,7 +968,7 @@ static void trig02(void) {
 
 /* trigger 3 - trig03_10005201 */
 static void trig03(void) {
-    ST(0xD84) = 2;
+    ST(L39_EXIT_SIDE) = 2;
     ST(ST_LEVEL) = 39;
     CB->change_piece(38, 0);
 }
@@ -978,9 +978,9 @@ static void trig04(void) {
     /* 0x5243 */
     if (ST(V_ENGAGED_PERSONA) != 0) {
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0xD88) = 10;
+        ST(L39_LEONA_STATE) = 10;
     }
-    ST(0xD84) = 1;
+    ST(L39_EXIT_SIDE) = 1;
     ST(ST_LEVEL) = 39;
     CB->change_piece(38, 0);
 }
