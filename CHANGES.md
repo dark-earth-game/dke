@@ -3,6 +3,7 @@
 - List of all changes during public version releases
 
 ## Unreleased
+- 2ef6bfb feat: first-run gamma picker (handle_screen_gamma_picker); 291613b brightness, contrast and saturation from DKEGAME.CFG applied to the frame
 - 6ecb64e docs: engine gap plan (docs/ENGINE_GAPS.md) and per-function exe coverage from a full IDA 7 Hex-Rays dump (tools/ida7/dump.sh)
 - a0e7df2 levels: every level's script variables named (LNN_* per level, 28 shared V_* in lieu_vars.h); all 55 level difftests clean
 - b5d49e0 fix: day/night file letter: night-only levels 40, 43, 44, 51 load, and after nightfall rooms use their night files
