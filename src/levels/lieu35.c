@@ -27,7 +27,7 @@
 static void tick_body(void) {
     /* 0x817F */
     if (ST(ST_HERO) != 4) {
-        ST(0xE8) = ST(ST_HERO);
+        ST(L35_LAST_LIVE_HERO) = ST(ST_HERO);
     }
     /* 0x81A8 */
     if (ST(ST_HERO) == 4 && ST(V_DEATH_EVENT_SENT) == 0) {
@@ -45,7 +45,7 @@ static void tick_body(void) {
     if (ST(V_END_GAME_REQ) == 1) {
         ST(V_END_GAME_REQ) = 0;
         CB->bloque(BLOQUE_ALL);
-        CB->divers_empile(DV_HP, ST(0xE8), 0);
+        CB->divers_empile(DV_HP, ST(L35_LAST_LIVE_HERO), 0);
         ST(V_DEATH_EVENT_SENT) = 1;
         /* 0x8290 */
         if (ST(V_GUARD_FIGHT_DONE) == 0) {
@@ -73,9 +73,9 @@ static void tick_body(void) {
     if (ST(V_EVENT_53) == 3) {
         ST(V_EVENT_53) = 0;
         /* 0x837B */
-        if (ST(0x4D8) == 0) {
+        if (ST(L35_INTRO_DIALOGUE_DONE) == 0) {
             CB->joindre(-ST(ST_HERO), 0, 0, 10, -1);
-            ST(0x4D8) = 1;
+            ST(L35_INTRO_DIALOGUE_DONE) = 1;
             /* 0x83B9 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 lieu_action_register("L35D01", P_ARKHAN2, "SG00DIA01", NULL);
@@ -90,12 +90,12 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x842A */
-    if (ST(0x64) == 0 && ST(ST_VIE(92)) == 1 && (ST(ST_LOCKED_CAMERA) == 2 || ST(ST_LOCKED_CAMERA) == 3) && (CB->distance(6, 20) < 300 || CB->distance(6, 40) < 250)) {
+    if (ST(L35_GUARD92_ENGAGED) == 0 && ST(ST_VIE(92)) == 1 && (ST(ST_LOCKED_CAMERA) == 2 || ST(ST_LOCKED_CAMERA) == 3) && (CB->distance(6, 20) < 300 || CB->distance(6, 40) < 250)) {
         CB->select_pile(0, 2);
-        ST(0x64) = 1;
+        ST(L35_GUARD92_ENGAGED) = 1;
         /* 0x84C1 */
-        if (ST(0x908) == 0) {
-            ST(0x908) = 1;
+        if (ST(L35_GUARD92_SEEN) == 0) {
+            ST(L35_GUARD92_SEEN) = 1;
             CB->pos_perso(92, 4062, 6903, 0x9858, 1, "p92mar01", 0x28, 600);
         }
         ST(V_ENGAGED_PERSONA) = 92;
@@ -103,8 +103,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8530 */
-    if (ST(V_HUD_TIMER_MS) == 0 && ST(0x68) == 0) {
-        ST(0x68) = 1;
+    if (ST(V_HUD_TIMER_MS) == 0 && ST(L35_DEATH_SCENE_STARTED) == 0) {
+        ST(L35_DEATH_SCENE_STARTED) = 1;
         CB->select_pile(1, 2);
         CB->bloque(BLOQUE_ALL);
         CB->evenement(EV_HUD_TIMER, -1);
@@ -126,8 +126,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x864F */
-    if (ST(V_SOB86_ACTIVE) == 666 && ST(0x68) == 0) {
-        ST(0x68) = 1;
+    if (ST(V_SOB86_ACTIVE) == 666 && ST(L35_DEATH_SCENE_STARTED) == 0) {
+        ST(L35_DEATH_SCENE_STARTED) = 1;
         CB->select_pile(1, 2);
         CB->bloque(BLOQUE_ALL);
         CB->evenement(EV_HUD_TIMER, -1);
@@ -177,7 +177,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L35_DEATH_ENDING_BYPASS) == 1) {
         l35_trig00();   /* 0x1000C409: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

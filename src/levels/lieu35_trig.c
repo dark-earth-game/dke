@@ -109,9 +109,9 @@ static void trig02(void) {
 /* trigger 4 - trig04_10008890 */
 static void trig04(void) {
     /* 0x889F */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && CB->direction_perso(P_MALROT6) && ST(0x4E0) == 0) {
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && CB->direction_perso(P_MALROT6) && ST(L35_MALROT6_SEARCHED) == 0) {
         CB->fouille(P_MALROT6);
-        ST(0x4E0) = 1;
+        ST(L35_MALROT6_SEARCHED) = 1;
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x8925 */
@@ -667,7 +667,7 @@ static void trig25(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x9D86 */
-        if (ST(0x698) == 1) {
+        if (ST(L35_OB72_EXAMINED) == 1) {
             CB->animation("SG00PRE09_10");
             /* 0x9DA3 */
             if (ST(ST_HERO) == P_ARKHAN2) {
@@ -680,8 +680,8 @@ static void trig25(void) {
             CB->animation("Sar_50");
         }
         /* 0x9DF2 */
-        if (ST(0x698) == 0) {
-            ST(0x698) = 1;
+        if (ST(L35_OB72_EXAMINED) == 0) {
+            ST(L35_OB72_EXAMINED) = 1;
             CB->animation("SG00PRE08_10");
             /* 0x9E1E */
             if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1205,7 +1205,7 @@ void l35_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(35)) == 1) {
         ST(V_HUD_TIMER_MS) = 600000;
-        ST(0xC28) = 2;
+        ST(L35_MALROT_STAGE) = 2;
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 30;
     }
@@ -1215,14 +1215,14 @@ void l35_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 37;
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
+    ST(L35_GUARD92_ENGAGED) = 0;
+    ST(L35_DEATH_SCENE_STARTED) = 0;
+    ST(L35_UNUSED_CLEARED) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_PRE90_OBJECT) = 0;
     ST(V_LAST_WEAPON) = 0;
-    ST(0xF40) = 1200000;
+    ST(L35_TIMER2_MS) = 1200000;
     ST(V_EVENT_1) = 0;
     ST(V_EVENT_53) = 0;
     ST(V_EVENT_2) = 0;
@@ -1323,7 +1323,7 @@ void l35_trig00(void) {
     /* 0x7C48 */
     if (ST(ST_VIE(92)) < 2) {
         /* 0x7C5A */
-        if (ST(0x908) == 0) {
+        if (ST(L35_GUARD92_SEEN) == 0) {
             CB->pos_perso(92, 3130, 75600, 0x9858, 1, "p92mar01", 0x28, 600);
         } else {
             CB->pos_perso(92, 3130, 7560, 0x9858, 1, "p92mar01", 0x28, 600);
@@ -1340,8 +1340,8 @@ void l35_trig00(void) {
         }
     }
     /* 0x7D26 */
-    if (ST(0xC28) >= 2 || ST(0xF24) == 3) {
-        ST(0xC28) = 3;
+    if (ST(L35_MALROT_STAGE) >= 2 || ST(L35_STORY_STAGE) == 3) {
+        ST(L35_MALROT_STAGE) = 3;
         CB->pos_perso(P_MALROT6, 3900, 7450, 0x60E0, 1, "P66ATT01", 4, 0);
         CB->etat_objet("OB90", 3900, -3300, 7500, 0, 0, 0, 0, 2);
     }
