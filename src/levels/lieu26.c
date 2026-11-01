@@ -27,13 +27,13 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x7784 */
-    if (ST(ST_LOCKED_CAMERA) == 0 && ST(0x6C) == 1) {
+    if (ST(ST_LOCKED_CAMERA) == 0 && ST(L26_TELEPORT_ANIM_PAUSED) == 1) {
         CB->load_anim("226TELES", 2);
-        ST(0x6C) = 0;
+        ST(L26_TELEPORT_ANIM_PAUSED) = 0;
     }
     /* 0x77C1 */
-    if (ST(ST_LOCKED_CAMERA) == 1 && ST(0x6C) == 0) {
-        ST(0x6C) = 1;
+    if (ST(ST_LOCKED_CAMERA) == 1 && ST(L26_TELEPORT_ANIM_PAUSED) == 0) {
+        ST(L26_TELEPORT_ANIM_PAUSED) = 1;
         CB->pause_anim(2, 0, 0);
     }
     /* 0x77FD */
@@ -70,8 +70,8 @@ static void tick_body(void) {
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         /* 0x794C */
-        if (ST(0x68) == 0) {
-            ST(0x68) = 1;
+        if (ST(L26_DOOR_EVENT0_STEP) == 0) {
+            ST(L26_DOOR_EVENT0_STEP) = 1;
             CB->select_pile(2, 2);
             CB->play_anim(4, 0);
             CB->select_pile(1, 1);
@@ -81,8 +81,8 @@ static void tick_body(void) {
             return;
         }
         /* 0x79C5 */
-        if (ST(0x68) == 1) {
-            ST(0x68) = 2;
+        if (ST(L26_DOOR_EVENT0_STEP) == 1) {
+            ST(L26_DOOR_EVENT0_STEP) = 2;
             CB->select_pile(2, 1);
             CB->evenement(0, 1000);
             CB->play_anim(0, 0);
@@ -90,11 +90,11 @@ static void tick_body(void) {
             return;
         }
         /* 0x7A19 */
-        if (ST(0x68) == 2) {
+        if (ST(L26_DOOR_EVENT0_STEP) == 2) {
             CB->bloque(BLOQUE_NONE);
             /* 0x7A33 */
-            if (ST(0xD14) == 0) {
-                ST(0xD14) = 1;
+            if (ST(L26_MUSIC_STARTED) == 0) {
+                ST(L26_MUSIC_STARTED) = 1;
             }
             CB->divers(DV_MUSIC, 1, 4);
             ST(ST_LEVEL) = 26;
@@ -140,7 +140,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L26_CHASE_STATE) == 1) {
         l26_trig00();   /* 0x1000A579: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

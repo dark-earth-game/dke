@@ -84,14 +84,14 @@ void l26_trig00(void) {
     CB->pos_perso(ST(ST_HERO), 7073, -3267, 0xBDA8, 1, "ar", 1, 0);
     CB->bruitage("L26AMB1", 7445, -3272);
     /* 0x76D5 */
-    if (ST(0xB38) == 0) {
-        ST(0xB38) = 1;
-        ST(0xE74) = 99;
-        ST(0xC48) = 99;
+    if (ST(L26_LEVEL_INIT_DONE) == 0) {
+        ST(L26_LEVEL_INIT_DONE) = 1;
+        ST(L26_STORY_MARK_E74) = 99;
+        ST(L26_STORY_MARK_C48) = 99;
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
+    ST(L26_HP_SAVED) = 0;
+    ST(L26_DOOR_EVENT0_STEP) = 0;
+    ST(L26_TELEPORT_ANIM_PAUSED) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_LAST_WEAPON) = 0;
@@ -133,8 +133,8 @@ static void trig02(void) {
                 /* 0x7D27 */
                 if (ST(ST_SPECIAL_MODE) == 0) {
                     CB->animation("SP02ACT29");
-                    ST(0x64) = CB->divers(DV_HP, ST(ST_HERO), -1);
-                    CB->divers(DV_HP, ST(ST_HERO), (ST(0x64) - 10));
+                    ST(L26_HP_SAVED) = CB->divers(DV_HP, ST(ST_HERO), -1);
+                    CB->divers(DV_HP, ST(ST_HERO), (ST(L26_HP_SAVED) - 10));
                 }
                 CB->animation("ar_100");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -147,8 +147,8 @@ static void trig02(void) {
                 /* 0x7DEA */
                 if (ST(ST_SPECIAL_MODE) == 0) {
                     CB->animation("SP03ACT29");
-                    ST(0x64) = CB->divers(DV_HP, ST(ST_HERO), -1);
-                    CB->divers(DV_HP, ST(ST_HERO), (ST(0x64) - 10));
+                    ST(L26_HP_SAVED) = CB->divers(DV_HP, ST(ST_HERO), -1);
+                    CB->divers(DV_HP, ST(ST_HERO), (ST(L26_HP_SAVED) - 10));
                 }
                 CB->animation("ar_100");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -209,8 +209,8 @@ static void trig04(void) {
         /* 0x814E */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0x8160 */
-            if (ST(0x630) == 0) {
-                ST(0x630) = 1;
+            if (ST(L26_ZONE4_ONCE) == 0) {
+                ST(L26_ZONE4_ONCE) = 1;
                 CB->animation("SG00PRE02");
                 CB->dialogue("L26D05", P_ARKHAN2);
                 lieu_action_register("L26D06", P_ARKHAN2, "SG00PRE08", NULL);
@@ -220,7 +220,7 @@ static void trig04(void) {
                 return;
             }
             /* 0x81EE */
-            if (ST(0x630) == 1) {
+            if (ST(L26_ZONE4_ONCE) == 1) {
                 lieu_action_register("LCOD10", P_ARKHAN2, "SG02PRE01", NULL);
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
@@ -230,8 +230,8 @@ static void trig04(void) {
         /* 0x8234 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0x8246 */
-            if (ST(0x630) == 0) {
-                ST(0x630) = 1;
+            if (ST(L26_ZONE4_ONCE) == 0) {
+                ST(L26_ZONE4_ONCE) = 1;
                 lieu_action_register("L26D07", P_ARKHAN3, "SG00PRE02", "SG00PRE09");
                 CB->dialogue("L26D08", P_ARKHAN3);
                 CB->etat_objet("OB46", -1, -1, -1, -1, -1, -1, -3, 0);
@@ -241,7 +241,7 @@ static void trig04(void) {
                 return;
             }
             /* 0x82D7 */
-            if (ST(0x630) == 1) {
+            if (ST(L26_ZONE4_ONCE) == 1) {
                 lieu_action_register("LCOD11", P_ARKHAN3, "SG03PRE01", NULL);
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
@@ -304,7 +304,7 @@ static void trig07(void) {
         /* 0x854A */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0x855C */
-            if (ST(0x808) == 0) {
+            if (ST(L26_ZONE7_STAGE) == 0) {
                 /* 0x856E */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L26D14A", P_ARKHAN2, "SG02PRE01", NULL);
@@ -319,7 +319,7 @@ static void trig07(void) {
                     CB->pos_perso(ST(ST_HERO), 7553, -3128, 0xD3EF, 1, "ar", 1, 0);
                     CB->evenement(1, 500);
                     CB->animation("SP02ACT06");
-                    ST(0x808) = 1;
+                    ST(L26_ZONE7_STAGE) = 1;
                     CB->dialogue("L26D15", P_ARKHAN2);
                     CB->animation("Sar_50");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -329,9 +329,9 @@ static void trig07(void) {
                 }
             }
             /* 0x8685 */
-            if (ST(0x808) == 1) {
-                ST(0x808) = 2;
-                ST(0xB4C) = 1;
+            if (ST(L26_ZONE7_STAGE) == 1) {
+                ST(L26_ZONE7_STAGE) = 2;
+                ST(L26_KALHI_PART_STEP) = 1;
                 lieu_action_register("L26D16", P_ARKHAN2, "SG02PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -340,7 +340,7 @@ static void trig07(void) {
                 return;
             }
             /* 0x8712 */
-            if (ST(0x808) == 2) {
+            if (ST(L26_ZONE7_STAGE) == 2) {
                 lieu_action_register("LCOD79", P_ARKHAN2, "SG02DIA07", NULL);
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -351,7 +351,7 @@ static void trig07(void) {
         /* 0x8763 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0x8775 */
-            if (ST(0x808) == 0) {
+            if (ST(L26_ZONE7_STAGE) == 0) {
                 /* 0x8787 */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L26D19A", P_ARKHAN3, "SG03PRE01", NULL);
@@ -366,7 +366,7 @@ static void trig07(void) {
                     CB->pos_perso(ST(ST_HERO), 7553, -3128, 0xD3EF, 1, "ar", 1, 0);
                     CB->evenement(1, 500);
                     CB->animation("SP03ACT06");
-                    ST(0x808) = 1;
+                    ST(L26_ZONE7_STAGE) = 1;
                     CB->dialogue("L26D20", P_ARKHAN3);
                     CB->animation("Sar_50");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -376,9 +376,9 @@ static void trig07(void) {
                 }
             }
             /* 0x889E */
-            if (ST(0x808) == 1) {
-                ST(0x808) = 2;
-                ST(0xB4C) = 1;
+            if (ST(L26_ZONE7_STAGE) == 1) {
+                ST(L26_ZONE7_STAGE) = 2;
+                ST(L26_KALHI_PART_STEP) = 1;
                 lieu_action_register("L26D21", P_ARKHAN3, "SG03PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -387,7 +387,7 @@ static void trig07(void) {
                 return;
             }
             /* 0x892B */
-            if (ST(0x808) == 2) {
+            if (ST(L26_ZONE7_STAGE) == 2) {
                 lieu_action_register("LCOD80", P_ARKHAN3, "SG03DIA07", NULL);
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -407,8 +407,8 @@ static void trig08(void) {
         /* 0x89DE */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0x89F0 */
-            if (ST(0xD18) == 0) {
-                ST(0xD18) = 1;
+            if (ST(L26_ZONE8_ONCE) == 0) {
+                ST(L26_ZONE8_ONCE) = 1;
                 lieu_action_register("L26D23", P_ARKHAN2, "SG00DIA05", "SG00PRE06");
                 CB->etat_objet("OB52", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -417,7 +417,7 @@ static void trig08(void) {
                 return;
             }
             /* 0x8A71 */
-            if (ST(0xD18) == 1) {
+            if (ST(L26_ZONE8_ONCE) == 1) {
                 lieu_action_register("LCOD70", P_ARKHAN2, "SG00PRE02", NULL);
                 CB->animation("ar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -428,8 +428,8 @@ static void trig08(void) {
         /* 0x8AC2 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0x8AD4 */
-            if (ST(0xD18) == 0) {
-                ST(0xD18) = 1;
+            if (ST(L26_ZONE8_ONCE) == 0) {
+                ST(L26_ZONE8_ONCE) = 1;
                 lieu_action_register("L26D25", P_ARKHAN3, "SG00DIA05", "SG00PRE06");
                 CB->etat_objet("OB52", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -438,7 +438,7 @@ static void trig08(void) {
                 return;
             }
             /* 0x8B55 */
-            if (ST(0xD18) == 1) {
+            if (ST(L26_ZONE8_ONCE) == 1) {
                 lieu_action_register("LCOD80", P_ARKHAN3, "SG03PRE02", NULL);
                 CB->animation("ar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -481,10 +481,10 @@ static void trig10(void) {
         CB->pos_perso(ST(ST_HERO), CB->divers(DV_DESC_POS, ST(ST_HERO), 0), CB->divers(DV_DESC_POS, ST(ST_HERO), 1), CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 1, 0);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x8D6C */
-        if (ST(0x50C) == 0) {
-            ST(0x50C) = 1;
+        if (ST(L26_ZONE10_ONCE) == 0) {
+            ST(L26_ZONE10_ONCE) = 1;
             /* 0x8D8D */
-            if (ST(0xD18) == 0) {
+            if (ST(L26_ZONE8_ONCE) == 0) {
                 /* 0x8D9F */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     lieu_action_register("L26D27A", P_ARKHAN2, "SG00DIA08", NULL);
@@ -498,15 +498,15 @@ static void trig10(void) {
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-            } else if (ST(0xD18) == 1) {
+            } else if (ST(L26_ZONE8_ONCE) == 1) {
                 CB->evenement(0, 500);
                 CB->pos_perso(ST(ST_HERO), 7106, -3309, 0x7D38, 1, "ar", 1, 0);
                 CB->animation("SP02ACT21");
                 CB->animation("ar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
-            } else if (ST(0x50C) == 1) {
+            } else if (ST(L26_ZONE10_ONCE) == 1) {
                 /* 0x8ECC */
-                if (ST(0xD18) == 0) {
+                if (ST(L26_ZONE8_ONCE) == 0) {
                     /* 0x8EDE */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L26D300", P_ARKHAN2, "SG00DIA08", NULL);
@@ -520,12 +520,12 @@ static void trig10(void) {
                     CB->animation("Sar_50");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
-                } else if (ST(0xD18) == 1) {
+                } else if (ST(L26_ZONE8_ONCE) == 1) {
                     CB->evenement(0, 500);
                     CB->pos_perso(ST(ST_HERO), 7106, -3309, 0x7D38, 1, "ar", 1, 0);
                     CB->animation("SP03ACT21");
                     /* 0x8FD8 */
-                    if (ST(0xD14) == 0) {
+                    if (ST(L26_MUSIC_STARTED) == 0) {
                         /* 0x8FEA */
                         if (ST(ST_HERO) == P_ARKHAN2) {
                             lieu_action_register("L26D32", P_ARKHAN2, "G00DIA08", NULL);
@@ -539,9 +539,9 @@ static void trig10(void) {
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 }
             }
-        } else if (ST(0x50C) == 1) {
+        } else if (ST(L26_ZONE10_ONCE) == 1) {
             /* 0x8ECC */
-            if (ST(0xD18) == 0) {
+            if (ST(L26_ZONE8_ONCE) == 0) {
                 /* 0x8EDE */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     lieu_action_register("L26D300", P_ARKHAN2, "SG00DIA08", NULL);
@@ -555,12 +555,12 @@ static void trig10(void) {
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-            } else if (ST(0xD18) == 1) {
+            } else if (ST(L26_ZONE8_ONCE) == 1) {
                 CB->evenement(0, 500);
                 CB->pos_perso(ST(ST_HERO), 7106, -3309, 0x7D38, 1, "ar", 1, 0);
                 CB->animation("SP03ACT21");
                 /* 0x8FD8 */
-                if (ST(0xD14) == 0) {
+                if (ST(L26_MUSIC_STARTED) == 0) {
                     /* 0x8FEA */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L26D32", P_ARKHAN2, "G00DIA08", NULL);
@@ -586,7 +586,7 @@ static void trig12(void) {
         /* 0x90C8 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0x90DA */
-            if (ST(0x808) == 0) {
+            if (ST(L26_ZONE7_STAGE) == 0) {
                 /* 0x90EC */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L26D34", P_ARKHAN2, "SG02DIA07", NULL);
@@ -600,7 +600,7 @@ static void trig12(void) {
                     CB->pos_perso(ST(ST_HERO), 7794, -3149, 0x1718, 1, "ar", 1, 0);
                     CB->evenement(1, 500);
                     CB->animation("SP02ACT06");
-                    ST(0x808) = 1;
+                    ST(L26_ZONE7_STAGE) = 1;
                     CB->dialogue("L26D15", P_ARKHAN2);
                     CB->animation("Sar_50");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -609,9 +609,9 @@ static void trig12(void) {
                 }
             }
             /* 0x91DD */
-            if (ST(0x808) == 1) {
-                ST(0x808) = 2;
-                ST(0xB4C) = 1;
+            if (ST(L26_ZONE7_STAGE) == 1) {
+                ST(L26_ZONE7_STAGE) = 2;
+                ST(L26_KALHI_PART_STEP) = 1;
                 lieu_action_register("L26D16", P_ARKHAN2, "SG02PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -620,7 +620,7 @@ static void trig12(void) {
                 return;
             }
             /* 0x926A */
-            if (ST(0x808) == 2) {
+            if (ST(L26_ZONE7_STAGE) == 2) {
                 lieu_action_register("LCOD79", P_ARKHAN2, "SG02DIA07", NULL);
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -631,7 +631,7 @@ static void trig12(void) {
         /* 0x92BB */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0x92CD */
-            if (ST(0x808) == 0) {
+            if (ST(L26_ZONE7_STAGE) == 0) {
                 /* 0x92DF */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L26D35", P_ARKHAN3, "SG03DIA07", NULL);
@@ -645,7 +645,7 @@ static void trig12(void) {
                     CB->pos_perso(ST(ST_HERO), 7794, -3149, 0x1718, 1, "ar", 1, 0);
                     CB->evenement(1, 500);
                     CB->animation("SP02ACT06");
-                    ST(0x808) = 1;
+                    ST(L26_ZONE7_STAGE) = 1;
                     CB->dialogue("L26D20", P_ARKHAN3);
                     CB->animation("Sar_50");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -654,9 +654,9 @@ static void trig12(void) {
                 }
             }
             /* 0x93D0 */
-            if (ST(0x808) == 1) {
-                ST(0x808) = 2;
-                ST(0xB4C) = 1;
+            if (ST(L26_ZONE7_STAGE) == 1) {
+                ST(L26_ZONE7_STAGE) = 2;
+                ST(L26_KALHI_PART_STEP) = 1;
                 lieu_action_register("L26D21", P_ARKHAN3, "SG02PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -665,7 +665,7 @@ static void trig12(void) {
                 return;
             }
             /* 0x945D */
-            if (ST(0x808) == 2) {
+            if (ST(L26_ZONE7_STAGE) == 2) {
                 lieu_action_register("LCOD80", P_ARKHAN3, "SG03DIA07", NULL);
                 CB->animation("Sar_50");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -679,7 +679,7 @@ static void trig12(void) {
 /* trig13 - sub_100094A7 - zone 13 */
 static void trig13(void) {
     /* 0x94B6 */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x3A98) && ST(0xD14) == 0) {
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x3A98) && ST(L26_MUSIC_STARTED) == 0) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x9522 */
