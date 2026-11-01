@@ -78,6 +78,7 @@
 #include "entity.h"
 #include "lieu_cb.h"
 #include "player.h"
+#include "pause.h"
 
 /* -------------------------------------------------------------------------
  * File-local globals — mirrors of asm data symbols.
@@ -2984,6 +2985,15 @@ i32 scene_render(system_t *sys) {
         if (ik && !s_i_prev && ((!g_player_movement_locked && g_ui_state == 1) || forced))
             inventory_screen_open();
         s_i_prev = ik;
+    }
+    /* 'P' (process_input_command 0x407159, VK 80): the pause screen. The
+     * original tests the key held, so the screen is entered on the press. */
+    {
+        static i32 s_p_prev = 0, s_pfr = 0;
+        i32 pk = sys ? sys->actions[80] : 0;
+        if (getenv("DKE_PAUSE") && ++s_pfr == atoi(getenv("DKE_PAUSE"))) pk = 1, s_p_prev = 0;   /* headless */
+        if (pk && !s_p_prev) pause_game();
+        s_p_prev = pk;
     }
     /* process_menu @ 0x408E8F: 0 = bare hands, 1..9 = the item on that
      * hotkey, when the player is free (no script lock, no anim mode / turn

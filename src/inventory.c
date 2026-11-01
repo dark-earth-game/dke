@@ -39,6 +39,7 @@
 #include "dialogue.h"
 #include "lieu_cb.h"
 #include "scene.h"
+#include "pause.h"
 
 i32 g_ui_state = 1;               /* dword_4DD9B4: 1 in game, 2 redraw, 10 back from a screen */
 i32 g_used_object = 0;            /* dword_507258 */
@@ -562,7 +563,8 @@ void inventory_screen_open(void) {             /* sub_42701B */
         unsetenv("DKE_GIVE");
 #endif
     }
-    /* dword_4B33F0 = 1; set_display_mode(0x19); sub_416C10(2); */
+    /* dword_4B33F0 = 1; sub_416C10(2); */
+    game_time_freeze(0x19);                    /* set_display_mode(0x19) */
     inv_sort();
     inv_auto_combine(inv_held_id());
     /* sub_44DEC9(player): stop the player's sounds */
@@ -574,7 +576,8 @@ void inventory_screen_open(void) {             /* sub_42701B */
     }
     inv_sort();
     /* restore palette/theme; if player +0xD58 is 0 or >= 1000: set idle anim
-     * (0x3B, -5 in special mode) and restart it; restore_display_mode(1,0x19) */
+     * (0x3B, -5 in special mode) and restart it */
+    game_time_thaw(1, 0x19);                   /* restore_display_mode(1, 0x19) */
     g_ui_state = 10;                           /* -> 2 next frame: full redraw */
 }
 

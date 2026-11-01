@@ -28,6 +28,7 @@
 #include "gamecfg.h"
 #include "gamma.h"
 #include "scene.h"
+#include "pause.h"
 #include "libsys/graphics/graphic.h"
 
 
@@ -318,6 +319,7 @@ i32 ls_main(system_t *system, c8 **argv) {
             print("main: DKE_NEWGAME scene_load_level failed\n");
     }
 
+    i32 prev_menu_state = menu.state;
     while(!system->quit) {
         if (dbg_maxframes && ++dbg_frame > dbg_maxframes) {
             print("main: DKE_FRAMES=%d reached — exiting\n", dbg_maxframes);
@@ -333,12 +335,16 @@ i32 ls_main(system_t *system, c8 **argv) {
          * NEW GAME, menu_dispatch calls scene_load_level and flips the
          * state to LOADING; from that frame on we blit the level's
          * camera-0 backdrop instead of the menu backdrop. */
+        if (menu.state == MENU_STATE_LOADING && prev_menu_state != MENU_STATE_LOADING)
+            game_time_thaw(1, 39);                   /* restore_display_mode(1, 39): back from the menu */
+        prev_menu_state = menu.state;
         if (menu.state == MENU_STATE_LOADING) {
             /* scene_render owns WASD polling now (moves the placeholder
              * cube around the room). Returns 1 when Esc is pressed;
              * flip back to the main menu so the user can pick another
              * action. */
             if (scene_render(system) == 1) {
+                game_time_freeze(39);                /* set_display_mode(39) before process_mainmenu_437EB7 */
                 menu.state = MENU_STATE_MAIN;
                 menu.hovered_item = 6;               /* var_4AEC = 6: resume */
                 menu.dirty = 1;
