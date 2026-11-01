@@ -53,10 +53,10 @@ static void trig_noop(void) {
 
 /* trigger 0 — sub_100073F0 (thunk sub_10001073; INIT default) */
 void l44_trig00(void) {
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
+    ST(L44_HERO_ACTING) = 0;
+    ST(L44_CAUGHT_STATE) = 0;
+    ST(L44_CAMERA_RELEASE_PENDING) = 0;
+    ST(L44_ACTION_ANIM_DONE) = 0;
     ST(V_EVENT_0) = 0;
     CB->pos_perso(P_ARKHAN3, -1805, -1470, 0xBB80, 1, "ar", 1, 0);
     CB->change_camera(0, CAM_LOCKED);
@@ -79,7 +79,7 @@ void l44_trig00(void) {
 /* trigger 41 — sub_100075C6 */
 static void trig41(void) {
     lieu_action_register("L41D15", P_ARKHAN3, "SG00DIA04", "Sar_10");
-    CB->modify_var(&ST(0x6C), 1);
+    CB->modify_var(&ST(L44_CAMERA_RELEASE_PENDING), 1);
     CB->bloque(BLOQUE_NONE);
     CB->bruitage("L44AMB1", -1, -1);
 }
@@ -87,15 +87,15 @@ static void trig41(void) {
 /* trigger 7 — sub_100078FD */
 static void trig07(void) {
     /* 0x7903 */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(0x64) == 0) {
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(L44_HERO_ACTING) == 0) {
         ST(ST_SCRIPT_BUSY) = 1;
-        ST(0x68) = 0;
-        ST(0x64) = 1;
+        ST(L44_CAUGHT_STATE) = 0;
+        ST(L44_HERO_ACTING) = 1;
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP03ATT75");
         CB->animation("P03ATT78_500");
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
-        CB->modify_var(&ST(0x70), 1);
+        CB->modify_var(&ST(L44_ACTION_ANIM_DONE), 1);
     }
 }
 

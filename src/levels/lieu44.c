@@ -39,24 +39,24 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x76BD */
-    if (ST(0x64) == 0 && ST(0x68) == 0) {
+    if (ST(L44_HERO_ACTING) == 0 && ST(L44_CAUGHT_STATE) == 0) {
         for (i32 i = 0; i < 6; i++) {
             i32 d = CB->divers(DV_STRUCT_DIST, i, 0);
             /* 0x7707 */
             if (d < 100) {
-                snprintf(buf, sizeof buf, "%d %d %d", CB->divers(DV_STRUCT_DIST, i, 0), ST(0x64), ST(0x68));
+                snprintf(buf, sizeof buf, "%d %d %d", CB->divers(DV_STRUCT_DIST, i, 0), ST(L44_HERO_ACTING), ST(L44_CAUGHT_STATE));
                 CB->print_msg(buf, 0, 210);
-                ST(0x68) = 1;
+                ST(L44_CAUGHT_STATE) = 1;
                 break;
             }
         }
     }
     /* 0x776E */
-    snprintf(buf, sizeof buf, "test1 %d test2 %d ALLER %d", ST(0x64), ST(0x68), ST(ST_UPDOWN_KEY));
+    snprintf(buf, sizeof buf, "test1 %d test2 %d ALLER %d", ST(L44_HERO_ACTING), ST(L44_CAUGHT_STATE), ST(ST_UPDOWN_KEY));
     CB->print_msg(buf, 0, 460);
     /* 0x77AD */
-    if (ST(0x68) == 1) {
-        ST(0x68) = 2;
+    if (ST(L44_CAUGHT_STATE) == 1) {
+        ST(L44_CAUGHT_STATE) = 2;
         CB->bloque(BLOQUE_ALL);
         if (CB->divers(DV_CAN_FIGHT, 7, 2)) {
             CB->animation("SP03ATT80");
@@ -68,15 +68,15 @@ static void tick_body(void) {
         CB->modify_var(&ST(ST_HERO), 4);
     }
     /* 0x7842 */
-    if (ST(0x6C) == 1 && ST(ST_UPDOWN_KEY) == 1) {
-        ST(0x6C) = 0;
+    if (ST(L44_CAMERA_RELEASE_PENDING) == 1 && ST(ST_UPDOWN_KEY) == 1) {
+        ST(L44_CAMERA_RELEASE_PENDING) = 0;
         CB->change_camera(1, CAM_AUTO);
     }
     /* 0x787C */
-    if (CB->divers(DV_ACTION_EDGE, 0, 0) == 1 && ST(0x64) == 1 && ST(0x70) == 1) {
+    if (CB->divers(DV_ACTION_EDGE, 0, 0) == 1 && ST(L44_HERO_ACTING) == 1 && ST(L44_ACTION_ANIM_DONE) == 1) {
         CB->bloque(BLOQUE_ALL);
-        ST(0x64) = 0;
-        ST(0x70) = 0;
+        ST(L44_HERO_ACTING) = 0;
+        ST(L44_ACTION_ANIM_DONE) = 0;
         CB->animation("Sar_10");
         CB->bloque(BLOQUE_NONE);
     }
@@ -111,7 +111,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L44_NO_DEATH_ENDING) == 1) {
         l44_trig00();   /* 0x10008709: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
