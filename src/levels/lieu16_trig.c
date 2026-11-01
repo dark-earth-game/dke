@@ -78,7 +78,7 @@ static void trig_noop(void) {
 void l16_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(16)) == 1) {
-        ST(0xEE4) = 0;
+        ST(L16_DELIA_WEAPON_STAGE) = 0;
         ST(ST_LEVEL) = 19;
         ST(ST_HERO) = P_ARKHAN3;
     }
@@ -98,40 +98,40 @@ void l16_trig00(void) {
     if (ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->divers(DV_MUSIC, 2, 0);
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x74) = 0;
-    ST(0x78) = 0;
-    ST(0x7C) = 0;
-    ST(0x80) = 0;
-    ST(0x84) = 0;
-    ST(0x88) = 0;
+    ST(L16_DELIA_SENT_AWAY) = 0;
+    ST(L16_MAOR_CONFRONTED) = 0;
+    ST(L16_RANDOM_STEP) = 0;
+    ST(L16_DELIA_ATTACKED) = 0;
+    ST(L16_MAOR_INTRO_SEEN) = 0;
+    ST(L16_MAOR_TALK_ZONE15) = 0;
+    ST(L16_MAOR_ATTACK_ZONE16) = 0;
+    ST(L16_HP_BEFORE_SIGN) = 0;
+    ST(L16_MAOR_CHASING) = 0;
+    ST(L16_DELIA_WALK_SYNC) = 0;
     ST(V_EVENT15_STEP) = 0;
-    ST(0x90) = 0;
-    ST(0x94) = 0;
-    ST(0x98) = 0;
-    ST(0xB8) = 0;
-    ST(0xBC) = 0;
-    ST(0xD4) = 0;
-    ST(0xD8) = 0;
-    ST(0xDC) = 0;
-    ST(0xE0) = 0;
-    ST(0xF0) = 0;
-    ST(0xF4) = 0;
-    ST(0xF8) = 0;
-    ST(0xFC) = 0;
-    ST(0x100) = 0;
-    ST(0x114) = 0;
+    ST(L16_TALK_DELIA_A3) = 0;
+    ST(L16_DEATH_EVENT_SENT) = 0;
+    ST(L16_TALK_DELIA_A2_B) = 0;
+    ST(L16_MAOR_WALKING) = 0;
+    ST(L16_DELIA_CAMERA_SEEN) = 0;
+    ST(L16_MAOR_CAMERA_ZONE) = 0;
+    ST(L16_DELIA_FOLLOW_ARMED) = 0;
+    ST(L16_DELIA_CLOSE) = 0;
+    ST(L16_CAMERA_LOCKED_45) = 0;
+    ST(L16_UNUSED_0F0) = 0;
+    ST(L16_DELIA_CRY_STATE) = 0;
+    ST(L16_MAOR_CRY_STATE) = 0;
+    ST(L16_TALK_MAOR_A2) = 0;
+    ST(L16_MAOR_ZONE2_STARTED) = 0;
+    ST(L16_DELIA_TALK_A2_NOTE) = 0;
     ST(V_WEAPON_WARNED) = 0;
-    ST(0x4C) = 0;
-    ST(0x50) = 0;
-    ST(0x54) = 0;
+    ST(L16_CAM_RESET_PENDING) = 0;
+    ST(L16_MAOR_ANGRY_LINE_SAID) = 0;
+    ST(L16_DELIA_WAIT_RUN) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_LAST_WEAPON) = 0;
-    ST(0x118) = 0;
+    ST(L16_DELIA_LAST_WEAPON) = 0;
     CB->ajoute_zone(4, 3559, 3560, 125, 105, 1);
     CB->ajoute_zone(5, 3703, 3559, 155, 111, 1);
     CB->ajoute_zone(10, 3637, 3422, 271, 140, 0);
@@ -158,58 +158,58 @@ void l16_trig00(void) {
     CB->ajoute_zone(32, 2544, 3616, 110, 130, 0);
     CB->ajoute_zone(33, 3797, 3469, 25, 25, 0);
     /* 0x7999 */
-    if (ST(0xBF0) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_ENCOUNTER) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->retire_zone(18);
     }
     /* 0x79C8 */
-    if (ST(0x788) == 0) {
-        ST(0x148) = 3;
+    if (ST(L16_CHEST_OB24C_STAGE) == 0) {
+        ST(L16_OB24C_INIT_STATE) = 3;
         CB->etat_objet("OB24C", 3576, -2210, 3360, 0xF800, 0xE400, 0, -1, 4);
     }
     /* 0x7A13 */
-    if (ST(0x588) == 0) {
+    if (ST(L16_CHEST_OB04_STAGE) == 0) {
         CB->etat_objet("OB04", 3585, -2224, 3340, 0xF200, 0x5800, 0x3C00, -1, 4);
     }
     /* 0x7A52 */
-    if (ST(0x534) == 0) {
+    if (ST(L16_CHEST_OB44B_STAGE) == 0) {
         CB->etat_objet("OB44B", 3588, -2187, 3827, 0, 0x2200, 0x3200, -1, 4);
     }
     /* 0x7A8E */
-    if (ST(0x67C) == 0) {
+    if (ST(L16_OB65_TAKEN) == 0) {
         CB->etat_objet("OB65", 3586, -2177, 3790, 0, 0xB200, 0xBC00, -1, 4);
     }
     CB->place_animal(1, 3350, -2199, 3371, 351471, 2048);
     /* 0x7AEB */
-    if ((ST(ST_LEVEL) == 19 && ST(0xBF0) != 0) || ST(V_GUARD_FIGHT_DONE) == 2) {
+    if ((ST(ST_LEVEL) == 19 && ST(L16_MAOR_ENCOUNTER) != 0) || ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->pos_perso(ST(ST_HERO), 3310, 3264, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 1, 0);
         CB->vire_col(21, 0);
     }
     /* 0x7B6D */
-    if (ST(0xBF0) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_ENCOUNTER) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->vire_col(21, 0);
         CB->pos_perso(ST(ST_HERO), 3333, 3069, 0x2E1, 1, "ar", 1, 0);
         CB->pos_perso(P_MAOR, 3529, 3745, 0x7F4E, 1, "P17ARR01", 2, 1);
         CB->pos_perso(P_DELIA, 3220, 3761, 0x7CD4, 1, "P10ARR01", 3, 0);
     }
     /* 0x7C13 */
-    if (ST(0x4D4) == 1 && ST(V_GUARD_FIGHT_DONE) != 2 && ST(ST_LEVEL) == 19) {
+    if (ST(L16_MAOR_HOSTILE) == 1 && ST(V_GUARD_FIGHT_DONE) != 2 && ST(ST_LEVEL) == 19) {
         CB->pos_perso(P_MAOR, 3502, 3472, 0x5D3A, 1, "P17ARR01", 2, 1);
     }
     /* 0x7C6B */
-    if (ST(0x528) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LEVEL) == 19 && ST(ST_VIE(90)) != VIE_DEAD) {
+    if (ST(L16_CREATURE_HOSTILE) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LEVEL) == 19 && ST(ST_VIE(90)) != VIE_DEAD) {
         CB->pos_perso(90, 3356, 3323, 0x2994, 1, "P90GAR01", 6, 1);
     }
     /* 0x7CD5 */
-    if (ST(0x770) >= 1 && ST(0x770) != 99) {
+    if (ST(L16_DELIA_ESCAPE_STAGE) >= 1 && ST(L16_DELIA_ESCAPE_STAGE) != 99) {
         ST(V_DELIA_PHASE) = 20;
         CB->pos_perso(P_DELIA, 3400, 3328, 0x4CAE, 2, "P10cad", 3, 0);
     }
     /* 0x7D2D */
-    if (ST(0x770) == 2 || ST(ST_VIE(90)) == VIE_DEAD) {
+    if (ST(L16_DELIA_ESCAPE_STAGE) == 2 || ST(ST_VIE(90)) == VIE_DEAD) {
         CB->pos_perso(90, 0, 0, 0, 2, "P90cad", 6, 0);
     }
     /* 0x7D6D */
-    if (ST(0xBF0) >= 1 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(0x4D4) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_ENCOUNTER) >= 1 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(L16_MAOR_HOSTILE) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->vire_col(21, 0);
         CB->pos_perso(P_MAOR, 3529, 3745, 0x7F4E, 1, "P17ARR01", 2, 1);
     }
@@ -246,14 +246,14 @@ static void trig02(void) {
         return;
     }
     /* 0xAB87 */
-    if (ST(0x100) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_ZONE2_STARTED) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->select_pile(1, 2);
         CB->bloque(BLOQUE_ALL);
         CB->evenement(1, -1);
         ST(V_EVENT_1) = 0;
-        ST(0x100) = 1;
-        ST(0x74) = 1;
-        ST(0x84) = 1;
+        ST(L16_MAOR_ZONE2_STARTED) = 1;
+        ST(L16_MAOR_INTRO_SEEN) = 1;
+        ST(L16_MAOR_CHASING) = 1;
         CB->stop_joindre(-P_MAOR);
         CB->animation("SP17ARR01_10");
         CB->joindre(P_MAOR, 0, 0, 0, ST(ST_HERO));
@@ -276,7 +276,7 @@ static void trig02(void) {
                 ST(V_EVENT_1) = 0;
                 CB->animation("SP17ARR01_10");
                 CB->stop_joindre(-P_MAOR);
-                ST(0x84) = 1;
+                ST(L16_MAOR_CHASING) = 1;
                 CB->joindre(P_MAOR, 0, 0, 0, 2);
                 /* 0xAD76 */
                 if (ST(ST_SPECIAL_MODE) == 1) {
@@ -316,7 +316,7 @@ static void trig02(void) {
     /* 0xAED2 */
     if (ST(V_PLAYER_STRIKE) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD) {
         CB->select_pile(1, 2);
-        ST(0x4D4) = 1;
+        ST(L16_MAOR_HOSTILE) = 1;
         ST(V_ENGAGED_PERSONA) = P_MAOR;
         CB->combat(P_MAOR, 0);
         CB->select_pile(0, 1);
@@ -365,9 +365,9 @@ static void trig03(void) {
             /* 0xB163 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 /* 0xB175 */
-                if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(0x118))) {
+                if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(L16_DELIA_LAST_WEAPON))) {
                     /* 0xB1CD */
-                    if (ST(0x510) == 0) {
+                    if (ST(L16_TALK_DELIA_A3_B) == 0) {
                         /* 0xB1DF */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D500", P_ARKHAN2, "SG00DIA05", NULL);
@@ -387,11 +387,11 @@ static void trig03(void) {
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
                         ST(V_DELIA_PHASE) = 2;
-                        ST(0x510) = 1;
+                        ST(L16_TALK_DELIA_A3_B) = 1;
                         return;
                     }
                     /* 0xB31C */
-                    if (ST(0x510) == 1) {
+                    if (ST(L16_TALK_DELIA_A3_B) == 1) {
                         /* 0xB32E */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D507", P_ARKHAN2, "SG00DIA05", NULL);
@@ -402,9 +402,9 @@ static void trig03(void) {
                             lieu_action_register("L16D509", P_ARKHAN2, "SG00DIA05", NULL);
                             lieu_action_register("L16D508", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                             /* 0xB3B0 */
-                            if (ST(0x114) == 0) {
+                            if (ST(L16_DELIA_TALK_A2_NOTE) == 0) {
                                 lieu_action_register("L16D510", P_ARKHAN2, "SG00DIA05", NULL);
-                                ST(0x114) = 1;
+                                ST(L16_DELIA_TALK_A2_NOTE) = 1;
                             }
                         }
                         CB->animation("Sar_20");
@@ -415,7 +415,7 @@ static void trig03(void) {
                 }
                 /* 0xB410 */
                 if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2)) {
-                    ST(0x118) = ST(ST_PLAYER_WEAPON);
+                    ST(L16_DELIA_LAST_WEAPON) = ST(ST_PLAYER_WEAPON);
                     /* 0xB450 */
                     if (ST(ST_PLAYER_WEAPON) == 56) {
                         lieu_action_register("L16D888", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
@@ -437,9 +437,9 @@ static void trig03(void) {
                 }
             }
             /* 0xB52A */
-            if (ST(ST_HERO) == P_ARKHAN3 && ST(0x510) == 0) {
+            if (ST(ST_HERO) == P_ARKHAN3 && ST(L16_TALK_DELIA_A3_B) == 0) {
                 /* 0xB54E */
-                if (ST(0x90) == 0) {
+                if (ST(L16_TALK_DELIA_A3) == 0) {
                     /* 0xB560 */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         lieu_action_register("L16D402", P_ARKHAN3, "SG00DIA02", NULL);
@@ -449,10 +449,10 @@ static void trig03(void) {
                         lieu_action_register("LCOD22B", P_ARKHAN3, "SG00DIA02", NULL);
                     }
                     lieu_action_register("L16D409", P_DELIA, "SP10DIA59", "SP10ARR01_10");
-                    ST(0x90) = 1;
+                    ST(L16_TALK_DELIA_A3) = 1;
                 }
                 /* 0xB5D8 */
-                if (ST(0x90) == 1) {
+                if (ST(L16_TALK_DELIA_A3) == 1) {
                     /* 0xB5EA */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         lieu_action_register("L16D407", P_ARKHAN3, "SG00DIA02", NULL);
@@ -467,7 +467,7 @@ static void trig03(void) {
                     if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2) {
                         CB->dialogue("L16D999", -1);
                     }
-                    ST(0x90) = 0;
+                    ST(L16_TALK_DELIA_A3) = 0;
                 }
                 CB->animation("Sar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -475,7 +475,7 @@ static void trig03(void) {
                 return;
             }
             /* 0xB6CE */
-            if (ST(ST_HERO) == P_ARKHAN3 && ST(0x510) != 0) {
+            if (ST(ST_HERO) == P_ARKHAN3 && ST(L16_TALK_DELIA_A3_B) != 0) {
                 lieu_action_register("L16D511", P_ARKHAN3, "SG00DIA02", NULL);
                 lieu_action_register("L16D512", P_DELIA, "SP10DIA59", "SP10ARR01_10");
                 CB->animation("Sar_20");
@@ -490,13 +490,13 @@ static void trig03(void) {
             if (ST(ST_LOCKED_CAMERA) == 5) {
                 CB->change_camera(4, CAM_LOCKED);
             }
-            ST(0x4C) = 1;
+            ST(L16_CAM_RESET_PENDING) = 1;
             /* 0xB78A */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 /* 0xB79C */
-                if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(0x118))) {
+                if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(L16_DELIA_LAST_WEAPON))) {
                     /* 0xB7F4 */
-                    if (ST(0x544) == 0) {
+                    if (ST(L16_TALK_DELIA_A2) == 0) {
                         /* 0xB806 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D513A", P_ARKHAN2, "SG00DIA05", NULL);
@@ -513,14 +513,14 @@ static void trig03(void) {
                             lieu_action_register("L16D514B", P_DELIA, "SP10DIA51", "SP10ARR01_10");
                             lieu_action_register("L16D517", P_ARKHAN2, "SG00DIA05", NULL);
                         }
-                        ST(0x544) = 1;
+                        ST(L16_TALK_DELIA_A2) = 1;
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
                         return;
                     }
                     /* 0xB94A */
-                    if (ST(0x544) == 1) {
+                    if (ST(L16_TALK_DELIA_A2) == 1) {
                         /* 0xB95C */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D518", P_ARKHAN2, "SG00DIA05", NULL);
@@ -538,7 +538,7 @@ static void trig03(void) {
                 }
                 /* 0xB9EE */
                 if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2)) {
-                    ST(0x118) = ST(ST_PLAYER_WEAPON);
+                    ST(L16_DELIA_LAST_WEAPON) = ST(ST_PLAYER_WEAPON);
                     /* 0xBA2E */
                     if (ST(ST_PLAYER_WEAPON) == 56) {
                         lieu_action_register("L16D888", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
@@ -562,7 +562,7 @@ static void trig03(void) {
             /* 0xBB08 */
             if (ST(ST_HERO) == P_ARKHAN3) {
                 /* 0xBB1A */
-                if (ST(0x90) == 0) {
+                if (ST(L16_TALK_DELIA_A3) == 0) {
                     /* 0xBB2C */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         lieu_action_register("L16D402", P_ARKHAN3, "SG00DIA02", NULL);
@@ -572,7 +572,7 @@ static void trig03(void) {
                         lieu_action_register("LCOD22A", P_ARKHAN3, "SG00DIA02", NULL);
                     }
                     lieu_action_register("L16D409", P_DELIA, "SP10DIA59", "SP10ARR01_10");
-                    ST(0x90) = 1;
+                    ST(L16_TALK_DELIA_A3) = 1;
                     ST(V_DELIA_HITS) = 1;
                     /* 0xBBB3 */
                     if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2) {
@@ -580,7 +580,7 @@ static void trig03(void) {
                     }
                 }
                 /* 0xBBE7 */
-                if (ST(0x90) == 1) {
+                if (ST(L16_TALK_DELIA_A3) == 1) {
                     /* 0xBBF9 */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         lieu_action_register("L16D407", P_ARKHAN3, "SG00DIA02", NULL);
@@ -590,7 +590,7 @@ static void trig03(void) {
                         lieu_action_register("LCOD22D", P_ARKHAN3, "SG00DIA02", NULL);
                     }
                     lieu_action_register("L16D410", P_DELIA, "SP10DIA51", "SP10ARR01_10");
-                    ST(0x90) = 0;
+                    ST(L16_TALK_DELIA_A3) = 0;
                     ST(V_DELIA_HITS) = 1;
                     /* 0xBC80 */
                     if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2) {
@@ -626,56 +626,56 @@ static void trig03(void) {
         if (ST(ST_LOCKED_CAMERA) == 5) {
             CB->change_camera(4, CAM_LOCKED);
         }
-        ST(0x4C) = 1;
+        ST(L16_CAM_RESET_PENDING) = 1;
         /* 0xBE26 */
         if (ST(ST_VIE(P_MAOR)) != VIE_DEAD) {
             /* 0xBE38 */
-            if (ST(0xEE4) == 0) {
+            if (ST(L16_DELIA_WEAPON_STAGE) == 0) {
                 /* 0xBE4A */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     /* 0xBE5C */
-                    if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(0x118))) {
+                    if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(L16_DELIA_LAST_WEAPON))) {
                         /* 0xBEB4 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             /* 0xBEC6 */
-                            if (ST(0xAE8) == 0) {
+                            if (ST(L16_DELIA_TALK_STAGE) == 0) {
                                 lieu_action_register("L16D100", P_ARKHAN2, "SG00DIA02", NULL);
                                 lieu_action_register("L16D101", P_DELIA, "SP10DIA50", "SP10ARR01_10");
-                                ST(0xAE8) = 1;
+                                ST(L16_DELIA_TALK_STAGE) = 1;
                                 CB->animation("Sar_20");
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 CB->bloque(BLOQUE_NONE);
                                 return;
                             }
                             /* 0xBF3F */
-                            if (ST(0xAE8) == 1) {
+                            if (ST(L16_DELIA_TALK_STAGE) == 1) {
                                 lieu_action_register("L16D102A", P_ARKHAN2, "SG00DIA04", NULL);
                                 lieu_action_register("L16D102B", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D102C", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D103", P_DELIA, "SP10DIA56", "SP10ARR01_10");
-                                ST(0xAE8) = 2;
+                                ST(L16_DELIA_TALK_STAGE) = 2;
                                 CB->animation("Sar_20");
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 CB->bloque(BLOQUE_NONE);
                                 return;
                             }
                             /* 0xBFE4 */
-                            if (ST(0xAE8) == 2) {
+                            if (ST(L16_DELIA_TALK_STAGE) == 2) {
                                 lieu_action_register("L16D104", P_ARKHAN2, "SG00DIA02", NULL);
                                 lieu_action_register("L16D105A", P_DELIA, "SP10DIA54", "SP10ARR01_10");
                                 lieu_action_register("L16D105B", P_DELIA, "SP10DIA54", "SP10ARR01_10");
                                 lieu_action_register("L16D106", P_ARKHAN2, "SG00DIA06", NULL);
                                 lieu_action_register("L16D107", P_DELIA, "SP10DIA53", "SP10ARR01_10");
-                                ST(0xAE8) = 3;
+                                ST(L16_DELIA_TALK_STAGE) = 3;
                                 CB->animation("Sar_20");
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 CB->bloque(BLOQUE_NONE);
                                 return;
                             }
                             /* 0xC0A5 */
-                            if (ST(0xAE8) == 3) {
+                            if (ST(L16_DELIA_TALK_STAGE) == 3) {
                                 /* 0xC0B7 */
-                                if (ST(0xBC8) != 2) {
+                                if (ST(L16_ARMAL_STAGE) != 2) {
                                     lieu_action_register("L16D108", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D109A", P_DELIA, "SP10DIA56", "SP10ARR01_10");
                                     lieu_action_register("L16D109B", P_DELIA, "SP10DIA54", "SP10ARR01_10");
@@ -683,32 +683,32 @@ static void trig03(void) {
                                     lieu_action_register("L16D111", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                 }
                                 /* 0xC140 */
-                                if (ST(0xBC8) == 2) {
+                                if (ST(L16_ARMAL_STAGE) == 2) {
                                     lieu_action_register("L16D112", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D113", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                 }
-                                ST(0xAE8) = 4;
+                                ST(L16_DELIA_TALK_STAGE) = 4;
                                 CB->animation("Sar_20");
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 CB->bloque(BLOQUE_NONE);
                                 return;
                             }
                             /* 0xC1B9 */
-                            if (ST(0xAE8) == 4) {
+                            if (ST(L16_DELIA_TALK_STAGE) == 4) {
                                 /* 0xC1CB */
-                                if (ST(0xBC8) != 2) {
-                                    ST(0xEE4) = 1;
+                                if (ST(L16_ARMAL_STAGE) != 2) {
+                                    ST(L16_DELIA_WEAPON_STAGE) = 1;
                                     lieu_action_register("L16D114", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D115A", P_DELIA, "SP10DIA53", "SP10ARR01_10");
                                     lieu_action_register("L16D115B", P_DELIA, "SP10DIA53", "SP10ARR01_10");
-                                    ST(0xAE8) = 5;
+                                    ST(L16_DELIA_TALK_STAGE) = 5;
                                     CB->animation("Sar_20");
                                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                     CB->bloque(BLOQUE_NONE);
                                     return;
                                 }
                                 /* 0xC26C */
-                                if (ST(0xBC8) == 2) {
+                                if (ST(L16_ARMAL_STAGE) == 2) {
                                     lieu_action_register("L16D116", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D117", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                     CB->animation("Sar_20");
@@ -721,8 +721,8 @@ static void trig03(void) {
                         /* 0xC2D6 */
                         if (ST(ST_SPECIAL_MODE) == 0) {
                             /* 0xC2E8 */
-                            if (ST(0xAE8) == 0) {
-                                ST(0xAE8) = 1;
+                            if (ST(L16_DELIA_TALK_STAGE) == 0) {
+                                ST(L16_DELIA_TALK_STAGE) = 1;
                                 lieu_action_register("L16D118", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D119", P_DELIA, "SP10DIA51", "SP10GAR01");
                                 CB->animation("Sar_20");
@@ -731,7 +731,7 @@ static void trig03(void) {
                                 return;
                             }
                             /* 0xC361 */
-                            if (ST(0xAE8) >= 1) {
+                            if (ST(L16_DELIA_TALK_STAGE) >= 1) {
                                 lieu_action_register("L16D120A", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D120B", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D121", P_DELIA, "SP10DIA51", "SP10GAR01");
@@ -742,7 +742,7 @@ static void trig03(void) {
                                 CB->animation("Sar_20");
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 ST(V_DELIA_HITS) = 1;
-                                ST(0x508) = 1;
+                                ST(L16_DELIA_HIT_FLAG) = 1;
                                 CB->bloque(BLOQUE_NONE);
                                 return;
                             }
@@ -750,7 +750,7 @@ static void trig03(void) {
                     }
                     /* 0xC433 */
                     if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2)) {
-                        ST(0x118) = ST(ST_PLAYER_WEAPON);
+                        ST(L16_DELIA_LAST_WEAPON) = ST(ST_PLAYER_WEAPON);
                         /* 0xC473 */
                         if (ST(ST_PLAYER_WEAPON) == 56) {
                             lieu_action_register("L16D888", P_ARKHAN2, "SG00PRE80", "SG00PRE82");
@@ -762,7 +762,7 @@ static void trig03(void) {
                             return;
                         } else {
                             /* 0xC4F0 */
-                            if (ST(0x98) == 0) {
+                            if (ST(L16_TALK_DELIA_A2_B) == 0) {
                                 lieu_action_register("LCOD18", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
                                 lieu_action_register("L16D886A", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                 lieu_action_register("L16D886B", P_DELIA, "SP10DIA50", "SP10ARR01_10");
@@ -770,11 +770,11 @@ static void trig03(void) {
                                 CB->animation("ar_20");
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 CB->bloque(BLOQUE_NONE);
-                                ST(0x98) = 1;
+                                ST(L16_TALK_DELIA_A2_B) = 1;
                                 return;
                             }
                             /* 0xC590 */
-                            if (ST(0x98) == 1) {
+                            if (ST(L16_TALK_DELIA_A2_B) == 1) {
                                 lieu_action_register("LCOD18", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
                                 lieu_action_register("L16D887", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                 CB->animation("SG00PRE82");
@@ -789,7 +789,7 @@ static void trig03(void) {
                 /* 0xC608 */
                 if (ST(ST_HERO) == P_ARKHAN3) {
                     /* 0xC61A */
-                    if (ST(0x90) == 0) {
+                    if (ST(L16_TALK_DELIA_A3) == 0) {
                         /* 0xC62C */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D402", P_ARKHAN3, "SG00DIA02", NULL);
@@ -799,7 +799,7 @@ static void trig03(void) {
                             lieu_action_register("LCOD22A", P_ARKHAN3, "SG00DIA02", NULL);
                         }
                         lieu_action_register("L16D409", P_DELIA, "SP10DIA59", "SP10ARR01_10");
-                        ST(0x68) = 1;
+                        ST(L16_MAOR_CONFRONTED) = 1;
                         ST(V_DELIA_HITS) = 1;
                         /* 0xC6B0 */
                         if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2) {
@@ -807,7 +807,7 @@ static void trig03(void) {
                         }
                     }
                     /* 0xC6E4 */
-                    if (ST(0x90) == 1) {
+                    if (ST(L16_TALK_DELIA_A3) == 1) {
                         /* 0xC6F6 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D407", P_ARKHAN3, "SG00DIA02", NULL);
@@ -817,7 +817,7 @@ static void trig03(void) {
                             lieu_action_register("LCOD22B", P_ARKHAN3, "SG00DIA02", NULL);
                         }
                         lieu_action_register("L16D410", P_DELIA, "SP10DIA51", "SP10ARR01_10");
-                        ST(0x90) = 0;
+                        ST(L16_TALK_DELIA_A3) = 0;
                         ST(V_DELIA_HITS) = 1;
                         /* 0xC77D */
                         if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2) {
@@ -831,7 +831,7 @@ static void trig03(void) {
                 }
             }
             /* 0xC7DA */
-            if (ST(0xEE4) != 0 && ST(ST_HERO) == P_ARKHAN2) {
+            if (ST(L16_DELIA_WEAPON_STAGE) != 0 && ST(ST_HERO) == P_ARKHAN2) {
                 /* 0xC7FE */
                 if (ST(ST_SPECIAL_MODE) == 0) {
                     lieu_action_register("L16D66", P_ARKHAN2, "SG00DIA05", NULL);
@@ -850,10 +850,10 @@ static void trig03(void) {
                     /* 0xC8B2 */
                     if (ST(V_DELIA_HITS) == 1) {
                         ST(V_DELIA_HITS) = 0;
-                        ST(0x508) = 0;
+                        ST(L16_DELIA_HIT_FLAG) = 0;
                     }
                     /* 0xC8E2 */
-                    if ((ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2)) && ST(0xEE4) == 1 && ST(0xAE8) == 5) {
+                    if ((ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2)) && ST(L16_DELIA_WEAPON_STAGE) == 1 && ST(L16_DELIA_TALK_STAGE) == 5) {
                         lieu_action_register("L16D68", P_ARKHAN2, "SG00DIA04", NULL);
                         lieu_action_register("L16D69", P_DELIA, "SP10DIA54", "SP10ARR01_10");
                         CB->animation("Sar_20");
@@ -862,7 +862,7 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xC987 */
-                    if (ST(ST_PLAYER_WEAPON) > 0 && ST(ST_PLAYER_WEAPON) != 20 && ST(ST_PLAYER_WEAPON) != 56 && ST(0xEE4) == 1 && ST(0xAE8) == 5) {
+                    if (ST(ST_PLAYER_WEAPON) > 0 && ST(ST_PLAYER_WEAPON) != 20 && ST(ST_PLAYER_WEAPON) != 56 && ST(L16_DELIA_WEAPON_STAGE) == 1 && ST(L16_DELIA_TALK_STAGE) == 5) {
                         lieu_action_register("L16D70", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
                         lieu_action_register("L16D71", P_DELIA, "SP10DIA56", "SP10ARR01_10");
                         CB->animation("SG00PRE82");
@@ -872,7 +872,7 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xCA47 */
-                    if (ST(ST_PLAYER_WEAPON) == 56 && ST(0xEE4) >= 1 && ST(0xAE8) >= 5) {
+                    if (ST(ST_PLAYER_WEAPON) == 56 && ST(L16_DELIA_WEAPON_STAGE) >= 1 && ST(L16_DELIA_TALK_STAGE) >= 5) {
                         lieu_action_register("L16D888", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
                         lieu_action_register("L16D889", P_DELIA, "SP10DIA56", "SP10ARR01_10");
                         CB->animation("SG00PRE82");
@@ -882,9 +882,9 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xCAE3 */
-                    if (ST(ST_PLAYER_WEAPON) == 20 && ST(0xEE4) == 1 && ST(0xAE8) == 5) {
-                        ST(0xEE4) = 2;
-                        ST(0xBC8) = 1;
+                    if (ST(ST_PLAYER_WEAPON) == 20 && ST(L16_DELIA_WEAPON_STAGE) == 1 && ST(L16_DELIA_TALK_STAGE) == 5) {
+                        ST(L16_DELIA_WEAPON_STAGE) = 2;
+                        ST(L16_ARMAL_STAGE) = 1;
                         CB->animation("SG00PRE80_1000");
                         lieu_action_register("L16D70", P_ARKHAN2, "SG00DIA05", NULL);
                         lieu_action_register("L16D72", P_DELIA, "SP10DIA54", "SP10ARR01_10");
@@ -898,12 +898,12 @@ static void trig03(void) {
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0xAE8) = 6;
+                        ST(L16_DELIA_TALK_STAGE) = 6;
                         return;
                     }
                     /* 0xCC51 */
-                    if (ST(0xEE4) == 2 && ST(0xAE8) == 6 && ST(0xBC8) != 2) {
-                        ST(0xEE4) = 3;
+                    if (ST(L16_DELIA_WEAPON_STAGE) == 2 && ST(L16_DELIA_TALK_STAGE) == 6 && ST(L16_ARMAL_STAGE) != 2) {
+                        ST(L16_DELIA_WEAPON_STAGE) = 3;
                         lieu_action_register("L16D78", P_ARKHAN2, "SG00DIA05", NULL);
                         lieu_action_register("L16D79A", P_DELIA, "SP10DIA53", "SP10ARR01_10");
                         lieu_action_register("L16D79B", P_DELIA, "SP10DIA53", "SP10ARR01_10");
@@ -914,11 +914,11 @@ static void trig03(void) {
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0xAE8) = 7;
+                        ST(L16_DELIA_TALK_STAGE) = 7;
                         return;
                     }
                     /* 0xCD77 */
-                    if ((ST(0xEE4) == 3 && ST(0xAE8) == 7 && ST(ST_PLAYER_WEAPON) == 0) || (ST(0xEE4) == 2 && ST(0xBC8) == 2)) {
+                    if ((ST(L16_DELIA_WEAPON_STAGE) == 3 && ST(L16_DELIA_TALK_STAGE) == 7 && ST(ST_PLAYER_WEAPON) == 0) || (ST(L16_DELIA_WEAPON_STAGE) == 2 && ST(L16_ARMAL_STAGE) == 2)) {
                         lieu_action_register("L16D83", P_ARKHAN2, "SG00DIA05", NULL);
                         lieu_action_register("L16D84", P_DELIA, "SP10DIA53", "SP10ARR01_10");
                         lieu_action_register("L16D85", P_DELIA, "SP10DIA54", "SP10ARR01_10");
@@ -928,7 +928,7 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xCE42 */
-                    if (ST(0xEE4) == 3 && ST(0xAE8) == 7 && ST(ST_PLAYER_WEAPON) > 0 && ST(ST_PLAYER_WEAPON) != 20 && ST(ST_PLAYER_WEAPON) != 56) {
+                    if (ST(L16_DELIA_WEAPON_STAGE) == 3 && ST(L16_DELIA_TALK_STAGE) == 7 && ST(ST_PLAYER_WEAPON) > 0 && ST(ST_PLAYER_WEAPON) != 20 && ST(ST_PLAYER_WEAPON) != 56) {
                         lieu_action_register("LCOD18", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
                         lieu_action_register("L16D885A", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                         CB->animation("SG00PRE82");
@@ -943,8 +943,8 @@ static void trig03(void) {
         /* 0xCF02 */
         if (ST(ST_VIE(P_MAOR)) == VIE_DEAD) {
             /* 0xCF14 */
-            if (ST(0x540) == 0) {
-                ST(0x540) = 1;
+            if (ST(L16_TALK_AFTER_MAOR_DEAD) == 0) {
+                ST(L16_TALK_AFTER_MAOR_DEAD) = 1;
                 /* 0xCF35 */
                 if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L16D400", P_ARKHAN2, "SG00DIA02", NULL);
@@ -969,7 +969,7 @@ static void trig03(void) {
                 return;
             }
             /* 0xD078 */
-            if (ST(0x540) == 1) {
+            if (ST(L16_TALK_AFTER_MAOR_DEAD) == 1) {
                 ST(V_DLG_RANDOM) = CB->random(2);
                 /* 0xD0A1 */
                 if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_SPECIAL_MODE) == 1) {
@@ -1062,12 +1062,12 @@ static void trig03(void) {
             CB->animation("P10cad");
             CB->pos_perso(P_DELIA, 0, 0, 0, 2, "P10CAD", 3, 0);
             /* 0xD522 */
-            if (ST(0x17C) == 1) {
+            if (ST(L16_CREATURE_GATE) == 1) {
                 CB->vire_col(21, 0);
             }
             /* 0xD541 */
-            if (ST(0x770) == 0) {
-                ST(0x770) = 99;
+            if (ST(L16_DELIA_ESCAPE_STAGE) == 0) {
+                ST(L16_DELIA_ESCAPE_STAGE) = 99;
             }
             CB->bloque(BLOQUE_NONE);
             CB->select_pile(0, 1);
@@ -1086,7 +1086,7 @@ static void trig03(void) {
                 CB->dialogue("L16D999", -1);
             }
             CB->animation("SP10GAR01_10");
-            CB->modify_var(&ST(0x6C), 1);
+            CB->modify_var(&ST(L16_RANDOM_STEP), 1);
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
             CB->select_pile(0, 1);
@@ -1099,10 +1099,10 @@ static void trig03(void) {
         CB->combat(P_DELIA, 1);
         ST(V_ENGAGED_PERSONA) = P_DELIA;
         /* 0xD6F0 */
-        if (ST(0x17C) == 1) {
+        if (ST(L16_CREATURE_GATE) == 1) {
             CB->vire_col(21, 0);
         }
-        ST(0x70) = 1;
+        ST(L16_DELIA_ATTACKED) = 1;
         ST(V_DELIA_HITS) = 1;
         CB->evenement(36, 2000);
     }
@@ -1110,8 +1110,8 @@ static void trig03(void) {
     if (ST(ST_ACTION_KEY) == 1 && ST(V_CRI_KEY) == 1 && ST(V_CRI_USED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && ST(ST_VIE(P_DELIA)) == 1 && CB->direction_perso(P_DELIA)) {
         ST(V_CRI_USED) = 1;
         /* 0xD7BF */
-        if (ST(0xF4) != 99) {
-            ST(0xF4) = 10;
+        if (ST(L16_DELIA_CRY_STATE) != 99) {
+            ST(L16_DELIA_CRY_STATE) = 10;
         }
         CB->bloque(BLOQUE_ALL);
         CB->evenement(33, 1000);
@@ -1127,25 +1127,25 @@ static void trig03(void) {
 /* trigger 4 — sub_1000D848 — Maor: chase on zone 4 and the talk scene */
 static void trig04(void) {
     /* 0xD85A */
-    if (ST(0x84) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && CB->divers(DV_IN_ZONE, ST(ST_HERO), 4) && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_CHASING) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && CB->divers(DV_IN_ZONE, ST(ST_HERO), 4) && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->select_pile(1, 2);
         CB->evenement(1, -1);
         ST(V_EVENT_1) = 0;
-        ST(0x84) = 1;
+        ST(L16_MAOR_CHASING) = 1;
         CB->animation("SP17ARR01_10");
         CB->stop_joindre(-P_MAOR);
         /* 0xD913 */
-        if (ST(0xCF4) == 0) {
+        if (ST(L16_MAOR_PATROL_STEP) == 0) {
             CB->animation("SP17ARR01_10");
             CB->joindre(-P_MAOR, 3590, 3727, 0x7C93, -1);
         }
         /* 0xD94C */
-        if (ST(0xCF4) == 2) {
+        if (ST(L16_MAOR_PATROL_STEP) == 2) {
             CB->animation("SP17ARR01_10");
             CB->joindre(-P_MAOR, 3590, 3727, 0x7C93, -1);
         }
         /* 0xD985 */
-        if (ST(0xCF4) == 3) {
+        if (ST(L16_MAOR_PATROL_STEP) == 3) {
             CB->animation("SP17ARR01_10");
             CB->joindre(-P_MAOR, 3590, 3727, 0x7C93, -1);
         }
@@ -1170,7 +1170,7 @@ static void trig04(void) {
                 /* 0xDB19 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     /* 0xDB2B */
-                    if (ST(0xD00) == 0) {
+                    if (ST(L16_TALK_MAOR_A2_B) == 0) {
                         /* 0xDB3D */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             CB->dialogue("L16D300A", P_ARKHAN2);
@@ -1187,11 +1187,11 @@ static void trig04(void) {
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0xD00) = 1;
+                        ST(L16_TALK_MAOR_A2_B) = 1;
                         return;
                     }
                     /* 0xDC30 */
-                    if (ST(0xD00) == 1) {
+                    if (ST(L16_TALK_MAOR_A2_B) == 1) {
                         /* 0xDC42 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D304A", P_ARKHAN2, "SG00DIA04", NULL);
@@ -1204,23 +1204,23 @@ static void trig04(void) {
                         }
                         lieu_action_register("L16D305", P_MAOR, "SP17DIA58", "SP17ARR01_10");
                         /* 0xDCD7 */
-                        if (ST(0x788) == 0) {
+                        if (ST(L16_CHEST_OB24C_STAGE) == 0) {
                             lieu_action_register("L16D307A", P_MAOR, "SP17DIA53", "SP17ARR01_10");
                             lieu_action_register("L16D307B", P_MAOR, "SP17DIA53", "SP17ARR01_10");
                         }
                         /* 0xDD1B */
-                        if (ST(0x788) != 0) {
+                        if (ST(L16_CHEST_OB24C_STAGE) != 0) {
                             lieu_action_register("L16D308A", P_MAOR, "SP17DIA53", "SP17ARR01_10");
                             lieu_action_register("L16D308B", P_MAOR, "SP17DIA53", "SP17ARR01_10");
                         }
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0xD00) = 2;
+                        ST(L16_TALK_MAOR_A2_B) = 2;
                         return;
                     }
                     /* 0xDD97 */
-                    if (ST(0xD00) == 2) {
+                    if (ST(L16_TALK_MAOR_A2_B) == 2) {
                         /* 0xDDA9 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L16D309", P_ARKHAN2, "SG00DIA07", NULL);
@@ -1238,23 +1238,23 @@ static void trig04(void) {
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0xD00) = 3;
+                        ST(L16_TALK_MAOR_A2_B) = 3;
                         return;
                     }
                     /* 0xDEC4 */
-                    if (ST(0xD00) == 3) {
+                    if (ST(L16_TALK_MAOR_A2_B) == 3) {
                         /* 0xDED6 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             /* 0xDEE8 */
-                            if (ST(0xFC) == 0) {
+                            if (ST(L16_TALK_MAOR_A2) == 0) {
                                 lieu_action_register("L16D313", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D314", P_MAOR, "SP17DIA55", "SP17ARR01_10");
-                                ST(0xFC) = 1;
+                                ST(L16_TALK_MAOR_A2) = 1;
                             } else {
                                 lieu_action_register("L16D315", P_ARKHAN2, "SG00DIA07", NULL);
                                 lieu_action_register("L16D316A", P_MAOR, "SP17DIA58", "SP17ARR01_10");
                                 lieu_action_register("L16D316B", P_MAOR, "SP17DIA53", "SP17ARR01_10");
-                                ST(0xFC) = 0;
+                                ST(L16_TALK_MAOR_A2) = 0;
                             }
                             CB->animation("Sar_20");
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1269,7 +1269,7 @@ static void trig04(void) {
                             lieu_action_register("L16D318B", P_MAOR, "SP17ATT50", "SP17ARR01_10");
                             CB->vire_col(7, 0);
                             ST(V_PLAYER_STRIKE) = -1;
-                            ST(0x4D4) = 1;
+                            ST(L16_MAOR_HOSTILE) = 1;
                             CB->joindre(ST(ST_HERO), 3447, 3356, 0x30E1, -1);
                             CB->joindre(-P_MAOR, 3482, 3750, -1, -1);
                             CB->animation("P17ACT01");
@@ -1290,7 +1290,7 @@ static void trig04(void) {
                 /* 0xE11D */
                 if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_SPECIAL_MODE) == 1) {
                     /* 0xE141 */
-                    if (ST(0x518) == 0) {
+                    if (ST(L16_TALK_MAOR_A3) == 0) {
                         lieu_action_register("L16D320", P_ARKHAN3, "SG00DIA07", NULL);
                         lieu_action_register("L16D321", P_MAOR, "SP17DIA57", "SP17ARR01_10");
                         lieu_action_register("L16D322", P_ARKHAN3, "SG00DIA07", NULL);
@@ -1298,40 +1298,40 @@ static void trig04(void) {
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0x518) = 1;
+                        ST(L16_TALK_MAOR_A3) = 1;
                         return;
                     }
                     /* 0xE1E9 */
-                    if (ST(0x518) == 1) {
+                    if (ST(L16_TALK_MAOR_A3) == 1) {
                         lieu_action_register("L16D324", P_ARKHAN3, "SG00DIA07", NULL);
                         lieu_action_register("L16D325A", P_MAOR, "SP17DIA59", "SP17ARR01_10");
                         /* 0xE22A */
-                        if (ST(0x788) == 0) {
+                        if (ST(L16_CHEST_OB24C_STAGE) == 0) {
                             lieu_action_register("L16D326A", P_MAOR, "SP17DIA56", "SP17ARR01_10");
                             lieu_action_register("L16D326B", P_MAOR, "SP17DIA53", "SP17ARR01_10");
                         }
                         /* 0xE26E */
-                        if (ST(0x788) != 0) {
+                        if (ST(L16_CHEST_OB24C_STAGE) != 0) {
                             lieu_action_register("L16D327A", P_MAOR, "SP17DIA56", "SP17ARR01_10");
                             lieu_action_register("L16D308B", P_MAOR, "SP17DIA53", "SP17ARR01_10");
                         }
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0x518) = 2;
+                        ST(L16_TALK_MAOR_A3) = 2;
                         return;
                     }
                     /* 0xE2EA */
-                    if (ST(0x518) == 2) {
+                    if (ST(L16_TALK_MAOR_A3) == 2) {
                         /* 0xE2FC */
-                        if (ST(0xFC) == 0) {
+                        if (ST(L16_TALK_MAOR_A2) == 0) {
                             lieu_action_register("L16D328", P_ARKHAN2, "SG00DIA07", NULL);
                             lieu_action_register("L16D329", P_MAOR, "SP17DIA55", "SP17ARR01_10");
-                            ST(0xFC) = 1;
+                            ST(L16_TALK_MAOR_A2) = 1;
                         } else {
                             lieu_action_register("L16D330", P_ARKHAN2, "SG00DIA07", NULL);
                             lieu_action_register("L16D331", P_MAOR, "SP17DIA58", "SP17ARR01_10");
-                            ST(0xFC) = 0;
+                            ST(L16_TALK_MAOR_A2) = 0;
                         }
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1342,24 +1342,24 @@ static void trig04(void) {
                 /* 0xE3B8 */
                 if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_SPECIAL_MODE) == 0) {
                     /* 0xE3DC */
-                    if (ST(0x518) == 0) {
+                    if (ST(L16_TALK_MAOR_A3) == 0) {
                         lieu_action_register("L16D332", P_ARKHAN3, "SG00DIA07", NULL);
                         lieu_action_register("L16D333A", P_MAOR, "SP17ATT50", "SP17ARR01_10");
                         lieu_action_register("L16D333B", P_MAOR, "SP17ATT50", "SP17ARR01_10");
                         CB->animation("Sar_20");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                         CB->bloque(BLOQUE_NONE);
-                        ST(0x518) = 1;
+                        ST(L16_TALK_MAOR_A3) = 1;
                         return;
                     }
                     /* 0xE46E */
-                    if (ST(0x518) >= 1) {
+                    if (ST(L16_TALK_MAOR_A3) >= 1) {
                         lieu_action_register("L16D334", P_ARKHAN3, "SG00DIA07", NULL);
                         lieu_action_register("L16D318A", P_MAOR, "SP17DIA59", "SP17ARR01_10");
                         lieu_action_register("L16D318B", P_MAOR, "SP17ATT50", "SP17ARR01_10");
                         CB->vire_col(7, 0);
                         ST(V_PLAYER_STRIKE) = -1;
-                        ST(0x4D4) = 1;
+                        ST(L16_MAOR_HOSTILE) = 1;
                         CB->joindre(ST(ST_HERO), 3447, 3356, 0x30E1, -1);
                         CB->joindre(-P_MAOR, 3482, 3750, -1, -1);
                         CB->animation("P17ACT01");
@@ -1436,27 +1436,27 @@ static void trig04(void) {
 /* trigger 5 — sub_1000E818 — Maor chase on zone 5, talk, exit and search */
 static void trig05(void) {
     /* 0xE82A */
-    if ((ST(0x84) == 0 || ST(0x74) == 1) && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2 && CB->divers(DV_IN_ZONE, ST(ST_HERO), 5)) {
+    if ((ST(L16_MAOR_CHASING) == 0 || ST(L16_MAOR_INTRO_SEEN) == 1) && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2 && CB->divers(DV_IN_ZONE, ST(ST_HERO), 5)) {
         CB->select_pile(1, 2);
         CB->stop_joindre(-P_MAOR);
         CB->evenement(1, -1);
         ST(V_EVENT_1) = 0;
-        ST(0x84) = 1;
-        ST(0x74) = 0;
+        ST(L16_MAOR_CHASING) = 1;
+        ST(L16_MAOR_INTRO_SEEN) = 0;
         CB->animation("SP17ARR01_10");
         CB->stop_joindre(-P_MAOR);
         /* 0xE909 */
-        if (ST(0xCF4) == 0) {
+        if (ST(L16_MAOR_PATROL_STEP) == 0) {
             CB->animation("SP17ARR01_10");
             CB->joindre(-P_MAOR, 3698, 3724, 0x756E, -1);
         }
         /* 0xE942 */
-        if (ST(0xCF4) == 2) {
+        if (ST(L16_MAOR_PATROL_STEP) == 2) {
             CB->animation("SP17ARR01_10");
             CB->joindre(-P_MAOR, 3698, 3724, 0x756E, -1);
         }
         /* 0xE97B */
-        if (ST(0xCF4) == 3) {
+        if (ST(L16_MAOR_PATROL_STEP) == 3) {
             CB->animation("SP17ARR01_10");
             CB->joindre(-P_MAOR, 3698, 3724, 0x756E, -1);
         }
@@ -1491,17 +1491,17 @@ static void trig10(void) {
         /* 0xEB1C */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0xEB2E */
-            if (ST(0x788) == 0) {
+            if (ST(L16_CHEST_OB24C_STAGE) == 0) {
                 CB->animation("SG00PRE07");
-                ST(0x148) = 3;
+                ST(L16_OB24C_INIT_STATE) = 3;
                 CB->etat_objet("OB24C", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x788) = 1;
+                ST(L16_CHEST_OB24C_STAGE) = 1;
                 return;
             }
             /* 0xEBA5 */
-            if (ST(0x788) == 1) {
+            if (ST(L16_CHEST_OB24C_STAGE) == 1) {
                 CB->animation("SG00PRE03");
                 CB->dialogue("LCOD79", P_ARKHAN2);
                 CB->animation("ar_20");
@@ -1513,17 +1513,17 @@ static void trig10(void) {
         /* 0xEBFB */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0xEC0D */
-            if (ST(0x788) == 0) {
+            if (ST(L16_CHEST_OB24C_STAGE) == 0) {
                 CB->animation("SG00PRE07");
-                ST(0x148) = 3;
+                ST(L16_OB24C_INIT_STATE) = 3;
                 CB->etat_objet("OB24C", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x788) = 1;
+                ST(L16_CHEST_OB24C_STAGE) = 1;
                 return;
             }
             /* 0xEC84 */
-            if (ST(0x788) == 1) {
+            if (ST(L16_CHEST_OB24C_STAGE) == 1) {
                 CB->animation("SG00PRE03");
                 CB->dialogue("LCOD80", P_ARKHAN3);
                 CB->animation("ar_20");
@@ -1589,10 +1589,10 @@ static void trig12(void) {
 /* trigger 14 — sub_1000EECC — zone 14: Maor confrontation */
 static void trig14(void) {
     /* 0xEEDE */
-    if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_COMBAT_STANCE) == 1 && ST(0x68) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD) {
+    if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_COMBAT_STANCE) == 1 && ST(L16_MAOR_CONFRONTED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MAOR)) != VIE_DEAD) {
         CB->bloque(BLOQUE_ALL);
         CB->change_camera(2, CAM_LOCKED);
-        ST(0x68) = 1;
+        ST(L16_MAOR_CONFRONTED) = 1;
         CB->joindre(P_MAOR, 0, 0, 0, ST(ST_HERO));
         CB->dialogue("L16D04", P_MAOR);
         CB->animation("SP17ACT03");
@@ -1609,7 +1609,7 @@ static void trig15(void) {
         return;
     }
     /* 0xF02D */
-    if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(0x78) == 0) {
+    if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(L16_MAOR_TALK_ZONE15) == 0) {
         CB->select_pile(1, 2);
         CB->bloque(BLOQUE_ALL);
         CB->divers_empile(DV_COMBAT_STANCE, 0, 0);
@@ -1621,7 +1621,7 @@ static void trig15(void) {
         CB->joindre(P_MAOR, 0, 0, 0, ST(ST_HERO));
         CB->dialogue("L16D07A", P_MAOR);
         CB->dialogue("L16D07B", P_MAOR);
-        ST(0x78) = 1;
+        ST(L16_MAOR_TALK_ZONE15) = 1;
         CB->stop_joindre(ST(ST_HERO));
         CB->bloque(BLOQUE_NONE);
         CB->select_pile(0, 2);
@@ -1631,13 +1631,13 @@ static void trig15(void) {
 /* trigger 16 — sub_1000F15E — zone 16: Maor attacks (L16D08) */
 static void trig16(void) {
     /* 0xF170 */
-    if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(0x7C) == 0) {
+    if (ST(ST_VIE(P_MAOR)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(L16_MAOR_ATTACK_ZONE16) == 0) {
         CB->select_pile(1, 1);
         CB->evenement(1, -1);
         ST(V_EVENT_1) = 0;
         CB->dialogue("L16D08", P_MAOR);
-        ST(0x7C) = 1;
-        ST(0x4D4) = 1;
+        ST(L16_MAOR_ATTACK_ZONE16) = 1;
+        ST(L16_MAOR_HOSTILE) = 1;
         CB->combat(P_MAOR, 0);
         ST(V_ENGAGED_PERSONA) = P_MAOR;
         CB->bloque(BLOQUE_NONE);
@@ -1707,8 +1707,8 @@ static void trig18(void) {
         CB->divers(DV_MUSIC, 2, 4);
     }
     /* 0xF46D */
-    if (ST(0x528) == 1 && ST(ST_VIE(90)) != VIE_DEAD && ST(ST_VIE(P_DELIA)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) == 2) {
-        ST(0x770) = 1;
+    if (ST(L16_CREATURE_HOSTILE) == 1 && ST(ST_VIE(90)) != VIE_DEAD && ST(ST_VIE(P_DELIA)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) == 2) {
+        ST(L16_DELIA_ESCAPE_STAGE) = 1;
     }
     ST(ST_LEVEL) = 16;
     CB->change_piece(19, 0);
@@ -1785,27 +1785,27 @@ static void trig22(void) {
         /* 0xF7FB */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0xF80D */
-            if (ST(0x534) == 0) {
+            if (ST(L16_CHEST_OB44B_STAGE) == 0) {
                 CB->animation("SG00PRE06");
                 CB->etat_objet("OB44B", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->animation("Sar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x534) = 1;
+                ST(L16_CHEST_OB44B_STAGE) = 1;
                 return;
             }
             /* 0xF880 */
-            if (ST(0x534) == 1) {
+            if (ST(L16_CHEST_OB44B_STAGE) == 1) {
                 CB->animation("SG00PRE06");
                 CB->etat_objet("OB65", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->animation("Sar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x534) = 2;
+                ST(L16_CHEST_OB44B_STAGE) = 2;
                 return;
             }
             /* 0xF8F3 */
-            if (ST(0x534) == 2) {
+            if (ST(L16_CHEST_OB44B_STAGE) == 2) {
                 CB->animation("SG00PRE02");
                 CB->dialogue("LCOD79", P_ARKHAN2);
                 CB->animation("ar_20");
@@ -1817,27 +1817,27 @@ static void trig22(void) {
         /* 0xF949 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0xF95B */
-            if (ST(0x534) == 0) {
+            if (ST(L16_CHEST_OB44B_STAGE) == 0) {
                 CB->animation("SG00PRE06");
                 CB->etat_objet("OB44B", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->animation("Sar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x534) = 1;
+                ST(L16_CHEST_OB44B_STAGE) = 1;
                 return;
             }
             /* 0xF9CE */
-            if (ST(0x534) == 1) {
+            if (ST(L16_CHEST_OB44B_STAGE) == 1) {
                 CB->animation("SG00PRE06");
                 CB->etat_objet("OB65", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->animation("Sar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x534) = 2;
+                ST(L16_CHEST_OB44B_STAGE) = 2;
                 return;
             }
             /* 0xFA41 */
-            if (ST(0x534) == 2) {
+            if (ST(L16_CHEST_OB44B_STAGE) == 2) {
                 CB->animation("SG00PRE02");
                 CB->dialogue("LCOD80", P_ARKHAN3);
                 CB->animation("ar_20");
@@ -1871,17 +1871,17 @@ static void trig24(void) {
         /* 0xFB93 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0xFBA5 */
-            if (ST(0x588) == 0) {
+            if (ST(L16_CHEST_OB04_STAGE) == 0) {
                 CB->animation("SG00PRE07");
                 CB->etat_objet("OB04", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->animation("ar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x588) = 1;
+                ST(L16_CHEST_OB04_STAGE) = 1;
                 return;
             }
             /* 0xFC18 */
-            if (ST(0x588) == 1) {
+            if (ST(L16_CHEST_OB04_STAGE) == 1) {
                 CB->animation("SG00PRE03");
                 CB->dialogue("LCOD79", P_ARKHAN2);
                 CB->animation("ar_20");
@@ -1893,17 +1893,17 @@ static void trig24(void) {
         /* 0xFC6E */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0xFC80 */
-            if (ST(0x588) == 0) {
+            if (ST(L16_CHEST_OB04_STAGE) == 0) {
                 CB->animation("SG00PRE07");
                 CB->etat_objet("OB04", -1, -1, -1, -1, -1, -1, -3, 4);
                 CB->animation("ar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
-                ST(0x588) = 1;
+                ST(L16_CHEST_OB04_STAGE) = 1;
                 return;
             }
             /* 0xFCF3 */
-            if (ST(0x588) == 1) {
+            if (ST(L16_CHEST_OB04_STAGE) == 1) {
                 CB->animation("SG00PRE03");
                 CB->dialogue("LCOD80", P_ARKHAN3);
                 CB->animation("ar_20");
@@ -1934,8 +1934,8 @@ static void trig26(void) {
             /* 0xFE22 */
             if (ST(ST_SPECIAL_MODE) == 0) {
                 CB->animation("SP02ACT29");
-                ST(0x80) = CB->divers(DV_HP, ST(ST_HERO), -1);
-                CB->divers(DV_HP, ST(ST_HERO), (ST(0x80) - 10));
+                ST(L16_HP_BEFORE_SIGN) = CB->divers(DV_HP, ST(ST_HERO), -1);
+                CB->divers(DV_HP, ST(ST_HERO), (ST(L16_HP_BEFORE_SIGN) - 10));
                 CB->animation("ar_20");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->bloque(BLOQUE_NONE);
@@ -2144,7 +2144,7 @@ static void trig32(void) {
 /* trigger 41 — sub_10007EE8 — room entry: music, Maor/Delia intro scene */
 static void trig41(void) {
     /* 0x7EFA */
-    if (ST(V_GUARD_FIGHT_DONE) != 2 && ST(0xBF0) >= 1) {
+    if (ST(V_GUARD_FIGHT_DONE) != 2 && ST(L16_MAOR_ENCOUNTER) >= 1) {
         CB->divers(DV_MUSIC, 1, 1);
     }
     /* 0x7F30 */
@@ -2152,15 +2152,15 @@ static void trig41(void) {
         CB->divers(DV_MUSIC, 2, 1);
     }
     /* 0x7F54 */
-    if (ST(0xBF0) >= 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
-        ST(0xCF4) = 1;
+    if (ST(L16_MAOR_ENCOUNTER) >= 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+        ST(L16_MAOR_PATROL_STEP) = 1;
     }
     /* 0x7F87 */
-    if (ST(0xBF0) > 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_ENCOUNTER) > 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->evenement(1, 1000);
     }
     /* 0x7FBB */
-    if (ST(0xBF0) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L16_MAOR_ENCOUNTER) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->bloque(BLOQUE_ALL);
         CB->divers_empile(DV_COMBAT_STANCE, 0, 0);
         CB->cinematique("SC11_500");
@@ -2178,15 +2178,15 @@ static void trig41(void) {
         CB->joindre(P_DELIA, 2558, 3811, 0xB5B5, -1);
         CB->evenement(0, 1000);
         CB->evenement(1, 500);
-        ST(0xBF0) = 1;
+        ST(L16_MAOR_ENCOUNTER) = 1;
     }
     /* 0x812C */
-    if (ST(0x4D4) == 1 && ST(V_GUARD_FIGHT_DONE) != 2 && ST(ST_VIE(P_MAOR)) != VIE_DEAD) {
+    if (ST(L16_MAOR_HOSTILE) == 1 && ST(V_GUARD_FIGHT_DONE) != 2 && ST(ST_VIE(P_MAOR)) != VIE_DEAD) {
         ST(V_ENGAGED_PERSONA) = P_MAOR;
         CB->combat(P_MAOR, 0);
     }
     /* 0x817B */
-    if (ST(0x528) == 1 && ST(ST_VIE(90)) != VIE_DEAD) {
+    if (ST(L16_CREATURE_HOSTILE) == 1 && ST(ST_VIE(90)) != VIE_DEAD) {
         ST(V_ENGAGED_PERSONA) = 90;
         CB->combat(90, 0);
     }
