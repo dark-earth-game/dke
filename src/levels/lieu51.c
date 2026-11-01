@@ -29,29 +29,29 @@ static c8 g_txt[256];
 static void tick_body(void) {
     snprintf(g_txt, sizeof(g_txt), "col:%d ", CB->divers(DV_PLAYER_ZONE, 0, 0));
     CB->print_msg(g_txt, 0, 0xDC);
-    snprintf(g_txt, sizeof(g_txt), "test21:%d ", ST(0xF0));
+    snprintf(g_txt, sizeof(g_txt), "test21:%d ", ST(L51_DIST_X2550));
     CB->print_msg(g_txt, 0, 0xF0);
-    snprintf(g_txt, sizeof(g_txt), "test23:%d ", ST(0xF8));
+    snprintf(g_txt, sizeof(g_txt), "test23:%d ", ST(L51_DIST_X5170));
     CB->print_msg(g_txt, 0, 0xFA);
-    snprintf(g_txt, sizeof(g_txt), "test24:%d ", ST(0xFC));
+    snprintf(g_txt, sizeof(g_txt), "test24:%d ", ST(L51_DIST_X5650));
     CB->print_msg(g_txt, 0, 0x104);
-    snprintf(g_txt, sizeof(g_txt), "test25:%d ", ST(0x100));
+    snprintf(g_txt, sizeof(g_txt), "test25:%d ", ST(L51_DIST_X4475));
     CB->print_msg(g_txt, 0, 0x10E);
-    snprintf(g_txt, sizeof(g_txt), "test26:%d ", ST(0x114));
+    snprintf(g_txt, sizeof(g_txt), "test26:%d ", ST(L51_DIST_X4475_B));
     CB->print_msg(g_txt, 0, 0x118);
-    snprintf(g_txt, sizeof(g_txt), "test30:%d ", ST(0x54));
+    snprintf(g_txt, sizeof(g_txt), "test30:%d ", ST(L51_ENTRY_X));
     CB->print_msg(g_txt, 0, 0x122);
-    snprintf(g_txt, sizeof(g_txt), "test31:%d ", ST(0x58));
+    snprintf(g_txt, sizeof(g_txt), "test31:%d ", ST(L51_ENTRY_Z));
     CB->print_msg(g_txt, 0, 0x12C);
     /* 0x830A */
     if ((CB->divers(DV_PLAYER_ZONE, 0, 0) == 10 || CB->divers(DV_PLAYER_ZONE, 0, 0) == 9 || CB->divers(DV_PLAYER_ZONE, 0, 0) == 6) && CB->direction_zone(11) && ST(V_EVENT15_STEP) == 0) {
         /* 0x8377 */
-        if (ST(0x88) == 0) {
-            ST(0x88) = ST(ST_GAME_TIME);
+        if (ST(L51_ZONE11_SINCE) == 0) {
+            ST(L51_ZONE11_SINCE) = ST(ST_GAME_TIME);
         }
         /* 0x83A0 */
-        if ((ST(ST_GAME_TIME) - ST(0x88)) > 500) {
-            ST(0x88) = 0;
+        if ((ST(ST_GAME_TIME) - ST(L51_ZONE11_SINCE)) > 500) {
+            ST(L51_ZONE11_SINCE) = 0;
             ST(V_EVENT15_STEP) = 1;
             CB->bloque(BLOQUE_ALL);
             /* 0x83EB */
@@ -98,61 +98,61 @@ static void tick_body(void) {
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         /* 0x856B */
-        if (ST(0x6C) == 7) {
+        if (ST(L51_EVENT1_ZONE) == 7) {
             CB->ajoute_zone(7, 5203, -800, 185, 520, 1);
         }
         /* 0x859B */
-        if (ST(0x6C) == 8) {
+        if (ST(L51_EVENT1_ZONE) == 8) {
             CB->ajoute_zone(8, 5010, -1195, 165, 435, 1);
         }
         /* 0x85CB */
-        if (ST(0x6C) == 9) {
+        if (ST(L51_EVENT1_ZONE) == 9) {
             CB->ajoute_zone(9, 5230, -1407, 316, 180, 1);
         }
         /* 0x85FB */
-        if (ST(0x6C) == 13) {
+        if (ST(L51_EVENT1_ZONE) == 13) {
             CB->ajoute_zone(13, 5395, -1725, 90, 570, 1);
         }
         /* 0x8628 */
-        if (ST(0x6C) == 14) {
+        if (ST(L51_EVENT1_ZONE) == 14) {
             CB->ajoute_zone(14, 5120, -2011, 490, 190, 1);
         }
         /* 0x8658 */
-        if (ST(0x6C) == 15) {
+        if (ST(L51_EVENT1_ZONE) == 15) {
             CB->ajoute_zone(15, 4630, -2150, 510, 160, 1);
         }
         /* 0x8688 */
-        if (ST(0x6C) == 16) {
+        if (ST(L51_EVENT1_ZONE) == 16) {
             CB->ajoute_zone(16, 4020, -2000, 690, 150, 1);
         }
         /* 0x86B8 */
-        if (ST(0x6C) == 17) {
+        if (ST(L51_EVENT1_ZONE) == 17) {
             CB->ajoute_zone(17, 3663, -1590, 115, 735, 1);
         }
         /* 0x86E5 */
-        if (ST(0x6C) == 18) {
+        if (ST(L51_EVENT1_ZONE) == 18) {
             CB->ajoute_zone(18, 3535, -1084, 115, 370, 1);
         }
         /* 0x8712 */
-        if (ST(0x6C) == 19) {
+        if (ST(L51_EVENT1_ZONE) == 19) {
             CB->ajoute_zone(19, 3723, -853, 306, 200, 1);
         }
         /* 0x8742 */
-        if (ST(0x6C) == 20) {
+        if (ST(L51_EVENT1_ZONE) == 20) {
             CB->ajoute_zone(20, 3966, -730, 170, 140, 1);
         }
         /* 0x8772 */
-        if (ST(0x6C) == 21) {
+        if (ST(L51_EVENT1_ZONE) == 21) {
             CB->ajoute_zone(21, 4370, -645, 690, 110, 1);
         }
         /* 0x879F */
-        if (ST(0x6C) == 22) {
+        if (ST(L51_EVENT1_ZONE) == 22) {
             CB->ajoute_zone(22, 4900, -560, 415, 105, 1);
         }
     }
     /* 0x87CC */
-    if (ST(0x68) == 1 && !CB->on_joindre(ST(ST_HERO))) {
-        ST(0x68) = 2;
+    if (ST(L51_LEAVE_STAGE) == 1 && !CB->on_joindre(ST(ST_HERO))) {
+        ST(L51_LEAVE_STAGE) = 2;
         CB->stop_joindre(-ST(ST_HERO));
         /* 0x8818 */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -164,12 +164,12 @@ static void tick_body(void) {
             CB->animation("SP03ATT36");
             CB->animation("P03_65535");
         }
-        CB->modify_var(&ST(0x68), 3);
+        CB->modify_var(&ST(L51_LEAVE_STAGE), 3);
     }
     /* 0x8879 */
-    if (ST(0x68) == 3) {
+    if (ST(L51_LEAVE_STAGE) == 3) {
         CB->divers(DV_MUSIC, 1, 4);
-        ST(0x68) = 4;
+        ST(L51_LEAVE_STAGE) = 4;
         /* 0x88A9 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->divers_empile(DV_SCREEN, 1, 0);
@@ -184,13 +184,13 @@ static void tick_body(void) {
         CB->change_piece(40, 0);
     }
     /* 0x8919 */
-    if (ST(0x70) == 1 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) < -180) {
-        ST(0x70) = 0;
+    if (ST(L51_ZONE25_USED) == 1 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) < -180) {
+        ST(L51_ZONE25_USED) = 0;
         CB->ajoute_zone(25, 4460, -103, 370, 90, 1);
     }
     /* 0x8975 */
-    if (ST(ST_LOCKED_CAMERA) == 5 && ST(0x51C) == 0) {
-        ST(0x51C) = 1;
+    if (ST(ST_LOCKED_CAMERA) == 5 && ST(L51_CAM5_SEEN) == 0) {
+        ST(L51_CAM5_SEEN) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x89B3 */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -234,7 +234,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L51_DEATH_ENDING_DONE) == 1) {
         l51_trig00();   /* 0x1000B109: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

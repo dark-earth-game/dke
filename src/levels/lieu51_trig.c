@@ -64,20 +64,20 @@ void l51_trig00(void) {
         ST(ST_LEVEL) = 10;
         ST(ST_HERO) = P_ARKHAN2;
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x88) = 0;
+    ST(L51_ARRIVAL_PENDING) = 0;
+    ST(L51_LEAVE_STAGE) = 0;
+    ST(L51_EVENT1_ZONE) = 0;
+    ST(L51_ZONE25_USED) = 0;
+    ST(L51_ZONE11_SINCE) = 0;
     ST(V_EVENT15_STEP) = 0;
-    ST(0xF0) = 0;
-    ST(0xF4) = 0;
-    ST(0xF8) = 0;
-    ST(0xFC) = 0;
-    ST(0x100) = 0;
-    ST(0x114) = 0;
-    ST(0x54) = 0;
-    ST(0x58) = 0;
+    ST(L51_DIST_X2550) = 0;
+    ST(L51_UNUSED_F4) = 0;
+    ST(L51_DIST_X5170) = 0;
+    ST(L51_DIST_X5650) = 0;
+    ST(L51_DIST_X4475) = 0;
+    ST(L51_DIST_X4475_B) = 0;
+    ST(L51_ENTRY_X) = 0;
+    ST(L51_ENTRY_Z) = 0;
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
     ST(V_EVENT_2) = 0;
@@ -111,44 +111,44 @@ void l51_trig00(void) {
     CB->ajoute_zone(36, 3475, -2022, 630, 385, 0);
     CB->ajoute_zone(37, 4676, -3090, 260, 260, 0);
     CB->ajoute_zone(38, 3400, -850, 100, 150, 0);
-    ST(0xB4C) = 3;
+    ST(L51_EXIT_STAGE) = 3;
     /* 0x788E */
-    if (ST(0xF30) < 2) {
+    if (ST(L51_PULLEY_STATE) < 2) {
         CB->etat_objet("OB48", 5196, -782, -1170, 0x2A00, 0x6E00, 0xD2F8, -1, 0);
     }
     /* 0x78CD */
-    if (ST(0xF30) == 2) {
+    if (ST(L51_PULLEY_STATE) == 2) {
         CB->etat_objet("OB29A", 5196, -782, -1170, 0x2A00, 0x6E00, 0xD2F8, -1, 0);
     }
     /* 0x7909 */
     if (ST(ST_LEVEL) == 8) {
         /* 0x791B */
-        if (ST(0xB54) == 3) {
+        if (ST(L51_ROOM8_EXIT) == 3) {
             CB->pos_perso(ST(ST_HERO), 2712, -1622, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 0xA, 0);
         }
         /* 0x796C */
-        if (ST(0xB54) == 4) {
+        if (ST(L51_ROOM8_EXIT) == 4) {
             CB->pos_perso(ST(ST_HERO), 2712, -1100, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 0xA, 0);
         }
     }
     /* 0x79BA */
     if (ST(ST_LEVEL) == 10) {
         CB->bloque(BLOQUE_ALL);
-        ST(0x64) = 1;
-        ST(0x54) = CB->divers(DV_DESC_POS, ST(ST_HERO), 0);
-        ST(0x58) = CB->divers(DV_DESC_POS, ST(ST_HERO), 1);
+        ST(L51_ARRIVAL_PENDING) = 1;
+        ST(L51_ENTRY_X) = CB->divers(DV_DESC_POS, ST(ST_HERO), 0);
+        ST(L51_ENTRY_Z) = CB->divers(DV_DESC_POS, ST(ST_HERO), 1);
         /* sub_1000BA50 is abs() */
-        ST(0xF0) = abs(2550 - ST(0x54));
-        ST(0xF8) = abs(5170 - ST(0x54));
-        ST(0xFC) = abs(5650 - ST(0x54));
-        ST(0x100) = abs(4475 - ST(0x54));
-        ST(0x114) = abs(4475 - ST(0x54));
+        ST(L51_DIST_X2550) = abs(2550 - ST(L51_ENTRY_X));
+        ST(L51_DIST_X5170) = abs(5170 - ST(L51_ENTRY_X));
+        ST(L51_DIST_X5650) = abs(5650 - ST(L51_ENTRY_X));
+        ST(L51_DIST_X4475) = abs(4475 - ST(L51_ENTRY_X));
+        ST(L51_DIST_X4475_B) = abs(4475 - ST(L51_ENTRY_X));
         /* 0x7AC8: F8 = min(F8, 114) */
-        if (ST(0x114) < ST(0xF8)) {
-            ST(0xF8) = ST(0x114);
+        if (ST(L51_DIST_X4475_B) < ST(L51_DIST_X5170)) {
+            ST(L51_DIST_X5170) = ST(L51_DIST_X4475_B);
         }
         /* 0x7AF5 */
-        if (ST(0xF0) < ST(0xFC) && ((ST(0xF0) <= ST(0x100) && ST(0xF0) <= ST(0xF8)) || (ST(0x58) > -2200 && ST(0x58) < -1100))) {
+        if (ST(L51_DIST_X2550) < ST(L51_DIST_X5650) && ((ST(L51_DIST_X2550) <= ST(L51_DIST_X4475) && ST(L51_DIST_X2550) <= ST(L51_DIST_X5170)) || (ST(L51_ENTRY_Z) > -2200 && ST(L51_ENTRY_Z) < -1100))) {
             /* 0x7B70 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->pos_perso(ST(ST_HERO), 3440, -1455, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P02PUI01", 0xA, 0);
@@ -157,7 +157,7 @@ void l51_trig00(void) {
             if (ST(ST_HERO) == P_ARKHAN3) {
                 CB->pos_perso(ST(ST_HERO), 3440, -1455, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P03PUI01", 0xA, 0);
             }
-        } else if (ST(0xF0) >= ST(0xF8) && ST(0xFC) >= ST(0xF8) && ST(0x100) >= ST(0xF8) && ST(0x58) < -1980) {
+        } else if (ST(L51_DIST_X2550) >= ST(L51_DIST_X5170) && ST(L51_DIST_X5650) >= ST(L51_DIST_X5170) && ST(L51_DIST_X4475) >= ST(L51_DIST_X5170) && ST(L51_ENTRY_Z) < -1980) {
             /* 0x7C80 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->pos_perso(ST(ST_HERO), 4477, -2530, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P02PUI01", 0xA, 0);
@@ -166,7 +166,7 @@ void l51_trig00(void) {
             if (ST(ST_HERO) == P_ARKHAN3) {
                 CB->pos_perso(ST(ST_HERO), 4477, -2530, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P03PUI01", 0xA, 0);
             }
-        } else if (ST(0xF0) > ST(0xFC) && ((ST(0xFC) <= ST(0xF8) && ST(0xFC) <= ST(0x100)) || (ST(0x58) < -600 && ST(0x58) > -2100))) {
+        } else if (ST(L51_DIST_X2550) > ST(L51_DIST_X5650) && ((ST(L51_DIST_X5650) <= ST(L51_DIST_X5170) && ST(L51_DIST_X5650) <= ST(L51_DIST_X4475)) || (ST(L51_ENTRY_Z) < -600 && ST(L51_ENTRY_Z) > -2100))) {
             /* 0x7DA2 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->pos_perso(ST(ST_HERO), 5550, -1135, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P02PUI01", 0xA, 0);
@@ -175,7 +175,7 @@ void l51_trig00(void) {
             if (ST(ST_HERO) == P_ARKHAN3) {
                 CB->pos_perso(ST(ST_HERO), 5550, -1135, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P03PUI01", 0xA, 0);
             }
-        } else if ((ST(0xF0) >= ST(0x100) && ST(0x100) <= ST(0xF8) && ST(0xFC) >= ST(0x100)) || ST(0x58) > -500) {
+        } else if ((ST(L51_DIST_X2550) >= ST(L51_DIST_X4475) && ST(L51_DIST_X4475) <= ST(L51_DIST_X5170) && ST(L51_DIST_X5650) >= ST(L51_DIST_X4475)) || ST(L51_ENTRY_Z) > -500) {
             /* 0x7EB2 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->pos_perso(ST(ST_HERO), 4250, -425, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "P02PUI01", 0xA, 0);
@@ -194,7 +194,7 @@ void l51_trig00(void) {
     if (ST(ST_LEVEL) == 23) {
         CB->pos_perso(ST(ST_HERO), 5070, -2655, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 0xA, 0);
     }
-    ST(0xB54) = 0;
+    ST(L51_ROOM8_EXIT) = 0;
     ST(ST_START_POINT(51)) = 0;
 }
 
@@ -202,9 +202,9 @@ void l51_trig00(void) {
 static void trig41(void) {
     CB->divers_empile(DV_MUSIC, 1, 1);
     /* 0x802B */
-    if (ST(0x64) == 1) {
+    if (ST(L51_ARRIVAL_PENDING) == 1) {
         CB->divers_empile(DV_SCREEN, 3, 0);
-        ST(0x64) = 0;
+        ST(L51_ARRIVAL_PENDING) = 0;
         /* 0x8058 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->animation("SP02PUI03");
@@ -236,7 +236,7 @@ static void trig41(void) {
 
 /* trigger 01 — sub_10008A0F — exit to room 8 (start 2) */
 static void trig01(void) {
-    ST(0xB54) = 2;
+    ST(L51_ROOM8_EXIT) = 2;
     CB->divers(DV_MUSIC, 1, 4);
     ST(ST_LEVEL) = 10;
     CB->change_piece(8, 2);
@@ -244,7 +244,7 @@ static void trig01(void) {
 
 /* trigger 02 — sub_10008A57 — exit to room 8 (start 1) */
 static void trig02(void) {
-    ST(0xB54) = 1;
+    ST(L51_ROOM8_EXIT) = 1;
     CB->divers(DV_MUSIC, 1, 4);
     ST(ST_LEVEL) = 10;
     CB->change_piece(8, 2);
@@ -264,11 +264,11 @@ static void trig05(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x8B41 */
-        if (ST(0xF30) < 2) {
+        if (ST(L51_PULLEY_STATE) < 2) {
             /* 0x8B53 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 /* 0x8B65 */
-                if (ST(0x530) == 1) {
+                if (ST(L51_ZONE5_FIRST_LOOK) == 1) {
                     /* 0x8B77 */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L51D03", P_ARKHAN2, "SG00DIA02", NULL);
@@ -279,8 +279,8 @@ static void trig05(void) {
                     }
                 }
                 /* 0x8BC7 */
-                if (ST(0x530) == 0) {
-                    ST(0x530) = 1;
+                if (ST(L51_ZONE5_FIRST_LOOK) == 0) {
+                    ST(L51_ZONE5_FIRST_LOOK) = 1;
                     /* 0x8BE8 */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L51D100A", P_ARKHAN2, "SG00DIA01", NULL);
@@ -330,7 +330,7 @@ static void trig05(void) {
             CB->bloque(BLOQUE_NONE);
         }
         /* 0x8D87 */
-        if (ST(0xF30) == 2) {
+        if (ST(L51_PULLEY_STATE) == 2) {
             /* 0x8D99 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 CB->pos_perso(ST(ST_HERO), CB->divers(DV_DESC_POS, ST(ST_HERO), 0), CB->divers(DV_DESC_POS, ST(ST_HERO), 1), CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 0xA, 0);
@@ -371,7 +371,7 @@ static void trig05(void) {
                 }
                 CB->joindre(-ST(ST_HERO), 0, 0, 0xCF08, -1);
                 CB->animation("Sar_50");
-                CB->modify_var(&ST(0x68), 1);
+                CB->modify_var(&ST(L51_LEAVE_STAGE), 1);
             }
         }
     }
@@ -426,13 +426,13 @@ static void trig12(void) {
         CB->bloque(BLOQUE_ALL);
         CB->pos_perso(ST(ST_HERO), CB->divers(DV_DESC_POS, ST(ST_HERO), 0), CB->divers(DV_DESC_POS, ST(ST_HERO), 1), CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 0xA, 0);
         /* 0x92F7 */
-        if (ST(0xF30) < 2) {
+        if (ST(L51_PULLEY_STATE) < 2) {
             /* 0x9309 */
             if (ST(ST_PLAYER_WEAPON) != 51) {
                 /* 0x931B */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     /* 0x932D */
-                    if (ST(0x530) == 1) {
+                    if (ST(L51_ZONE5_FIRST_LOOK) == 1) {
                         /* 0x933F */
                         if (ST(ST_HERO) == P_ARKHAN2) {
                             lieu_action_register("L51D03", P_ARKHAN2, "SG00DIA02", NULL);
@@ -443,8 +443,8 @@ static void trig12(void) {
                         }
                     }
                     /* 0x938F */
-                    if (ST(0x530) == 0) {
-                        ST(0x530) = 1;
+                    if (ST(L51_ZONE5_FIRST_LOOK) == 0) {
+                        ST(L51_ZONE5_FIRST_LOOK) = 1;
                         /* 0x93B0 */
                         if (ST(ST_HERO) == P_ARKHAN2) {
                             lieu_action_register("L51D100A", P_ARKHAN2, "SG00DIA01", NULL);
@@ -495,7 +495,7 @@ static void trig12(void) {
             }
             /* 0x954F */
             if (ST(ST_PLAYER_WEAPON) == 51) {
-                ST(0xF30) = 2;
+                ST(L51_PULLEY_STATE) = 2;
                 CB->joindre(-ST(ST_HERO), 0, 0, 0, -13);
                 /* 0x958D */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -527,7 +527,7 @@ static void trig12(void) {
             }
         }
         /* 0x96E9 */
-        if (ST(0xF30) == 2) {
+        if (ST(L51_PULLEY_STATE) == 2) {
             /* 0x96FB */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 lieu_action_register("L51D15", P_ARKHAN2, "SG00DIA04", "Sar_10");
@@ -556,9 +556,9 @@ static void trig23(void) {
 /* trigger 25 — sub_1000987F */
 static void trig25(void) {
     /* 0x9885 */
-    if (ST(0x70) == 0 && ST(ST_SCRIPT_BUSY) == 0 && CB->direction_spec(0)) {
+    if (ST(L51_ZONE25_USED) == 0 && ST(ST_SCRIPT_BUSY) == 0 && CB->direction_spec(0)) {
         ST(ST_SCRIPT_BUSY) = 1;
-        ST(0x70) = 1;
+        ST(L51_ZONE25_USED) = 1;
         CB->retire_zone(25);
         CB->bloque(BLOQUE_ALL);
         /* 0x98E1 */
