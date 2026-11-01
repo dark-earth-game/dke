@@ -79,11 +79,11 @@ static void talk_random3(i32 spec) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         if (ST(ST_HERO) == P_ARKHAN2) {
-            if (ST(0x524) == 0) {
+            if (ST(L38_TALK_RANDOM_INTRO) == 0) {
                 lieu_action_register("L38D15A", P_ARKHAN2, "SG00DIA01", NULL);
                 lieu_action_register("L38D15B", P_ARKHAN2, "SG00DIA01", NULL);
                 lieu_action_register("L38D15C", P_ARKHAN2, "SG00DIA01", NULL);
-                ST(0x524) = 1;
+                ST(L38_TALK_RANDOM_INTRO) = 1;
             } else {
                 ST(V_DLG_RANDOM) = CB->random(3);
                 if (ST(V_DLG_RANDOM) == 0) {
@@ -100,11 +100,11 @@ static void talk_random3(i32 spec) {
             return;
         }
         if (ST(ST_HERO) == P_ARKHAN3) {
-            if (ST(0x524) == 0) {
+            if (ST(L38_TALK_RANDOM_INTRO) == 0) {
                 lieu_action_register("L38D19A", P_ARKHAN3, "SG00DIA01", NULL);
                 lieu_action_register("L38D19B", P_ARKHAN3, "SG00DIA01", NULL);
                 lieu_action_register("L38D19C", P_ARKHAN3, "SG00DIA01", NULL);
-                ST(0x524) = 1;
+                ST(L38_TALK_RANDOM_INTRO) = 1;
             } else {
                 ST(V_DLG_RANDOM) = CB->random(3);
                 if (ST(V_DLG_RANDOM) == 0) {
@@ -253,8 +253,8 @@ void l38_trig00(void) {
     CB->ajoute_zone(28, -605, -445, 250, 250, 0);
     CB->ajoute_zone(29, -346, -524, 252, 251, 0);
     /* 0x7A6E */
-    if (ST(0x55C) == 0) {
-        ST(0x55C) = 1;
+    if (ST(L38_VISITED) == 0) {
+        ST(L38_VISITED) = 1;
     }
     /* 0x7A8F */
     if (ST(ST_LEVEL) == 37) {
@@ -263,36 +263,36 @@ void l38_trig00(void) {
     /* 0x7AC9 */
     if (ST(ST_LEVEL) == 39) {
         /* 0x7ADD */
-        if (ST(0xD84) == 1) {
+        if (ST(L38_ENTRY_DOOR_FROM39) == 1) {
             CB->pos_perso(ST(ST_HERO), 1491, 622, 0xA4F5, 1, "ar", 1, 0);
         }
         /* 0x7B15 */
-        if (ST(0xD84) == 2) {
+        if (ST(L38_ENTRY_DOOR_FROM39) == 2) {
             CB->pos_perso(ST(ST_HERO), 394, 1366, 0x3287, 1, "ar", 1, 0);
         }
     }
     /* 0x7B52 */
-    if (ST(0xC40) == 0) {
+    if (ST(L38_GUARD91_STATE) == 0) {
         CB->pos_perso(91, 211, -279, 0x76F9, 1, "P91ARR01", 0x14, 0);
     }
     /* 0x7B89 */
-    if (ST(0xC40) == 1) {
+    if (ST(L38_GUARD91_STATE) == 1) {
         CB->pos_perso(91, 211, -279, 0x76F9, 1, "P91GAR01", 0x14, 0);
     }
     CB->bruitage("L38AMB1", -1, -1);
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 3;
-    ST(0x70) = 0;
-    ST(0x74) = 10;
-    ST(0x78) = 0;
-    ST(0x7C) = 0;
-    ST(0x80) = 0;
-    ST(0x84) = 0;
-    ST(0x88) = 0;
-    ST(0x524) = 0;
+    ST(L38_UNUSED_CLEARED_64) = 0;
+    ST(L38_DRAIN_LAST_TIME) = 0;
+    ST(L38_DRAIN_DARKNESS_STEP) = 3;
+    ST(L38_DRAIN_STEP_COUNT) = 0;
+    ST(L38_DRAIN_HP_STEP) = 10;
+    ST(L38_UNUSED_CLEARED_78) = 0;
+    ST(L38_UNUSED_CLEARED_7C) = 0;
+    ST(L38_ZONE23_TALKED) = 0;
+    ST(L38_ZONE25_TALKED) = 0;
+    ST(L38_STANCE_WAS_ON) = 0;
+    ST(L38_TALK_RANDOM_INTRO) = 0;
     /* 0x7C60 */
-    if (ST(0xD84) == 2) {
+    if (ST(L38_ENTRY_DOOR_FROM39) == 2) {
         CB->vire_col(25, 0);
     }
     ST(ST_SCRIPT_BUSY) = 0;
@@ -303,12 +303,12 @@ void l38_trig00(void) {
 /* trigger 41 - trig41_10007CAA */
 static void trig41(void) {
     /* 0x7CB5 */
-    if (ST(0xF34) == 0) {
-        ST(0xF34) = 1;
+    if (ST(L38_INTRO_DONE) == 0) {
+        ST(L38_INTRO_DONE) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x7CE5 */
         if (ST(ST_COMBAT_STANCE) == 1) {
-            ST(0x88) = 1;
+            ST(L38_STANCE_WAS_ON) = 1;
             CB->divers_empile(DV_COMBAT_STANCE, 0, 0);
         }
         CB->change_camera(2, CAM_LOCKED);
@@ -327,13 +327,13 @@ static void trig41(void) {
         CB->change_camera(2, CAM_AUTO);
         CB->bloque(BLOQUE_NONE);
         /* 0x7DCE */
-        if (ST(0x88) != 0) {
+        if (ST(L38_STANCE_WAS_ON) != 0) {
             CB->divers_empile(DV_COMBAT_STANCE, 1, 0);
         }
     }
     /* 0x7DF2 */
-    if (ST(0xC40) == 1) {
-        ST(0xE0) = 99;
+    if (ST(L38_GUARD91_STATE) == 1) {
+        ST(L38_GUARD91_REARM) = 99;
     }
 }
 
@@ -345,7 +345,7 @@ static void trig02(void) {
 
 /* trigger 4 - trig04_10008751 */
 static void trig04(void) {
-    ST(0xD5C) = 1;
+    ST(L38_EXIT39_DOOR) = 1;
     ST(ST_LEVEL) = 38;
     CB->retire_zone(4);
     CB->change_piece(39, 0);
@@ -353,7 +353,7 @@ static void trig04(void) {
 
 /* trigger 5 - trig05_1000878F */
 static void trig05(void) {
-    ST(0xD5C) = 2;
+    ST(L38_EXIT39_DOOR) = 2;
     ST(ST_LEVEL) = 38;
     CB->retire_zone(5);
     CB->change_piece(39, 0);
@@ -371,7 +371,7 @@ static void trig06(void) {
             if (ST(ST_HERO) == P_ARKHAN2) {
                 lieu_action_register("L38D07", P_ARKHAN2, "SG00DIA01", NULL);
                 /* 0x8870 */
-                if (ST(0xB10) == 1) {
+                if (ST(L38_FLAG_0B10) == 1) {
                     lieu_action_register("L38D08", P_ARKHAN2, "SG00DIA01", NULL);
                 }
                 talk_end();
@@ -381,7 +381,7 @@ static void trig06(void) {
             if (ST(ST_HERO) == P_ARKHAN3) {
                 lieu_action_register("L38D09", P_ARKHAN3, "SG00DIA01", NULL);
                 /* 0x88E9 */
-                if (ST(0xB10) == 1) {
+                if (ST(L38_FLAG_0B10) == 1) {
                     lieu_action_register("L38D10", P_ARKHAN3, "SG00DIA01", NULL);
                 }
                 talk_end();
@@ -392,8 +392,8 @@ static void trig06(void) {
         /* 0x893F */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0x8951 */
-            if (ST(0x62C) == 0) {
-                ST(0x62C) = 1;
+            if (ST(L38_OB45_EXAMINED) == 0) {
+                ST(L38_OB45_EXAMINED) = 1;
                 lieu_action_register("L38D07", P_ARKHAN2, "SG00DIA01", NULL);
                 lieu_action_register("L38D11", P_ARKHAN2, "SG00DIA01", NULL);
                 CB->animation("SP02ACT50");
@@ -410,8 +410,8 @@ static void trig06(void) {
         /* 0x8A3F */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0x8A51 */
-            if (ST(0x62C) == 0) {
-                ST(0x62C) = 1;
+            if (ST(L38_OB45_EXAMINED) == 0) {
+                ST(L38_OB45_EXAMINED) = 1;
                 lieu_action_register("L38D09", P_ARKHAN3, "SG00DIA01", NULL);
                 lieu_action_register("L38D13", P_ARKHAN3, "SG00DIA01", NULL);
                 CB->animation("SP03ACT50");
@@ -512,9 +512,9 @@ static void trig23(void) {
             /* 0xA589 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 /* 0xA59B */
-                if (ST(0x80) == 0) {
+                if (ST(L38_ZONE23_TALKED) == 0) {
                     lieu_action_register("L38D37", P_ARKHAN2, "SG00DIA01", NULL);
-                    ST(0x80) = 1;
+                    ST(L38_ZONE23_TALKED) = 1;
                 } else {
                     lieu_action_register("L38D38", P_ARKHAN2, "SG00DIA01", NULL);
                 }
@@ -537,9 +537,9 @@ static void trig23(void) {
             /* 0xA67D */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 /* 0xA68F */
-                if (ST(0x80) == 0) {
+                if (ST(L38_ZONE23_TALKED) == 0) {
                     lieu_action_register("L38D40", P_ARKHAN3, "SG00DIA01", NULL);
-                    ST(0x80) = 1;
+                    ST(L38_ZONE23_TALKED) = 1;
                 } else {
                     lieu_action_register("L38D41", P_ARKHAN3, "SG00DIA01", NULL);
                 }
@@ -590,9 +590,9 @@ static void trig25(void) {
         /* 0xA914 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0xA926 */
-            if (ST(0x84) == 0) {
+            if (ST(L38_ZONE25_TALKED) == 0) {
                 lieu_action_register("L38D45", P_ARKHAN2, "SG00DIA01", NULL);
-                ST(0x84) = 1;
+                ST(L38_ZONE25_TALKED) = 1;
             } else {
                 lieu_action_register("L38D46", P_ARKHAN2, "SG00DIA01", NULL);
             }
@@ -600,9 +600,9 @@ static void trig25(void) {
         /* 0xA978 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0xA98A */
-            if (ST(0x84) == 0) {
+            if (ST(L38_ZONE25_TALKED) == 0) {
                 lieu_action_register("L38D47", P_ARKHAN3, "SG00DIA01", NULL);
-                ST(0x84) = 1;
+                ST(L38_ZONE25_TALKED) = 1;
             } else {
                 lieu_action_register("L38D48", P_ARKHAN3, "SG00DIA01", NULL);
             }

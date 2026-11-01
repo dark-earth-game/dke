@@ -61,8 +61,8 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x7F80 - the skeleton guard (persona 91) notices the hero */
-    if (ST(0xC40) == 0 && CB->distance(1, 20) < 220) {
-        ST(0xC40) = 1;
+    if (ST(L38_GUARD91_STATE) == 0 && CB->distance(1, 20) < 220) {
+        ST(L38_GUARD91_STATE) = 1;
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP91GAR26");
         CB->animation("P91GAR01");
@@ -71,16 +71,16 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8001 */
-    if (ST(0xC40) == 1 && CB->distance(1, 20) < 220 && ST(0xE0) == 99) {
-        ST(0xE0) = 0;
+    if (ST(L38_GUARD91_STATE) == 1 && CB->distance(1, 20) < 220 && ST(L38_GUARD91_REARM) == 99) {
+        ST(L38_GUARD91_REARM) = 0;
         CB->combat(91, 1);
     }
     /* 0x805F */
-    if (ST(0xC40) == 1) {
+    if (ST(L38_GUARD91_STATE) == 1) {
         /* 0x8071 */
         if (ST(ST_VIE(91)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0) {
             ST(V_ENGAGED_PERSONA) = 0;
-            ST(0xC40) = 2;
+            ST(L38_GUARD91_STATE) = 2;
         }
         /* 0x80B5 */
         if (CB->divers(DV_WAS_HIT, 91, 0) && ST(ST_VIE(91)) != VIE_DEAD) {
@@ -98,7 +98,7 @@ static void tick_body(void) {
             if (CB->divers(DV_HP, 91, -1) <= 1) {
                 ST(ST_VIE(91)) = VIE_DEAD;
                 ST(V_ENGAGED_PERSONA) = 0;
-                ST(0xC40) = 2;
+                ST(L38_GUARD91_STATE) = 2;
                 CB->divers_empile(DV_BONE_SOUND, 91, 0);
                 CB->animation("SP91IMP51");
                 CB->animation("P91ARR01");
@@ -114,11 +114,11 @@ static void tick_body(void) {
         }
     }
     /* 0x8258 - the hero is close to the descriptor of the key spot */
-    if (ST(0xD60) == 0 && ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) < 90 && (ST(ST_LOCKED_CAMERA) == 5 || ST(ST_LOCKED_CAMERA) == 6)) {
-        ST(0xD60) = 1;
+    if (ST(L38_KEYSPOT_NEAR) == 0 && ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) < 90 && (ST(ST_LOCKED_CAMERA) == 5 || ST(ST_LOCKED_CAMERA) == 6)) {
+        ST(L38_KEYSPOT_NEAR) = 1;
     }
     /* 0x82D0 */
-    if (ST(0xD60) == 1) {
+    if (ST(L38_KEYSPOT_NEAR) == 1) {
         /* 0x82E2 */
         if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
             /* 0x8319: pass unless (in zone 24 and facing 0x24B8); zone 24 is
@@ -150,7 +150,7 @@ static void tick_body(void) {
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->bloque(BLOQUE_ALL);
                 /* 0x83D6 */
-                if (ST(0xD64) < 2) {
+                if (ST(L38_KEYSPOT_USES) < 2) {
                     /* 0x83E8 */
                     if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
                         CB->animation("SP02ACT52");
@@ -168,13 +168,13 @@ static void tick_body(void) {
                         lieu_action_register("L38D04A", P_ARKHAN3, "G03DIA01", NULL);
                         lieu_action_register("L38D04B", P_ARKHAN3, "SG00CON01", NULL);
                     }
-                    ST(0x68) = ST(ST_GAME_TIME);
-                    ST(0xD64)++;
+                    ST(L38_DRAIN_LAST_TIME) = ST(ST_GAME_TIME);
+                    ST(L38_KEYSPOT_USES)++;
                     CB->animation("ar");
                     return;
                 }
                 /* 0x84D5 */
-                if (ST(0xD64) == 2) {
+                if (ST(L38_KEYSPOT_USES) == 2) {
                     /* 0x84EC */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L38D05", P_ARKHAN2, "SG00DIA02", NULL);
@@ -192,32 +192,32 @@ static void tick_body(void) {
         }
         /* 0x8560 */
         if (ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) > 100) {
-            ST(0xD60) = 0;
-            ST(0xD64) = 0;
+            ST(L38_KEYSPOT_NEAR) = 0;
+            ST(L38_KEYSPOT_USES) = 0;
         }
     }
     /* 0x85B1 - drain timer while event 0 is armed */
-    if (ST(V_EVENT_0) == 1 && (ST(ST_GAME_TIME) - ST(0x68)) / 25 > 1) {
-        ST(0x70)++;
-        ST(0x68) = ST(ST_GAME_TIME);
+    if (ST(V_EVENT_0) == 1 && (ST(ST_GAME_TIME) - ST(L38_DRAIN_LAST_TIME)) / 25 > 1) {
+        ST(L38_DRAIN_STEP_COUNT)++;
+        ST(L38_DRAIN_LAST_TIME) = ST(ST_GAME_TIME);
         /* 0x8604 */
-        if (CB->divers(DV_HP, ST(ST_HERO), -1) - ST(0x74) > 0) {
-            i32 hp = CB->divers(DV_HP, ST(ST_HERO), -1) - ST(0x74);
+        if (CB->divers(DV_HP, ST(ST_HERO), -1) - ST(L38_DRAIN_HP_STEP) > 0) {
+            i32 hp = CB->divers(DV_HP, ST(ST_HERO), -1) - ST(L38_DRAIN_HP_STEP);
             CB->divers(DV_HP, ST(ST_HERO), hp);
         } else {
-            ST(0x70) = 31;
+            ST(L38_DRAIN_STEP_COUNT) = 31;
         }
         /* 0x8676 */
-        if (CB->divers(DV_DARKNESS, -1, 0) - ST(0x6C) > 0) {
-            i32 dark = CB->divers(DV_DARKNESS, -1, 0) - ST(0x6C);
+        if (CB->divers(DV_DARKNESS, -1, 0) - ST(L38_DRAIN_DARKNESS_STEP) > 0) {
+            i32 dark = CB->divers(DV_DARKNESS, -1, 0) - ST(L38_DRAIN_DARKNESS_STEP);
             CB->divers(DV_DARKNESS, dark, 0);
         } else {
-            ST(0x70) = 31;
+            ST(L38_DRAIN_STEP_COUNT) = 31;
         }
         /* 0x86D4 */
-        if (ST(0x70) > 30) {
+        if (ST(L38_DRAIN_STEP_COUNT) > 30) {
             ST(V_EVENT_0) = 0;
-            ST(0x70) = 0;
+            ST(L38_DRAIN_STEP_COUNT) = 0;
             ST(ST_SCRIPT_BUSY) = 0;
             CB->bloque(BLOQUE_NONE);
         }
@@ -253,7 +253,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L38_DEATH_ENDING_BYPASS) == 1) {
         l38_trig00();   /* 0x1000C559: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
