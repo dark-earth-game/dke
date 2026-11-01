@@ -15,7 +15,7 @@
  * (sub_10005DD3) are not the lieu_common.c ones. They match the LIEU33 ones
  * (instruction by instruction, checked by a normalised listing diff) except:
  *   - event4 has one extra case, 44 (EV_END_GAME): V_END_GAME_REQ = 1;
- *   - event5 OB_PARCHMENT sets ST(0x84) = 1 when ST_LEVEL == 28, right
+ *   - event5 OB_PARCHMENT sets ST(L47_LEVER_ANIM_PAUSED) = 1 when ST_LEVEL == 28, right
  *     after the V_LCOD23_SEEN update.
  * lieu_action_register is the shared one. sub_10001856 (the LIEU33
  * pre-scene variant, 706 bytes) is never called in this DLL and is not
@@ -39,10 +39,10 @@ static c8 g_txt[32];
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x76CC */
-    if (ST(ST_HERO) == P_ARKHAN3 && ST(0x68) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 500 && ST(0x4E4) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(ST_HERO) == P_ARKHAN3 && ST(L47_ARKHAN3_SPOTTED) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 500 && ST(L47_GUARD_HOSTILE) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
-        ST(0x68) = 1;
+        ST(L47_ARKHAN3_SPOTTED) = 1;
         CB->animation("SP32GAR05");
         CB->dialogue("L11D01", P_GUARD);
         CB->bloque(BLOQUE_NONE);
@@ -50,24 +50,24 @@ static void tick_body(void) {
         return;
     }
     /* 0x7797 */
-    if (ST(ST_HERO) == P_ARKHAN3 && ST(0x6C) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 200 && ST(0x4E4) == 0) {
+    if (ST(ST_HERO) == P_ARKHAN3 && ST(L47_ARKHAN3_CHALLENGED) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 200 && ST(L47_GUARD_HOSTILE) == 0) {
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
-        ST(0x6C) = 1;
+        ST(L47_ARKHAN3_CHALLENGED) = 1;
         CB->vire_col(7, 0);
         CB->dialogue("L11D02", P_GUARD);
         ST(V_ENGAGED_PERSONA) = P_GUARD;
         CB->combat(P_GUARD, 0);
-        ST(0x4E4) = 1;
+        ST(L47_GUARD_HOSTILE) = 1;
         CB->bloque(BLOQUE_NONE);
         CB->select_pile(0, 1);
         return;
     }
     /* 0x787D */
-    if (ST(ST_HERO) == P_ARKHAN2 && ST(0x70) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 400 && ST(0x4E4) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(ST_HERO) == P_ARKHAN2 && ST(L47_ARKHAN2_SPOTTED) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 400 && ST(L47_GUARD_HOSTILE) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
-        ST(0x70) = 1;
+        ST(L47_ARKHAN2_SPOTTED) = 1;
         CB->vire_col(7, 0);
         CB->animation("SP32GAR05");
         CB->dialogue("L11D03", P_GUARD);
@@ -76,10 +76,10 @@ static void tick_body(void) {
         return;
     }
     /* 0x7955 */
-    if (ST(ST_HERO) == P_ARKHAN2 && ST(0x74) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 250 && ST(0x4E4) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(ST_HERO) == P_ARKHAN2 && ST(L47_ARKHAN2_WARNED) == 0 && ST(ST_VIE(P_GUARD)) != VIE_DEAD && CB->distance(6, 12) < 250 && ST(L47_GUARD_HOSTILE) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
-        ST(0x74) = 1;
+        ST(L47_ARKHAN2_WARNED) = 1;
         CB->vire_col(7, 0);
         CB->animation("SP32ARR04");
         CB->dialogue("L11D04", P_GUARD);
@@ -100,7 +100,7 @@ static void tick_body(void) {
         if (ST(V_ENGAGED_PERSONA) == 0) {
             ST(V_ENGAGED_PERSONA) = P_GUARD;
         }
-        ST(0x4E4) = 1;
+        ST(L47_GUARD_HOSTILE) = 1;
         /* 0x7AF6 */
         if ((CB->divers(DV_HP, P_GUARD, -1) - ST(V_HIT_DAMAGE)) > 0) {
             CB->divers(DV_HP, P_GUARD, (CB->divers(DV_HP, P_GUARD, -1) - ST(V_HIT_DAMAGE)));
@@ -127,17 +127,17 @@ static void tick_body(void) {
     }
     snprintf(g_txt, sizeof(g_txt), "Garde:%d", ST(ST_VIE(P_GUARD)));
     CB->print_msg(g_txt, 0, 240);
-    snprintf(g_txt, sizeof(g_txt), "F37:%d", ST(0xEA4));
+    snprintf(g_txt, sizeof(g_txt), "F37:%d", ST(L47_GUARD_FOOD_STAGE));
     CB->print_msg(g_txt, 0, 260);
     /* 0x7C8E */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         /* 0x7CAF */
-        if (ST(0x80) == 32) {
-            ST(0x80) = 99;
+        if (ST(L47_SHOUT_STATE) == 32) {
+            ST(L47_SHOUT_STATE) = 99;
             ST(V_ENGAGED_PERSONA) = P_GUARD;
             CB->combat(P_GUARD, 0);
-            ST(0x4E4) = 1;
+            ST(L47_GUARD_HOSTILE) = 1;
             lieu_action_register("L11D05", P_GUARD, "SP32ARR04", "SP32GAR05");
             CB->animation("Sar_50");
             CB->modify_var(&ST(V_CRI_USED), 0);
@@ -164,12 +164,12 @@ static void tick_body(void) {
         CB->change_piece(12, -1);
     }
     /* 0x7DE2 */
-    if (ST(0x4E4) == 1 && ST(ST_LEVEL) == 10) {
+    if (ST(L47_GUARD_HOSTILE) == 1 && ST(ST_LEVEL) == 10) {
         CB->pos_perso(P_GUARD, 6087, -1362, 0x449F, 1, "P32GAR05", 0xC, 0);
     }
     /* 0x7E28 */
-    if (ST(ST_HERO) == 4 && ST(0x7C) == 0) {
-        ST(0x7C) = 1;
+    if (ST(ST_HERO) == 4 && ST(L47_END_EVENT_SENT) == 0) {
+        ST(L47_END_EVENT_SENT) = 1;
         CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x7E65 */
@@ -203,13 +203,13 @@ static void tick_body(void) {
         return;
     }
     /* 0x7F7E */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 3 && ST(0x84) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 3 && ST(L47_LEVER_ANIM_PAUSED) == 0) {
         CB->pause_anim(0, 1, 0);
-        ST(0x84) = 1;
+        ST(L47_LEVER_ANIM_PAUSED) = 1;
     }
     /* 0x7FD2 */
-    if (ST(ST_LOCKED_CAMERA) != 3 && ST(0x84) == 1) {
-        ST(0x84) = 0;
+    if (ST(ST_LOCKED_CAMERA) != 3 && ST(L47_LEVER_ANIM_PAUSED) == 1) {
+        ST(L47_LEVER_ANIM_PAUSED) = 0;
     }
 }
 
