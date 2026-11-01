@@ -28,7 +28,7 @@ static void tick_body(void) {
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         /* 0x7BEB */
-        if (ST(0x74) == 0) {
+        if (ST(L28_DOOR_EVENT1_STEP) == 0) {
             CB->select_pile(1, 1);
             CB->play_anim(0, 0);
             CB->bruitage("L28B01", -1, -1);
@@ -46,21 +46,21 @@ static void tick_body(void) {
             CB->animation("Sar_10");
             CB->load_anim("228OUV02", 1);
             CB->play_anim(1, 0);
-            CB->modify_var(&ST(0x74), 1);
+            CB->modify_var(&ST(L28_DOOR_EVENT1_STEP), 1);
             CB->select_pile(0, 1);
             return;
         }
     }
     /* 0x7CEC */
-    if (ST(ST_LOCKED_CAMERA) == 1 && ST(0x74) == 1) {
+    if (ST(ST_LOCKED_CAMERA) == 1 && ST(L28_DOOR_EVENT1_STEP) == 1) {
         CB->free_anim(1);
-        ST(0x74) = 0;
+        ST(L28_DOOR_EVENT1_STEP) = 0;
         return;
     }
     /* 0x7D26 */
-    if (ST(0x6C) == 0 && ST(0xB38) != 1 && ST(0xB38) != 2 && ST(0xB38) != 3 && ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD && CB->distance(1, 2) > 250 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L28_ARCHIVIST_LEFT_POST) == 0 && ST(L28_ARCHIVIST_STAGE) != 1 && ST(L28_ARCHIVIST_STAGE) != 2 && ST(L28_ARCHIVIST_STAGE) != 3 && ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD && CB->distance(1, 2) > 250 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->select_pile(1, 1);
-        ST(0x6C) = 1;
+        ST(L28_ARCHIVIST_LEFT_POST) = 1;
         CB->joindre(P_ARCHIVIST, 7890, -4827, 0xEA60, -1);
         CB->animation("SP05LIR01");
         CB->select_pile(0, 1);
@@ -79,22 +79,22 @@ static void tick_body(void) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0x7E7D */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(0xB38) >= 1) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(L28_ARCHIVIST_STAGE) >= 1) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         /* 0x7EB3 */
-        if (ST(0xC48) != 0) {
+        if (ST(L28_STORY_MARK_C48) != 0) {
             /* 0x7EC5 */
-            if (ST(0xC48) == 99 || ST(0xC48) == 100) {
+            if (ST(L28_STORY_MARK_C48) == 99 || ST(L28_STORY_MARK_C48) == 100) {
                 /* 0x7EE9 */
-                if (ST(0xC48) == 99) {
-                    ST(0xC48) = 100;
+                if (ST(L28_STORY_MARK_C48) == 99) {
+                    ST(L28_STORY_MARK_C48) = 100;
                 }
                 ST(ST_LEVEL) = 28;
                 CB->change_piece(27, 0);
             }
             /* 0x7F23 */
-            if (ST(0xC48) == 111) {
+            if (ST(L28_STORY_MARK_C48) == 111) {
                 ST(ST_LEVEL) = 28;
                 CB->change_piece(27, 1);
             }
@@ -121,8 +121,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8063 */
-    if (ST(ST_HERO) == 4 && ST(0x78) == 0) {
-        ST(0x78) = 1;
+    if (ST(ST_HERO) == 4 && ST(L28_DEATH_HANDLED) == 0) {
+        ST(L28_DEATH_HANDLED) = 1;
         CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x80A0 */
@@ -158,10 +158,10 @@ static void tick_body(void) {
     /* 0x81C7 */
     if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 2) && ST(V_CRI_KEY) == 1 && ST(V_CRI_USED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && ST(ST_VIE(P_PROVIDER)) != VIE_DEAD && CB->direction_perso(P_ARCHIVIST)) {
         ST(V_CRI_USED) = 1;
-        ST(0x80) = 99;
+        ST(L28_ARCHIVIST_BATTLE_CRY) = 99;
         /* 0x825E */
-        if (ST(0x80) != 0) {
-            ST(0x80) = 5;
+        if (ST(L28_ARCHIVIST_BATTLE_CRY) != 0) {
+            ST(L28_ARCHIVIST_BATTLE_CRY) = 5;
         }
         CB->bloque(BLOQUE_ALL);
         CB->evenement(34, 1000);
@@ -171,8 +171,8 @@ static void tick_body(void) {
     if (ST(V_EVENT_34) == 1) {
         ST(V_EVENT_34) = 0;
         /* 0x82C0 */
-        if (ST(0x80) == 5) {
-            ST(0x80) = 99;
+        if (ST(L28_ARCHIVIST_BATTLE_CRY) == 5) {
+            ST(L28_ARCHIVIST_BATTLE_CRY) = 99;
             CB->dialogue("L28D22A", P_ARCHIVIST);
             CB->dialogue("L28D22B", P_ARCHIVIST);
             CB->animation("Sar_50");
@@ -182,8 +182,8 @@ static void tick_body(void) {
         }
     }
     /* 0x832D */
-    if (ST(0x80) == 99) {
-        ST(0x80) = 5;
+    if (ST(L28_ARCHIVIST_BATTLE_CRY) == 99) {
+        ST(L28_ARCHIVIST_BATTLE_CRY) = 5;
     }
 }
 
@@ -216,7 +216,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L28_CHASE_STATE) == 1) {
         l28_trig00();   /* 0x1000DAA9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
