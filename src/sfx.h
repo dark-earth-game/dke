@@ -19,7 +19,9 @@ void sfx_level_end(void);
 void audio_lock(void);        /* sfx/music state is shared with the mixer thread */
 void audio_unlock(void);
 void sfx_tick(void);
-void sfx_pump(void);          /* keep the mixer fed inside a blocking loop */
+void sfx_pump(void);
+void sfx_pause_all(void);     /* ls_pause_sound 0x4802B0 on every game voice */
+void sfx_resume_all(void);    /* ls_resume_sound 0x480260 */          /* keep the mixer fed inside a blocking loop */
 /* Menu sounds, mixed (not queued): the click is ls_play_sound(help_screen_context,
  * freq, 1); freq 0 = the WAV's rate, the menus confirm at 8000 Hz. `w` must
  * outlive the playback; ds_vol is in 1/100 dB before the master volume. */

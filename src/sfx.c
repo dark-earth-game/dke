@@ -89,6 +89,7 @@ typedef struct {
     i32  vol, pan;   /* DirectSound units (1/100 dB) */
     b8   loop;
     b8   active;
+    b8   held;       /* ls_pause_sound 0x4802B0: stopped but still "playing" */
 } sfx_voice_t;
 
 static sfx_voice_t g_v[SFX_VOICES];
@@ -127,7 +128,7 @@ static void voice_play(i32 vi, const wav_t *w, i32 freq, i32 count) {
     v->active = 1;
     voice_apply(v);
 }
-static void voice_stop(i32 vi)                 { g_v[vi].active = 0; }
+static void voice_stop(i32 vi)                 { g_v[vi].active = 0; g_v[vi].held = 0; }
 static b8   voice_playing(i32 vi)              { return g_v[vi].active; }  /* ls_get_sound_status==1 */
 static void voice_volume(i32 vi, i32 ds)       { g_v[vi].vol = ds; voice_apply(&g_v[vi]); }
 static void voice_pan(i32 vi, i32 pan)         { g_v[vi].pan = g_reverse ? -pan : pan; voice_apply(&g_v[vi]); }
@@ -137,7 +138,7 @@ static void mix(i16 *out, u32 frames) {
     memset(acc, 0, frames * 2 * sizeof(i32));
     for (i32 i = 0; i < SFX_VOICES; i++) {
         sfx_voice_t *v = &g_v[i];
-        if (!v->active) continue;
+        if (!v->active || v->held) continue;
         const wav_t *w = v->w;
         for (u32 f = 0; f < frames; f++) {
             u32 sf = (u32)(v->pos >> 16);
@@ -721,6 +722,24 @@ void sfx_tick(void) {
         inst_free(SFX_INST_VOICE);
     audio_unlock();
     mixer_thread_start();
+}
+
+/* ls_pause_sound 0x4802B0 / ls_resume_sound 0x480260 over every game voice
+ * (sub_44D68C / sub_44D6C9 walk the 50 cached sounds; the P key also pauses
+ * renderer_instance[0], [1] == dword_4FB334 and the event slots). The DS
+ * buffer is Stopped (position kept) and later Played again; a held voice
+ * stays "playing" so nothing waiting on it is released. The menu click voices
+ * (the last SFX_UI_SLOTS) and the music player are left alone. */
+void sfx_pause_all(void) {
+    audio_lock();
+    for (i32 i = 0; i < SFX_VOICES - SFX_UI_SLOTS; i++)
+        if (g_v[i].active) g_v[i].held = 1;
+    audio_unlock();
+}
+void sfx_resume_all(void) {
+    audio_lock();
+    for (i32 i = 0; i < SFX_VOICES; i++) g_v[i].held = 0;
+    audio_unlock();
 }
 
 /* Kept for loops that block the frame: the mixer thread feeds the device. */
