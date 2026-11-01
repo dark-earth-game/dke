@@ -45,8 +45,8 @@ static void tick_body(void) {
         CB->divers(DV_LOOK_AT_PLAYER, P_BANDOR, 1);
         CB->bloque(BLOQUE_NONE);
     }
-    if (ST(ST_LOCKED_CAMERA) == 2 && CB->distance(1, 2) < 300 && ST(0x80C) == 0 && ST(0x100) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
-        ST(0x100) = 666;
+    if (ST(ST_LOCKED_CAMERA) == 2 && CB->distance(1, 2) < 300 && ST(L50_FIRST_TALK_STAGE) == 0 && ST(L50_APPROACH_SCENE) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
+        ST(L50_APPROACH_SCENE) = 666;
         CB->animation("SP07MAR29");
         CB->animation("SP83GAR01_500");
         CB->animation("P83ATT01");
@@ -69,8 +69,8 @@ static void tick_body(void) {
     }
     if ((CB->divers(DV_IN_ZONE, ST(ST_HERO), 2) || CB->divers(DV_IN_ZONE, ST(ST_HERO), 3)) && ST(V_CRI_KEY) == 1 && ST(V_CRI_USED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD && (CB->direction_perso(P_BANDOR) || CB->direction_perso(P_KHORAD))) {
         ST(V_CRI_USED) = 1;
-        if (ST(0x74) != 99) {
-            ST(0x74) = 83;
+        if (ST(L50_CRY_PHASE) != 99) {
+            ST(L50_CRY_PHASE) = 83;
         }
         CB->bloque(BLOQUE_ALL);
         CB->evenement(33, 1000);
@@ -78,8 +78,8 @@ static void tick_body(void) {
     }
     if (ST(V_EVENT_33) == 1) {
         ST(V_EVENT_33) = 0;
-        if (ST(0x74) == 83) {
-            ST(0x74) = 99;
+        if (ST(L50_CRY_PHASE) == 83) {
+            ST(L50_CRY_PHASE) = 99;
             ST(V_DLG_RANDOM) = CB->random(2);
             if (ST(V_DLG_RANDOM) == 0) {
                 CB->dialogue("L12D128", P_BANDOR);
@@ -93,8 +93,8 @@ static void tick_body(void) {
             return;
         }
     }
-    if (ST(0x74) == 99) {
-        ST(0x74) = 83;
+    if (ST(L50_CRY_PHASE) == 99) {
+        ST(L50_CRY_PHASE) = 83;
     }
     if (ST(V_EVENT_34) == 1) {
         ST(V_EVENT_34) = 0;
@@ -159,8 +159,8 @@ static void tick_body(void) {
         }
         CB->select_pile(0, 1);
     }
-    if (CB->distance(1, 2) < 250 && ST(ST_COMBAT_STANCE) == 1 && ST(0x6C) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
-        ST(0x6C) = 1;
+    if (CB->distance(1, 2) < 250 && ST(ST_COMBAT_STANCE) == 1 && ST(L50_STANCE_WARNED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
+        ST(L50_STANCE_WARNED) = 1;
         CB->select_pile(2, 2);
         CB->select_pile(2, 1);
         CB->bloque(BLOQUE_ALL);
@@ -180,8 +180,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
         return;
     }
-    if (ST(0x6C) == 1 && ST(ST_COMBAT_STANCE) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
-        ST(0x6C) = 0;
+    if (ST(L50_STANCE_WARNED) == 1 && ST(ST_COMBAT_STANCE) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
+        ST(L50_STANCE_WARNED) = 0;
         CB->change_camera(-4, CAM_LOCKED);
         CB->select_pile(2, 2);
         CB->select_pile(2, 1);
@@ -199,24 +199,24 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
         return;
     }
-    if (ST(ST_LOCKED_CAMERA) == 3 && ST(0x4BC) == 1 && ST(0x78) == 1) {
+    if (ST(ST_LOCKED_CAMERA) == 3 && ST(L50_SHRINE_USED) == 1 && ST(L50_LEVER_PAUSE_ARMED) == 1) {
         CB->pause_anim(0, 7, 0);
-        ST(0x78) = 0;
+        ST(L50_LEVER_PAUSE_ARMED) = 0;
     }
-    if (ST(ST_LOCKED_CAMERA) != 3 && ST(0x78) == 0) {
-        ST(0x78) = 1;
+    if (ST(ST_LOCKED_CAMERA) != 3 && ST(L50_LEVER_PAUSE_ARMED) == 0) {
+        ST(L50_LEVER_PAUSE_ARMED) = 1;
     }
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 0 && ST(0x80) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 0 && ST(L50_LEVIER_PAUSED) == 0) {
         CB->select_pile(1, 1);
         CB->pause_anim(1, 1, 0);
-        ST(0x80) = 1;
+        ST(L50_LEVIER_PAUSED) = 1;
         CB->select_pile(0, 1);
     }
-    if (ST(ST_LOCKED_CAMERA) != 0 && ST(0x80) == 1) {
-        ST(0x80) = 0;
+    if (ST(ST_LOCKED_CAMERA) != 0 && ST(L50_LEVIER_PAUSED) == 1) {
+        ST(L50_LEVIER_PAUSED) = 0;
     }
-    if (ST(ST_HERO) == 4 && ST(0x7C) == 0) {
-        ST(0x7C) = 1;
+    if (ST(ST_HERO) == 4 && ST(L50_END_GAME_TIMER_SET) == 0) {
+        ST(L50_END_GAME_TIMER_SET) = 1;
         CB->evenement(EV_END_GAME, 3000);
     }
     if (ST(V_END_GAME_REQ) == 1) {
