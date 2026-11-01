@@ -74,27 +74,27 @@ void l36_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_GUARD_FIGHT_DONE) = 2;
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x74) = 0;
-    ST(0x78) = 0;
-    ST(0x7C) = 0;
-    ST(0x80) = 0;
-    ST(0x84) = 0;
-    ST(0x88) = 0;
+    ST(L36_CAM4_CINEMATIC_STAGE) = 0;
+    ST(L36_PAIR_SEEN_AT_EXIT) = 0;
+    ST(L36_GUARD_PASS_STAGE) = 0;
+    ST(L36_KONK_STRUCK_FIRST) = 0;
+    ST(L36_KILL_SEQ_ACTIVE) = 0;
+    ST(L36_LODAR_GREET_TOGGLE) = 0;
+    ST(L36_LODAR_TALK_STAGE) = 0;
+    ST(L36_G20_SPOKE) = 0;
+    ST(L36_UNUSED_CLEARED_84) = 0;
+    ST(L36_G20_POST_STATE) = 0;
     ST(V_EVENT15_STEP) = 0;
-    ST(0x90) = 0;
-    ST(0x94) = 0;
+    ST(L36_UNUSED_CLEARED_90) = 0;
+    ST(L36_UNUSED_CLEARED_94) = 0;
     ST(V_WEAPON_WARNED) = 0;
-    ST(0xE0) = 0;
-    ST(0xF0) = 0;
-    ST(0xF4) = 0;
-    ST(0xF8) = 0;
-    ST(0x50) = 0;
-    ST(0x54) = 0;
-    l36_prev_8d4 = ST(0x8D4);
+    ST(L36_KONK_D200_SAID) = 0;
+    ST(L36_LODAR_ALERT_STEP) = 0;
+    ST(L36_KONK_ALERT_STEP) = 0;
+    ST(L36_LODAR_HELMET_TALK_ALT) = 0;
+    ST(L36_CHASE_TARGET) = 0;
+    ST(L36_LODAR_PANIC_ANIM_DONE) = 0;
+    l36_prev_8d4 = ST(L36_PLAYER_HIT_COUNT);
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_PRE90_OBJECT) = 0;
@@ -104,8 +104,8 @@ void l36_trig00(void) {
     CB->bruitage("L36AMB1", -1, -1);
     CB->pos_perso(ST(ST_HERO), 2920, 5120, 0, 1, "ar", 1, 0);
     /* 0x7762 */
-    if (ST(0xF50) == 0 && ST(V_GUARD_FIGHT_DONE) >= 2) {
-        ST(0xF50) = 1;
+    if (ST(L36_GUARD_PAIR_PHASE) == 0 && ST(V_GUARD_FIGHT_DONE) >= 2) {
+        ST(L36_GUARD_PAIR_PHASE) = 1;
     }
     /* 0x7795 */
     if (ST(V_GUARD_FIGHT_DONE) >= 2) {
@@ -142,27 +142,27 @@ void l36_trig00(void) {
         CB->pos_perso(P_GUARDIAN20, 0, 0, 0, 2, "P20cad", 4, 0);
     }
     /* 0x7A13 */
-    if (ST(V_GUARD_FIGHT_DONE) < 2 && ST(0xA50) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) < 2 && ST(L36_GUARD_VARIANT) == 0) {
         CB->pos_perso(P_GUARDIAN1, 3840, 5876, 0xC350, 1, "P41ARR02", 0x12, 0);
     }
     /* 0x7A5C */
-    if (ST(V_GUARD_FIGHT_DONE) < 2 && ST(0xA50) == 1) {
+    if (ST(V_GUARD_FIGHT_DONE) < 2 && ST(L36_GUARD_VARIANT) == 1) {
         CB->pos_perso(85, 3840, 5876, 0xC350, 1, "P85ARR03", 0x12, 0);
     }
     /* 0x7AA5 */
     if (ST(ST_VIE(P_LODAR)) == 1) {
         /* 0x7AB7 */
-        if (ST(0xF50) == 1) {
+        if (ST(L36_GUARD_PAIR_PHASE) == 1) {
             CB->pos_perso(P_LODAR, 6365, 6330, 0x59D8, 1, "P86GAR02", 2, 0);
         }
         /* 0x7AEE */
-        if (ST(0xF50) == 2) {
+        if (ST(L36_GUARD_PAIR_PHASE) == 2) {
             ST(ST_VIE(P_LODAR)) = VIE_DEAD;
         }
         /* 0x7B0F */
-        if (ST(0xF50) == 5) {
+        if (ST(L36_GUARD_PAIR_PHASE) == 5) {
             /* 0x7B21 */
-            if (ST(0xF54) == 3) {
+            if (ST(L36_FIGHT_TARGET_STATE) == 3) {
                 CB->pos_perso(P_LODAR, 3055, 5844, 0x7148, 1, "P86GAR02", 2, 0);
                 CB->combat(P_LODAR, 0);
                 ST(V_ENGAGED_PERSONA) = P_LODAR;
@@ -178,19 +178,19 @@ void l36_trig00(void) {
     /* 0x7BC9 */
     if (ST(ST_VIE(P_KONKALITE12)) == 1) {
         /* 0x7BDB */
-        if (ST(0xF50) == 1) {
+        if (ST(L36_GUARD_PAIR_PHASE) == 1) {
             CB->pos_perso(P_KONKALITE12, 6220, 6230, 0xD6D8, 1, "P82GAR03", 3, 0);
         }
         /* 0x7C12 */
-        if (ST(0xF50) == 2) {
+        if (ST(L36_GUARD_PAIR_PHASE) == 2) {
             CB->pos_perso(P_KONKALITE12, 6220, 6230, 0xD6D8, 1, "P82GAR03", 3, 0);
             CB->combat(P_KONKALITE12, 0);
             ST(V_ENGAGED_PERSONA) = P_KONKALITE12;
         }
         /* 0x7C62 */
-        if (ST(0xF50) == 3) {
+        if (ST(L36_GUARD_PAIR_PHASE) == 3) {
             /* 0x7C74 */
-            if (ST(0xF54) == 2) {
+            if (ST(L36_FIGHT_TARGET_STATE) == 2) {
                 CB->pos_perso(P_KONKALITE12, 3055, 5844, 0x7148, 1, "P82GAR03", 3, 0);
                 CB->combat(P_KONKALITE12, 0);
                 ST(V_ENGAGED_PERSONA) = P_KONKALITE12;
@@ -224,14 +224,14 @@ void l36_trig02(void) {
     /* 0x9C1F */
     if (ST(ST_VIE(P_LODAR)) == VIE_DEAD && ST(ST_COMBAT_STANCE) == 0 && ST(ST_ACTION_KEY) == 1) {
         /* 0x9C4F */
-        if (ST(0xC14) == 1 && ST(ST_VIE(P_KONKALITE12)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
-            ST(0xC14) = 2;
-            ST(0xF50) = 8;
+        if (ST(L36_HELMET_STAGE) == 1 && ST(ST_VIE(P_KONKALITE12)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
+            ST(L36_HELMET_STAGE) = 2;
+            ST(L36_GUARD_PAIR_PHASE) = 8;
             CB->pos_perso(P_KONKALITE12, 3600, 6224, 0, 4, "P82ARR01", 3, 0);
         }
         /* 0x9CC2 */
-        if (ST(0xC14) == 0) {
-            ST(0xC14) = 3;
+        if (ST(L36_HELMET_STAGE) == 0) {
+            ST(L36_HELMET_STAGE) = 3;
             CB->divers_empile(DV_PERSONA_ITEMS, P_LODAR, OB_HELMET);
         }
         CB->fouille(P_LODAR);
@@ -307,7 +307,7 @@ void l36_trig02(void) {
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
                 /* 0xA075 */
-                if (ST(0xF50) > 1) {
+                if (ST(L36_GUARD_PAIR_PHASE) > 1) {
                     /* 0xA084 */
                     if (ST(V_ENGAGED_PERSONA) == 0) {
                         CB->joindre(P_LODAR, 0, 0, 0, ST(ST_HERO));
@@ -326,20 +326,20 @@ void l36_trig02(void) {
                     CB->animation("SP82GAR03_10");
                 }
                 /* 0xA128 */
-                if (ST(0x54) == 0) {
+                if (ST(L36_LODAR_PANIC_ANIM_DONE) == 0) {
                     CB->animation("SP86GAR27");
-                    ST(0x54) = 1;
+                    ST(L36_LODAR_PANIC_ANIM_DONE) = 1;
                     CB->animation("P86_65535");
                 }
                 /* 0xA15C */
                 if (ST(ST_PLAYER_WEAPON) == 0 || (ST(ST_PLAYER_WEAPON) != 0 && CB->divers(DV_CAN_FIGHT, 0, 2)) || (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON))) {
                     /* 0xA1DA */
-                    if (ST(0xF50) == 1) {
+                    if (ST(L36_GUARD_PAIR_PHASE) == 1) {
                         CB->bloque(BLOQUE_ALL);
                         ST(ST_SCRIPT_BUSY) = 1;
                         /* 0xA200 */
-                        if (ST(0x78) == 0) {
-                            ST(0x78) = 1;
+                        if (ST(L36_LODAR_GREET_TOGGLE) == 0) {
+                            ST(L36_LODAR_GREET_TOGGLE) = 1;
                             /* 0xA21E */
                             if (ST(ST_SPECIAL_MODE) == 1) {
                                 /* 0xA230 */
@@ -366,7 +366,7 @@ void l36_trig02(void) {
                             CB->dialogue("L36D92A", P_KONKALITE12);
                             CB->dialogue("L36D92B", P_KONKALITE12);
                         } else {
-                            ST(0x78) = 0;
+                            ST(L36_LODAR_GREET_TOGGLE) = 0;
                             /* 0xA323 */
                             if (ST(ST_HERO) == P_ARKHAN2) {
                                 lieu_action_register("L36D78", P_ARKHAN2, "SG00DIA04", NULL);
@@ -380,7 +380,7 @@ void l36_trig02(void) {
                         /* 0xA380 */
                         if (ST(V_ENGAGED_PERSONA) == 0) {
                             CB->divers_empile(DV_CINEMATIC, 1, 2);
-                            ST(0xF50) = 1;
+                            ST(L36_GUARD_PAIR_PHASE) = 1;
                         }
                         CB->animation("Sar_10");
                         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -389,13 +389,13 @@ void l36_trig02(void) {
                         return;
                     }
                     /* 0xA3E9 */
-                    if (ST(0xF50) == 5) {
+                    if (ST(L36_GUARD_PAIR_PHASE) == 5) {
                         /* 0xA3FB */
-                        if (ST(0x568) == 0) {
+                        if (ST(L36_LODAR_HELMET_TALK) == 0) {
                             CB->bloque(BLOQUE_ALL);
                             ST(ST_SCRIPT_BUSY) = 1;
-                            ST(0xC14) = 2;
-                            ST(0x568) = 1;
+                            ST(L36_HELMET_STAGE) = 2;
+                            ST(L36_LODAR_HELMET_TALK) = 1;
                             ST(V_WEAPON_WARNED) = 1;
                             /* 0xA451 */
                             if (ST(ST_SPECIAL_MODE) == 1) {
@@ -430,7 +430,7 @@ void l36_trig02(void) {
                             }
                             CB->animation("P86_65535");
                             CB->link_objet(P_LODAR, "OB84", 0x1B, 1);
-                            ST(0xC14) = 3;
+                            ST(L36_HELMET_STAGE) = 3;
                             lieu_action_register("L36D57C", P_LODAR, "SP86DIA53", "SP86ARR01_10");
                             lieu_pre_scene(ST(ST_HERO), P_LODAR, OB_HELMET, 1, 2);
                             CB->animation("Sar_10");
@@ -440,10 +440,10 @@ void l36_trig02(void) {
                             return;
                         }
                         /* 0xA600 */
-                        if (ST(0x568) == 1) {
+                        if (ST(L36_LODAR_HELMET_TALK) == 1) {
                             CB->bloque(BLOQUE_ALL);
                             ST(ST_SCRIPT_BUSY) = 1;
-                            ST(0x568) = 2;
+                            ST(L36_LODAR_HELMET_TALK) = 2;
                             /* 0xA638 */
                             if (ST(ST_SPECIAL_MODE) == 1) {
                                 /* 0xA64A */
@@ -476,8 +476,8 @@ void l36_trig02(void) {
                             return;
                         }
                         /* 0xA77D */
-                        if (ST(0x568) == 2) {
-                            ST(0x568) = 3;
+                        if (ST(L36_LODAR_HELMET_TALK) == 2) {
+                            ST(L36_LODAR_HELMET_TALK) = 3;
                             CB->bloque(BLOQUE_ALL);
                             ST(ST_SCRIPT_BUSY) = 1;
                             /* 0xA7B5 */
@@ -525,7 +525,7 @@ void l36_trig02(void) {
                             return;
                         }
                         /* 0xA9C7 */
-                        if (ST(0x568) == 3) {
+                        if (ST(L36_LODAR_HELMET_TALK) == 3) {
                             CB->bloque(BLOQUE_ALL);
                             ST(ST_SCRIPT_BUSY) = 1;
                             /* 0xA9F0 */
@@ -539,8 +539,8 @@ void l36_trig02(void) {
                                     lieu_action_register("L36D73", P_ARKHAN3, "SG00DIA04", NULL);
                                 }
                                 /* 0xAA52 */
-                                if (ST(0xF8) == 0) {
-                                    ST(0xF8) = 1;
+                                if (ST(L36_LODAR_HELMET_TALK_ALT) == 0) {
+                                    ST(L36_LODAR_HELMET_TALK_ALT) = 1;
                                     lieu_action_register("L36D71B", P_LODAR, "SP86DIA53", "SP86ARR01_10");
                                     lieu_action_register("L36D71C", P_LODAR, "SP86DIA54", "SP86ARR01_10");
                                 } else {
@@ -559,12 +559,12 @@ void l36_trig02(void) {
                                     lieu_action_register("L36D76", P_ARKHAN3, "SG00DIA04", NULL);
                                 }
                                 /* 0xAB3E */
-                                if (ST(0xF8) == 0) {
-                                    ST(0xF8) = 1;
+                                if (ST(L36_LODAR_HELMET_TALK_ALT) == 0) {
+                                    ST(L36_LODAR_HELMET_TALK_ALT) = 1;
                                     lieu_action_register("L36D77A", P_LODAR, "SP86DIA60", "SP86ARR01_10");
                                     lieu_action_register("L36D77B", P_LODAR, "SP86DIA51", "SP86ARR01_10");
                                 } else {
-                                    ST(0xF8) = 0;
+                                    ST(L36_LODAR_HELMET_TALK_ALT) = 0;
                                     lieu_action_register("L36D71B", P_LODAR, "SP86DIA53", "SP86ARR01_10");
                                     lieu_action_register("L36D71C", P_LODAR, "SP86DIA54", "SP86ARR01_10");
                                 }
@@ -685,12 +685,12 @@ void l36_trig02(void) {
             }
             CB->joindre_perm(P_LODAR, ST(ST_HERO));
             /* 0xB14F */
-            if (ST(0x570) == 0) {
+            if (ST(L36_LODAR_FIGHT_TALK) == 0) {
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->stop_joindre(-P_LODAR);
-                ST(0x54) = 0;
-                ST(0x570) = 1;
+                ST(L36_LODAR_PANIC_ANIM_DONE) = 0;
+                ST(L36_LODAR_FIGHT_TALK) = 1;
                 CB->animation("SP86GAR02_10");
                 lieu_action_register("L36D85", P_LODAR, "SP86DIA53", "SP86GAR02_10");
                 CB->stop_joindre(P_LODAR);
@@ -709,17 +709,17 @@ void l36_trig02(void) {
                 return;
             }
             /* 0xB264 */
-            if (ST(0x570) >= 1) {
-                ST(0xF54) = 3;
-                ST(0x54) = 0;
+            if (ST(L36_LODAR_FIGHT_TALK) >= 1) {
+                ST(L36_FIGHT_TARGET_STATE) = 3;
+                ST(L36_LODAR_PANIC_ANIM_DONE) = 0;
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->stop_joindre(-P_LODAR);
                 CB->animation("SP86GAR02_10");
                 /* 0xB2BE */
-                if (ST(0x570) == 1) {
+                if (ST(L36_LODAR_FIGHT_TALK) == 1) {
                     CB->dialogue("L36D86", P_LODAR);
-                    ST(0x570) = 2;
+                    ST(L36_LODAR_FIGHT_TALK) = 2;
                 }
                 ST(V_ENGAGED_PERSONA) = P_LODAR;
                 CB->combat(P_LODAR, 0);
@@ -728,7 +728,7 @@ void l36_trig02(void) {
                     ST(V_EVENT_0) = 0;
                     CB->evenement(0, -1);
                     l36_sub_7400(P_KONKALITE12);
-                    CB->modify_var(&ST(0xF4), 1);
+                    CB->modify_var(&ST(L36_KONK_ALERT_STEP), 1);
                 }
                 CB->animation("Sar_10");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -753,9 +753,9 @@ static void trig03(void) {
         /* 0xB3F6 */
         if (ST(ST_VIE(P_KONKALITE12)) == VIE_DEAD && ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0) {
             /* 0xB435 */
-            if (ST(0xC14) == 1) {
+            if (ST(L36_HELMET_STAGE) == 1) {
                 CB->divers(DV_PERSONA_ITEMS, P_KONKALITE12, OB_HELMET);
-                ST(0xC14) = 3;
+                ST(L36_HELMET_STAGE) = 3;
             }
             CB->fouille(P_KONKALITE12);
             return;
@@ -836,9 +836,9 @@ static void trig03(void) {
                 /* 0xB79C */
                 if (ST(ST_PLAYER_WEAPON) == 0 || (ST(ST_PLAYER_WEAPON) != 0 && CB->divers(DV_CAN_FIGHT, 0, 2)) || (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON))) {
                     /* 0xB81A */
-                    if (ST(0xF50) == 1) {
+                    if (ST(L36_GUARD_PAIR_PHASE) == 1) {
                         /* 0xB829 */
-                        if (ST(0x7C) == 1) {
+                        if (ST(L36_LODAR_TALK_STAGE) == 1) {
                             /* 0xB83B */
                             if (ST(ST_SPECIAL_MODE) == 1) {
                                 /* 0xB84D */
@@ -870,7 +870,7 @@ static void trig03(void) {
                                 ST(V_ENGAGED_PERSONA) = P_KONKALITE12;
                                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                                 CB->combat(P_KONKALITE12, 0);
-                                ST(0xF54) = 2;
+                                ST(L36_FIGHT_TARGET_STATE) = 2;
                                 l36_sub_7400(P_LODAR);
                                 CB->divers_empile(DV_CINEMATIC, 0, 0);
                                 CB->bloque(BLOQUE_NONE);
@@ -879,8 +879,8 @@ static void trig03(void) {
                             }
                         }
                         /* 0xB9C5 */
-                        if (ST(0x7C) == 0) {
-                            ST(0x7C) = 1;
+                        if (ST(L36_LODAR_TALK_STAGE) == 0) {
+                            ST(L36_LODAR_TALK_STAGE) = 1;
                             /* 0xB9E3 */
                             if (ST(ST_SPECIAL_MODE) == 1) {
                                 /* 0xB9F5 */
@@ -913,12 +913,12 @@ static void trig03(void) {
                         }
                     }
                     /* 0xBB04 */
-                    if (ST(0xF50) == 2 || ST(0xF50) == 3) {
+                    if (ST(L36_GUARD_PAIR_PHASE) == 2 || ST(L36_GUARD_PAIR_PHASE) == 3) {
                         /* 0xBB25 */
-                        if (ST(0x7C) == 0) {
-                            ST(0x7C) = 1;
+                        if (ST(L36_LODAR_TALK_STAGE) == 0) {
+                            ST(L36_LODAR_TALK_STAGE) = 1;
                             /* 0xBB43 */
-                            if (ST(0xF50) == 2) {
+                            if (ST(L36_GUARD_PAIR_PHASE) == 2) {
                                 /* 0xBB55 */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
                                     lieu_action_register("L36D110", P_ARKHAN2, "SG00DIA04", NULL);
@@ -930,7 +930,7 @@ static void trig03(void) {
                                 lieu_action_register("L36D112", P_KONKALITE12, "SP82DIA53", "SP82ARR01_10");
                             }
                             /* 0xBBBE */
-                            if (ST(0xF50) == 3) {
+                            if (ST(L36_GUARD_PAIR_PHASE) == 3) {
                                 /* 0xBBD0 */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
                                     lieu_action_register("L36D113", P_ARKHAN2, "SG00DIA04", NULL);
@@ -952,7 +952,7 @@ static void trig03(void) {
                             return;
                         }
                         /* 0xBC9F */
-                        if (ST(0x7C) == 1) {
+                        if (ST(L36_LODAR_TALK_STAGE) == 1) {
                             /* 0xBCB1 */
                             if (ST(ST_HERO) == P_ARKHAN2) {
                                 lieu_action_register("L36D119", P_ARKHAN2, "SG00DIA04", NULL);
@@ -963,7 +963,7 @@ static void trig03(void) {
                             }
                             lieu_action_register("L36D121", P_KONKALITE12, "SP82DIA53", "SP82ARR01_10");
                             ST(V_ENGAGED_PERSONA) = P_KONKALITE12;
-                            ST(0xF54) = 2;
+                            ST(L36_FIGHT_TARGET_STATE) = 2;
                             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                             CB->combat(P_KONKALITE12, 0);
                             CB->bloque(BLOQUE_NONE);
@@ -982,11 +982,11 @@ static void trig03(void) {
                         lieu_action_register("LCOD19", P_ARKHAN3, "SG00PRE80", "SG00PRE81");
                     }
                     /* 0xBDDC */
-                    if (ST(0xF50) == 1) {
+                    if (ST(L36_GUARD_PAIR_PHASE) == 1) {
                         CB->dialogue("L36D109", P_KONKALITE12);
                     }
                     /* 0xBDFE */
-                    if (ST(0xF50) != 1) {
+                    if (ST(L36_GUARD_PAIR_PHASE) != 1) {
                         lieu_action_register("L36D109", P_KONKALITE12, "SP82DIA53", "SP82ARR01_10");
                     }
                     CB->animation("G00PRE82");
@@ -1013,8 +1013,8 @@ static void trig03(void) {
             ST(ST_SCRIPT_BUSY) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->animation("SP82ESA21");
-            ST(0xF54) = 2;
-            ST(0x70) = 1;
+            ST(L36_FIGHT_TARGET_STATE) = 2;
+            ST(L36_KONK_STRUCK_FIRST) = 1;
             CB->divers(DV_CINEMATIC, 0, 0);
             /* 0xBF66 */
             if (ST(V_ENGAGED_PERSONA) == 0) {
@@ -1026,17 +1026,17 @@ static void trig03(void) {
             ST(V_ENGAGED_PERSONA) = P_KONKALITE12;
             CB->combat(P_KONKALITE12, 0);
             /* 0xBFC8 */
-            if (ST(0xE0) == 0) {
+            if (ST(L36_KONK_D200_SAID) == 0) {
                 CB->dialogue("L36D200", P_KONKALITE12);
-                ST(0xE0) = 1;
+                ST(L36_KONK_D200_SAID) = 1;
             }
             ST(V_EVENT_0) = 0;
             CB->evenement(0, -1);
             /* 0xC015 */
-            if (ST(ST_VIE(P_LODAR)) != VIE_DEAD && ST(0x74) == 0) {
+            if (ST(ST_VIE(P_LODAR)) != VIE_DEAD && ST(L36_KILL_SEQ_ACTIVE) == 0) {
                 CB->combat(P_LODAR, -1);
                 l36_sub_7400(P_LODAR);
-                CB->modify_var(&ST(0xF0), 1);
+                CB->modify_var(&ST(L36_LODAR_ALERT_STEP), 1);
             }
             CB->animation("Sar_10");
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -1067,7 +1067,7 @@ void l36_trig04(void) {
             /* 0xC1A3 */
             if (ST(ST_PLAYER_WEAPON) == 0 || (ST(ST_PLAYER_WEAPON) != 0 && CB->divers(DV_CAN_FIGHT, 0, 2)) || (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON))) {
                 /* 0xC21E */
-                if (ST(0x7C) == 2) {
+                if (ST(L36_LODAR_TALK_STAGE) == 2) {
                     /* 0xC230 */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         ST(V_DLG_RANDOM) = CB->random(2);
@@ -1080,7 +1080,7 @@ void l36_trig04(void) {
                             lieu_action_register("L36D150", P_ARKHAN2, "SG00DIA04", NULL);
                         }
                         /* 0xC2A9 */
-                        if (ST(0x80) == 1) {
+                        if (ST(L36_G20_SPOKE) == 1) {
                             ST(V_DLG_RANDOM) = CB->random(2);
                             /* 0xC2D2 */
                             if (ST(V_DLG_RANDOM) == 0) {
@@ -1094,8 +1094,8 @@ void l36_trig04(void) {
                             }
                         }
                         /* 0xC336 */
-                        if (ST(0x80) == 0) {
-                            ST(0x80) = 1;
+                        if (ST(L36_G20_SPOKE) == 0) {
+                            ST(L36_G20_SPOKE) = 1;
                             ST(V_DLG_RANDOM) = CB->random(2);
                             /* 0xC36E */
                             if (ST(V_DLG_RANDOM) == 0) {
@@ -1118,17 +1118,17 @@ void l36_trig04(void) {
                     }
                     /* 0xC42F */
                     if (ST(ST_SPECIAL_MODE) == 0) {
-                        ST(0x7C) = 1;
+                        ST(L36_LODAR_TALK_STAGE) = 1;
                     }
                 }
                 /* 0xC44A */
-                if (ST(0x7C) == 1) {
+                if (ST(L36_LODAR_TALK_STAGE) == 1) {
                     /* 0xC45C */
                     if (ST(ST_SPECIAL_MODE) == 1) {
-                        ST(0x7C) = 2;
+                        ST(L36_LODAR_TALK_STAGE) = 2;
                         /* 0xC47A */
-                        if (ST(0x80) == 1) {
-                            ST(0x80) = 0;
+                        if (ST(L36_G20_SPOKE) == 1) {
+                            ST(L36_G20_SPOKE) = 0;
                             CB->animation("SP60GAR27");
                             CB->animation("P60ARR03_10");
                         }
@@ -1148,18 +1148,18 @@ void l36_trig04(void) {
                     }
                     /* 0xC58C */
                     if (ST(ST_SPECIAL_MODE) == 0) {
-                        ST(0xF54) = 1;
+                        ST(L36_FIGHT_TARGET_STATE) = 1;
                         /* 0xC5AD */
                         if (ST(ST_HERO) == P_ARKHAN2) {
                             lieu_action_register("L36D138A", P_ARKHAN2, "SG00DIA04", NULL);
                             lieu_action_register("L36D138B", P_ARKHAN2, "SG00DIA04", NULL);
                         }
                         /* 0xC5EB */
-                        if (ST(0x80) == 0) {
+                        if (ST(L36_G20_SPOKE) == 0) {
                             lieu_action_register("L36D140", P_GUARDIAN20, "SP60GAR26", "SP60GAR03_10");
                         }
                         /* 0xC616 */
-                        if (ST(0x80) == 1) {
+                        if (ST(L36_G20_SPOKE) == 1) {
                             CB->dialogue("L36D140", P_GUARDIAN20);
                         }
                         ST(V_ENGAGED_PERSONA) = P_GUARDIAN20;
@@ -1167,13 +1167,13 @@ void l36_trig04(void) {
                         CB->bloque(BLOQUE_NONE);
                         CB->combat(P_GUARDIAN20, 0);
                         CB->select_pile(0, 1);
-                        ST(0x80) = 1;
+                        ST(L36_G20_SPOKE) = 1;
                         return;
                     }
                 }
                 /* 0xC688 */
-                if (ST(0x7C) == 0) {
-                    ST(0x7C) = 1;
+                if (ST(L36_LODAR_TALK_STAGE) == 0) {
+                    ST(L36_LODAR_TALK_STAGE) = 1;
                     /* 0xC6A6 */
                     if (ST(ST_SPECIAL_MODE) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
                         lieu_action_register("L36D123A", P_ARKHAN2, "SG00DIA04", NULL);
@@ -1190,7 +1190,7 @@ void l36_trig04(void) {
                     }
                     /* 0xC753 */
                     if (ST(ST_SPECIAL_MODE) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
-                        ST(0x80) = 1;
+                        ST(L36_G20_SPOKE) = 1;
                         lieu_action_register("L36D126", P_ARKHAN2, "SG00DIA04", NULL);
                         CB->dialogue("L36D140", P_GUARDIAN20);
                         ST(V_ENGAGED_PERSONA) = P_GUARDIAN20;
@@ -1208,12 +1208,12 @@ void l36_trig04(void) {
                     lieu_action_register("LCOD18", P_ARKHAN2, "SG00PRE80", "SG00PRE81");
                 }
                 /* 0xC831 */
-                if (ST(0x80) == 0) {
+                if (ST(L36_G20_SPOKE) == 0) {
                     lieu_action_register("L36D141A", P_GUARDIAN20, "SP60DIA54", "SP60ARR03_10");
                     lieu_action_register("L36D141B", P_GUARDIAN20, "SP60DIA54", "SP60ARR03_10");
                 }
                 /* 0xC875 */
-                if (ST(0x80) == 1) {
+                if (ST(L36_G20_SPOKE) == 1) {
                     CB->dialogue("L36D141A", P_GUARDIAN20);
                     CB->dialogue("L36D141B", P_GUARDIAN20);
                 }
@@ -1268,21 +1268,21 @@ void l36_trig04(void) {
         CB->bloque(BLOQUE_ALL);
         CB->stop_joindre(-P_GUARDIAN20);
         CB->animation("SP60ESA23");
-        ST(0xF54) = 1;
+        ST(L36_FIGHT_TARGET_STATE) = 1;
         ST(V_PLAYER_STRIKE) = -1;
         ST(V_ENGAGED_PERSONA) = P_GUARDIAN20;
         /* 0xCAB8 */
-        if (ST(0x80) == 0) {
+        if (ST(L36_G20_SPOKE) == 0) {
             lieu_action_register("L36D143", P_GUARDIAN20, "SP60GAR26", "SP60GAR03_10");
         }
         /* 0xCAE3 */
-        if (ST(0x80) == 1) {
+        if (ST(L36_G20_SPOKE) == 1) {
             CB->dialogue("L36D143", P_GUARDIAN20);
             CB->animation("SP60GAR03_10");
         }
         CB->bloque(BLOQUE_NONE);
         CB->combat(P_GUARDIAN20, 0);
-        ST(0x80) = 1;
+        ST(L36_G20_SPOKE) = 1;
         CB->select_pile(0, 1);
         return;
     }
@@ -1294,21 +1294,21 @@ void l36_trig04(void) {
 static void trig05(void) {
     CB->retire_zone(5);
     /* 0xCB86 */
-    if (ST(0xF50) == 2 && ST(0x68) == 1 && ST(0xC14) == 0) {
-        ST(0xC14) = 1;
-        ST(0xF50) = 3;
-    } else if (ST(0xF50) == 3 && ST(0xF54) == 0 && ST(0x68) == 1) {
-        ST(0xF50) = 8;
-    } else if (ST(0xF50) == 1 && ST(0x68) == 1 && ST(0xC14) == 0) {
-        ST(0xC14) = 1;
-        ST(0xF50) = 2;
-    } else if (ST(0xF50) == 2) {
-        ST(0xC14) = 2;
-        ST(0xF50) = 8;
+    if (ST(L36_GUARD_PAIR_PHASE) == 2 && ST(L36_PAIR_SEEN_AT_EXIT) == 1 && ST(L36_HELMET_STAGE) == 0) {
+        ST(L36_HELMET_STAGE) = 1;
+        ST(L36_GUARD_PAIR_PHASE) = 3;
+    } else if (ST(L36_GUARD_PAIR_PHASE) == 3 && ST(L36_FIGHT_TARGET_STATE) == 0 && ST(L36_PAIR_SEEN_AT_EXIT) == 1) {
+        ST(L36_GUARD_PAIR_PHASE) = 8;
+    } else if (ST(L36_GUARD_PAIR_PHASE) == 1 && ST(L36_PAIR_SEEN_AT_EXIT) == 1 && ST(L36_HELMET_STAGE) == 0) {
+        ST(L36_HELMET_STAGE) = 1;
+        ST(L36_GUARD_PAIR_PHASE) = 2;
+    } else if (ST(L36_GUARD_PAIR_PHASE) == 2) {
+        ST(L36_HELMET_STAGE) = 2;
+        ST(L36_GUARD_PAIR_PHASE) = 8;
     }
     /* 0xCCAB */
     if (ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_KONKALITE12)) == 1 && ST(ST_VIE(P_LODAR)) == 1) {
-        ST(0xC14) = 1;
+        ST(L36_HELMET_STAGE) = 1;
     }
     CB->divers(DV_MUSIC, 1, 4);
     ST(ST_LEVEL) = 36;
@@ -1759,13 +1759,13 @@ static void trig41(void) {
         CB->divers(DV_MUSIC, 2, 1);
     }
     /* 0x7DC6 */
-    if (ST(0xF50) == 5 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L36_GUARD_PAIR_PHASE) == 5 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->joindre_perm(P_LODAR, ST(ST_HERO));
     }
     /* 0x7DFD */
-    if (ST(0xF54) == 1 && ST(ST_VIE(P_GUARDIAN20)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) < 2) {
+    if (ST(L36_FIGHT_TARGET_STATE) == 1 && ST(ST_VIE(P_GUARDIAN20)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) < 2) {
         CB->combat(P_GUARDIAN20, 0);
-        ST(0x80) = 1;
+        ST(L36_G20_SPOKE) = 1;
         ST(V_ENGAGED_PERSONA) = P_GUARDIAN20;
     }
     ST(V_PLAYER_STRIKE) = -1;
