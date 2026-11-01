@@ -60,30 +60,30 @@ static void trig_noop(void) {
 void l37_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(37)) == 1) {
-        ST(0x550) = 0;
+        ST(L37_INTRO_DONE) = 0;
         ST(ST_LEVEL) = 35;
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_SOB86_ACTIVE) = 1;
     }
     /* 0x744D */
     if (ST(ST_START_POINT(37)) == 2) {
-        ST(0x550) = 0;
+        ST(L37_INTRO_DONE) = 0;
         ST(ST_LEVEL) = 35;
         ST(ST_HERO) = P_ARKHAN3;
     }
     ST(ST_START_POINT(37)) = 0;
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x74) = 0;
-    ST(0x78) = 0;
-    ST(0x7C) = 0;
-    ST(0x80) = 0;
-    ST(0x84) = 0;
-    ST(0x88) = 0;
-    ST(0x90) = 0;
-    ST(0x94) = 0;
+    ST(L37_FLOOR) = 0;
+    ST(L37_UNUSED_68) = 0;
+    ST(L37_UNUSED_6C) = 0;
+    ST(L37_TRUCE_39) = 0;
+    ST(L37_UNUSED_74) = 0;
+    ST(L37_UNUSED_78) = 0;
+    ST(L37_TRUCE_38) = 0;
+    ST(L37_EXIT_STAGE) = 0;
+    ST(L37_EXIT_JOIN) = 0;
+    ST(L37_UNUSED_88) = 0;
+    ST(L37_P39_AGGRO) = 0;
+    ST(L37_SOB86_ENTRY_DONE) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_CRI_USED) = 0;
@@ -117,7 +117,7 @@ void l37_trig00(void) {
     CB->bruitage("L37AMB1", -1, -1);
     /* 0x77DD */
     if (ST(ST_LEVEL) == 35 || ST(ST_LEVEL) == 37) {
-        ST(0x64) = 1;
+        ST(L37_FLOOR) = 1;
         CB->pos_perso(ST(ST_HERO), -1130, 13710, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
         /* 0x7849 */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -130,7 +130,7 @@ void l37_trig00(void) {
     }
     /* 0x78DC */
     if (ST(ST_LEVEL) == 38) {
-        ST(0x64) = 2;
+        ST(L37_FLOOR) = 2;
         CB->pos_perso(ST(ST_HERO), -500, 15080, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
     }
     /* 0x7939 */
@@ -138,11 +138,11 @@ void l37_trig00(void) {
         /* 0x7948 */
         if (ST(ST_LEVEL) == 35) {
             /* 0x795A */
-            if (ST(0xE2C) != 1) {
+            if (ST(L37_FIGHT_STATE) != 1) {
                 CB->pos_perso(39, -1950, 14146, 0xE290, 1, "P39GAR01", 8, 0);
             }
             /* 0x7991 */
-            if (ST(0xE2C) == 1) {
+            if (ST(L37_FIGHT_STATE) == 1) {
                 CB->pos_perso(39, -1387, 14676, 0x8120, 1, "P39GAR01", 8, 0);
             }
         }
@@ -179,7 +179,7 @@ void l37_trig00(void) {
     ST(ST_START_POINT(37)) = 0;
     /* 0x7B8C */
     if (ST(ST_VIE(P_DELIA)) == VIE_DEAD || ST(V_DELIA_PHASE) >= 10) {
-        ST(0xC44) = 1;
+        ST(L37_DELIA_GONE) = 1;
     }
     CB->divers(DV_MUSIC, 1, 0);
 }
@@ -188,9 +188,9 @@ void l37_trig00(void) {
 static void trig41(void) {
     CB->divers(DV_MUSIC, 1, 1);
     /* 0x7BEE */
-    if (ST(0x550) == 0) {
+    if (ST(L37_INTRO_DONE) == 0) {
         CB->bloque(BLOQUE_ALL);
-        ST(0x550) = 1;
+        ST(L37_INTRO_DONE) = 1;
         /* 0x7C1A */
         if (ST(ST_HERO) == P_ARKHAN2) {
             lieu_action_register("L37D01A", P_ARKHAN2, "SG00DIA01", NULL);
@@ -235,7 +235,7 @@ static void trig41(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x7E52 */
-    if (ST(0xE2C) == 1) {
+    if (ST(L37_FIGHT_STATE) == 1) {
         /* 0x7E64 */
         if (ST(ST_VIE(39)) != VIE_DEAD && ST(ST_VIE(38)) != VIE_DEAD) {
             ST(V_ENGAGED_PERSONA) = 3938;
@@ -258,9 +258,9 @@ static void trig41(void) {
 /* trigger 1 — sub_10008C18 */
 static void trig01(void) {
     /* 0x8C2A */
-    if (ST(V_SOB86_ACTIVE) == 1 && ST(0x94) == 0) {
+    if (ST(V_SOB86_ACTIVE) == 1 && ST(L37_SOB86_ENTRY_DONE) == 0) {
         CB->bloque(BLOQUE_ALL);
-        ST(0x94) = 1;
+        ST(L37_SOB86_ENTRY_DONE) = 1;
         /* 0x8C6B */
         if (ST(V_HUD_TIMER_MS) < 600000) {
             ST(V_HUD_TIMER_MS) = 300000;
@@ -293,8 +293,8 @@ static void trig01(void) {
         }
     }
     /* 0x8D80 */
-    if (ST(V_SOB86_ACTIVE) == 0 && ST(0x80) == 0) {
-        ST(0x80) = 1;
+    if (ST(V_SOB86_ACTIVE) == 0 && ST(L37_EXIT_STAGE) == 0) {
+        ST(L37_EXIT_STAGE) = 1;
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x8DC7 */
@@ -334,11 +334,11 @@ static void trig01(void) {
             CB->joindre(-P_ARKHAN3, -1140, 13750, 0, -1);
         }
         CB->animation("Sar_50");
-        CB->modify_var(&ST(0x84), 2);
+        CB->modify_var(&ST(L37_EXIT_JOIN), 2);
         return;
     }
     /* 0x8FCB */
-    if (ST(V_SOB86_ACTIVE) == 0 && ST(0x80) == 2) {
+    if (ST(V_SOB86_ACTIVE) == 0 && ST(L37_EXIT_STAGE) == 2) {
         ST(V_SOB86_ACTIVE) = 666;
         CB->bloque(BLOQUE_ALL);
         CB->change_piece(35, 0);
@@ -363,8 +363,8 @@ static void trig02(void) {
 /* trigger 3 — sub_10009091 */
 static void trig03(void) {
     /* 0x90A0 */
-    if (ST(ST_UPDOWN_KEY) == 1 && ST(0x64) == 1) {
-        ST(0x64) = 2;
+    if (ST(ST_UPDOWN_KEY) == 1 && ST(L37_FLOOR) == 1) {
+        ST(L37_FLOOR) = 2;
         CB->pos_perso(ST(ST_HERO), -877, 15874, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
         CB->animation("Sar_10");
         /* 0x9114 */
@@ -384,8 +384,8 @@ static void trig03(void) {
 /* trigger 4 — sub_1000918D */
 static void trig04(void) {
     /* 0x919C */
-    if (ST(ST_UPDOWN_KEY) == 1 && ST(0x64) == 2) {
-        ST(0x64) = 1;
+    if (ST(ST_UPDOWN_KEY) == 1 && ST(L37_FLOOR) == 2) {
+        ST(L37_FLOOR) = 1;
         CB->pos_perso(ST(ST_HERO), -1900, 15887, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
         CB->animation("Sar_10");
         /* 0x9210 */
@@ -409,13 +409,13 @@ static void trig05(void) {
         /* 0x92E8 */
         if (ST(ST_VIE(38)) == 1) {
             /* 0x92F7 */
-            if (ST(0x7C) == 2 || ST(0x70) == 1) {
+            if (ST(L37_TRUCE_38) == 2 || ST(L37_TRUCE_39) == 1) {
                 CB->bloque(BLOQUE_ALL);
                 /* 0x9323 */
                 if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L37D13A", P_ARKHAN2, "SG00DIA02", NULL);
                     /* 0x935A */
-                    if (ST(0x7C) == 2) {
+                    if (ST(L37_TRUCE_38) == 2) {
                         lieu_action_register("L37D13B", P_ARKHAN2, "SG00DIA02", NULL);
                     }
                 }
@@ -427,7 +427,7 @@ static void trig05(void) {
                 if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L37D15A", P_ARKHAN3, "SG00DIA02", NULL);
                     /* 0x93F3 */
-                    if (ST(0x7C) == 2) {
+                    if (ST(L37_TRUCE_38) == 2) {
                         lieu_action_register("L37D15B", P_ARKHAN3, "SG00DIA02", NULL);
                     }
                 }
@@ -518,13 +518,13 @@ static void trig08(void) {
         /* 0x979D */
         if (ST(ST_VIE(39)) == 1) {
             /* 0x97AC */
-            if (ST(0x7C) == 2 || ST(0x70) == 1) {
+            if (ST(L37_TRUCE_38) == 2 || ST(L37_TRUCE_39) == 1) {
                 CB->bloque(BLOQUE_ALL);
                 /* 0x97D8 */
                 if (ST(ST_HERO) == P_ARKHAN2 && ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L37D13A", P_ARKHAN2, "SG00DIA02", NULL);
                     /* 0x980F */
-                    if (ST(0x70) == 2) {
+                    if (ST(L37_TRUCE_39) == 2) {
                         lieu_action_register("L37D23", P_ARKHAN2, "SG00DIA02", NULL);
                     }
                 }
@@ -536,7 +536,7 @@ static void trig08(void) {
                 if (ST(ST_HERO) == P_ARKHAN3 && ST(ST_SPECIAL_MODE) == 1) {
                     lieu_action_register("L37D15A", P_ARKHAN3, "SG00DIA02", NULL);
                     /* 0x98A8 */
-                    if (ST(0x70) == 2) {
+                    if (ST(L37_TRUCE_39) == 2) {
                         lieu_action_register("L37D24", P_ARKHAN3, "SG00DIA02", NULL);
                     }
                 }
@@ -681,7 +681,7 @@ static void trig13(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x9F1D */
-        if (ST(0x624) > 0) {
+        if (ST(L37_ZONE13_EXAMINED) > 0) {
             /* 0x9F2F */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 lieu_action_register("L37D33A", P_ARKHAN2, "SG00PRE09", NULL);
@@ -693,8 +693,8 @@ static void trig13(void) {
             }
         }
         /* 0x9F95 */
-        if (ST(0x624) == 0) {
-            ST(0x624) = 1;
+        if (ST(L37_ZONE13_EXAMINED) == 0) {
+            ST(L37_ZONE13_EXAMINED) = 1;
             CB->animation("SG00PRE08_10");
             /* 0x9FC1 */
             if (ST(ST_HERO) == P_ARKHAN2) {
