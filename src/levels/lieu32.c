@@ -28,50 +28,50 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x8769 */
-    if (ST(0xFC) < ST(0x8D4) && ST(ST_COMBAT_STANCE) == 0) {
+    if (ST(L32_HIT_COUNT_SEEN) < ST(L32_PLAYER_HIT_COUNT) && ST(ST_COMBAT_STANCE) == 0) {
         CB->select_pile(0, 2);
         CB->divers(DV_CUT_SPEECH, 0, 0);
         ST(ST_SCRIPT_BUSY) = 0;
         CB->bloque(BLOQUE_NONE);
-        ST(0xFC) = ST(0x8D4);
+        ST(L32_HIT_COUNT_SEEN) = ST(L32_PLAYER_HIT_COUNT);
     }
     /* 0x87D1 */
-    if (ST(0xE0) == 0 && ST(ST_LOCKED_CAMERA) == 1) {
-        ST(0xE0) = 1;
+    if (ST(L32_CAMERA1_PAUSED) == 0 && ST(ST_LOCKED_CAMERA) == 1) {
+        ST(L32_CAMERA1_PAUSED) = 1;
         /* 0x8804 */
-        if (ST(0xF48) == 0) {
+        if (ST(L32_DOORS_OPENED) == 0) {
             CB->pause_anim(1, 0, 0);
         }
         /* 0x8825 */
-        if (ST(0xF48) == 1) {
+        if (ST(L32_DOORS_OPENED) == 1) {
             CB->pause_anim(1, 20, 0);
         }
     }
     /* 0x8849 */
-    if (ST(0xE0) == 1 && ST(ST_LOCKED_CAMERA) != 1) {
-        ST(0xE0) = 0;
+    if (ST(L32_CAMERA1_PAUSED) == 1 && ST(ST_LOCKED_CAMERA) != 1) {
+        ST(L32_CAMERA1_PAUSED) = 0;
     }
     /* 0x887C */
-    if (ST(0xF0) == 0 && ST(ST_LOCKED_CAMERA) == 0) {
+    if (ST(L32_CAMERA_ANIM_PAUSED) == 0 && ST(ST_LOCKED_CAMERA) == 0) {
         /* 0x88A0 */
-        if (ST(0xB70) == 1) {
-            ST(0xF0) = 1;
+        if (ST(L32_ROOM_ANIM_KIND) == 1) {
+            ST(L32_CAMERA_ANIM_PAUSED) = 1;
             CB->pause_anim(0, 0, 0);
         }
         /* 0x88CD */
-        if (ST(0xB70) == 2) {
-            ST(0xF0) = 1;
+        if (ST(L32_ROOM_ANIM_KIND) == 2) {
+            ST(L32_CAMERA_ANIM_PAUSED) = 1;
             CB->pause_anim(0, 15, 0);
         }
     }
     /* 0x88FD */
-    if (ST(0xF0) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
-        ST(0xF0) = 0;
+    if (ST(L32_CAMERA_ANIM_PAUSED) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
+        ST(L32_CAMERA_ANIM_PAUSED) = 0;
     }
     /* 0x8930 */
     if (ST(V_EVENT15_STEP) == 0 && CB->distance(12, 14) < 100) {
         ST(V_EVENT15_STEP) = 1;
-        ST(0xF28) = 3;
+        ST(L32_KONKALITE3_STATE) = 3;
         CB->pos_perso(P_MALROT6, -1, -1, -1, 4, "", -1, 0);
         CB->animation("Sar_50");
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -105,25 +105,25 @@ static void tick_body(void) {
     }
     /* 0x8AFC */
     if (ST(ST_HERO) != 4) {
-        ST(0xE8) = ST(ST_HERO);
+        ST(L32_LAST_LIVING_HERO) = ST(ST_HERO);
     }
     /* 0x8B25 */
-    if (ST(ST_HERO) == 4 && ST(0x100) == 0) {
-        ST(0x100) = 1;
+    if (ST(ST_HERO) == 4 && ST(L32_DEATH_HANDLED) == 0) {
+        ST(L32_DEATH_HANDLED) = 1;
         CB->evenement(1, 2000);
     }
     /* 0x8B68 */
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         /* 0x8B89 */
-        if (ST(0xE8C) == 0 && ST(0xE20) < 2 && (ST(0xBB0) == 2 || ST(0xBB0) == 10) &&
+        if (ST(L32_CHASE_STATE) == 0 && ST(L32_SORDOS_DUEL_STATE) < 2 && (ST(L32_STORY_PART) == 2 || ST(L32_STORY_PART) == 10) &&
             (ST(ST_VIE(P_GORK)) < 2 || ST(ST_VIE(P_KONKALITE11)) < 2) &&
             !CB->divers(DV_PERSONA_PRESENT, 29, 0)) {
-            ST(0xE8C) = 1;
+            ST(L32_CHASE_STATE) = 1;
             ST(ST_VIE(69)) = VIE_DEAD;
             /* 0x8C75 */
-            if (ST(0xEF8) != 1 && ST(0xEF8) != 11 && ST(0xBB0) == 10) {
-                ST(0xEF8) = 1;
+            if (ST(L32_CHASE_ROUTE) != 1 && ST(L32_CHASE_ROUTE) != 11 && ST(L32_STORY_PART) == 10) {
+                ST(L32_CHASE_ROUTE) = 1;
             }
             CB->bloque(BLOQUE_ALL);
             CB->divers_empile(DV_SCREEN, 5, 0);
@@ -168,7 +168,7 @@ static void tick_body(void) {
         ST(V_EVENT_34) = 0;
         CB->ajoute_zone(11, 5023, 6975, 314, 160, 0);
         /* 0x8E92 */
-        if (ST(0xC38) == 0) {
+        if (ST(L32_GORK_DEAD) == 0) {
             CB->ajoute_zone(7, 5226, 7139, 20, 20, 0);
             CB->ajoute_zone(8, 5646, 7309, 20, 20, 0);
             CB->ajoute_zone(9, 5352, 7582, 20, 20, 0);
@@ -177,7 +177,7 @@ static void tick_body(void) {
             CB->ajoute_zone(8, 5738, 7038, 20, 20, 0);
             CB->ajoute_zone(9, 5494, 7592, 20, 20, 0);
         }
-        ST(ST_HERO) = ST(0xE8);
+        ST(ST_HERO) = ST(L32_LAST_LIVING_HERO);
         CB->divers(DV_HP, ST(ST_HERO), 256);
         CB->divers(DV_INVENTORY, 1, 0);
         /* 0x8F8C */
@@ -187,21 +187,21 @@ static void tick_body(void) {
         CB->pos_perso(ST(ST_HERO), 5313, 7762, 0x89A5, 1, "P02ARR01", 1, 0);
         CB->pos_perso(P_SORDOS, 5177, 7173, 0xB2FD, 1, "P23ARR03", 2, 0);
         /* 0x8FFD */
-        if (ST(0xC38) == 0) {
+        if (ST(L32_GORK_DEAD) == 0) {
             CB->pos_perso(P_GORK, 5809, 6920, 0x2384, 1, "P31ARR01", 4, 1);
         } else {
             CB->pos_perso(P_KONKALITE11, 5809, 6920, 0x2384, 1, "P81ARR01", 0x10, 1);
         }
         CB->divers_empile(DV_SCREEN, 3, 0);
         /* 0x9070 */
-        if (ST(0xE8C) == 1) {
-            ST(0xE8C) = 2;
-            ST(0xF00) = 0;
+        if (ST(L32_CHASE_STATE) == 1) {
+            ST(L32_CHASE_STATE) = 2;
+            ST(L32_GORK_KONKALITE7_STATE) = 0;
             ST(V_ENGAGED_PERSONA) = 0;
             CB->bloque(BLOQUE_ALL);
             /* 0x90B7 */
-            if (ST(0xC38) == 0) {
-                ST(0x64) = 20;
+            if (ST(L32_GORK_DEAD) == 0) {
+                ST(L32_SORDOS_SCENE_STEP) = 20;
                 CB->joindre(-P_GORK, 5292, 7089, 0x2A66, -1);
                 CB->joindre(-P_SORDOS, 0, 0, 0, P_GORK);
                 lieu_action_register("L32D08", P_SORDOS, "SP23DIA54", "SP23ARR03");
@@ -215,16 +215,16 @@ static void tick_body(void) {
         }
     }
     /* 0x9184 */
-    if (ST(0xE8C) != 0 && (ST(0xF00) == 0 || ST(0xF00) >= 10) && ST(0xF24) != 3 && ST(0xF24) != 4) {
+    if (ST(L32_CHASE_STATE) != 0 && (ST(L32_GORK_KONKALITE7_STATE) == 0 || ST(L32_GORK_KONKALITE7_STATE) >= 10) && ST(L32_ROOM_PLOT_STAGE) != 3 && ST(L32_ROOM_PLOT_STAGE) != 4) {
         /* 0x91DE */
-        if (ST(0xC38) == 1) {
+        if (ST(L32_GORK_DEAD) == 1) {
             /* 0x91F0 */
             if (ST(V_EVENT_0) == 1) {
                 ST(V_EVENT_0) = 0;
                 /* 0x920E */
-                if (ST(0x64) == 0) {
-                    ST(0xB70) = 1;
-                    ST(0x64) = 2;
+                if (ST(L32_SORDOS_SCENE_STEP) == 0) {
+                    ST(L32_ROOM_ANIM_KIND) = 1;
+                    ST(L32_SORDOS_SCENE_STEP) = 2;
                     CB->select_pile(1, 1);
                     CB->joindre(-P_KONKALITE11, 0, 0, 0, P_SORDOS);
                     lieu_action_register("L32D71", P_KONKALITE11, "P81DIA56", "SP81ARR01_10");
@@ -240,8 +240,8 @@ static void tick_body(void) {
                     return;
                 }
                 /* 0x9300 */
-                if (ST(0x64) == 2) {
-                    ST(0x64) = 3;
+                if (ST(L32_SORDOS_SCENE_STEP) == 2) {
+                    ST(L32_SORDOS_SCENE_STEP) = 3;
                     CB->select_pile(2, 1);
                     CB->evenement(0, 2500);
                     CB->divers(DV_LOOK_AT_PLAYER, P_SORDOS, 1);
@@ -259,8 +259,8 @@ static void tick_body(void) {
                     return;
                 }
                 /* 0x93BD */
-                if (ST(0x64) == 3) {
-                    ST(0x64) = 51;
+                if (ST(L32_SORDOS_SCENE_STEP) == 3) {
+                    ST(L32_SORDOS_SCENE_STEP) = 51;
                     CB->joindre(-ST(ST_HERO), 0, 0, 0, P_SORDOS);
                     CB->joindre(P_KONKALITE11, 5226, 7139, 0x1518, -1);
                     CB->select_pile(1, 1);
@@ -276,8 +276,8 @@ static void tick_body(void) {
                     return;
                 }
                 /* 0x94DC */
-                if (ST(0x64) == 51) {
-                    ST(0x64) = 100;
+                if (ST(L32_SORDOS_SCENE_STEP) == 51) {
+                    ST(L32_SORDOS_SCENE_STEP) = 100;
                     CB->select_pile(1, 1);
                     /* 0x950A */
                     if (ST(ST_VIE(P_GORK)) != VIE_DEAD) {
@@ -302,8 +302,8 @@ static void tick_body(void) {
                     return;
                 }
                 /* 0x9663 */
-                if (ST(0x64) == 100 && !CB->on_joindre(P_SORDOS)) {
-                    ST(0x64) = 250;
+                if (ST(L32_SORDOS_SCENE_STEP) == 100 && !CB->on_joindre(P_SORDOS)) {
+                    ST(L32_SORDOS_SCENE_STEP) = 250;
                     CB->select_pile(2, 1);
                     CB->pos_perso(P_SORDOS, -1, -1, -1, 4, "", -1, 0);
                     CB->select_pile(0, 1);
@@ -313,9 +313,9 @@ static void tick_body(void) {
         } else if (ST(V_EVENT_0) == 1) {
             ST(V_EVENT_0) = 0;
             /* 0x96F8 */
-            if (ST(0x64) == 20) {
-                ST(0xB70) = 1;
-                ST(0x64) = 21;
+            if (ST(L32_SORDOS_SCENE_STEP) == 20) {
+                ST(L32_ROOM_ANIM_KIND) = 1;
+                ST(L32_SORDOS_SCENE_STEP) = 21;
                 CB->select_pile(2, 1);
                 CB->joindre(-P_GORK, 0, 0, 0, P_SORDOS);
                 CB->select_pile(1, 1);
@@ -342,8 +342,8 @@ static void tick_body(void) {
                 return;
             }
             /* 0x9857 */
-            if (ST(0x64) == 21) {
-                ST(0x64) = 22;
+            if (ST(L32_SORDOS_SCENE_STEP) == 21) {
+                ST(L32_SORDOS_SCENE_STEP) = 22;
                 CB->select_pile(1, 1);
                 CB->joindre(P_GORK, 5226, 7139, 0x1518, -1);
                 CB->animation("SP23ARR03");
@@ -359,8 +359,8 @@ static void tick_body(void) {
                 return;
             }
             /* 0x9964 */
-            if (ST(0x64) == 22) {
-                ST(0x64) = 23;
+            if (ST(L32_SORDOS_SCENE_STEP) == 22) {
+                ST(L32_SORDOS_SCENE_STEP) = 23;
                 CB->select_pile(1, 1);
                 CB->joindre(-P_GORK, 5349, 7573, 0x3C0, -1);
                 CB->select_pile(0, 1);
@@ -368,8 +368,8 @@ static void tick_body(void) {
             }
         }
         /* 0x99BD */
-        if (ST(0x64) == 23 && CB->distance(2, 4) > 400) {
-            ST(0x64) = 24;
+        if (ST(L32_SORDOS_SCENE_STEP) == 23 && CB->distance(2, 4) > 400) {
+            ST(L32_SORDOS_SCENE_STEP) = 24;
             CB->select_pile(2, 1);
             CB->animation("SP31GAR01");
             CB->dialogue("L32D12A", P_GORK);
@@ -380,8 +380,8 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x9A60 */
-        if (ST(0x64) == 24 && !CB->on_joindre(P_SORDOS)) {
-            ST(0x64) = 25;
+        if (ST(L32_SORDOS_SCENE_STEP) == 24 && !CB->on_joindre(P_SORDOS)) {
+            ST(L32_SORDOS_SCENE_STEP) = 25;
             CB->select_pile(1, 1);
             CB->evenement(2, -1);
             CB->pos_perso(P_SORDOS, -1, -1, -1, 4, "", -1, 0);
@@ -393,8 +393,8 @@ static void tick_body(void) {
         if (ST(V_EVENT_33) == 1) {
             ST(V_EVENT_33) = 0;
             /* 0x9B10 */
-            if (ST(0x70) == 2) {
-                ST(0x70) = 99;
+            if (ST(L32_GORK_ENCOUNTER_STEP) == 2) {
+                ST(L32_GORK_ENCOUNTER_STEP) = 99;
                 CB->select_pile(2, 2);
                 /* 0x9B46 */
                 if (CB->divers(DV_PERSONA_PRESENT, P_KONKALITE11, 0)) {
@@ -423,22 +423,22 @@ static void tick_body(void) {
             }
         }
         /* 0x9C7F */
-        if (ST(0x68) == 1 && !CB->on_joindre(P_GORK) && ST(V_ENGAGED_PERSONA) == 0) {
-            ST(0x68) = 0;
+        if (ST(L32_GORK_TAUNT_ACTIVE) == 1 && !CB->on_joindre(P_GORK) && ST(V_ENGAGED_PERSONA) == 0) {
+            ST(L32_GORK_TAUNT_ACTIVE) = 0;
             CB->select_pile(1, 1);
             CB->evenement(2, 2500);
             CB->select_pile(0, 1);
         }
         /* 0x9CEC */
-        if (ST(V_EVENT_2) == 1 && ST(ST_VIE(P_GORK)) != VIE_DEAD && ST(0x70) < 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(V_CRI_USED) == 0 && !CB->on_joindre(P_GORK)) {
+        if (ST(V_EVENT_2) == 1 && ST(ST_VIE(P_GORK)) != VIE_DEAD && ST(L32_GORK_ENCOUNTER_STEP) < 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(V_CRI_USED) == 0 && !CB->on_joindre(P_GORK)) {
             CB->select_pile(1, 1);
             ST(V_EVENT_2) = 0;
-            ST(0x6C) = CB->random(3) + 1;
-            switch (ST(0x6C)) {
+            ST(L32_TAUNT_VARIANT) = CB->random(3) + 1;
+            switch (ST(L32_TAUNT_VARIANT)) {
             case 1:   /* 0x9D8B */
                 if (CB->distance(4, 7) > 100) {
                     CB->joindre(P_GORK, 5226, 7139, 0x1518, -1);
-                    CB->modify_var(&ST(0x68), 1);
+                    CB->modify_var(&ST(L32_GORK_TAUNT_ACTIVE), 1);
                 } else {
                     ST(V_EVENT_2) = 1;
                 }
@@ -447,7 +447,7 @@ static void tick_body(void) {
             case 2:   /* 0x9DFA */
                 if (CB->distance(4, 8) > 100) {
                     CB->joindre(P_GORK, 5646, 7309, 0x1CE8, -1);
-                    CB->modify_var(&ST(0x68), 1);
+                    CB->modify_var(&ST(L32_GORK_TAUNT_ACTIVE), 1);
                 } else {
                     ST(V_EVENT_2) = 1;
                 }
@@ -489,8 +489,8 @@ static void tick_body(void) {
             ST(V_ENGAGED_PERSONA) = 0;
         }
         /* 0xA012 */
-        if (ST(0x64) == 100) {
-            ST(0x64) = 0;
+        if (ST(L32_SORDOS_SCENE_STEP) == 100) {
+            ST(L32_SORDOS_SCENE_STEP) = 0;
             CB->select_pile(1, 1);
             CB->evenement(35, 2500);
             CB->select_pile(0, 1);
@@ -499,13 +499,13 @@ static void tick_body(void) {
         if (ST(V_EVENT_35) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
             CB->select_pile(1, 1);
             ST(V_EVENT_35) = 0;
-            ST(0x6C) = CB->random(3) + 1;
-            switch (ST(0x6C)) {
+            ST(L32_TAUNT_VARIANT) = CB->random(3) + 1;
+            switch (ST(L32_TAUNT_VARIANT)) {
             case 1:   /* 0xA0B6 */
                 if (CB->distance(16, 7) > 100) {
                     CB->joindre(P_KONKALITE11, 4824, 7217, 0x5522, -1);
                     CB->animation("SP81ARR01_500");
-                    CB->modify_var(&ST(0x64), 100);
+                    CB->modify_var(&ST(L32_SORDOS_SCENE_STEP), 100);
                 } else {
                     ST(V_EVENT_35) = 1;
                 }
@@ -515,7 +515,7 @@ static void tick_body(void) {
                 if (CB->distance(16, 8) > 100) {
                     CB->joindre(P_KONKALITE11, 5738, 7038, 0xA78C, -1);
                     CB->animation("SP81ARR01_500");
-                    CB->modify_var(&ST(0x64), 100);
+                    CB->modify_var(&ST(L32_SORDOS_SCENE_STEP), 100);
                 } else {
                     ST(V_EVENT_35) = 1;
                 }
@@ -525,7 +525,7 @@ static void tick_body(void) {
                 if (CB->distance(16, 9) > 100) {
                     CB->joindre(P_KONKALITE11, 5494, 7592, 0x24CD, -1);
                     CB->animation("SP81ARR01_500");
-                    CB->modify_var(&ST(0x64), 100);
+                    CB->modify_var(&ST(L32_SORDOS_SCENE_STEP), 100);
                 } else {
                     ST(V_EVENT_35) = 1;
                 }
@@ -541,18 +541,18 @@ static void tick_body(void) {
         }
     }
     /* 0xA285 */
-    if ((ST(0xF00) == 1 || ST(0xF00) == 2) && (ST(0xE8C) == 0 || ST(0xE8C) == 10) && ST(0xF24) == 0) {
+    if ((ST(L32_GORK_KONKALITE7_STATE) == 1 || ST(L32_GORK_KONKALITE7_STATE) == 2) && (ST(L32_CHASE_STATE) == 0 || ST(L32_CHASE_STATE) == 10) && ST(L32_ROOM_PLOT_STAGE) == 0) {
         /* 0xA2DC */
-        if (ST(0x74) == 0 && ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(ST_VIE(P_GORK)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && CB->distance(1, 12) > 400) {
-            ST(0x74) = 1;
-            ST(0xF00) = 2;
+        if (ST(L32_KONKALITE7_AMBUSH_ONCE) == 0 && ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(ST_VIE(P_GORK)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && CB->distance(1, 12) > 400) {
+            ST(L32_KONKALITE7_AMBUSH_ONCE) = 1;
+            ST(L32_GORK_KONKALITE7_STATE) = 2;
             CB->select_pile(2, 1);
             CB->bloque(BLOQUE_ALL);
             CB->divers(DV_LOOK_AT_PLAYER, P_KONKALITE7, 1);
             CB->dialogue("L32D13", P_KONKALITE7);
             CB->joindre(P_KONKALITE7, 0, 0, 0, ST(ST_HERO));
             CB->animation("SP77GAR26");
-            CB->modify_var(&ST(0x78), 1);
+            CB->modify_var(&ST(L32_KONKALITE7_FOLLOWUP), 1);
             CB->animation("P77GAR03");
             CB->dialogue("L32D14", P_KONKALITE7);
             CB->vire_col(14, 1);
@@ -560,16 +560,16 @@ static void tick_body(void) {
             return;
         }
         /* 0xA40A */
-        if (ST(0x78) == 1) {
-            ST(0x78) = 2;
+        if (ST(L32_KONKALITE7_FOLLOWUP) == 1) {
+            ST(L32_KONKALITE7_FOLLOWUP) = 2;
             CB->select_pile(1, 1);
             CB->joindre(P_GORK, -1, -1, -1, ST(ST_HERO));
             CB->select_pile(0, 1);
             return;
         }
         /* 0xA467 */
-        if (ST(0x78) == 2 && CB->distance(1, 4) < 350) {
-            ST(0x78) = 0;
+        if (ST(L32_KONKALITE7_FOLLOWUP) == 2 && CB->distance(1, 4) < 350) {
+            ST(L32_KONKALITE7_FOLLOWUP) = 0;
             CB->bloque(BLOQUE_NONE);
             ST(V_ENGAGED_PERSONA) = 3177;   /* P_GORK * 100 + P_KONKALITE7 */
             CB->select_pile(1, 1);
@@ -585,13 +585,13 @@ static void tick_body(void) {
             if (CB->distance(1, 5) >= 300) {
                 CB->select_pile(2, 1);
                 /* 0xA575 */
-                if (ST(0x7C) == 0) {
-                    ST(0x7C) = 1;
+                if (ST(L32_TIMER_OR_FLAG) == 0) {
+                    ST(L32_TIMER_OR_FLAG) = 1;
                     CB->combat(P_KONKALITE7, -1);
                 }
                 CB->divers(DV_RUN, P_KONKALITE7, 1);
                 /* 0xA5BB */
-                if ((ST(0x38) % 20) == 0) {
+                if ((ST(L32_FRAME_COUNTER) % 20) == 0) {
                     CB->joindre(-P_KONKALITE7, -1, -1, -1, ST(ST_HERO));
                 }
                 CB->select_pile(0, 1);
@@ -600,7 +600,7 @@ static void tick_body(void) {
             /* 0xA608 */
             if (CB->distance(1, 5) < 250) {
                 CB->select_pile(2, 1);
-                ST(0x7C) = 0;
+                ST(L32_TIMER_OR_FLAG) = 0;
                 CB->combat(P_KONKALITE7, 0);
                 CB->select_pile(0, 1);
                 return;
@@ -608,29 +608,29 @@ static void tick_body(void) {
         }
     }
     /* 0xA655 */
-    if ((ST(0xF00) == 2 || ST(0xF00) == 3) && ST(0xF24) != 3 && ST(0xF24) != 4 && ST(V_ENGAGED_PERSONA) != 0) {
+    if ((ST(L32_GORK_KONKALITE7_STATE) == 2 || ST(L32_GORK_KONKALITE7_STATE) == 3) && ST(L32_ROOM_PLOT_STAGE) != 3 && ST(L32_ROOM_PLOT_STAGE) != 4 && ST(V_ENGAGED_PERSONA) != 0) {
         /* 0xA6AC */
-        if (ST(ST_VIE(P_GORK)) == VIE_DEAD && ST(0xC38) == 0) {
-            ST(0xC38) = 1;
+        if (ST(ST_VIE(P_GORK)) == VIE_DEAD && ST(L32_GORK_DEAD) == 0) {
+            ST(L32_GORK_DEAD) = 1;
         }
         /* 0xA6DF */
         if (ST(ST_VIE(P_KONKALITE7)) == VIE_DEAD && ST(ST_VIE(P_GORK)) == VIE_DEAD) {
             ST(V_ENGAGED_PERSONA) = 0;
-            ST(0xF00) = 10;
-            ST(0xC38) = 1;
+            ST(L32_GORK_KONKALITE7_STATE) = 10;
+            ST(L32_GORK_DEAD) = 1;
         }
     }
     /* 0xA72D */
-    if (ST(0xF00) != 0 || ST(0xF24) == 5) {
+    if (ST(L32_GORK_KONKALITE7_STATE) != 0 || ST(L32_ROOM_PLOT_STAGE) == 5) {
         /* 0xA759 */
-        if (CB->divers(DV_WAS_HIT, P_KONKALITE7, 0) && ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(0xF24) != 5) {
+        if (CB->divers(DV_WAS_HIT, P_KONKALITE7, 0) && ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(L32_ROOM_PLOT_STAGE) != 5) {
             CB->retire_zone(7);
             CB->select_pile(2, 2);
             CB->divers_empile(DV_WAS_HIT, P_KONKALITE7, 1);
             CB->combat(P_KONKALITE7, -1);
             /* 0xA7CC */
-            if (ST(0xF00) == 1) {
-                ST(0xF00) = 2;
+            if (ST(L32_GORK_KONKALITE7_STATE) == 1) {
+                ST(L32_GORK_KONKALITE7_STATE) = 2;
             }
             /* 0xA801 */
             if ((CB->divers(DV_HP, P_KONKALITE7, -1) - ST(V_HIT_DAMAGE)) > 0) {
@@ -671,8 +671,8 @@ static void tick_body(void) {
             CB->combat(P_GORK, -1);
             CB->divers(DV_CUT_SPEECH, 0, 0);
             /* 0xA9F4 */
-            if (ST(0xF00) == 1 && ST(0xF24) != 5) {
-                ST(0xF00) = 2;
+            if (ST(L32_GORK_KONKALITE7_STATE) == 1 && ST(L32_ROOM_PLOT_STAGE) != 5) {
+                ST(L32_GORK_KONKALITE7_STATE) = 2;
             }
             /* 0xAA3B */
             if ((CB->divers(DV_HP, P_GORK, -1) - ST(V_HIT_DAMAGE)) > 0) {
@@ -700,7 +700,7 @@ static void tick_body(void) {
                 /* 0xAB82 */
                 if (ST(V_ENGAGED_PERSONA) == 0) {
                     /* 0xAB94 */
-                    if (ST(0xF24) != 5) {
+                    if (ST(L32_ROOM_PLOT_STAGE) != 5) {
                         ST(V_ENGAGED_PERSONA) = 3177;   /* P_GORK * 100 + P_KONKALITE7 */
                     } else {
                         ST(V_ENGAGED_PERSONA) = P_GORK;
@@ -708,7 +708,7 @@ static void tick_body(void) {
                 }
                 CB->select_pile(2, 1);
                 /* 0xABD3 */
-                if (ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(0xF24) != 5) {
+                if (ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(L32_ROOM_PLOT_STAGE) != 5) {
                     CB->combat(P_KONKALITE7, 0);
                 }
             }
@@ -716,7 +716,7 @@ static void tick_body(void) {
         }
     }
     /* 0xAC11 */
-    if (ST(0xF24) == 6) {
+    if (ST(L32_ROOM_PLOT_STAGE) == 6) {
         /* 0xAC2B */
         if (CB->divers(DV_WAS_HIT, 29, 0) && ST(ST_VIE(29)) != VIE_DEAD) {
             CB->select_pile(1, 2);
@@ -753,12 +753,12 @@ static void tick_body(void) {
         }
     }
     /* 0xAE03 */
-    if (ST(0xF24) == 1 && ST(ST_LOCKED_CAMERA) >= 2) {
-        ST(0xF78) = 1;
-        ST(0xF24) = 2;
+    if (ST(L32_ROOM_PLOT_STAGE) == 1 && ST(ST_LOCKED_CAMERA) >= 2) {
+        ST(L32_CAMERA_CUT_DONE) = 1;
+        ST(L32_ROOM_PLOT_STAGE) = 2;
     }
     /* 0xAE45 */
-    if (ST(0xF24) == 3 || ST(0xF24) == 4) {
+    if (ST(L32_ROOM_PLOT_STAGE) == 3 || ST(L32_ROOM_PLOT_STAGE) == 4) {
         /* 0xAE71 */
         if (CB->divers(DV_WAS_HIT, P_KONKALITE3, 0) && ST(ST_VIE(P_KONKALITE3)) != VIE_DEAD) {
             CB->select_pile(1, 2);
@@ -766,8 +766,8 @@ static void tick_body(void) {
             CB->combat(P_KONKALITE3, -1);
             ST(ST_VIE(P_KONKALITE3)) = VIE_DEAD;
             /* 0xAED6 */
-            if (ST(0xF28) == 0) {
-                ST(0xF28) = 1;
+            if (ST(L32_KONKALITE3_STATE) == 0) {
+                ST(L32_KONKALITE3_STATE) = 1;
             }
             /* 0xAEF4 */
             if (ST(V_ENGAGED_PERSONA) == 0) {
@@ -787,7 +787,7 @@ static void tick_body(void) {
             CB->select_pile(2, 2);
             CB->divers_empile(DV_WAS_HIT, P_MALROT6, 1);
             ST(ST_VIE(P_MALROT6)) = VIE_DEAD;
-            ST(0xC28) = 10;
+            ST(L32_MALROT6_DEAD) = 10;
             CB->stop_joindre(-P_MALROT6);
             CB->divers_empile(DV_BONE_SOUND, 66, 0);
             CB->animation("SP66IMP52");
@@ -805,15 +805,15 @@ static void tick_body(void) {
             return;
         }
         /* 0xB0AC */
-        if (ST(0xF28) == 0 && ST(ST_VIE(P_KONKALITE3)) != VIE_DEAD) {
+        if (ST(L32_KONKALITE3_STATE) == 0 && ST(ST_VIE(P_KONKALITE3)) != VIE_DEAD) {
             /* 0xB0CD */
-            if (ST(0x7C) == 0) {
-                ST(0x80) = 0;
-                ST(0x7C) = ST(ST_GAME_TIME);
+            if (ST(L32_TIMER_OR_FLAG) == 0) {
+                ST(L32_KONKALITE3_TAUNT) = 0;
+                ST(L32_TIMER_OR_FLAG) = ST(ST_GAME_TIME);
             }
             /* 0xB102 */
-            if (ST(0x80) == 0 && (ST(ST_GAME_TIME) - ST(0x7C)) > 5000) {
-                ST(0x80) = CB->random(3) + 1;
+            if (ST(L32_KONKALITE3_TAUNT) == 0 && (ST(ST_GAME_TIME) - ST(L32_TIMER_OR_FLAG)) > 5000) {
+                ST(L32_KONKALITE3_TAUNT) = CB->random(3) + 1;
                 CB->bloque(BLOQUE_ALL);
                 CB->select_pile(1, 1);
                 ST(V_DLG_RANDOM) = CB->random(3);
@@ -832,27 +832,27 @@ static void tick_body(void) {
                 CB->animation("SP66ATT03");
                 CB->animation("P66ATT02");
                 /* 0xB1F9 */
-                if (ST(0x80) == 1) {
+                if (ST(L32_KONKALITE3_TAUNT) == 1) {
                     lieu_action_register("L32D666", P_KONKALITE3, "SP73ATT02", "SP73ATT01");
                 }
                 /* 0xB224 */
-                if (ST(0x80) == 2) {
+                if (ST(L32_KONKALITE3_TAUNT) == 2) {
                     lieu_action_register("L32D667", P_KONKALITE3, "SP73ATT02", "SP73ATT01");
                 }
                 /* 0xB24F */
-                if (ST(0x80) == 3) {
+                if (ST(L32_KONKALITE3_TAUNT) == 3) {
                     lieu_action_register("L32D668", P_KONKALITE3, "SP73ATT02", "SP73ATT01");
                 }
                 CB->animation("Sar_50");
-                CB->modify_var(&ST(0x7C), 0);
+                CB->modify_var(&ST(L32_TIMER_OR_FLAG), 0);
                 CB->bloque(BLOQUE_NONE);
                 CB->select_pile(0, 1);
                 return;
             }
             /* 0xB2B0 */
-            if (ST(0x84) == 0 && (CB->distance(1, 12) > 400 || ST(0xC28) == 10 || (ST(V_PLAYER_STRIKE) == 1 && CB->divers(DV_CAN_FIGHT, 9, 2) && !CB->divers(DV_WAS_HIT, P_MALROT6, 0) && !CB->divers(DV_WAS_HIT, P_KONKALITE3, 0)))) {
-                ST(0x84) = 1;
-                ST(0xF28) = 1;
+            if (ST(L32_CHEER_PLAYED) == 0 && (CB->distance(1, 12) > 400 || ST(L32_MALROT6_DEAD) == 10 || (ST(V_PLAYER_STRIKE) == 1 && CB->divers(DV_CAN_FIGHT, 9, 2) && !CB->divers(DV_WAS_HIT, P_MALROT6, 0) && !CB->divers(DV_WAS_HIT, P_KONKALITE3, 0)))) {
+                ST(L32_CHEER_PLAYED) = 1;
+                ST(L32_KONKALITE3_STATE) = 1;
                 CB->select_pile(1, 2);
                 CB->bloque(BLOQUE_ALL);
                 CB->divers(DV_LOOK_AT_PLAYER, P_MALROT6, 1);
@@ -871,10 +871,10 @@ static void tick_body(void) {
             }
         }
         /* 0xB451 */
-        if (ST(0xF28) == 1 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_KONKALITE3)) == VIE_DEAD) {
+        if (ST(L32_KONKALITE3_STATE) == 1 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_KONKALITE3)) == VIE_DEAD) {
             CB->select_pile(1, 1);
             ST(V_ENGAGED_PERSONA) = 0;
-            ST(0xF28) = 2;
+            ST(L32_KONKALITE3_STATE) = 2;
             /* 0xB4AF */
             if (ST(ST_VIE(P_MALROT6)) != VIE_DEAD) {
                 CB->dialogue("L32D225", P_MALROT6);
@@ -883,9 +883,9 @@ static void tick_body(void) {
         }
     }
     /* 0xB4DE */
-    if (ST(0xF24) == 5 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GORK)) == VIE_DEAD) {
+    if (ST(L32_ROOM_PLOT_STAGE) == 5 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GORK)) == VIE_DEAD) {
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0xC38) = 1;
+        ST(L32_GORK_DEAD) = 1;
     }
 }
 
@@ -918,7 +918,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L32_CHASE_STATE) == 1) {
         l32_trig00();   /* 0x100110D9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
