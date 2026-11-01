@@ -24,6 +24,7 @@
 #include "game_detection.h"
 #include "game_init.h"
 #include "menu/menu.h"
+#include "menu/screens.h"
 #include "gamecfg.h"
 #include "gamma.h"
 #include "scene.h"
@@ -278,11 +279,14 @@ i32 ls_main(system_t *system, c8 **argv) {
      * publisher/title splash (EADKE) at boot so we exercise the CRH decoder
      * + CoreAudio streaming end-to-end. ls_play_movie skips gracefully if
      * the file is missing rather than crash. */
+    /* process_mainmenu_437EB7 0x43839C: no DKEGAME.CFG -> menu_process_gamma, then EADKE.
+     * DKE_GAMMA_PICKER=1 shows it headless too. */
+    if ((first_run && !getenv("DKE_NEWGAME")) || getenv("DKE_GAMMA_PICKER"))
+        menu_gamma_run();
     if (!getenv("DKE_NEWGAME")) {  /* skip the movies in headless test mode */
         /* process_mainmenu_437EB7 0x43837C: EADKE (sub_437DDD) on every run;
-         * the first time (no DKEGAME.CFG) the gamma picker and then the
-         * SC01 intro follow. The gamma picker writes the cfg; the port has
-         * no picker yet, so the cfg is written right after SC01. */
+         * the first time (no DKEGAME.CFG) the SC01 intro follows (the gamma
+         * picker came first, above). The cfg is written right after SC01. */
         ls_play_movie("HDISK:>EARTH>sc>EADKE.CRH");
         if (first_run) {
             ls_play_movie("HDISK:>EARTH>sc>SC01.CRH");
