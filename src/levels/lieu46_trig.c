@@ -42,12 +42,12 @@ void l46_trig00(void) {
     if (ST(ST_START_POINT(46)) == 1) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 6;
-        ST(0xB4C) = 3;
-        ST(0x32C) = 0x1C;
+        ST(L46_EXIT_STAGE) = 3;
+        ST(L46_RYL21_SKIP) = 0x1C;
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0xE0) = 0;
+    ST(L46_BODY_SEARCHED) = 0;
+    ST(L46_CAM2_LOCKED) = 0;
+    ST(L46_ZONE4_SEEN) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_PRE90_OBJECT) = 0;
@@ -76,15 +76,15 @@ void l46_trig00(void) {
         CB->pos_perso(ST(ST_HERO), 3021, 515, 0x9C40, 1, "ar", 6, 0);
     }
     /* 0x75F3 */
-    if (ST(0x32C) == 0 && ST(0x330) == 0) {
+    if (ST(L46_RYL21_SKIP) == 0 && ST(L46_RYL21_AMBUSH_DONE) == 0) {
         CB->pos_perso(P_RYLSADHAR21, 1820, -150, 0x9470, 1, "P21ARR01", 3, 0);
     }
     /* 0x763C */
-    if (ST(0x330) != 0) {
+    if (ST(L46_RYL21_AMBUSH_DONE) != 0) {
         CB->pos_perso(P_RYLSADHAR21, 1820, -150, 0x9470, 1, "P21cad", 3, 0);
     }
     /* 0x7673 */
-    if (ST(0xB4C) <= 2) {
+    if (ST(L46_EXIT_STAGE) <= 2) {
         CB->vire_col(0xC, 0);
     } else {
         CB->ajoute_zone(4, 2778, -251, 210, 200, 1);
@@ -135,8 +135,8 @@ static void trig03(void) {
     /* 0x7F43 */
     if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0) {
         /* 0x7F7F */
-        if (ST(0x64) == 0) {
-            ST(0x64) = 1;
+        if (ST(L46_BODY_SEARCHED) == 0) {
+            ST(L46_BODY_SEARCHED) = 1;
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             /* 0x7FB4 */
@@ -199,7 +199,7 @@ static void trig03(void) {
             return;
         }
         /* 0x8246 */
-        if (ST(0x64) == 1) {
+        if (ST(L46_BODY_SEARCHED) == 1) {
             CB->fouille(P_RYLSADHAR21);
             return;
         }
@@ -209,9 +209,9 @@ static void trig03(void) {
 /* trigger 4 — sub_10008261 */
 static void trig04(void) {
     /* 0x8270 */
-    if (ST(ST_SCRIPT_BUSY) == 0 && ST(0xE0) == 0) {
+    if (ST(ST_SCRIPT_BUSY) == 0 && ST(L46_ZONE4_SEEN) == 0) {
         CB->bloque(BLOQUE_ALL);
-        ST(0xE0) = 1;
+        ST(L46_ZONE4_SEEN) = 1;
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x82BA */
         if (ST(ST_HERO) == P_ARKHAN2) {

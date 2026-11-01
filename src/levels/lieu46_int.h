@@ -11,6 +11,17 @@
 
 /* ST() reads g_lvl_S, the DLL's dword_1001859C. */
 
+/* Level 46 script variables */
+#define L46_BODY_SEARCHED      0x064  /* Rylsadhar21 corpse (zone 3): 0 = first action plays the remark, 1 = afterwards fouille */
+#define L46_CAM2_LOCKED        0x068  /* tick: 1 = camera 2 forced locked (exit stage >= 3), reset to auto camera 1 when hero X < 2400 */
+#define L46_ZONE4_SEEN         0x0E0  /* zone 4 remark (LCOD70/71) said once; 0 = not yet, 1 = done */
+#define L46_RYL21_SKIP         0x32C  /* event-3 slot shared by many levels: nonzero skips the Rylsadhar21 ambush; start point 1 presets 0x1C */
+#define L46_RYL21_AMBUSH_DONE  0x330  /* event-4 slot: 1 = Rylsadhar21 ambush (L46D01..) played, he lies dead (P21cad) */
+#define L46_EXIT_STAGE         0xB4C  /* route progress stage shared with LIEU47/51/23: start point 1 sets 3; >= 3 opens zone 4 and camera lock, <= 2 blocks collision 12 */
+#define L46_DEATH_ENDING_DONE   0xE8C  /* engine-set: 1 = death ending already handled, INIT then runs the normal setup even when the hero is dead; same slot in all level scripts */
+#define L46_QUEST_STAGE_EB0    0xEB0  /* quest slot shared with LIEU28/25/6/5: 1 or 2 (in progress) becomes 3 (done) when the ambush plays */
+#define L46_PLOT_STAGE_F24     0xF24  /* plot stage shared with LIEU14/18/54/6: the ambush sets 3 */
+
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu46_trig.c). */
 void l46_trigger(i32 idx);
 

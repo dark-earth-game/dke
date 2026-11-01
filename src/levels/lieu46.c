@@ -20,13 +20,13 @@
  * `return` == original `jmp` to the epilogue. */
 static void tick_body(void) {
     /* 0x76CE */
-    if (ST(0xB4C) >= 3 && ST(0x68) == 0 && ST(ST_LOCKED_CAMERA) == 2) {
-        ST(0x68) = 1;
+    if (ST(L46_EXIT_STAGE) >= 3 && ST(L46_CAM2_LOCKED) == 0 && ST(ST_LOCKED_CAMERA) == 2) {
+        ST(L46_CAM2_LOCKED) = 1;
         CB->change_camera(2, CAM_LOCKED);
     }
     /* 0x771A */
-    if (ST(0x68) == 1 && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 2400) {
-        ST(0x68) = 0;
+    if (ST(L46_CAM2_LOCKED) == 1 && CB->divers(DV_DESC_POS, ST(ST_HERO), 0) < 2400) {
+        ST(L46_CAM2_LOCKED) = 0;
         ST(ST_LOCKED_CAMERA) = 1;
         CB->change_camera(1, CAM_AUTO);
     }
@@ -64,32 +64,32 @@ static void tick_body(void) {
         ST(V_EVENT_53) = 0;
         CB->animation("Sar_10");
         /* 0x78D1 */
-        if (ST(0x32C) == 0 && ST(0x330) == 0) {
+        if (ST(L46_RYL21_SKIP) == 0 && ST(L46_RYL21_AMBUSH_DONE) == 0) {
             CB->modify_var(&ST(V_EVENT_2), 1);
         }
         /* 0x790C */
-        if (ST(0x32C) != 0 || ST(0x330) != 0) {
+        if (ST(L46_RYL21_SKIP) != 0 || ST(L46_RYL21_AMBUSH_DONE) != 0) {
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
         }
     }
     /* 0x795A */
-    if (CB->divers(DV_DESC_POS, ST(ST_HERO), 1) > -450 && ST(0x32C) == 0 && ST(0x330) == 0 && ST(V_EVENT_2) == 0 && ST(V_EVENT_53) == 0) {
+    if (CB->divers(DV_DESC_POS, ST(ST_HERO), 1) > -450 && ST(L46_RYL21_SKIP) == 0 && ST(L46_RYL21_AMBUSH_DONE) == 0 && ST(V_EVENT_2) == 0 && ST(V_EVENT_53) == 0) {
         ST(V_EVENT_2) = 1;
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
     }
     /* 0x79DA */
-    if (ST(0x32C) == 0 && ST(0x330) == 0 && ST(V_EVENT_2) == 1) {
+    if (ST(L46_RYL21_SKIP) == 0 && ST(L46_RYL21_AMBUSH_DONE) == 0 && ST(V_EVENT_2) == 1) {
         CB->bloque(BLOQUE_ALL);
         ST(V_EVENT_2) = 0;
-        ST(0x330) = 1;
-        ST(0xF24) = 3;
+        ST(L46_RYL21_AMBUSH_DONE) = 1;
+        ST(L46_PLOT_STAGE_F24) = 3;
         CB->change_camera(7, CAM_LOCKED);
         CB->joindre(-ST(ST_HERO), 0, 0, 0x64, -1);
         /* 0x7A75 */
-        if (ST(0xEB0) == 1 || ST(0xEB0) == 2) {
-            ST(0xEB0) = 3;
+        if (ST(L46_QUEST_STAGE_EB0) == 1 || ST(L46_QUEST_STAGE_EB0) == 2) {
+            ST(L46_QUEST_STAGE_EB0) = 3;
         }
         /* 0x7AA8 */
         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -184,7 +184,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L46_DEATH_ENDING_DONE) == 1) {
         l46_trig00();   /* 0x10008EB9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
