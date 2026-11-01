@@ -61,7 +61,7 @@ static void tick_body(void) {
     /* 0x885A */
     if (ST(ST_COMBAT_STANCE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && CB->divers(DV_CAN_FIGHT, 0, 0)) {
         /* 0x8892 */
-        if (ST(ST_LOCKED_CAMERA) != 0 && ST(V_EVENT_51) == 0 && ST(ST_VIE(P_MALROT2)) != VIE_DEAD && ST(0x58) == 0) {
+        if (ST(ST_LOCKED_CAMERA) != 0 && ST(V_EVENT_51) == 0 && ST(ST_VIE(P_MALROT2)) != VIE_DEAD && ST(L18_MALROT2_FIGHT_STARTED) == 0) {
             CB->select_pile(0, 2);
             CB->select_pile(1, 2);
             CB->select_pile(2, 2);
@@ -70,20 +70,20 @@ static void tick_body(void) {
             CB->evenement(1, -1);
             ST(V_EVENT_0) = 0;
             ST(V_EVENT_1) = 0;
-            ST(0x58) = 1;
+            ST(L18_MALROT2_FIGHT_STARTED) = 1;
             ST(V_ENGAGED_PERSONA) |= 0x662;   /* engaged: P_ARMAL << 8 | P_MALROT2 */
             CB->stop_joindre(-P_MALROT2);
             CB->animation("Sar_10");
             CB->animation("SP62GAR02_10");
             CB->animation("SP06GAR02_10");
             CB->modify_var(&ST(V_EVENT_51), 1);
-            CB->modify_var(&ST(0xE0), 1);
-            CB->modify_var(&ST(0xDA8), 3);
+            CB->modify_var(&ST(L18_ARMAL_FIGHT_REQ), 1);
+            CB->modify_var(&ST(L18_FIGHT_PHASE), 3);
             CB->select_pile(0, 1);
             return;
         }
         /* 0x89E5 */
-        if (ST(ST_LOCKED_CAMERA) == 0 && ST(0x58) == 0 && ST(ST_VIE(P_MALROT2)) == 1) {
+        if (ST(ST_LOCKED_CAMERA) == 0 && ST(L18_MALROT2_FIGHT_STARTED) == 0 && ST(ST_VIE(P_MALROT2)) == 1) {
             CB->select_pile(0, 2);
             CB->select_pile(1, 2);
             CB->select_pile(2, 2);
@@ -92,12 +92,12 @@ static void tick_body(void) {
             CB->evenement(1, -1);
             ST(V_EVENT_0) = 0;
             ST(V_EVENT_1) = 0;
-            ST(0x58) = 1;
+            ST(L18_MALROT2_FIGHT_STARTED) = 1;
             ST(V_ENGAGED_PERSONA) |= 0x662;   /* engaged: P_ARMAL << 8 | P_MALROT2 */
             CB->stop_joindre(-P_MALROT2);
             CB->animation("Sar_10");
             CB->animation("SP62GAR02_10");
-            CB->modify_var(&ST(0xF0), 1);
+            CB->modify_var(&ST(L18_ARMAL_ATTACKED), 1);
             CB->select_pile(0, 1);
             return;
         }
@@ -220,11 +220,11 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x90EB */
-    if (ST(ST_VIE(P_ARMAL)) >= 2 && ST(ST_VIE(P_MALROT2)) >= 2 && ST(0xF10) == 0) {
-        ST(0xF10) = 1;
+    if (ST(ST_VIE(P_ARMAL)) >= 2 && ST(ST_VIE(P_MALROT2)) >= 2 && ST(L18_BOTH_KNOCKED_OUT) == 0) {
+        ST(L18_BOTH_KNOCKED_OUT) = 1;
         ST(ST_SCRIPT_BUSY) = 0;
         CB->change_camera(0, CAM_AUTO);
-        CB->modify_var(&ST(0x88), 4);
+        CB->modify_var(&ST(L18_DOOR_RETURN_STATE), 4);
         CB->ajoute_zone(7, 2804, 1983, 120, 100, 0);
         CB->ajoute_zone(8, 2117, 2100, 120, 100, 0);
     }
@@ -275,8 +275,8 @@ static void tick_body(void) {
                     ST(V_EVENT_0) = 0;
                     ST(V_EVENT_1) = 0;
                     CB->modify_var(&ST(V_EVENT_51), 1);
-                    CB->modify_var(&ST(0xE0), 1);
-                    CB->modify_var(&ST(0xDA8), 3);
+                    CB->modify_var(&ST(L18_ARMAL_FIGHT_REQ), 1);
+                    CB->modify_var(&ST(L18_FIGHT_PHASE), 3);
                 } else {
                     CB->bloque(BLOQUE_NONE);
                 }
@@ -336,9 +336,9 @@ static void tick_body(void) {
                 CB->animation("P62_65535");
                 CB->animation("SP62GAR02_1");
                 /* 0x97AF */
-                if (ST(ST_VIE(P_ARMAL)) != VIE_DEAD && ST(0xF0) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
-                    CB->modify_var(&ST(0xD8), 1);
-                    CB->modify_var(&ST(0xF0), 1);
+                if (ST(ST_VIE(P_ARMAL)) != VIE_DEAD && ST(L18_ARMAL_ATTACKED) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
+                    CB->modify_var(&ST(L18_EVENT52_ARMED), 1);
+                    CB->modify_var(&ST(L18_ARMAL_ATTACKED), 1);
                 }
                 CB->combat(P_MALROT2, 0);
                 ST(V_ENGAGED_PERSONA) |= 0x62;   /* engaged: P_MALROT2 (low byte) */
@@ -358,9 +358,9 @@ static void tick_body(void) {
         CB->divers_empile(DV_WAS_HIT, P_MALROT2, 1);
     }
     /* 0x9906 */
-    if ((ST(0xC28) == 0 || ST(0xC28) == 10) && ST(ST_VIE(P_ARMAL)) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(0x70) != 1000) {
+    if ((ST(L18_MALROT_CHASE_STAGE) == 0 || ST(L18_MALROT_CHASE_STAGE) == 10) && ST(ST_VIE(P_ARMAL)) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(L18_MALROT2_ENCOUNTER_STEP) != 1000) {
         /* 0x995D */
-        if (ST(V_EVENT_1) == 1 && ST(0x74) == 0 && ST(ST_VIE(P_ARMAL)) == 1) {
+        if (ST(V_EVENT_1) == 1 && ST(L18_ARMAL_PATROL_STEP) == 0 && ST(ST_VIE(P_ARMAL)) == 1) {
             CB->pos_perso(P_ARMAL, 2117, 2000, 0x4650, 1, "P06ATT02", 4, 0);
             ST(V_EVENT_1) = 0;
             CB->select_pile(1, 1);
@@ -379,8 +379,8 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x9A60 */
-        if (ST(0x54) == 0 && ST(0xBC8) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) == 1 && ST(0x74) == 0 && ST(0xF0) == 0) {
-            ST(0x74) = 10;
+        if (ST(L18_ARMAL_ARRIVAL_LOCK) == 0 && ST(L18_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) == 1 && ST(L18_ARMAL_PATROL_STEP) == 0 && ST(L18_ARMAL_ATTACKED) == 0) {
+            ST(L18_ARMAL_PATROL_STEP) = 10;
             CB->bloque(BLOQUE_ALL);
             CB->joindre(-ST(ST_HERO), 0, 0, 0, P_ARMAL);
             ST(V_EVENT_1) = 0;
@@ -390,14 +390,14 @@ static void tick_body(void) {
             CB->animation("SP06ARR01_10");
             CB->vire_col(8, 1);
             CB->animation("Sar_10");
-            CB->modify_var(&ST(0x74), 1);
+            CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
             CB->bloque(BLOQUE_NONE);
             return;
         }
         /* 0x9B8D */
-        if (ST(0xBC8) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) != 1 && ST(0x74) != 0 && ST(0x6C) == 0) {
-            ST(0x74) = 0;
-            ST(0x54) = 0;
+        if (ST(L18_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) != 1 && ST(L18_ARMAL_PATROL_STEP) != 0 && ST(L18_ARMAL_STANCE_STATE) == 0) {
+            ST(L18_ARMAL_PATROL_STEP) = 0;
+            ST(L18_ARMAL_ARRIVAL_LOCK) = 0;
             CB->select_pile(1, 1);
             CB->stop_joindre(P_ARMAL);
             CB->pos_perso(P_ARMAL, 2117, 2010, 0x61A8, 1, "P06ARR01", 4, 0);
@@ -408,26 +408,26 @@ static void tick_body(void) {
         }
     }
     /* 0x9C71 */
-    if ((ST(0xC28) == 0 || ST(0xC28) == 10) && ST(ST_VIE(P_ARMAL)) == 1) {
+    if ((ST(L18_MALROT_CHASE_STAGE) == 0 || ST(L18_MALROT_CHASE_STAGE) == 10) && ST(ST_VIE(P_ARMAL)) == 1) {
         /* 0x9CA7 */
-        if (ST(V_EVENT_0) == 1 && ST(0x90) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT2)) == 1) {
-            ST(0x90) = 1;
+        if (ST(V_EVENT_0) == 1 && ST(L18_MALROT2_SEQ_STEP) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT2)) == 1) {
+            ST(L18_MALROT2_SEQ_STEP) = 1;
         }
         /* 0x9CFB */
-        if (ST(0x94) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT2)) == 1) {
+        if (ST(L18_MALROT2_NEAR) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT2)) == 1) {
             /* 0x9D2E */
-            if (ST(V_EVENT_0) != 0 && ST(0x90) <= 1) {
+            if (ST(V_EVENT_0) != 0 && ST(L18_MALROT2_SEQ_STEP) <= 1) {
                 CB->select_pile(2, 1);
                 ST(V_EVENT_0) = 0;
-                ST(0x90) = 1;
+                ST(L18_MALROT2_SEQ_STEP) = 1;
                 CB->joindre(-P_MALROT2, 2912, 1682, 0xA028, -1);
-                CB->modify_var(&ST(0x90), 2);
+                CB->modify_var(&ST(L18_MALROT2_SEQ_STEP), 2);
                 CB->select_pile(0, 1);
             }
             /* 0x9DC0 */
-            if (ST(0x90) == 2 && !CB->on_joindre(P_MALROT2)) {
+            if (ST(L18_MALROT2_SEQ_STEP) == 2 && !CB->on_joindre(P_MALROT2)) {
                 CB->select_pile(2, 1);
-                ST(0x90) = 3;
+                ST(L18_MALROT2_SEQ_STEP) = 3;
                 CB->stop_joindre(-P_MALROT2);
                 CB->joindre(-P_MALROT2, 0, 0, 0xA028, -1);
                 /* 0x9E25 */
@@ -472,18 +472,18 @@ static void tick_body(void) {
                 CB->select_pile(0, 1);
             }
             /* 0x9F86 */
-            if (ST(V_EVENT_0) != 0 && ST(0x90) == 3) {
+            if (ST(V_EVENT_0) != 0 && ST(L18_MALROT2_SEQ_STEP) == 3) {
                 CB->select_pile(2, 1);
                 ST(V_EVENT_0) = 0;
-                ST(0x90) = 4;
+                ST(L18_MALROT2_SEQ_STEP) = 4;
                 CB->joindre(-P_MALROT2, 2825, 1880, 0xFDE8, -1);
-                CB->modify_var(&ST(0x90), 5);
+                CB->modify_var(&ST(L18_MALROT2_SEQ_STEP), 5);
                 CB->select_pile(0, 1);
             }
             /* 0xA018 */
-            if (ST(0x90) == 5 && !CB->on_joindre(P_MALROT2)) {
+            if (ST(L18_MALROT2_SEQ_STEP) == 5 && !CB->on_joindre(P_MALROT2)) {
                 CB->select_pile(2, 1);
-                ST(0x90) = 0;
+                ST(L18_MALROT2_SEQ_STEP) = 0;
                 CB->stop_joindre(-P_MALROT2);
                 CB->joindre(-P_MALROT2, 0, 0, 0xFDE8, -1);
                 /* 0xA07D */
@@ -502,24 +502,24 @@ static void tick_body(void) {
             }
         }
         /* 0xA0F6 */
-        if (ST(ST_VIE(P_MALROT2)) == 1 && CB->distance(3, 6) < 240 && ST(V_ENGAGED_PERSONA) == 0 && ST(0x94) == 0) {
+        if (ST(ST_VIE(P_MALROT2)) == 1 && CB->distance(3, 6) < 240 && ST(V_ENGAGED_PERSONA) == 0 && ST(L18_MALROT2_NEAR) == 0) {
             /* 0xA144 */
-            if (ST(0x90) == 2) {
-                ST(0x90) = 1;
+            if (ST(L18_MALROT2_SEQ_STEP) == 2) {
+                ST(L18_MALROT2_SEQ_STEP) = 1;
             }
             /* 0xA165 */
-            if (ST(0x90) == 4) {
-                ST(0x90) = 3;
+            if (ST(L18_MALROT2_SEQ_STEP) == 4) {
+                ST(L18_MALROT2_SEQ_STEP) = 3;
             }
             /* 0xA186 */
-            if (ST(0x90) == 0) {
-                ST(0x90) = 5;
+            if (ST(L18_MALROT2_SEQ_STEP) == 0) {
+                ST(L18_MALROT2_SEQ_STEP) = 5;
             }
             /* 0xA1A7 */
-            if (ST(0x90) == 3) {
-                ST(0x90) = 2;
+            if (ST(L18_MALROT2_SEQ_STEP) == 3) {
+                ST(L18_MALROT2_SEQ_STEP) = 2;
             }
-            ST(0x94) = 1;
+            ST(L18_MALROT2_NEAR) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->evenement(0, -1);
             CB->animation("SP62ARR01_10");
@@ -531,32 +531,32 @@ static void tick_body(void) {
             CB->joindre_perm(P_MALROT2, ST(ST_HERO));
             CB->animation("SP62ARR01_10");
             /* 0xA275 */
-            if (ST(0xBC8) == 2 && ST(0x8A4) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0) {
-                ST(0x8A4) = 1;
+            if (ST(L18_ARMAL_STAGE) == 2 && ST(L18_ARMAL_DIALOGUE_SEEN) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0) {
+                ST(L18_ARMAL_DIALOGUE_SEEN) = 1;
                 lieu_action_register("L18D190A", P_MALROT2, "SP62DIA62", "SP62ARR01_10");
                 lieu_action_register("L18D190B", P_MALROT2, "SP62DIA63", "SP62ARR01_10");
             }
             CB->bloque(BLOQUE_NONE);
-            CB->modify_var(&ST(0x70), 1);
+            CB->modify_var(&ST(L18_MALROT2_ENCOUNTER_STEP), 1);
             return;
         }
         /* 0xA319 */
-        if (ST(ST_VIE(P_MALROT2)) == 1 && CB->distance(3, 6) > 400 && ST(V_ENGAGED_PERSONA) == 0 && ST(0x94) == 1) {
-            ST(0x94) = 0;
-            ST(0x70) = 0;
+        if (ST(ST_VIE(P_MALROT2)) == 1 && CB->distance(3, 6) > 400 && ST(V_ENGAGED_PERSONA) == 0 && ST(L18_MALROT2_NEAR) == 1) {
+            ST(L18_MALROT2_NEAR) = 0;
+            ST(L18_MALROT2_ENCOUNTER_STEP) = 0;
             CB->stop_joindre(-P_MALROT2);
             /* 0xA38D */
-            if (ST(0x90) <= 1 || ST(0x90) == 3) {
+            if (ST(L18_MALROT2_SEQ_STEP) <= 1 || ST(L18_MALROT2_SEQ_STEP) == 3) {
                 CB->evenement(0, 200);
             }
         }
     }
     /* 0xA3BB */
-    if (ST(0x74) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_ARMAL)) == 1) {
+    if (ST(L18_ARMAL_PATROL_STEP) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_ARMAL)) == 1) {
         /* 0xA3EB */
-        if (ST(0x6C) == 0 && ST(ST_COMBAT_STANCE) >= 1 && CB->direction_perso(P_ARMAL) && ST(ST_LOCKED_CAMERA) == 1) {
-            ST(0x6C) = 1;
-            ST(0x74) = 40;
+        if (ST(L18_ARMAL_STANCE_STATE) == 0 && ST(ST_COMBAT_STANCE) >= 1 && CB->direction_perso(P_ARMAL) && ST(ST_LOCKED_CAMERA) == 1) {
+            ST(L18_ARMAL_STANCE_STATE) = 1;
+            ST(L18_ARMAL_PATROL_STEP) = 40;
             ST(ST_SCRIPT_BUSY) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_ARMAL);
@@ -564,15 +564,15 @@ static void tick_body(void) {
             CB->animation("P06GAR02_10");
             CB->dialogue("L18D10", P_ARMAL);
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
-            CB->modify_var(&ST(0x74), 1);
+            CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
             CB->bloque(BLOQUE_NONE);
             return;
         }
         /* 0xA4C0 */
-        if (ST(0x6C) == 1 && ST(ST_COMBAT_STANCE) == 0) {
+        if (ST(L18_ARMAL_STANCE_STATE) == 1 && ST(ST_COMBAT_STANCE) == 0) {
             CB->bloque(BLOQUE_ALL);
-            ST(0x6C) = 0;
-            ST(0x74) = 40;
+            ST(L18_ARMAL_STANCE_STATE) = 0;
+            ST(L18_ARMAL_PATROL_STEP) = 40;
             CB->stop_joindre(-P_ARMAL);
             CB->animation("SP06GAR27");
             CB->animation("P06ARR01_100");
@@ -582,29 +582,29 @@ static void tick_body(void) {
             CB->bloque(BLOQUE_NONE);
             /* 0xA559 */
             if (ST(ST_LOCKED_CAMERA) != 1) {
-                ST(0x74) = 0;
+                ST(L18_ARMAL_PATROL_STEP) = 0;
                 CB->joindre(-P_ARMAL, 2117, 2000, 0x4650, -1);
                 CB->evenement(1, 1000);
             }
             /* 0xA5A3 */
             if (ST(ST_LOCKED_CAMERA) == 1) {
-                CB->modify_var(&ST(0x74), 1);
+                CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
             }
             return;
         }
         /* 0xA5CB */
-        if (ST(0x6C) == 1 && ST(ST_COMBAT_STANCE) >= 1) {
-            ST(0x6C) = 2;
+        if (ST(L18_ARMAL_STANCE_STATE) == 1 && ST(ST_COMBAT_STANCE) >= 1) {
+            ST(L18_ARMAL_STANCE_STATE) = 2;
             ST(V_EVENT_51) = 1;
-            ST(0xE0) = 1;
+            ST(L18_ARMAL_FIGHT_REQ) = 1;
         }
     }
     /* 0xA613 */
-    if (ST(0x70) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_ARMAL)) < 2) {
+    if (ST(L18_MALROT2_ENCOUNTER_STEP) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_ARMAL)) < 2) {
         /* 0xA646 */
         if (ST(V_EVENT15_STEP) == 0 && ST(ST_COMBAT_STANCE) == 1 && CB->direction_perso(P_MALROT2)) {
             ST(V_EVENT15_STEP) = 1;
-            ST(0x70) = 0;
+            ST(L18_MALROT2_ENCOUNTER_STEP) = 0;
             ST(ST_SCRIPT_BUSY) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_MALROT2);
@@ -613,13 +613,13 @@ static void tick_body(void) {
             CB->dialogue("L18D134", P_MALROT2);
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
-            CB->modify_var(&ST(0x70), 1);
+            CB->modify_var(&ST(L18_MALROT2_ENCOUNTER_STEP), 1);
             return;
         }
         /* 0xA70F */
         if (ST(V_EVENT15_STEP) == 1 && ST(ST_COMBAT_STANCE) == 0) {
             ST(V_EVENT15_STEP) = 0;
-            ST(0x70) = 0;
+            ST(L18_MALROT2_ENCOUNTER_STEP) = 0;
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_MALROT2);
             CB->animation("SP62GAR27");
@@ -627,50 +627,50 @@ static void tick_body(void) {
             CB->dialogue("L18D135", P_MALROT2);
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
-            CB->modify_var(&ST(0x70), 1);
+            CB->modify_var(&ST(L18_MALROT2_ENCOUNTER_STEP), 1);
             return;
         }
     }
     /* 0xA7B6 */
-    if (ST(0x74) == 1) {
-        ST(0x74) = 2;
-        ST(0x70) = 1000;
+    if (ST(L18_ARMAL_PATROL_STEP) == 1) {
+        ST(L18_ARMAL_PATROL_STEP) = 2;
+        ST(L18_MALROT2_ENCOUNTER_STEP) = 1000;
         CB->animation("SP06ARR01_10");
         CB->joindre_perm(-P_ARMAL, ST(ST_HERO));
     }
     /* 0xA7FE */
-    if (ST(0x70) == 1) {
-        ST(0x70) = 2;
+    if (ST(L18_MALROT2_ENCOUNTER_STEP) == 1) {
+        ST(L18_MALROT2_ENCOUNTER_STEP) = 2;
         CB->joindre_perm(-P_MALROT2, ST(ST_HERO));
     }
     /* 0xA832 */
-    if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_EVENT_51) == 1 && ST(0xFC) == 1 && ST(0xDA8) == 0) {
+    if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_EVENT_51) == 1 && ST(L18_FIGHT_REQ_TRIG) == 1 && ST(L18_FIGHT_PHASE) == 0) {
         ST(V_EVENT_51) = 0;
-        ST(0xDA8) = 1;
-        ST(0x6C) = 1;
+        ST(L18_FIGHT_PHASE) = 1;
+        ST(L18_ARMAL_STANCE_STATE) = 1;
         CB->animation("Sar_10");
         lieu_action_register("L18D118", P_ARMAL, "SP06DIA60", "SP06GAR02_10");
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
-        CB->modify_var(&ST(0x74), 1);
+        CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
         return;
     }
     /* 0xA8FA */
-    if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_EVENT_51) == 1 && (ST(0xE0) == 1 || ST(0xF8) == 1 || (ST(0xFC) == 1 && ST(0xDA8) == 1))) {
+    if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_EVENT_51) == 1 && (ST(L18_ARMAL_FIGHT_REQ) == 1 || ST(L18_FIGHT_REQ_ZONE) == 1 || (ST(L18_FIGHT_REQ_TRIG) == 1 && ST(L18_FIGHT_PHASE) == 1))) {
         CB->bloque(BLOQUE_ALL);
         CB->select_pile(0, 2);
-        ST(0xE0) = 2;
+        ST(L18_ARMAL_FIGHT_REQ) = 2;
         ST(V_ENGAGED_PERSONA) |= 0x662;   /* engaged: P_ARMAL << 8 | P_MALROT2 */
         ST(V_EVENT_51) = 2;
-        ST(0x90) = 1000;
+        ST(L18_MALROT2_SEQ_STEP) = 1000;
         ST(V_EVENT_0) = 100;
         ST(V_EVENT_1) = 100;
-        ST(0x90) = 0;
+        ST(L18_MALROT2_SEQ_STEP) = 0;
         CB->stop_joindre(-P_MALROT2);
         CB->stop_joindre(-P_ARMAL);
         CB->joindre(-P_ARMAL, 0, 0, 0, ST(ST_HERO));
         CB->animation("SP06GAR02_10");
-        ST(0xDA8) = 3;
+        ST(L18_FIGHT_PHASE) = 3;
         CB->evenement(1, -1);
         CB->evenement(0, -1);
         CB->animation("Sar_10");
@@ -680,7 +680,7 @@ static void tick_body(void) {
         CB->vire_col(11, 1);
         CB->divers(DV_RUN, P_MALROT2, 1);
         /* 0xAAAF */
-        if (ST(0xE0) == 0) {
+        if (ST(L18_ARMAL_FIGHT_REQ) == 0) {
             CB->joindre(-ST(ST_HERO), 0, 0, 0xAFC8, -1);
         }
         CB->joindre(-P_MALROT2, 2804, 1983, 0x2890, -1);
@@ -702,7 +702,7 @@ static void tick_body(void) {
         CB->evenement(51, 500);
     }
     /* 0xABE6 */
-    if (ST(V_EVENT_51) == 5 && ST(0xDA8) == 3) {
+    if (ST(V_EVENT_51) == 5 && ST(L18_FIGHT_PHASE) == 3) {
         ST(V_EVENT_51) = 6;
         CB->divers(DV_RUN, P_MALROT2, 0);
         CB->stop_joindre(-P_MALROT2);
@@ -715,7 +715,7 @@ static void tick_body(void) {
         CB->pause_anim(0, 1, -1);
         CB->pause_anim(1, 1, -1);
         CB->pause_anim(2, 1, -1);
-        CB->modify_var(&ST(0x88), 318);
+        CB->modify_var(&ST(L18_DOOR_RETURN_STATE), 318);
         CB->ajoute_zone(9, 2400, 2115, 140, 100, 1);
         CB->change_camera(0, CAM_AUTO);
         CB->animation("Sar_10");
@@ -726,12 +726,12 @@ static void tick_body(void) {
         return;
     }
     /* 0xAD3A */
-    if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_EVENT_52) == 1 && ST(0xDA4) == 0 && ST(0xD8) == 1) {
-        ST(0x70) = 1000;
+    if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_EVENT_52) == 1 && ST(L18_EVENT52_DONE) == 0 && ST(L18_EVENT52_ARMED) == 1) {
+        ST(L18_MALROT2_ENCOUNTER_STEP) = 1000;
         ST(V_EVENT_52) = 0;
-        ST(0xD8) = 0;
+        ST(L18_EVENT52_ARMED) = 0;
         ST(V_EVENT15_STEP) = 1;
-        ST(0xDA4) = 1;
+        ST(L18_EVENT52_DONE) = 1;
         CB->animation("Sar_10");
         CB->animation("SP62GAR02_10");
         lieu_action_register("L18D160", P_MALROT2, "SP62DIA54", "SP62GAR02_10");
@@ -741,34 +741,34 @@ static void tick_body(void) {
         lieu_action_register("L18D136", P_MALROT2, "SP62DIA60", "SP62GAR02_10");
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
-        CB->modify_var(&ST(0x70), 1);
+        CB->modify_var(&ST(L18_MALROT2_ENCOUNTER_STEP), 1);
         return;
     }
     /* 0xAE71 */
-    if (ST(ST_VIE(P_ARMAL)) == 1 && (ST(0xF0) == 1 || (ST(V_EVENT_52) == 1 && (ST(0xDA4) == 1 || ST(0xD8) == 0)))) {
+    if (ST(ST_VIE(P_ARMAL)) == 1 && (ST(L18_ARMAL_ATTACKED) == 1 || (ST(V_EVENT_52) == 1 && (ST(L18_EVENT52_DONE) == 1 || ST(L18_EVENT52_ARMED) == 0)))) {
         ST(V_EVENT_52) = 2;
-        ST(0x70) = 1000;
+        ST(L18_MALROT2_ENCOUNTER_STEP) = 1000;
         ST(V_EVENT15_STEP) = 1;
-        ST(0xF0) = 2;
+        ST(L18_ARMAL_ATTACKED) = 2;
         ST(V_EVENT_0) = 0;
         ST(V_EVENT_1) = 0;
         CB->bloque(BLOQUE_ALL);
         CB->evenement(0, -1);
         CB->evenement(1, -1);
-        ST(0xDA4) = 1;
+        ST(L18_EVENT52_DONE) = 1;
         CB->retire_zone(1);
         CB->vire_col(11, 1);
         CB->animation("Sar_10");
         /* 0xAF7F */
-        if (ST(0xD8) == 1) {
+        if (ST(L18_EVENT52_ARMED) == 1) {
             CB->animation("Sar_10");
             CB->animation("SP62GAR02_10");
             lieu_action_register("L18D137", P_MALROT2, "SP62DIA54", "SP62GAR02_10");
         }
         CB->change_camera(1, CAM_LOCKED);
         /* 0xAFCD */
-        if (ST(0x74) != 0) {
-            ST(0x74) = 5;
+        if (ST(L18_ARMAL_PATROL_STEP) != 0) {
+            ST(L18_ARMAL_PATROL_STEP) = 5;
             CB->stop_joindre(-P_ARMAL);
         }
         CB->vire_col(8, 0);
@@ -778,7 +778,7 @@ static void tick_body(void) {
         CB->joindre(-P_ARMAL, 2132, 2021, 0x35C, -1);
         CB->animation("P06ATT07");
         /* 0xB05B */
-        if (ST(0xD8) == 0) {
+        if (ST(L18_EVENT52_ARMED) == 0) {
             CB->pos_perso(P_MALROT2, 2825, 1600, 0x4A38, 1, "P62GAR02", 3, 0);
         }
         CB->bruitage("L18B01", -1, -1);
@@ -798,7 +798,7 @@ static void tick_body(void) {
         CB->pause_anim(0, 1, -1);
         CB->pause_anim(1, 1, -1);
         CB->pause_anim(2, 1, -1);
-        CB->modify_var(&ST(0x88), 3);
+        CB->modify_var(&ST(L18_DOOR_RETURN_STATE), 3);
         CB->ajoute_zone(9, 2400, 2115, 140, 100, 1);
         CB->change_camera(0, CAM_AUTO);
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -821,61 +821,61 @@ static void tick_body(void) {
     }
     /* 0xB25C */
     if (ST(V_EVENT_33) == 1) {
-        ST(0x74) = 60;
+        ST(L18_ARMAL_PATROL_STEP) = 60;
         CB->stop_joindre(-P_ARMAL);
         CB->vire_col(8, 1);
         ST(V_EVENT_33) = 0;
-        ST(0x78) = CB->divers(DV_INN_MENU, 0, 0);
+        ST(L18_INN_MENU_CHOICE) = CB->divers(DV_INN_MENU, 0, 0);
         CB->bruitage("L18AMB1", -1, -1);
     }
     /* 0xB2CB */
-    if (ST(0x78) == 2) {
-        ST(0x78) = 0;
+    if (ST(L18_INN_MENU_CHOICE) == 2) {
+        ST(L18_INN_MENU_CHOICE) = 0;
         CB->divers(DV_SCREEN, 1, 0);
         CB->pos_perso(P_ARMAL, 2117, 2000, 0x4650, 1, "P06ARR01", 4, 0);
         CB->pos_perso(ST(ST_HERO), 1950, 1980, 0xBB80, 1, "ar", 6, 0);
         CB->divers_empile(DV_SCREEN, 3, 0);
-        ST(0x68) = 1;
-        ST(0x7C) = 2;
-        ST(0xF70) = 2;
+        ST(L18_ARMAL_TALKED) = 1;
+        ST(L18_INN_RESULT) = 2;
+        ST(L18_INN_ACTION) = 2;
         /* 0xB384 */
-        if (ST(0xDD0) == 1) {
-            ST(0xDD0) = 2;
+        if (ST(L18_INN_STATE) == 1) {
+            ST(L18_INN_STATE) = 2;
         }
         /* 0xB3A5 */
-        if (ST(0x84) == 0) {
-            ST(0xC0C) = 4;
+        if (ST(L18_ARMAL_MOOD) == 0) {
+            ST(L18_ARMAL_TALK_MODE) = 4;
             lieu_action_register("L18D120A", P_ARMAL, "SP06DIA60", "SP06ARR01_10");
             lieu_action_register("L18D120B", P_ARMAL, "SP06DIA60", "SP06ARR01_10");
             lieu_action_register("L18D121", P_ARMAL, "SP06DIA54", "SP06ARR01_10");
         }
         /* 0xB411 */
-        if (ST(0x84) == 2) {
-            ST(0xC0C) = 0;
-            ST(0x84) = 0;
+        if (ST(L18_ARMAL_MOOD) == 2) {
+            ST(L18_ARMAL_TALK_MODE) = 0;
+            ST(L18_ARMAL_MOOD) = 0;
             lieu_action_register("L18D132", P_ARMAL, "SP06DIA53", "SP06ARR01_10");
         }
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
-        CB->modify_var(&ST(0x74), 1);
+        CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
         return;
     }
     /* 0xB489 */
-    if (ST(0x78) == 1 || ST(0x78) == 3) {
-        ST(0x78) = 0;
+    if (ST(L18_INN_MENU_CHOICE) == 1 || ST(L18_INN_MENU_CHOICE) == 3) {
+        ST(L18_INN_MENU_CHOICE) = 0;
         CB->divers(DV_SCREEN, 1, 0);
         CB->pos_perso(P_ARMAL, 2117, 2000, 0x4650, 1, "P06ARR01", 4, 0);
         CB->pos_perso(ST(ST_HERO), 1950, 1980, 0xBB80, 1, "ar", 6, 0);
         CB->animation("Sar_100");
-        ST(0xC0C) = 3;
-        ST(0x7C) = 1;
-        ST(0xF70) = 1;
+        ST(L18_ARMAL_TALK_MODE) = 3;
+        ST(L18_INN_RESULT) = 1;
+        ST(L18_INN_ACTION) = 1;
         CB->select_pile(1, 1);
         CB->divers_empile(DV_SCREEN, 3, 0);
         /* 0xB56F */
-        if (ST(0x84) == 0) {
+        if (ST(L18_ARMAL_MOOD) == 0) {
             /* 0xB581 */
-            if (ST(0xDB0) == 1) {
+            if (ST(L18_MAIN_QUEST_STAGE) == 1) {
                 lieu_action_register("L18D122A", P_ARMAL, "SP06DIA62", "SP06ARR01_10");
                 /* 0xB5AC */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -901,8 +901,8 @@ static void tick_body(void) {
                 lieu_action_register("L18D122N", P_ARMAL, "SP06DIA55", "SP06ARR01_10");
             }
             /* 0xB74C */
-            if (ST(0xDB0) == 5) {
-                ST(0xB1C) = 1;
+            if (ST(L18_MAIN_QUEST_STAGE) == 5) {
+                ST(L18_ARMAL_L18D123_SEEN) = 1;
                 lieu_action_register("L18D123A", P_ARMAL, "SP06ATT60", "SP06ARR01_10");
                 lieu_action_register("L18D123B", P_ARMAL, "SP06DIA53", "SP06ARR01_10");
                 lieu_action_register("L18D123C", P_ARMAL, "SP06DIA59", "SP06ARR01_10");
@@ -921,10 +921,10 @@ static void tick_body(void) {
                 lieu_action_register("L18D253A", P_ARMAL, "SP06ATT60", "SP06ARR01_10");
                 lieu_action_register("L18D253B", P_ARMAL, "SP06DIA53", "SP06ARR01_10");
                 lieu_action_register("L18D253C", P_ARMAL, "SP06DIA53", "SP06ARR01_10");
-                ST(0xDB0) = 6;
+                ST(L18_MAIN_QUEST_STAGE) = 6;
                 /* 0xB8C3 */
-                if (ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(0x11C) == 0) {
-                    ST(0x11C) = 1;
+                if (ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(L18_SORDOS_LOOTED) == 0) {
+                    ST(L18_SORDOS_LOOTED) = 1;
                     /* 0xB8F6 */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L18D279A", P_ARKHAN2, "SG00DIA07", NULL);
@@ -950,16 +950,16 @@ static void tick_body(void) {
                     }
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
-                    CB->modify_var(&ST(0x74), 1);
+                    CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
                     return;
                 }
             }
         }
         /* 0xBA6E */
-        if (ST(0x84) == 2) {
-            ST(0xC0C) = 0;
-            ST(0x84) = 0;
-            ST(0x31C)++;
+        if (ST(L18_ARMAL_MOOD) == 2) {
+            ST(L18_ARMAL_TALK_MODE) = 0;
+            ST(L18_ARMAL_MOOD) = 0;
+            ST(L18_ARMAL_ANGER_COUNT)++;
             lieu_action_register("L18D254A", P_ARMAL, "SP06DIA54", "SP06ARR01_10");
             lieu_action_register("L18D254B", P_ARMAL, "SP06DIA54", "SP06ARR01_10");
             lieu_action_register("L18D254C", P_ARMAL, "SP06DIA60", "SP06ARR01_10");
@@ -976,33 +976,33 @@ static void tick_body(void) {
         }
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
-        CB->modify_var(&ST(0x74), 1);
+        CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
         CB->select_pile(0, 1);
         return;
     }
     /* 0xBBB5 */
-    if (ST(ST_LOCKED_CAMERA) == 1 && ST(0x88) != 2 && ST(0x88) != 0 && ST(0x88) != 10) {
-        ST(0x88) = 2;
-        ST(0xF4) = 1;
+    if (ST(ST_LOCKED_CAMERA) == 1 && ST(L18_DOOR_RETURN_STATE) != 2 && ST(L18_DOOR_RETURN_STATE) != 0 && ST(L18_DOOR_RETURN_STATE) != 10) {
+        ST(L18_DOOR_RETURN_STATE) = 2;
+        ST(L18_CAMERA_ZONE_STATE) = 1;
         CB->pause_anim(3, 1, -1);
         CB->play_anim(9, 0);
     }
     /* 0xBC3A */
-    if (ST(ST_LOCKED_CAMERA) == 0 && ST(0x88) != 3 && ST(0x88) != 0 && ST(0x88) != 10) {
-        ST(0x88) = 3;
-        ST(0xF4) = 2;
+    if (ST(ST_LOCKED_CAMERA) == 0 && ST(L18_DOOR_RETURN_STATE) != 3 && ST(L18_DOOR_RETURN_STATE) != 0 && ST(L18_DOOR_RETURN_STATE) != 10) {
+        ST(L18_DOOR_RETURN_STATE) = 3;
+        ST(L18_CAMERA_ZONE_STATE) = 2;
         CB->pause_anim(9, 1, -1);
         CB->play_anim(3, 0);
     }
     /* 0xBCBF */
-    if (ST(ST_LOCKED_CAMERA) == 2 && ST(0x88) != 1 && ST(0x88) != 0 && ST(0x88) != 10) {
-        ST(0x88) = 1;
+    if (ST(ST_LOCKED_CAMERA) == 2 && ST(L18_DOOR_RETURN_STATE) != 1 && ST(L18_DOOR_RETURN_STATE) != 0 && ST(L18_DOOR_RETURN_STATE) != 10) {
+        ST(L18_DOOR_RETURN_STATE) = 1;
         /* 0xBD16 */
-        if (ST(0xF4) == 1) {
+        if (ST(L18_CAMERA_ZONE_STATE) == 1) {
             CB->pause_anim(9, 1, -1);
         }
         /* 0xBD3A */
-        if (ST(0xF4) == 2) {
+        if (ST(L18_CAMERA_ZONE_STATE) == 2) {
             CB->pause_anim(3, 1, -1);
         }
     }
@@ -1034,40 +1034,40 @@ static void tick_body(void) {
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 100);
         CB->change_camera(1, CAM_AUTO);
         /* 0xBEDD */
-        if (ST(0x64) == 1) {
+        if (ST(L18_DOOR_ZONE_PRESSED) == 1) {
             CB->play_anim(3, 0);
         }
         /* 0xBEF9 */
-        if (ST(0x64) == 2) {
+        if (ST(L18_DOOR_ZONE_PRESSED) == 2) {
             CB->play_anim(9, 0);
         }
         CB->animation("Sar_10");
         CB->retire_zone(1);
         /* 0xBF2B */
-        if (ST(0x64) == 1) {
-            CB->modify_var(&ST(0x88), 3);
+        if (ST(L18_DOOR_ZONE_PRESSED) == 1) {
+            CB->modify_var(&ST(L18_DOOR_RETURN_STATE), 3);
         }
         /* 0xBF51 */
-        if (ST(0x64) == 2) {
-            CB->modify_var(&ST(0x88), 2);
+        if (ST(L18_DOOR_ZONE_PRESSED) == 2) {
+            CB->modify_var(&ST(L18_DOOR_RETURN_STATE), 2);
         }
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
         return;
     }
     /* 0xBF98 */
-    if (ST(0xC24) == 0 && ST(ST_LOCKED_CAMERA) == 2 && ST(0xB8) == 0) {
-        ST(0xB8) = 1;
+    if (ST(L18_CHEST_STAGE) == 0 && ST(ST_LOCKED_CAMERA) == 2 && ST(L18_CHEST_ANIM_ON) == 0) {
+        ST(L18_CHEST_ANIM_ON) = 1;
         CB->play_anim(8, 1);
     }
     /* 0xBFED */
-    if (ST(0xC24) == 0 && ST(ST_LOCKED_CAMERA) != 2 && ST(0xB8) == 1) {
-        ST(0xB8) = 0;
+    if (ST(L18_CHEST_STAGE) == 0 && ST(ST_LOCKED_CAMERA) != 2 && ST(L18_CHEST_ANIM_ON) == 1) {
+        ST(L18_CHEST_ANIM_ON) = 0;
         CB->pause_anim(8, 1, -1);
     }
     /* 0xC044 */
-    if (ST(0xC24) == 1 && ST(ST_LOCKED_CAMERA) != 2) {
-        ST(0xC24) = 2;
+    if (ST(L18_CHEST_STAGE) == 1 && ST(ST_LOCKED_CAMERA) != 2) {
+        ST(L18_CHEST_STAGE) = 2;
         CB->pause_anim(7, 1, -1);
     }
     /* 0xC089 */
@@ -1076,7 +1076,7 @@ static void tick_body(void) {
         /* 0xC0AA */
         if (ST(ST_VIE(P_MALROT2)) == 1) {
             CB->select_pile(2, 1);
-            ST(0x70) = 0;
+            ST(L18_MALROT2_ENCOUNTER_STEP) = 0;
             CB->stop_joindre(-P_MALROT2);
             lieu_action_register("L18D175", P_MALROT2, "SP62DIA59", "SP62ARR01_10");
         }
@@ -1137,7 +1137,7 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
         /* 0xC2B6 */
         if (ST(ST_VIE(P_MALROT2)) == 1) {
-            CB->modify_var(&ST(0x70), 1);
+            CB->modify_var(&ST(L18_MALROT2_ENCOUNTER_STEP), 1);
         }
         return;
     }
@@ -1172,11 +1172,11 @@ static void tick_body(void) {
         lieu_action_register("L18D195B", P_MALROT6, "SP66DIA59", "SP66ARR01_10");
         CB->divers(DV_RUN, P_MALROT6, 1);
         CB->joindre(-P_MALROT6, 2380, 2500, 0, -1);
-        CB->modify_var(&ST(0xC28), 6);
+        CB->modify_var(&ST(L18_MALROT_CHASE_STAGE), 6);
     }
     /* 0xC505 */
-    if (ST(0xC28) == 6 && !CB->on_joindre(P_MALROT6)) {
-        ST(0xC28) = 7;
+    if (ST(L18_MALROT_CHASE_STAGE) == 6 && !CB->on_joindre(P_MALROT6)) {
+        ST(L18_MALROT_CHASE_STAGE) = 7;
         CB->joindre(-P_ARMAL, 0, 0, 0, P_MALROT6);
         CB->joindre(-ST(ST_HERO), 0, 0, 0, P_ARMAL);
         lieu_action_register("L18D196", P_ARMAL, "SP06DIA54", "SP06ARR01_10");
@@ -1191,12 +1191,12 @@ static void tick_body(void) {
         CB->animation("Sar_10");
         CB->bloque(BLOQUE_NONE);
         CB->modify_var(&ST(V_WEAPON_WARNED), 0);
-        CB->modify_var(&ST(0xC28), 10);
-        CB->modify_var(&ST(0x74), 1);
+        CB->modify_var(&ST(L18_MALROT_CHASE_STAGE), 10);
+        CB->modify_var(&ST(L18_ARMAL_PATROL_STEP), 1);
     }
     /* 0xC69F */
-    if ((CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 2040 || CB->distance(35, 6) > 100) && ST(0x100) == 1) {
-        ST(0x100) = 0;
+    if ((CB->divers(DV_DESC_POS, ST(ST_HERO), 0) > 2040 || CB->distance(35, 6) > 100) && ST(L18_ZONE2_REMOVED) == 1) {
+        ST(L18_ZONE2_REMOVED) = 0;
         CB->ajoute_zone(2, 1975, 1975, 100, 100, 1);
     }
     /* 0xC706 */
@@ -1238,7 +1238,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L18_DEATH_ENDING_DONE) == 1) {
         l18_trig00();   /* 0x10016FB9: call sub_10001078 -> sub_10007400 */
         return 0;
     }
