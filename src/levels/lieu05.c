@@ -32,7 +32,7 @@ static void tick_body(void) {
     snprintf(g_txt, sizeof(g_txt), "combat_on=%d", ST(V_ENGAGED_PERSONA));
     CB->print_msg(g_txt, 0, 0x122);
     /* 0x86D8 */
-    if (ST(0xC60) == 1 && ST(ST_VIE(P_DELIA)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L05_DUEL_MODE) == 1 && ST(ST_VIE(P_DELIA)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
         ST(V_ENGAGED_PERSONA) = P_DELIA;
         CB->combat(P_DELIA, 0);
     }
@@ -47,7 +47,7 @@ static void tick_body(void) {
         ST(V_ENGAGED_PERSONA) = P_DELIA;
     }
     /* 0x87CB */
-    if (ST(0xC60) == 2 && ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(ST_VIE(P_BOGDARAN)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L05_DUEL_MODE) == 2 && ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(ST_VIE(P_BOGDARAN)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->bloque(BLOQUE_ALL);
         lieu_action_register("L05D77D", P_BOGDARAN, "SP08DIA59", "SP08ARR03_20");
         CB->bloque(BLOQUE_NONE);
@@ -130,10 +130,10 @@ static void tick_body(void) {
     /* 0x8C53 */
     if (ST(ST_VIE(P_BOGDARAN)) == VIE_DEAD) {
         /* 0x8C62 */
-        if (ST(0x4C) != 0) {
+        if (ST(L05_BOGDARAN_FIGHT_STEP) != 0) {
             CB->print_msg("pile 2 videe", 0, 0x10E);
             CB->select_pile(2, 2);
-            ST(0x4C) = 0;
+            ST(L05_BOGDARAN_FIGHT_STEP) = 0;
         }
         /* 0x8C9F */
         if (ST(V_ENGAGED_PERSONA) == P_BOGDARAN && (ST(V_DELIA_PHASE) < 10 || (ST(V_DELIA_PHASE) > 10 && ST(ST_VIE(P_DELIA)) == VIE_DEAD))) {
@@ -149,7 +149,7 @@ static void tick_body(void) {
             ST(ST_SCRIPT_BUSY) = 0;
             ST(V_ENGAGED_PERSONA) = 0;
             CB->dialogue("L05D04", P_DELIA);
-            ST(0xC60) = 1;
+            ST(L05_DUEL_MODE) = 1;
             CB->stop_joindre(-P_DELIA);
             CB->print_msg("mise en combat ln 489", 0, 0x10E);
             CB->combat(P_DELIA, 0);
@@ -168,12 +168,12 @@ static void tick_body(void) {
     /* 0x8E2B */
     if (ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(V_DELIA_KILLED) == 0) {
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0xC60) = 2;
+        ST(L05_DUEL_MODE) = 2;
         ST(V_DELIA_KILLED) = 5;
     }
     /* 0x8E79 */
-    if (ST(0xB9C) == 12) {
-        ST(0xB9C) = 11;
+    if (ST(L05_BOGDARAN_STAGE) == 12) {
+        ST(L05_BOGDARAN_STAGE) = 11;
         ST(V_ENGAGED_PERSONA) = P_BOGDARAN;
         /* 0x8EA6 */
         if (ST(ST_VIE(P_BOGDARAN)) == 1) {
@@ -223,10 +223,10 @@ static void tick_body(void) {
         CB->animation("P10CAD");
         CB->pos_perso(P_DELIA, 0, 0, 0, 2, "P10CAD", 5, 0);
         CB->divers_empile(DV_SCREEN, 6, 0);
-        ST(0xC60) = 2;
+        ST(L05_DUEL_MODE) = 2;
         /* 0x9175 */
         if (ST(ST_VIE(P_BOGDARAN)) == 1) {
-            ST(0x4C) = 1;
+            ST(L05_BOGDARAN_FIGHT_STEP) = 1;
             lieu_action_register("L05D77D", P_BOGDARAN, "SP08DIA59", "SP08ARR03_20");
             CB->stop_joindre(-P_BOGDARAN);
             CB->combat(P_BOGDARAN, 0);
@@ -235,11 +235,11 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x91DA */
-    if (ST(0x6C) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1 && CB->distance(2, 6) < 190 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L05_BOGDARAN_MET) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1 && CB->distance(2, 6) < 190 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->select_pile(0, 2);
-        ST(0x68) = 0;
-        ST(0x6C) = 1;
-        ST(0x64) = 1;
+        ST(L05_BOGDARAN_RETURN) = 0;
+        ST(L05_BOGDARAN_MET) = 1;
+        ST(L05_BOGDARAN_TALKING) = 1;
         CB->stop_joindre(-P_BOGDARAN);
         /* 0x9264 */
         if (ST(ST_HERO) == P_ARKHAN1) {
@@ -254,12 +254,12 @@ static void tick_body(void) {
             if (ST(ST_SPECIAL_MODE) == 0) {
                 lieu_action_register("L05D06", P_ARKHAN1, "SP01DIA12", "Sar_100");
             }
-            CB->modify_var(&ST(0x68), 0);
+            CB->modify_var(&ST(L05_BOGDARAN_RETURN), 0);
             CB->animation("SP08PRE73");
             CB->animation("P08ARR03_10");
             CB->bloque(BLOQUE_NONE);
             /* 0x9333 */
-            if (ST(0x8F4) != 0) {
+            if (ST(L05_BOGDARAN_D13_STATE) != 0) {
                 CB->evenement(2, 6000);
             }
             CB->joindre_perm(P_BOGDARAN, ST(ST_HERO));
@@ -270,9 +270,9 @@ static void tick_body(void) {
         /* 0x9385 */
         if (ST(ST_HERO) == P_ARKHAN2 || ST(ST_HERO) == P_ARKHAN3) {
             /* 0x93A9 */
-            if (ST(0xB9C) == 0 && ST(0xDC) == 0) {
-                ST(0x68) = 0;
-                ST(0xDC) = 1;
+            if (ST(L05_BOGDARAN_STAGE) == 0 && ST(L05_FIRST_TALK_DONE) == 0) {
+                ST(L05_BOGDARAN_RETURN) = 0;
+                ST(L05_FIRST_TALK_DONE) = 1;
                 CB->bloque(BLOQUE_ALL);
                 CB->animation("SP08PRE73");
                 CB->animation("P08ARR03_10");
@@ -298,9 +298,9 @@ static void tick_body(void) {
                 return;
             }
             /* 0x951B */
-            if (ST(0xB9C) != 0) {
+            if (ST(L05_BOGDARAN_STAGE) != 0) {
                 /* 0x952D */
-                if (ST(0xF0) == 1) {
+                if (ST(L05_TALK_IN_FIGHT_OK) == 1) {
                     CB->bloque(BLOQUE_ALL);
                     /* 0x9552 */
                     if (CB->divers(DV_CAN_FIGHT, 7, 2)) {
@@ -353,7 +353,7 @@ static void tick_body(void) {
                         }
                     }
                     CB->animation("SP10ARR01_10");
-                    CB->modify_var(&ST(0x94), 1);
+                    CB->modify_var(&ST(L05_DELIA_FOLLOW_STEP), 1);
                     CB->bloque(BLOQUE_NONE);
                     CB->joindre(-P_BOGDARAN, 0, 0, 0, ST(ST_HERO));
                     CB->animation("SP08ARR03_10");
@@ -362,7 +362,7 @@ static void tick_body(void) {
                     return;
                 } else {
                     /* 0x979D */
-                    if (ST(0xB7C) != 4 || ST(0x81C) != 0) {
+                    if (ST(L05_BOGDARAN_QUEST) != 4 || ST(L05_DELIA_FIGHT_PHASE) != 0) {
                         CB->animation("SP08PRE73");
                     }
                     CB->animation("P08ARR03_10");
@@ -374,11 +374,11 @@ static void tick_body(void) {
         }
     }
     /* 0x97FC */
-    if (ST(0x6C) == 1 && ST(0x68) == 0 && ST(0x4C) == 3 && CB->distance(2, 6) > 260 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1 && ST(ST_HERO) == P_ARKHAN1 && ST(0xD8) == 0) {
+    if (ST(L05_BOGDARAN_MET) == 1 && ST(L05_BOGDARAN_RETURN) == 0 && ST(L05_BOGDARAN_FIGHT_STEP) == 3 && CB->distance(2, 6) > 260 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1 && ST(ST_HERO) == P_ARKHAN1 && ST(L05_BOGDARAN_LEFT) == 0) {
         CB->select_pile(0, 2);
-        ST(0x64) = 0;
-        ST(0x68) = 1;
-        ST(0x6C) = 0;
+        ST(L05_BOGDARAN_TALKING) = 0;
+        ST(L05_BOGDARAN_RETURN) = 1;
+        ST(L05_BOGDARAN_MET) = 0;
         CB->stop_joindre(-P_BOGDARAN);
         CB->link_objet(8, "OB88", 0x1B, 1);
         /* 0x98DC */
@@ -387,17 +387,17 @@ static void tick_body(void) {
             CB->animation("SP08ARR01_10");
         }
         /* 0x9912 */
-        if (ST(ST_HERO) >= 2 && ST(0xB9C) == 1) {
+        if (ST(ST_HERO) >= 2 && ST(L05_BOGDARAN_STAGE) == 1) {
             CB->joindre(-P_BOGDARAN, -2005, -98, 0x5167, -1);
             CB->animation("SP08ATT02_10");
         }
         CB->select_pile(0, 1);
     }
     /* 0x9967 */
-    if (ST(0x88) == 1) {
+    if (ST(L05_D13_STEP) == 1) {
         CB->stop_joindre(-P_BOGDARAN);
-        ST(0x88) = 2;
-        ST(0x8F4) = 2;
+        ST(L05_D13_STEP) = 2;
+        ST(L05_BOGDARAN_D13_STATE) = 2;
         lieu_action_register("L05D13A", P_BOGDARAN, "SP08ATT04", "SP08ARR03_20");
         lieu_action_register("L05D13B", P_BOGDARAN, "SP08ATT07", "SP08ARR03_20");
         CB->animation("Sar_20");
@@ -406,14 +406,14 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x9A0E */
-    if (ST(V_EVENT_2) == 1 && ST(0x64) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1) {
+    if (ST(V_EVENT_2) == 1 && ST(L05_BOGDARAN_TALKING) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1) {
         /* 0x9A4D */
         if (ST(ST_SCRIPT_BUSY) == 0) {
             CB->stop_joindre(P_BOGDARAN);
             CB->bloque(BLOQUE_ALL);
             ST(V_EVENT_2) = 0;
-            ST(0x80) = (ST(ST_GAME_TIME) % 3) + 1;
-            switch (ST(0x80)) {   /* [ebp-4] copy, tests 1/2/3 */
+            ST(L05_QUIP_PICK) = (ST(ST_GAME_TIME) % 3) + 1;
+            switch (ST(L05_QUIP_PICK)) {   /* [ebp-4] copy, tests 1/2/3 */
             case 1: lieu_action_register("L05D14", P_BOGDARAN, "SP08DIA60", "SP08ARR03_20"); break;
             case 2: lieu_action_register("L05D15", P_BOGDARAN, "SP08DIA59", "SP08ARR03_20"); break;
             case 3: lieu_action_register("L05D16", P_BOGDARAN, "SP08ATT07", "SP08ARR03_20"); break;
@@ -429,14 +429,14 @@ static void tick_body(void) {
         }
     }
     /* 0x9B87 */
-    if (ST(V_EVENT_2) == 1 && ST(0x64) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1) {
+    if (ST(V_EVENT_2) == 1 && ST(L05_BOGDARAN_TALKING) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BOGDARAN)) == 1) {
         /* 0x9BC6 */
         if (ST(ST_SCRIPT_BUSY) == 0) {
             ST(V_EVENT_2) = 0;
             CB->bloque(BLOQUE_ALL);
             CB->divers(DV_LOOK_AT_PLAYER, P_BOGDARAN, 1);
-            ST(0x80) = (ST(ST_GAME_TIME) % 3) + 1;
-            switch (ST(0x80)) {   /* [ebp-8] copy, tests 1/2/3 */
+            ST(L05_QUIP_PICK) = (ST(ST_GAME_TIME) % 3) + 1;
+            switch (ST(L05_QUIP_PICK)) {   /* [ebp-8] copy, tests 1/2/3 */
             case 1: CB->dialogue("L05D14", P_BOGDARAN); break;
             case 2: CB->dialogue("L05D15", P_BOGDARAN); break;
             case 3: CB->dialogue("L05D16", P_BOGDARAN); break;
@@ -453,7 +453,7 @@ static void tick_body(void) {
         }
     }
     /* 0x9CF8 */
-    if (ST(0x84) == 1) {
+    if (ST(L05_WEAPON_GIVE_STEP) == 1) {
         ST(ST_PLAYER_WEAPON) = 40;
         ST(V_WEAPON_WARNED) = 1;
         lieu_action_register("L05D17", P_BOGDARAN, "SP08DIA03", "SP08ARR03_20");
@@ -468,9 +468,9 @@ static void tick_body(void) {
         lieu_action_register("L05D20A", P_BOGDARAN, "SP08DIA56", "SP08ARR03_20");
         lieu_action_register("L05D20B", P_BOGDARAN, "SP08DIA57", "SP08ARR03_20");
         lieu_action_register("L05D20C", P_BOGDARAN, "SP08DIA59", "SP08ARR03_20");
-        ST(0x84) = 2;
-        ST(0x6C) = 1;
-        ST(0xB7C) = 5;
+        ST(L05_WEAPON_GIVE_STEP) = 2;
+        ST(L05_BOGDARAN_MET) = 1;
+        ST(L05_BOGDARAN_QUEST) = 5;
         lieu_pre_scene(ST(ST_HERO), P_BOGDARAN, 40, 6, 2);
         CB->link_objet(8, "OB41", 0x1B, 0);
         CB->divers(DV_PERSONA_ITEMS, P_BOGDARAN, -OB_OBJ_BEFORE41);
@@ -481,39 +481,39 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x9E99 */
-    if (ST(0xB8) == 1 && !CB->on_joindre(P_DELIA)) {
-        ST(0xB8) = 2;
+    if (ST(L05_DELIA_D21_STEP) == 1 && !CB->on_joindre(P_DELIA)) {
+        ST(L05_DELIA_D21_STEP) = 2;
         CB->animation("SP10ARR01_10");
         CB->dialogue("L05D21A", P_DELIA);
         CB->dialogue("L05D21B", P_DELIA);
         CB->dialogue("L05D21C", P_DELIA);
         CB->animation("Sar_10");
-        CB->modify_var(&ST(0x94), 1);
+        CB->modify_var(&ST(L05_DELIA_FOLLOW_STEP), 1);
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x9F43 */
-    if (ST(0x94) == 1 && ST(ST_COMBAT_STANCE) == 0) {
-        ST(0x94) = 2;
+    if (ST(L05_DELIA_FOLLOW_STEP) == 1 && ST(ST_COMBAT_STANCE) == 0) {
+        ST(L05_DELIA_FOLLOW_STEP) = 2;
         /* 0x9F73 */
         if (ST(ST_VIE(P_DELIA)) == 1 && ST(V_DELIA_PHASE) == 11) {
             CB->joindre(-P_DELIA, 0, 0, 0, ST(ST_HERO));
-            CB->modify_var(&ST(0x94), 3);
+            CB->modify_var(&ST(L05_DELIA_FOLLOW_STEP), 3);
         }
     }
     /* 0x9FCB */
-    if (ST(0x94) == 3 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_VIE(P_DELIA)) == 1 && !CB->on_joindre(P_DELIA)) {
-        ST(0x94) = 4;
+    if (ST(L05_DELIA_FOLLOW_STEP) == 3 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_VIE(P_DELIA)) == 1 && !CB->on_joindre(P_DELIA)) {
+        ST(L05_DELIA_FOLLOW_STEP) = 4;
         CB->print_msg("joindreperm ln860", 0, 0x11D);
         CB->joindre_perm(P_DELIA, ST(ST_HERO));
     }
     /* 0xA045 */
-    if (ST(V_PLAYER_STRIKE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && CB->divers(DV_CAN_FIGHT, 9, 2) && !CB->divers(DV_WAS_HIT, P_BOGDARAN, 0) && !CB->direction_perso(P_BOGDARAN) && ST(ST_VIE(P_BOGDARAN)) == 1 && ST(ST_VIE(P_DELIA)) < 2 && ST(0x50) == 0) {
-        ST(0x50) = 1;
+    if (ST(V_PLAYER_STRIKE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && CB->divers(DV_CAN_FIGHT, 9, 2) && !CB->divers(DV_WAS_HIT, P_BOGDARAN, 0) && !CB->direction_perso(P_BOGDARAN) && ST(ST_VIE(P_BOGDARAN)) == 1 && ST(ST_VIE(P_DELIA)) < 2 && ST(L05_D150_ARMED) == 0) {
+        ST(L05_D150_ARMED) = 1;
         CB->joindre(P_BOGDARAN, 0, 0, 0, ST(ST_HERO));
         CB->print_msg("dialogue ln 927", 0, 0xF0);
         lieu_action_register("L05D150A", P_BOGDARAN, "SP08GAR01", "SP08GAR01_10");
-        CB->modify_var(&ST(0x50), 0);
+        CB->modify_var(&ST(L05_D150_ARMED), 0);
         return;
     }
     /* 0xA147 */
@@ -522,7 +522,7 @@ static void tick_body(void) {
         ST(V_ENGAGED_PERSONA) = P_DELIA;
         ST(ST_SCRIPT_BUSY) = 1;
         CB->divers(DV_HP, P_DELIA, 1);
-        ST(0x94) = 10;
+        ST(L05_DELIA_FOLLOW_STEP) = 10;
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP10ESA01");
         CB->animation("P10GAR01_10");
@@ -570,7 +570,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L05_FORCE_DEFAULT_INIT) == 1) {
         l05_trig00();   /* 0x100126A9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
