@@ -156,13 +156,13 @@ static void tick_body(void) {
         CB->select_pile(1, 1);
         CB->anim_objet("IM23", 1, 0x36, 0x12C, 0x200);
         /* 0x7EED */
-        if (ST(0xE44) == 1) {
-            ST(0xE44) = 2;
+        if (ST(L09_GATE_STATE) == 1) {
+            ST(L09_GATE_STATE) = 2;
             CB->etat_objet("OB33D", -1, -1, -1, -1, -1, -1, -3, 3);
         }
         /* 0x7F2C */
-        if (ST(0xE44) == 0) {
-            ST(0xE44) = 1;
+        if (ST(L09_GATE_STATE) == 0) {
+            ST(L09_GATE_STATE) = 1;
             CB->etat_objet("OB33C", -1, -1, -1, -1, -1, -1, -3, 3);
         }
         CB->animation("Sar_50");
@@ -189,7 +189,7 @@ static void tick_body(void) {
         return;
     }
     /* 0x8037 */
-    if (ST(0xC08) == 2 && CB->divers(DV_WAS_HIT, P_GUARDIAN8, 0) && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
+    if (ST(L09_GUARDIAN8_STAGE) == 2 && CB->divers(DV_WAS_HIT, P_GUARDIAN8, 0) && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
         CB->select_pile(1, 2);
         CB->divers_empile(DV_WAS_HIT, P_GUARDIAN8, 1);
         CB->combat(P_GUARDIAN8, -1);
@@ -223,8 +223,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8216 */
-    if (ST(0xC08) == 2 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GUARDIAN8)) == VIE_DEAD) {
-        ST(0xC08) = 3;
+    if (ST(L09_GUARDIAN8_STAGE) == 2 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GUARDIAN8)) == VIE_DEAD) {
+        ST(L09_GUARDIAN8_STAGE) = 3;
         ST(V_ENGAGED_PERSONA) = 0;
     }
 }
@@ -258,7 +258,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L09_ENDING_OVERRIDE) == 1) {
         l09_trig00();   /* 0x1000AEE9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

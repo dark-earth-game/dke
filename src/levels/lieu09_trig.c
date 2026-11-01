@@ -72,10 +72,10 @@ void l09_trig00(void) {
     }
     /* 0x7423 */
     if (ST(ST_START_POINT(9)) == 2) {
-        ST(0xAF8) = 1;
+        ST(L09_GUARD_ARC_PHASE) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(0xC08) = 2;
+        ST(L09_GUARDIAN8_STAGE) = 2;
     }
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
@@ -91,10 +91,10 @@ void l09_trig00(void) {
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(ST_START_POINT(9)) = 0;
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x88) = 0;
+    ST(L09_UNUSED_64) = 0;
+    ST(L09_UNUSED_68) = 0;
+    ST(L09_UNUSED_6C) = 0;
+    ST(L09_UNUSED_88) = 0;
     ST(V_EVENT15_STEP) = 0;
     CB->bruitage("L09AMB1", -1, -1);
     CB->ajoute_zone(1, 508, -574, 105, 65, 0);
@@ -111,7 +111,7 @@ void l09_trig00(void) {
     CB->etat_objet("IM23", 730, 38, -98, 0, 0x8000, 0, 0, 3);
     CB->pos_perso(ST(ST_HERO), 538, -512, 0x2D1, 1, "ar", 4, 0);
     /* 0x772D */
-    if (ST(0xC08) == 2) {
+    if (ST(L09_GUARDIAN8_STAGE) == 2) {
         /* 0x773F */
         if (ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
             CB->pos_perso(P_GUARDIAN8, 858, -305, 0x2231, 1, "P48ARR04", 3, 0);
@@ -120,13 +120,13 @@ void l09_trig00(void) {
         }
     }
     /* 0x778B */
-    if (ST(0x338) == 0 && ST(0x348) == 0 && ST(0xAF8) == 0 && ST(0xB98) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-        ST(0xB98) = 0;
+    if (ST(L09_EVENT6_DONE) == 0 && ST(L09_EVENT10_DONE) == 0 && ST(L09_GUARD_ARC_PHASE) == 0 && ST(L09_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+        ST(L09_GUARDIAN4_STAGE) = 0;
     }
     /* 0x77F4 */
-    if (ST(0x338) == 0 && ST(0x348) == 0 && ST(0xAF8) == 1 && ST(0xB98) == 4) {
-        ST(0x338) = 1;
-        ST(0x348) = 1;
+    if (ST(L09_EVENT6_DONE) == 0 && ST(L09_EVENT10_DONE) == 0 && ST(L09_GUARD_ARC_PHASE) == 1 && ST(L09_GUARDIAN4_STAGE) == 4) {
+        ST(L09_EVENT6_DONE) = 1;
+        ST(L09_EVENT10_DONE) = 1;
     }
     ST(V_WEAPON_WARNED) = 0;
 }
@@ -134,7 +134,7 @@ void l09_trig00(void) {
 /* trigger 41 — sub_1000786E — guardian 8 challenges the hero (cutscene) */
 static void trig41(void) {
     /* 0x7880 */
-    if (ST(0xAF8) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(0xC08) == 2 && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
+    if (ST(L09_GUARD_ARC_PHASE) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(L09_GUARDIAN8_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
         CB->joindre(-ST(ST_HERO), 0, 0, 0, P_GUARDIAN8);
@@ -542,9 +542,9 @@ static void trig08(void) {
         /* 0x926F */
         if (ST(ST_PLAYER_WEAPON) == OB_BOGD_KEY && ST(ST_HERO) > 1) {
             /* 0x929F */
-            if (ST(0xE44) <= 1) {
+            if (ST(L09_GATE_STATE) <= 1) {
                 /* 0x92B1 */
-                if (ST(0xE44) == 0) {
+                if (ST(L09_GATE_STATE) == 0) {
                     CB->animation("SG02OUV10");
                     CB->animation("G02OUV11");
                     /* 0x92D9 */
@@ -558,7 +558,7 @@ static void trig08(void) {
                     return;
                 }
                 /* 0x9322 */
-                if (ST(0xE44) == 1) {
+                if (ST(L09_GATE_STATE) == 1) {
                     /* 0x9334 */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         CB->animation("SG02OUV04");
@@ -577,7 +577,7 @@ static void trig08(void) {
             }
         } else {
             /* 0x93D3 */
-            if (ST(0xE44) == 0) {
+            if (ST(L09_GATE_STATE) == 0) {
                 CB->animation("SG02OUV04");
                 CB->animation("G02OUV09");
                 CB->animation("ar_100");
@@ -599,7 +599,7 @@ static void trig08(void) {
                 return;
             }
             /* 0x9495 */
-            if (ST(0xE44) == 1 && ST(ST_HERO) > 1) {
+            if (ST(L09_GATE_STATE) == 1 && ST(ST_HERO) > 1) {
                 /* 0x94B9 */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     CB->animation("SG02OUV04");
@@ -617,7 +617,7 @@ static void trig08(void) {
             }
         }
         /* 0x9547 */
-        if (ST(0xE44) == 2 && ST(ST_HERO) > 1) {
+        if (ST(L09_GATE_STATE) == 2 && ST(ST_HERO) > 1) {
             CB->animation("SG02OUV04");
             /* 0x9582 */
             if (ST(ST_SPECIAL_MODE) == 1) {
