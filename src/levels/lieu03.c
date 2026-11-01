@@ -27,33 +27,33 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x83BF */
-    if (ST(0x100) == 0 && ST(ST_LOCKED_CAMERA) == 1 && CB->distance(8, 15) < 0x19) {
-        ST(0x100) = 1;
+    if (ST(L03_CAM_ZONE_ARMED) == 0 && ST(ST_LOCKED_CAMERA) == 1 && CB->distance(8, 15) < 0x19) {
+        ST(L03_CAM_ZONE_ARMED) = 1;
         CB->select_pile(2, 1);
         CB->play_anim(0, 0);
         CB->select_pile(0, 1);
     }
     /* 0x8432 */
-    if (ST(0x100) == 1 && CB->distance(8, 15) > 0x5A) {
-        ST(0x100) = 0;
+    if (ST(L03_CAM_ZONE_ARMED) == 1 && CB->distance(8, 15) > 0x5A) {
+        ST(L03_CAM_ZONE_ARMED) = 0;
     }
     /* 0x846C */
-    if (ST(ST_HERO) != 4 && ST(0xFC) != 0x63 && ST(0xE9C) < 3 && ST(0xE9C) != 0) {
+    if (ST(ST_HERO) != 4 && ST(L03_KALHI33_WATCH_OFF) != 0x63 && ST(L03_KALHI_COMPANION) < 3 && ST(L03_KALHI_COMPANION) != 0) {
         /* 0x84BA */
-        if ((ST(0x38) % 100) == 0 && ST(0xE0) != -1 && ST(0xF0) != -1 && ST(0xF4) != -1 && ST(0x74) == 0x63) {
-            ST(0xE0) = CB->divers(DV_DESC_POS, P_KALHI33, 0);
-            ST(0xF0) = CB->divers(DV_DESC_POS, P_KALHI33, 1);
-            ST(0xF4) = CB->divers(DV_DESC_POS, P_KALHI33, 2);
+        if ((ST(L03_FRAME_COUNTER) % 100) == 0 && ST(L03_KALHI33_POS_X) != -1 && ST(L03_KALHI33_POS_Y) != -1 && ST(L03_KALHI33_POS_Z) != -1 && ST(L03_KALHI_SWAP) == 0x63) {
+            ST(L03_KALHI33_POS_X) = CB->divers(DV_DESC_POS, P_KALHI33, 0);
+            ST(L03_KALHI33_POS_Y) = CB->divers(DV_DESC_POS, P_KALHI33, 1);
+            ST(L03_KALHI33_POS_Z) = CB->divers(DV_DESC_POS, P_KALHI33, 2);
         }
         /* 0x856B */
-        if (ST(0xE0) != 0 && ST(0xF0) != 0 && ST(0xF4) != 0 && CB->on_joindre(P_KALHI33) && CB->divers(DV_PERSONA_PRESENT, P_KALHI33, 0) && ST(ST_LOCKED_CAMERA) == 1 && CB->divers(DV_IDLE_TIME, 0, 0) > 0x7D0) {
+        if (ST(L03_KALHI33_POS_X) != 0 && ST(L03_KALHI33_POS_Y) != 0 && ST(L03_KALHI33_POS_Z) != 0 && CB->on_joindre(P_KALHI33) && CB->divers(DV_PERSONA_PRESENT, P_KALHI33, 0) && ST(ST_LOCKED_CAMERA) == 1 && CB->divers(DV_IDLE_TIME, 0, 0) > 0x7D0) {
             CB->divers(DV_IDLE_TIME, 1, 0);
             /* 0x862B */
-            if (abs(ST(0xE0) - CB->divers(DV_DESC_POS, P_KALHI33, 0)) < 0xF && abs(ST(0xF0) - CB->divers(DV_DESC_POS, P_KALHI33, 1)) < 0xF) {
+            if (abs(ST(L03_KALHI33_POS_X) - CB->divers(DV_DESC_POS, P_KALHI33, 0)) < 0xF && abs(ST(L03_KALHI33_POS_Y) - CB->divers(DV_DESC_POS, P_KALHI33, 1)) < 0xF) {
                 CB->select_pile(0, 2);
-                ST(0xE0) = -1;
-                ST(0xF0) = -1;
-                ST(0xF4) = -1;
+                ST(L03_KALHI33_POS_X) = -1;
+                ST(L03_KALHI33_POS_Y) = -1;
+                ST(L03_KALHI33_POS_Z) = -1;
                 CB->bloque(BLOQUE_ALL);
                 CB->divers_empile(DV_SCREEN, 1, 0);
                 CB->change_camera(0, CAM_LOCKED);
@@ -63,9 +63,9 @@ static void tick_body(void) {
                 CB->evenement(0x23, 2000);
                 CB->select_pile(0, 1);
             } else {
-                ST(0xE0) = 0;
-                ST(0xF0) = 0;
-                ST(0xF4) = 0;
+                ST(L03_KALHI33_POS_X) = 0;
+                ST(L03_KALHI33_POS_Y) = 0;
+                ST(L03_KALHI33_POS_Z) = 0;
             }
         }
     }
@@ -114,16 +114,16 @@ static void tick_body(void) {
     }
     /* 0x8956 */
     if ((ST(ST_VIE(P_KALHI13)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) == P_KALHI13) || (ST(ST_VIE(P_KALHI33)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) == P_KALHI33)) {
-        ST(0xE9C) = 2;
-        ST(0xE58) = 1;
+        ST(L03_KALHI_COMPANION) = 2;
+        ST(L03_COMPANION_KILLED) = 1;
         ST(ST_SCRIPT_BUSY) = 0;
         ST(V_ENGAGED_PERSONA) = 0;
     }
     /* 0x89D6 */
     if (CB->divers(DV_WAS_HIT, P_KALHI13, 0) && ST(ST_VIE(P_KALHI13)) != VIE_DEAD && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0)) {
         ST(ST_VIE(P_KALHI13)) = VIE_DEAD;
-        ST(0xE58) = 1;
-        ST(0xE9C) = 2;
+        ST(L03_COMPANION_KILLED) = 1;
+        ST(L03_KALHI_COMPANION) = 2;
         CB->select_pile(1, 2);
         CB->combat(P_KALHI13, -1);
         CB->stop_joindre(-P_KALHI13);
@@ -133,10 +133,10 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8AB3 */
-    if (CB->divers(DV_WAS_HIT, P_KALHI33, 0) && ST(ST_VIE(P_KALHI33)) != VIE_DEAD && CB->divers(DV_PERSONA_PRESENT, P_KALHI33, 0) && ST(0xF3C) == 0) {
+    if (CB->divers(DV_WAS_HIT, P_KALHI33, 0) && ST(ST_VIE(P_KALHI33)) != VIE_DEAD && CB->divers(DV_PERSONA_PRESENT, P_KALHI33, 0) && ST(L03_KALHI33_ROUTE) == 0) {
         ST(ST_VIE(P_KALHI33)) = VIE_DEAD;
-        ST(0xE58) = 1;
-        ST(0xE9C) = 2;
+        ST(L03_COMPANION_KILLED) = 1;
+        ST(L03_KALHI_COMPANION) = 2;
         CB->select_pile(1, 2);
         CB->combat(P_KALHI33, -1);
         CB->stop_joindre(-P_KALHI33);
@@ -148,7 +148,7 @@ static void tick_body(void) {
     /* 0x8BA2 */
     if (CB->divers(DV_WAS_HIT, P_DELIA, 0) && ST(ST_VIE(P_DELIA)) != VIE_DEAD) {
         ST(ST_VIE(P_DELIA)) = VIE_DEAD;
-        ST(0x68) = 0xA;
+        ST(L03_DELIA_FOLLOW) = 0xA;
         ST(V_DELIA_KILLED) = 3;
         ST(V_DELIA_PHASE) = 0x14;
         CB->select_pile(1, 2);
@@ -160,18 +160,18 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8C66 */
-    if (ST(0x6C) == 0 && (ST(V_DELIA_PHASE) == 8 || ST(V_DELIA_PHASE) == 9)) {
+    if (ST(L03_DELIA_ESCORT_SET) == 0 && (ST(V_DELIA_PHASE) == 8 || ST(V_DELIA_PHASE) == 9)) {
         ST(V_DELIA_PHASE) = 9;
-        ST(0x6C) = 1;
+        ST(L03_DELIA_ESCORT_SET) = 1;
         /* 0x8CB7 */
         if (ST(ST_VIE(P_DELIA)) == 1) {
-            ST(0x68) = 1;
+            ST(L03_DELIA_FOLLOW) = 1;
         }
     }
     /* 0x8CD5 */
-    if (ST(0xB40) == 3 && ST(0xE9C) == 0 && ST(ST_VIE(P_KALHI33)) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI33, 0)) {
-        ST(0xE9C) = 1;
-        ST(0x948) = 1;
+    if (ST(L03_KALHI_RECRUIT) == 3 && ST(L03_KALHI_COMPANION) == 0 && ST(ST_VIE(P_KALHI33)) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI33, 0)) {
+        ST(L03_KALHI_COMPANION) = 1;
+        ST(L03_KALHI13_CHAT_STAGE) = 1;
         CB->select_pile(1, 1);
         CB->joindre(-P_KALHI33, 0, 0, 0, ST(ST_HERO));
         CB->animation("SP33ARR01_50");
@@ -185,31 +185,31 @@ static void tick_body(void) {
         return;
     }
     /* 0x8DF0 */
-    if (ST(0xB40) == 3 && ST(0xE9C) == 0 && ST(ST_VIE(P_KALHI13)) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0)) {
-        ST(0xE9C) = 1;
+    if (ST(L03_KALHI_RECRUIT) == 3 && ST(L03_KALHI_COMPANION) == 0 && ST(ST_VIE(P_KALHI13)) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0)) {
+        ST(L03_KALHI_COMPANION) = 1;
     }
     /* 0x8E4F */
-    if (ST(ST_VIE(P_KALHI13)) == 1 && ST(0xE9C) == 1 && ST(ST_SCRIPT_BUSY) == 0) {
+    if (ST(ST_VIE(P_KALHI13)) == 1 && ST(L03_KALHI_COMPANION) == 1 && ST(ST_SCRIPT_BUSY) == 0) {
         CB->select_pile(1, 1);
         /* 0x8E99 */
-        if (CB->distance(8, 4) < 0x5A && ST(0x88) == 0) {
-            ST(0x88) = 1;
-            ST(0x78) = 1;
+        if (CB->distance(8, 4) < 0x5A && ST(L03_KALHI13_NEAR) == 0) {
+            ST(L03_KALHI13_NEAR) = 1;
+            ST(L03_KALHI13_CHATTER) = 1;
             CB->stop_joindre(-P_KALHI13);
             CB->pos_perso(P_KALHI13, CB->divers(DV_DESC_POS, P_KALHI13, 0), CB->divers(DV_DESC_POS, P_KALHI13, 1), CB->divers(DV_DESC_POS, P_KALHI13, 2), 1, "P13ARR01", 4, 1);
             CB->joindre_perm(P_KALHI13, ST(ST_HERO));
         }
         /* 0x8F46 */
-        if (ST(0x7C) == 1 && (ST(0x38) % 20) == 0) {
+        if (ST(L03_KALHI13_FOLLOW) == 1 && (ST(L03_FRAME_COUNTER) % 20) == 0) {
             /* 0x8F79 */
             if (CB->distance(8, 4) >= 0xC8 && CB->distance(8, 4) < 0x12C) {
-                ST(0x88) = 0;
+                ST(L03_KALHI13_NEAR) = 0;
                 CB->divers(DV_RUN, P_KALHI13, 0);
                 CB->joindre(-P_KALHI13, -1, -1, -1, ST(ST_HERO));
             }
             /* 0x8FF0 */
             if (CB->distance(8, 4) >= 0x12C) {
-                ST(0x88) = 0;
+                ST(L03_KALHI13_NEAR) = 0;
                 CB->divers(DV_RUN, P_KALHI13, 1);
                 CB->joindre(-P_KALHI13, -1, -1, -1, ST(ST_HERO));
             }
@@ -217,8 +217,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x9050 */
-    if (ST(ST_VIE(P_KALHI33)) == 1 && ST(0xE9C) == 1 && ST(0x90) == 0 && !CB->on_joindre(P_KALHI33) && CB->distance(5, 13) < 0x12C) {
-        ST(0x90) = 0x3E8;
+    if (ST(ST_VIE(P_KALHI33)) == 1 && ST(L03_KALHI_COMPANION) == 1 && ST(L03_KALHI33_ZONE_DONE) == 0 && !CB->on_joindre(P_KALHI33) && CB->distance(5, 13) < 0x12C) {
+        ST(L03_KALHI33_ZONE_DONE) = 0x3E8;
         CB->select_pile(1, 1);
         CB->retire_zone(13);
         CB->animation("SP33ARR01_10");
@@ -226,27 +226,27 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x9115 */
-    if (ST(0xF3C) == 0 && CB->divers(DV_IN_ZONE, P_KALHI33, 1)) {
-        ST(0xF3C) = 2;
+    if (ST(L03_KALHI33_ROUTE) == 0 && CB->divers(DV_IN_ZONE, P_KALHI33, 1)) {
+        ST(L03_KALHI33_ROUTE) = 2;
     }
     /* 0x9150 */
-    if (ST(0xF3C) == 0 && CB->divers(DV_IN_ZONE, P_KALHI33, 6)) {
-        ST(0xF3C) = 1;
+    if (ST(L03_KALHI33_ROUTE) == 0 && CB->divers(DV_IN_ZONE, P_KALHI33, 6)) {
+        ST(L03_KALHI33_ROUTE) = 1;
     }
     /* 0x918B */
-    if ((ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1) && ST(V_EVENT15_STEP) == 1 && ST(0xE9C) == 2) {
+    if ((ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1) && ST(V_EVENT15_STEP) == 1 && ST(L03_KALHI_COMPANION) == 2) {
         /* 0x91DC */
         if (CB->distance(8, 4) < 0x82 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0)) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             ST(V_EVENT15_STEP) = 2;
-            ST(0xE9C) = 1;
-            ST(0x70) = 1;
+            ST(L03_KALHI_COMPANION) = 1;
+            ST(L03_COMPANION_REJOINED) = 1;
             CB->animation("SP13LEV01");
             lieu_action_register("L03D500A", P_KALHI13, "P13DIA60", "SP13ARR01_10");
             lieu_action_register("L03D500B", P_KALHI13, "P13DIA60", "SP13ARR01_10");
             ST(V_KALHI13_TALK_C) = 2;
-            CB->modify_var(&ST(0x7C), 1);
+            CB->modify_var(&ST(L03_KALHI13_FOLLOW), 1);
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
             return;
@@ -256,8 +256,8 @@ static void tick_body(void) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             ST(V_EVENT15_STEP) = 2;
-            ST(0xE9C) = 1;
-            ST(0x70) = 1;
+            ST(L03_KALHI_COMPANION) = 1;
+            ST(L03_COMPANION_REJOINED) = 1;
             ST(V_KALHI13_TALK_C) = 2;
             CB->animation("SP33LEV01");
             lieu_action_register("L03D500A", P_KALHI33, "P33DIA60", "SP33ARR01_10");
@@ -269,8 +269,8 @@ static void tick_body(void) {
         }
     }
     /* 0x93C3 */
-    if (ST(ST_HERO) != 4 && ST(0xE9C) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0) && ST(0x74) == 1) {
-        ST(0x74) = 2;
+    if (ST(ST_HERO) != 4 && ST(L03_KALHI_COMPANION) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0) && ST(L03_KALHI_SWAP) == 1) {
+        ST(L03_KALHI_SWAP) = 2;
         CB->select_pile(1, 1);
         CB->divers_empile(DV_SCREEN, 5, 0);
         ST(ST_VIE(P_KALHI13)) = 4;
@@ -282,10 +282,10 @@ static void tick_body(void) {
         lieu_action_register("L03D501A", P_KALHI33, "P33DIA54", "SP33ARR01");
         lieu_action_register("L03D501B", P_KALHI33, "SP33DIA59", "SP33ARR01_10");
         CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
-        CB->modify_var(&ST(0xE0), CB->divers(DV_DESC_POS, P_KALHI33, 0));
-        CB->modify_var(&ST(0xF0), CB->divers(DV_DESC_POS, P_KALHI33, 1));
-        CB->modify_var(&ST(0xF4), CB->divers(DV_DESC_POS, P_KALHI33, 2));
-        CB->modify_var(&ST(0x74), 0x63);
+        CB->modify_var(&ST(L03_KALHI33_POS_X), CB->divers(DV_DESC_POS, P_KALHI33, 0));
+        CB->modify_var(&ST(L03_KALHI33_POS_Y), CB->divers(DV_DESC_POS, P_KALHI33, 1));
+        CB->modify_var(&ST(L03_KALHI33_POS_Z), CB->divers(DV_DESC_POS, P_KALHI33, 2));
+        CB->modify_var(&ST(L03_KALHI_SWAP), 0x63);
         CB->divers(DV_IDLE_TIME, 1, 0);
         i32 d1 = CB->distance(1, 4);
         /* 0x95D7 */
@@ -302,49 +302,49 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x967A */
-    if (ST(0x78) == 1 && CB->divers(DV_IDLE_TIME, 0, 0) >= 0x2710) {
-        ST(0x78) = 0;
+    if (ST(L03_KALHI13_CHATTER) == 1 && CB->divers(DV_IDLE_TIME, 0, 0) >= 0x2710) {
+        ST(L03_KALHI13_CHATTER) = 0;
         CB->select_pile(1, 1);
         /* 0x96C2 */
-        if (ST(0x948) == 2) {
+        if (ST(L03_KALHI13_CHAT_STAGE) == 2) {
             lieu_action_register("L03D601", P_KALHI13, "SP13DIA60", "SP13ARR01_10");
         }
         /* 0x96ED */
-        if (ST(0x948) == 1) {
-            ST(0x948) = 2;
+        if (ST(L03_KALHI13_CHAT_STAGE) == 1) {
+            ST(L03_KALHI13_CHAT_STAGE) = 2;
             lieu_action_register("L03D602", P_KALHI13, "SP13DIA53", "SP13ARR01_10");
         }
         /* 0x9727 */
-        if (ST(0x948) == 0) {
-            ST(0x948) = 1;
+        if (ST(L03_KALHI13_CHAT_STAGE) == 0) {
+            ST(L03_KALHI13_CHAT_STAGE) = 1;
             lieu_action_register("L03D603", P_KALHI13, "SP13DIA54", "SP13ARR01_10");
         }
         CB->divers_empile(DV_IDLE_TIME, 1, 0);
         CB->animation("SP13ARR01_10");
-        CB->modify_var(&ST(0x78), 1);
+        CB->modify_var(&ST(L03_KALHI13_CHATTER), 1);
         CB->select_pile(0, 1);
         return;
     }
     /* 0x97A4 */
     if (ST(V_DELIA_PHASE) == 9 && ST(ST_VIE(P_DELIA)) == 1 && ST(ST_SCRIPT_BUSY) == 0) {
         /* 0x97E0 */
-        if (CB->distance(8, 12) < 0x8C && ST(0x84) == 0) {
-            ST(0x84) = 1;
+        if (CB->distance(8, 12) < 0x8C && ST(L03_DELIA_RUN) == 0) {
+            ST(L03_DELIA_RUN) = 1;
             CB->joindre_perm(-P_DELIA, ST(ST_HERO));
             CB->stop_joindre(P_DELIA);
             CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0xC, 0);
         }
         /* 0x9881 */
-        if (ST(0x68) == 1 && (ST(0x38) % 20) == 0) {
+        if (ST(L03_DELIA_FOLLOW) == 1 && (ST(L03_FRAME_COUNTER) % 20) == 0) {
             /* 0x98B4 */
             if (CB->distance(8, 12) >= 0xB4) {
-                ST(0x84) = 0;
+                ST(L03_DELIA_RUN) = 0;
                 CB->divers(DV_RUN, P_DELIA, 0);
                 CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
             }
             /* 0x9910 */
             if (CB->distance(8, 12) >= 0x12C) {
-                ST(0x84) = 0;
+                ST(L03_DELIA_RUN) = 0;
                 CB->divers(DV_RUN, P_DELIA, 1);
                 CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
             }
@@ -381,7 +381,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L03_FORCE_DEFAULT_INIT) == 1) {
         l03_trig00();   /* 0x1000E329: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
