@@ -38,6 +38,8 @@
 #include "game_init.h"
 #include "lieu_cb.h"
 #include "world.h"                     /* g_world.world_controller */
+#include "fx.h"
+#include "libsys/graphics/shading.h"   /* cosine_table */
 
 #define ROOT(e)  EROOT(e)
 #define ANIM(e)  ((can_rec_t *)EPTR(e, 0xD50))
@@ -270,10 +272,8 @@ static void ai_take_hit(entity_t *e) {
     u8 *d = EDESC(e);
     if (st_hurt(e)) return;                                   /* already reeling */
     g_enemy_hits++;
-    if (g_hit_bone && !(g_combat_flags & 2)) {
-        /* play_sound_at_position(hit_pt.x, hit_pt.y, hit_pt.z, yaw+0x4000):
-         * impact spark/blood effect. TODO hook. */
-    }
+    if (g_hit_bone && !(g_combat_flags & 2))      /* play_sound_at_position @ 0x470564: blood spray */
+        fx_blood_start(g_hit_pt[0], g_hit_pt[1], g_hit_pt[2], ROOT(e)->rot[2] + 0x4000);
     /* play_entity_sound(e, get_sound_id(bone 0x1F/0x22 ? "impactd" : "impacta"))
      * TODO: needs an exported sfx_entity(e, name) in sfx.c. */
     if (!(g_combat_flags & 2) && id != 0x1A && id != 0x1B && id != 0x54 && id != 0x19) {
@@ -510,6 +510,113 @@ static i32 ai_strike_facing(entity_t *e, i32 bear_self, i32 dist) {
 }
 
 /* ========================================================================
+ * sub_46034D @ 0x46034D — the player's live strike lands on e (the imp):
+ * attacking, inside its hit window, clefs touching. Resets the player's
+ * stagger meter (+0xC64 = 0x10000) like the other hit tests.
+ * ======================================================================== */
+static i32 imp_struck(entity_t *e) {
+    entity_t *p = g_player_entity;
+    if (!e) return 0;
+    if (!st_attacking(p) || !in_hit_window(p) || !weapon_hits(p, e)) return 0;
+    E32(p, 0xC64) = 0x10000;
+    return 1;
+}
+
+/* ========================================================================
+ * sub_45FD40 @ 0x45FD40 — the flying imp P92 (persona 0x5C). It hovers
+ * 72000 above the floor on a slow bob, keeps 66000..90000 from the hero,
+ * lunges ("p92ata01") now and then, and falls dead after "p92imp02".
+ *   D04: 0 hover, 1 lunging, 2 hurt ("p92imp01"), 3 dying ("p92imp02")
+ *   +0xD34 last lunge roll, +0xD38 start of the lunge / hurt / death,
+ *   +0xC34 last anim tick (the step is scaled by the time since).
+ * Every move goes through sub_4603CB (actor_nudge): collision-resolved.
+ * ======================================================================== */
+static void imp_play(entity_t *e, const c8 *clip) {      /* play_entity_animation(e, id, 1) */
+    actor_play_anim(e, can_get_anim(clip), 1);
+}
+
+static void imp_tick(entity_t *e) {
+    i32 now = now_ms();
+    obc_node_t *g = ROOT(e);
+    entity_t *p = g_player_entity;
+    u8 *d = EDESC(e);
+    i32 v13 = cosine_table[((u32)(g->rot[2] + 16392) >> 4) & 0xFFF];   /* the original's sine_table is cos */
+    i32 v14 = cosine_table[((u32)(g->rot[2] + 8) >> 4) & 0xFFF];
+    f64 step = (f64)(now - E32(e, 0xC34)) / 200.0;
+    f64 fall;
+
+    if (E32(e, 0xD04) == 3 && !d[0x96]) {                /* dying: sinks, slides back, then lies */
+        g->pos[1] -= (i32)(step * 7200.0);
+        fall = 5.0 - (f64)(now - E32(e, 0xD38)) / 50.0;
+        if (fall < 0.0) fall = 0.0;
+        step *= fall;
+        actor_nudge(e, (i32)-((f64)v13 * step), (i32)-((f64)v14 * step));
+        if (g->pos[1] <= E32(e, 0x8C)) {
+            g->pos[1] = E32(e, 0x8C);
+            if (actor_anim_done(e)) {
+                E32(e, 0x70) = -1;
+                d[0x96] = 1;                             /* drops out of every tick */
+                /* create_model_render_data(e); render_entity_with_ui(e, 1) bake the corpse. TODO */
+                lieu_set_persona_vie(E32(e, 0xB0), 2);   /* dword_505DD0[id] = 2 */
+            }
+        }
+        return;
+    }
+
+    f64 dist; i32 bear_self, bear_opp;
+    ai_measure(e, &dist, &bear_self, &bear_opp);         /* sub_46FB40 */
+    g->rot[2] += bear_self;
+    g->pos[1] = cosine_table[((u32)(32 * now + 8) >> 4) & 0xFFF] / 2 + E32(e, 0x8C) + 72000;
+
+    i32 hurt_wait = 0;
+    if (E32(e, 0xD04) != 2) {
+        if (imp_struck(e)) {                             /* sub_46034D */
+            DHP(e) -= 128;
+            hud_enemy_bar(e);                            /* sub_45C700 */
+            if (DHP(e) > 0) { imp_play(e, "p92imp01"); E32(e, 0xD38) = now; E32(e, 0xD04) = 2; }
+            else            { imp_play(e, "p92imp02"); E32(e, 0xD38) = now; E32(e, 0xD04) = 3; }
+        }
+    } else if (!actor_anim_done(e)) {
+        hurt_wait = 1;                                   /* staggering back, no decisions */
+    } else {
+        imp_play(e, "p92mar01");
+        E32(e, 0xD04) = 0;
+    }
+
+    if (hurt_wait) {
+        fall = 5.0 - (f64)(now - E32(e, 0xD38)) / 50.0;
+        if (fall < 0.0) fall = 0.0;
+        step *= fall;
+        actor_nudge(e, (i32)-((f64)v13 * step), (i32)-((f64)v14 * step));
+        return;
+    }
+
+    if (E32(e, 0xD04) == 1) {                            /* lunging */
+        if (dist >= 54000.0) {
+            actor_nudge(e, (i32)((f64)v13 * step * 2.0), (i32)((f64)v14 * step * 2.0));
+        } else {
+            if (!st_parrying(p)) {                       /* is_creature_in_special_level_range */
+                DHP(p) -= 64;
+                E32(p, 0xD04) = DHP(p) > 0 ? 22 : 26;
+                E32(p, 0xD08) = 0;
+            }
+            imp_play(e, "p92mar01");
+            E32(e, 0xD04) = 0;
+        }
+    } else if (now - E32(e, 0xD34) > 250) {
+        E32(e, 0xD34) = now;
+        if (!st_hurt(p) && ai_random(0x100) <= 32) {
+            imp_play(e, "p92ata01");
+            actor_nudge(e, (i32)((f64)v13 * step), (i32)((f64)v14 * step));
+            E32(e, 0xD38) = now;
+            E32(e, 0xD04) = 1;
+        }
+    }
+    if (dist < 66000.0) actor_nudge(e, (i32)-((f64)v13 * step), (i32)-((f64)v14 * step));
+    if (dist > 90000.0) actor_nudge(e, (i32)((f64)v13 * step), (i32)((f64)v14 * step));
+}
+
+/* ========================================================================
  * sub_4701E0 — per-frame combat brain for an NPC with +0xD60 set.
  * ======================================================================== */
 void combat_ai_tick(entity_t *e) {
@@ -518,7 +625,7 @@ void combat_ai_tick(entity_t *e) {
     i32 now = now_ms();
     /* debug_enabled: draw "NRJ : %d" (HP) at (0, 0x140). */
 
-    if (E32(e, 0xB0) == 0x5C) { /* sub_45FD40(e) P92 -- TODO */ return; }
+    if (E32(e, 0xB0) == 0x5C) { imp_tick(e); return; }          /* sub_45FD40: flying imp P92 */
     if (E32(e, 0xB0) == 0x28) { /* sub_460444(e) P40 -- TODO */ return; }
 
     if (now - E32(e, 0xD34) > 250) {                          /* re-roll moods 4x/s */

@@ -375,6 +375,18 @@ static void actor_move_to(entity_t *e, i32 x, i32 z) {
     E32(e, 0xC00) = 0;
 }
 
+/* sub_4603CB @ 0x4603CB — step the root by (dx, dz) through collision. */
+void actor_nudge(entity_t *e, i32 dx, i32 dz) {
+    obc_node_t *g = ROOT(e);
+    E32(e, 0xBF8) = dx;
+    E32(e, 0xC00) = dz;
+    actor_collide(e, 3);
+    g->pos[0] += E32(e, 0xBF8);
+    g->pos[2] += E32(e, 0xC00);
+    E32(e, 0xBF8) = 0;
+    E32(e, 0xC00) = 0;
+}
+
 /* =========================================================================
  * Ballistic helpers
  * ========================================================================= */

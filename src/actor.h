@@ -100,6 +100,9 @@ i32 actor_play_named(entity_t *e, const c8 *anim);
 /* is_entity_in_animation @ 0x418D7F — 1 when the current clip has run out. */
 i32 actor_anim_done(entity_t *e);
 
+/* sub_4603CB @ 0x4603CB: move the root by (dx, dz) through collision. */
+void actor_nudge(entity_t *e, i32 dx, i32 dz);
+
 /* Animation ticks elapsed since the clip started (entity+0xC28). */
 i32 actor_anim_time(const entity_t *e);
 
