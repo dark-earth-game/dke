@@ -1920,24 +1920,24 @@ static void trig08(void) {
             }
             CB->animation("ar");
             /* 0xBFC */
-            if (ST(L14_MALROT5_STEP) == 1) {
-                ST(L14_MALROT5_STEP) = 2;
+            if (ST(L14_PROGRESS_STEP) == 1) {
+                ST(L14_PROGRESS_STEP) = 2;
             }
             /* 0xC1D */
-            if (ST(L14_MALROT5_STEP) == 4 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD) {
-                ST(L14_MALROT5_STEP) = 5;
+            if (ST(L14_PROGRESS_STEP) == 4 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD) {
+                ST(L14_PROGRESS_STEP) = 5;
             }
             /* 0xC50 */
-            if (ST(L14_MALROT5_STEP) == 4 && ST(ST_VIE(P_MALROT5)) == VIE_DEAD) {
-                ST(L14_MALROT5_STEP) = 8;
+            if (ST(L14_PROGRESS_STEP) == 4 && ST(ST_VIE(P_MALROT5)) == VIE_DEAD) {
+                ST(L14_PROGRESS_STEP) = 8;
             }
             /* 0xC83 */
-            if (ST(L14_MALROT5_STEP) == 7) {
-                ST(L14_MALROT5_STEP) = 8;
+            if (ST(L14_PROGRESS_STEP) == 7) {
+                ST(L14_PROGRESS_STEP) = 8;
             }
             /* 0xCA4 */
             if (ST(ST_VIE(P_DANRYS)) == VIE_DEAD && ST(V_KALHI13_TALK_C) == 3 && ST(L14_DANRYS_PLOT_C34) == 1) {
-                ST(L14_MALROT5_STEP) = 9;
+                ST(L14_PROGRESS_STEP) = 9;
             }
             /* 0xCE9 */
             if (ST(L14_PENDING_E34) == 1) {
@@ -2023,24 +2023,24 @@ static void trig08(void) {
         }
         CB->animation("ar");
         /* 0x1030 */
-        if (ST(L14_MALROT5_STEP) == 1) {
-            ST(L14_MALROT5_STEP) = 2;
+        if (ST(L14_PROGRESS_STEP) == 1) {
+            ST(L14_PROGRESS_STEP) = 2;
         }
         /* 0x1051 */
-        if (ST(L14_MALROT5_STEP) == 4 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD) {
-            ST(L14_MALROT5_STEP) = 5;
+        if (ST(L14_PROGRESS_STEP) == 4 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD) {
+            ST(L14_PROGRESS_STEP) = 5;
         }
         /* 0x1084 */
-        if (ST(L14_MALROT5_STEP) == 4 && ST(ST_VIE(P_MALROT5)) == VIE_DEAD) {
-            ST(L14_MALROT5_STEP) = 8;
+        if (ST(L14_PROGRESS_STEP) == 4 && ST(ST_VIE(P_MALROT5)) == VIE_DEAD) {
+            ST(L14_PROGRESS_STEP) = 8;
         }
         /* 0x10B7 */
-        if (ST(L14_MALROT5_STEP) == 7) {
-            ST(L14_MALROT5_STEP) = 8;
+        if (ST(L14_PROGRESS_STEP) == 7) {
+            ST(L14_PROGRESS_STEP) = 8;
         }
         /* 0x10D8 */
         if (ST(ST_VIE(P_DANRYS)) == VIE_DEAD && ST(V_KALHI13_TALK_C) == 3 && ST(L14_DANRYS_PLOT_C34) == 1) {
-            ST(L14_MALROT5_STEP) = 9;
+            ST(L14_PROGRESS_STEP) = 9;
         }
         /* 0x111D */
         if (ST(L14_PENDING_E34) == 1) {

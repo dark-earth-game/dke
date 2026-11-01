@@ -65,7 +65,7 @@ void l14_trig00(void);
 #define L14_PLOT_B38                0xB38   /* game-wide plot step; 2 -> 3 at INIT */
 #define L14_RETURN_ROOM_STEP        0xB4C   /* 0 / 1 which exit room the hero uses when leaving (same slot as L10_RETURN_ROOM_STEP) */
 #define L14_PLOT_BA8                0xBA8   /* game-wide plot step; 5 -> 6 at INIT (shared with L10, L23, L24) */
-#define L14_MALROT5_STEP            0xBBC   /* game-wide Malrot5 chain; 1 -> 2, 4 -> 5 if Malrot5 alive, 4 -> 8 if dead */
+#define L14_PROGRESS_STEP            0xBBC   /* game-wide mission step (same slot as L15_PROGRESS_STEP); 1 -> 2, 4 -> 5 if Malrot5 alive, 4 -> 8 if dead */
 #define L14_WEAPON_REACT_STAGE      0xBE0   /* 0 = first time the hero shows a weapon to Provider, 1 = repeat */
 #define L14_PROVIDER_ACTIVE         0xBE8   /* game-wide; >= 1 = Provider / Malrot4 follow logic enabled (start points 3 and 4 set 1); 0 with E9C == 10 sets E9C to 40 for Kalhi13 */
 #define L14_MALROT1_STORY_STAGE     0xBEC   /* 1 = Malrot1 met, 2 = Malrot1 story told (changes his dialogue at triggers 17, 24) */
