@@ -163,6 +163,15 @@ static NSAutoreleasePool *pool = NULL;
 
 
 static void handle_events(system_t *system, i32 type, i32 key) {
+    // Letters also set their VK code (actions['A'..'Z'], what process_input_command
+    // tests); 'P' = actions[80] is the pause key and the cheat words typed on the
+    // pause screen use the rest. macOS key codes are laid out by keyboard position.
+    static const char letter_of_key[128] = {
+        [0x00]='A', [0x0B]='B', [0x08]='C', [0x02]='D', [0x0E]='E', [0x03]='F', [0x05]='G', [0x04]='H',
+        [0x22]='I', [0x26]='J', [0x28]='K', [0x25]='L', [0x2E]='M', [0x2D]='N', [0x1F]='O', [0x23]='P',
+        [0x0C]='Q', [0x0F]='R', [0x01]='S', [0x11]='T', [0x20]='U', [0x09]='V', [0x0D]='W', [0x07]='X',
+        [0x10]='Y', [0x06]='Z' };
+    if (key >= 0 && key < 128 && letter_of_key[key] && letter_of_key[key] != 'C') system->actions[(int)letter_of_key[key]] = type;
     // if (key > 0 && key < 256) {
     //     return;
     // }

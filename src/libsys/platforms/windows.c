@@ -16,6 +16,8 @@ static u8 *surface = NULL;
 
 
 static void handle_events(system_t *system, i32 type, i32 key) {
+    // VK 'A'..'Z' (P = 80 pauses; the cheat words typed on the pause screen use the rest)
+    if (key >= 'A' && key <= 'Z') system->actions[key] = type;
     switch(key) {
         // w
         case 'W':
