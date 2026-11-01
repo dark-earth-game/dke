@@ -33,8 +33,8 @@ static void tick_body(void) {
     snprintf(g_txt, sizeof(g_txt), "ONJOINDRE:%d", CB->on_joindre(P_BANDOR));
     CB->print_msg(g_txt, 0, 240);
     /* 0x7C5F */
-    if (ST(0x90) == 1 && ST(0xC1C) == 2 && !CB->on_joindre(P_BANDOR)) {
-        ST(0x90) = 2;
+    if (ST(L12_BANDOR_WALK_STEP) == 1 && ST(L12_TALK_STAGE) == 2 && !CB->on_joindre(P_BANDOR)) {
+        ST(L12_BANDOR_WALK_STEP) = 2;
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x7CAD */
@@ -42,31 +42,31 @@ static void tick_body(void) {
         ST(V_EVENT_2) = 0;
         /* 0x7CCE: Bandor's facing in [0xF618, 0x10000] or [0, 0x2328]; the
          * original re-calls Divers for every comparison */
-        if (ST(0xC1C) == 2 &&
+        if (ST(L12_TALK_STAGE) == 2 &&
             ((CB->divers(DV_DESC_POS, P_BANDOR, 2) >= 0xF618 && CB->divers(DV_DESC_POS, P_BANDOR, 2) <= 0x10000) ||
              (CB->divers(DV_DESC_POS, P_BANDOR, 2) >= 0 && CB->divers(DV_DESC_POS, P_BANDOR, 2) <= 0x2328)) &&
-            ST(0x94) == 0) {
+            ST(L12_BANDOR_REPOSITIONED) == 0) {
             /* 0x7D63 */
             CB->joindre(P_BANDOR, 7147, -1562, 0xFFA6, -1);
-            ST(0x94) = 1;
+            ST(L12_BANDOR_REPOSITIONED) = 1;
             CB->joindre(P_KHORAD, 7356, -985, 0x8906, -1);
             CB->animation("P07ARR01_10");
             /* 0x7DB5 */
             if (!CB->on_joindre(P_BANDOR)) {
                 CB->joindre(P_BANDOR, 7294, -1026, 0x9513, -1);
             }
-            CB->modify_var(&ST(0x90), 1);
+            CB->modify_var(&ST(L12_BANDOR_WALK_STEP), 1);
             /* 0x7DFB */
-            if (ST(0x180) == 0) {
+            if (ST(L12_WEAPON_SCENE_CAM) == 0) {
                 CB->change_camera(2, CAM_AUTO);
             }
         } else {
             /* 0x7E22 */
             CB->joindre(P_KHORAD, 7356, -985, 0x8906, -1);
             CB->joindre(P_BANDOR, 7294, -1026, 0x9513, -1);
-            CB->modify_var(&ST(0x90), 1);
+            CB->modify_var(&ST(L12_BANDOR_WALK_STEP), 1);
             /* 0x7E71 */
-            if (ST(0x180) == 0) {
+            if (ST(L12_WEAPON_SCENE_CAM) == 0) {
                 CB->change_camera(2, CAM_AUTO);
             }
         }
@@ -81,8 +81,8 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x7EFA */
-    if (ST(ST_LOCKED_CAMERA) == 2 && CB->distance(1, 2) < 300 && ST(0x80C) == 0 && ST(0x100) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
-        ST(0x100) = 666;
+    if (ST(ST_LOCKED_CAMERA) == 2 && CB->distance(1, 2) < 300 && ST(L12_FIRST_TALK_STAGE) == 0 && ST(L12_APPROACH_SCENE) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
+        ST(L12_APPROACH_SCENE) = 666;
         CB->animation("SP07MAR29");
         CB->animation("SP83GAR01_500");
         CB->animation("P83ATT01_500");
@@ -112,8 +112,8 @@ static void tick_body(void) {
         /* 0x8140 */
         ST(V_CRI_USED) = 1;
         /* 0x814F */
-        if (ST(0x74) != 99) {
-            ST(0x74) = 83;
+        if (ST(L12_CRY_PHASE) != 99) {
+            ST(L12_CRY_PHASE) = 83;
         }
         CB->bloque(BLOQUE_ALL);
         CB->evenement(33, 1000);
@@ -123,8 +123,8 @@ static void tick_body(void) {
     if (ST(V_EVENT_33) == 1) {
         ST(V_EVENT_33) = 0;
         /* 0x81AB */
-        if (ST(0x74) == 83) {
-            ST(0x74) = 99;
+        if (ST(L12_CRY_PHASE) == 83) {
+            ST(L12_CRY_PHASE) = 99;
             ST(V_DLG_RANDOM) = CB->random(2);
             /* 0x81DD */
             if (ST(V_DLG_RANDOM) == 0) {
@@ -141,8 +141,8 @@ static void tick_body(void) {
         }
     }
     /* 0x824D */
-    if (ST(0x74) == 99) {
-        ST(0x74) = 83;
+    if (ST(L12_CRY_PHASE) == 99) {
+        ST(L12_CRY_PHASE) = 83;
     }
     /* 0x8268 */
     if (ST(V_EVENT_34) == 1) {
@@ -227,8 +227,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x85EB */
-    if (CB->distance(1, 2) < 250 && ST(ST_COMBAT_STANCE) == 1 && ST(0x6C) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
-        ST(0x6C) = 1;
+    if (CB->distance(1, 2) < 250 && ST(ST_COMBAT_STANCE) == 1 && ST(L12_STANCE_WARNED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
+        ST(L12_STANCE_WARNED) = 1;
         CB->select_pile(2, 2);
         CB->select_pile(2, 1);
         CB->bloque(BLOQUE_ALL);
@@ -248,8 +248,8 @@ static void tick_body(void) {
         return;
     }
     /* 0x874F */
-    if (ST(0x6C) == 1 && ST(ST_COMBAT_STANCE) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
-        ST(0x6C) = 0;
+    if (ST(L12_STANCE_WARNED) == 1 && ST(ST_COMBAT_STANCE) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_BANDOR)) != VIE_DEAD && ST(ST_VIE(P_KHORAD)) != VIE_DEAD) {
+        ST(L12_STANCE_WARNED) = 0;
         CB->change_camera(-4, CAM_LOCKED);
         CB->select_pile(2, 2);
         CB->select_pile(2, 1);
@@ -268,30 +268,30 @@ static void tick_body(void) {
         return;
     }
     /* 0x88A3 */
-    if (ST(ST_LOCKED_CAMERA) == 3 && ST(0x4BC) == 1 && ST(0x78) == 1) {
+    if (ST(ST_LOCKED_CAMERA) == 3 && ST(L12_SHRINE_USED) == 1 && ST(L12_LEVER_PAUSE_ARMED) == 1) {
         CB->select_pile(2, 1);
         CB->pause_anim(0, 7, 0);
-        ST(0x78) = 0;
+        ST(L12_LEVER_PAUSE_ARMED) = 0;
         CB->select_pile(0, 1);
     }
     /* 0x890E */
-    if (ST(ST_LOCKED_CAMERA) != 3 && ST(0x78) == 0) {
-        ST(0x78) = 1;
+    if (ST(ST_LOCKED_CAMERA) != 3 && ST(L12_LEVER_PAUSE_ARMED) == 0) {
+        ST(L12_LEVER_PAUSE_ARMED) = 1;
     }
     /* 0x893B */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 0 && ST(0x80) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 0 && ST(L12_LEVIER_PAUSED) == 0) {
         CB->select_pile(1, 1);
         CB->pause_anim(1, 1, 0);
-        ST(0x80) = 1;
+        ST(L12_LEVIER_PAUSED) = 1;
         CB->select_pile(0, 1);
     }
     /* 0x89AF */
-    if (ST(ST_LOCKED_CAMERA) != 0 && ST(0x80) == 1) {
-        ST(0x80) = 0;
+    if (ST(ST_LOCKED_CAMERA) != 0 && ST(L12_LEVIER_PAUSED) == 1) {
+        ST(L12_LEVIER_PAUSED) = 0;
     }
     /* 0x89E2 */
-    if (ST(ST_HERO) == 4 && ST(0x7C) == 0) {
-        ST(0x7C) = 1;
+    if (ST(ST_HERO) == 4 && ST(L12_END_GAME_TIMER_SET) == 0) {
+        ST(L12_END_GAME_TIMER_SET) = 1;
         CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x8A1F */
@@ -355,7 +355,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L12_ENDING_OVERRIDE) == 1) {
         l12_trig00();   /* 0x10012399: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
