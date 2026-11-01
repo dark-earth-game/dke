@@ -65,41 +65,41 @@ void l31_trig00(void) {
     if (ST(ST_START_POINT(31)) == 1) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 30;
-        ST(0xBB0) = 0;
-        ST(0x140) = 1;
+        ST(L31_STORY_PART) = 0;
+        ST(L31_ALCOHOL_COUNTERS) = 1;
     }
     /* 0x744D */
     if (ST(ST_START_POINT(31)) == 2) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 30;
-        ST(0xBB0) = 2;
-        ST(0xF24) = 5;
+        ST(L31_STORY_PART) = 2;
+        ST(L31_STORY_MARK_F24) = 5;
     }
     /* 0x7498 */
     if (ST(ST_START_POINT(31)) == 3) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(0xEE0) = 10;
+        ST(L31_BORK_ROUTE_STAGE) = 10;
         ST(ST_LEVEL) = 32;
     }
     /* 0x74D4 */
     if (ST(ST_START_POINT(31)) == 4) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 34;
-        ST(0xEF8) = 11;
+        ST(L31_CHASE_ROUTE) = 11;
     }
     ST(ST_START_POINT(31)) = 0;
     /* 0x751C */
-    if (ST(ST_LEVEL) == 32 && ST(0xE8C) == 2) {
+    if (ST(ST_LEVEL) == 32 && ST(L31_CHASE_STATE) == 2) {
         /* 0x7540 */
-        if (ST(0xEE0) == 1) {
-            ST(0xEE0) = 10;
+        if (ST(L31_BORK_ROUTE_STAGE) == 1) {
+            ST(L31_BORK_ROUTE_STAGE) = 10;
         }
         /* 0x7561 */
-        if (ST(0xEE0) == 2) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 2) {
             /* no body */
         }
         /* 0x7567 */
-        if (ST(0xEE0) == 30) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 30) {
             /* no body */
         }
     }
@@ -130,9 +130,9 @@ void l31_trig00(void) {
         CB->pos_perso(ST(ST_HERO), 2379, 6190, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 1, 0);
     }
     /* 0x7839 */
-    if (ST(0xEE0) > 2) {
+    if (ST(L31_BORK_ROUTE_STAGE) > 2) {
         /* 0x784B */
-        if (ST(0xEE0) == 10) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 10) {
             /* 0x785A */
             if (ST(ST_LEVEL) == 30) {
                 /* 0x786C */
@@ -151,9 +151,9 @@ void l31_trig00(void) {
             /* 0x7919 */
             if (ST(ST_LEVEL) == 34) {
                 /* 0x792B */
-                if (ST(0xEF8) == 1 || ST(0xEF8) == 11) {
+                if (ST(L31_CHASE_ROUTE) == 1 || ST(L31_CHASE_ROUTE) == 11) {
                     /* 0x794F */
-                    if (ST(0xEF8) == 1) {
+                    if (ST(L31_CHASE_ROUTE) == 1) {
                         CB->pos_perso(P_BORK, 2580, 6286, 0x4E20, 1, "P30ARR03", 4, 1);
                     } else {
                         CB->pos_perso(P_BORK, 2580, 6286, 0x4E20, 1, "P30ARR03", 4, 1);
@@ -191,7 +191,7 @@ void l31_trig00(void) {
             }
         }
         /* 0x7B49 */
-        if (ST(0xEE0) == 20) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 20) {
             /* 0x7B58 */
             if (ST(ST_LEVEL) == 30) {
                 CB->pos_perso(P_KONKALITE8, 0, 0, 0, 2, "P78CAD", 2, 0);
@@ -200,9 +200,9 @@ void l31_trig00(void) {
             /* 0x7B9F */
             if (ST(ST_LEVEL) == 34) {
                 /* 0x7BB1 */
-                if (ST(0xEF8) == 1 || ST(0xEF8) == 11) {
+                if (ST(L31_CHASE_ROUTE) == 1 || ST(L31_CHASE_ROUTE) == 11) {
                     /* 0x7BD5 */
-                    if (ST(0xEF8) == 1) {
+                    if (ST(L31_CHASE_ROUTE) == 1) {
                         CB->pos_perso(P_BORK, 2580, 6286, 0x4E20, 1, "P30ARR03", 4, 1);
                     } else {
                         CB->pos_perso(P_BORK, 2580, 6286, 0x4E20, 1, "P30ARR03", 4, 1);
@@ -220,7 +220,7 @@ void l31_trig00(void) {
             }
         }
         /* 0x7CDF */
-        if (ST(0xEE0) == 30) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 30) {
             /* 0x7CEE */
             if (ST(ST_LEVEL) == 30) {
                 /* 0x7D00 */
@@ -268,19 +268,19 @@ void l31_trig00(void) {
             }
         }
         /* 0x7F2E */
-        if (ST(0xEE0) == 35) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 35) {
             CB->pos_perso(P_BORK, 0, 0, 0, 2, "P30CAD", 4, 0);
             CB->pos_perso(P_KONKALITE11, 0, 0, 0, 2, "P81CAD", 5, 0);
         }
     }
     /* 0x7F78 */
-    if (ST(0xEE0) < 3) {
+    if (ST(L31_BORK_ROUTE_STAGE) < 3) {
         /* 0x7F87 */
         if (ST(ST_LEVEL) == 34) {
             /* 0x7F99 */
-            if (ST(0xEF8) == 1 || ST(0xEF8) == 11) {
+            if (ST(L31_CHASE_ROUTE) == 1 || ST(L31_CHASE_ROUTE) == 11) {
                 /* 0x7FBD */
-                if (ST(0xEF8) == 1) {
+                if (ST(L31_CHASE_ROUTE) == 1) {
                     CB->pos_perso(P_BORK, 2580, 6286, 0x4E20, 1, "P30ARR03", 4, 1);
                 } else {
                     CB->pos_perso(P_BORK, 2580, 6286, 0x4E20, 1, "P30ARR03", 4, 1);
@@ -288,13 +288,13 @@ void l31_trig00(void) {
                 }
             } else {
                 /* 0x8048 */
-                if (ST(0xEE8) < 8 || ST(0xEE8) == 99) {
+                if (ST(L31_KONKALITE8_HITS) < 8 || ST(L31_KONKALITE8_HITS) == 99) {
                     CB->pos_perso(P_KONKALITE8, CB->divers(DV_DESC_POS, P_KONKALITE8, 0), CB->divers(DV_DESC_POS, P_KONKALITE8, 1), CB->divers(DV_DESC_POS, P_KONKALITE8, 2), 1, "P78ARR01", 2, 1);
                 } else {
                     CB->pos_perso(P_KONKALITE8, 3062, 6786, 0x38A3, 2, "P78ACT04", 2, 0);
                 }
                 /* 0x80E6 */
-                if (ST(0xEEC) < 8 || ST(0xEEC) == 99) {
+                if (ST(L31_KONKALITE10_HITS) < 8 || ST(L31_KONKALITE10_HITS) == 99) {
                     CB->pos_perso(P_KONKALITE10, CB->divers(DV_DESC_POS, P_KONKALITE10, 0), CB->divers(DV_DESC_POS, P_KONKALITE10, 1), CB->divers(DV_DESC_POS, P_KONKALITE10, 2), 1, "P80ARR01", 3, 1);
                 } else {
                     CB->pos_perso(P_KONKALITE10, CB->divers(DV_DESC_POS, P_KONKALITE10, 0), CB->divers(DV_DESC_POS, P_KONKALITE10, 1), CB->divers(DV_DESC_POS, P_KONKALITE10, 2), 2, "P80ACT04", 3, 0);
@@ -304,21 +304,21 @@ void l31_trig00(void) {
         /* 0x81AC */
         if (ST(ST_LEVEL) == 30 || ST(ST_LEVEL) == 32) {
             /* 0x81CD */
-            if (ST(0xBB0) != 2) {
+            if (ST(L31_STORY_PART) != 2) {
                 /* 0x81DF */
-                if (ST(0xEE0) == 0) {
-                    ST(0xEE0) = 1;
+                if (ST(L31_BORK_ROUTE_STAGE) == 0) {
+                    ST(L31_BORK_ROUTE_STAGE) = 1;
                     CB->pos_perso(P_KONKALITE8, 2712, 6441, 0x8EE8, 1, "P78DIA58", 2, 1);
                     CB->pos_perso(P_KONKALITE10, 2777, 6257, 0x138C, 1, "P80DIA53", 3, 1);
                 } else {
                     /* 0x824F */
-                    if (ST(0xEE8) < 8 || ST(0xEE8) == 99) {
+                    if (ST(L31_KONKALITE8_HITS) < 8 || ST(L31_KONKALITE8_HITS) == 99) {
                         CB->pos_perso(P_KONKALITE8, CB->divers(DV_DESC_POS, P_KONKALITE8, 0), CB->divers(DV_DESC_POS, P_KONKALITE8, 1), CB->divers(DV_DESC_POS, P_KONKALITE8, 2), 1, "P78ARR01", 2, 1);
                     } else {
                         CB->pos_perso(P_KONKALITE8, 3062, 6786, 0x38A3, 2, "P78ACT04", 2, 0);
                     }
                     /* 0x82ED */
-                    if (ST(0xEEC) < 8 || ST(0xEEC) == 99) {
+                    if (ST(L31_KONKALITE10_HITS) < 8 || ST(L31_KONKALITE10_HITS) == 99) {
                         CB->pos_perso(P_KONKALITE10, CB->divers(DV_DESC_POS, P_KONKALITE10, 0), CB->divers(DV_DESC_POS, P_KONKALITE10, 1), CB->divers(DV_DESC_POS, P_KONKALITE10, 2), 1, "P80ARR01", 3, 1);
                     } else {
                         CB->pos_perso(P_KONKALITE10, CB->divers(DV_DESC_POS, P_KONKALITE10, 0), CB->divers(DV_DESC_POS, P_KONKALITE10, 1), CB->divers(DV_DESC_POS, P_KONKALITE10, 2), 2, "P80ACT04", 3, 0);
@@ -326,8 +326,8 @@ void l31_trig00(void) {
                 }
             }
             /* 0x83B6 */
-            if (ST(0xBB0) == 2) {
-                ST(0xEE0) = 2;
+            if (ST(L31_STORY_PART) == 2) {
+                ST(L31_BORK_ROUTE_STAGE) = 2;
                 CB->pos_perso(P_BORK, 2621, 6262, 0xD576, 1, "P30ARR03", 4, 1);
                 CB->pos_perso(P_KONKALITE11, 2902, 6748, 0x15C1, 1, "P81ARR01", 5, 1);
             }
@@ -349,26 +349,26 @@ void l31_trig00(void) {
     ST(V_EVENT_38) = 0;
     ST(V_EVENT_39) = 0;
     ST(V_EVENT_41) = 0;
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x70) = 0;
-    ST(0x74) = 0;
-    ST(0x78) = 0;
-    ST(0x7C) = 0;
-    ST(0x80) = 0;
-    ST(0x84) = 0;
-    ST(0x88) = 0;
-    ST(0xB8) = 0;
-    ST(0xBC) = 0;
-    ST(0xD4) = 0;
-    ST(0xE0) = 0;
-    ST(0xFC) = 0;
-    ST(0x100) = 0;
+    ST(L31_KONKALITE8_AMBUSH) = 0;
+    ST(L31_KONKALITE10_AMBUSH) = 0;
+    ST(L31_KONKALITE_RETREAT_WHO) = 0;
+    ST(L31_BORK_APPROACH_STEP) = 0;
+    ST(L31_UNUSED_74) = 0;
+    ST(L31_UNUSED_78) = 0;
+    ST(L31_UNUSED_7C) = 0;
+    ST(L31_UNUSED_80) = 0;
+    ST(L31_UNUSED_84) = 0;
+    ST(L31_DEATH_HANDLED) = 0;
+    ST(L31_UNUSED_B8) = 0;
+    ST(L31_UNUSED_BC) = 0;
+    ST(L31_UNUSED_D4) = 0;
+    ST(L31_AMBUSH_CAMERA_RELEASED) = 0;
+    ST(L31_KONKALITE8_CRY_ONCE) = 0;
+    ST(L31_KONKALITE10_CRY_ONCE) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_LAST_WEAPON) = 0;
-    ST(0x118) = 0;
+    ST(L31_WEAPON_SEEN) = 0;
 }
 
 /* trigger 41 - sub_10008600 */
@@ -378,7 +378,7 @@ static void trig41(void) {
         CB->divers(DV_MUSIC, 1, 1);
     }
     /* 0x8633 */
-    if (ST(ST_VIE(P_BORK)) != VIE_DEAD && ST(ST_LEVEL) == 34 && ST(0xEF8) == 1) {
+    if (ST(ST_VIE(P_BORK)) != VIE_DEAD && ST(ST_LEVEL) == 34 && ST(L31_CHASE_ROUTE) == 1) {
         CB->select_pile(1, 1);
         CB->change_camera(4, CAM_LOCKED);
         CB->bloque(BLOQUE_ALL);
@@ -388,7 +388,7 @@ static void trig41(void) {
         CB->select_pile(0, 1);
     }
     /* 0x86C1 */
-    if (ST(ST_VIE(P_BORK)) != VIE_DEAD && ST(ST_LEVEL) == 34 && ST(0xEF8) == 11) {
+    if (ST(ST_VIE(P_BORK)) != VIE_DEAD && ST(ST_LEVEL) == 34 && ST(L31_CHASE_ROUTE) == 11) {
         CB->select_pile(1, 1);
         CB->change_camera(4, CAM_LOCKED);
         CB->bloque(BLOQUE_ALL);
@@ -399,7 +399,7 @@ static void trig41(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8768 */
-    if (ST(0xEE0) == 10 && ST(0xEF8) != 1 && ST(0xEF8) != 11) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 10 && ST(L31_CHASE_ROUTE) != 1 && ST(L31_CHASE_ROUTE) != 11) {
         /* 0x879E */
         if (ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD) {
             CB->combat(P_KONKALITE8, 0);
@@ -411,7 +411,7 @@ static void trig41(void) {
         ST(V_ENGAGED_PERSONA) = 0x1EC8;
     }
     /* 0x87E8 */
-    if (ST(0xEE0) == 30 && ST(0xEF8) != 1 && ST(0xEF8) != 11) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 30 && ST(L31_CHASE_ROUTE) != 1 && ST(L31_CHASE_ROUTE) != 11) {
         /* 0x881E */
         if (ST(ST_VIE(P_BORK)) != VIE_DEAD) {
             CB->combat(P_BORK, 0);
@@ -445,8 +445,8 @@ static void trig02(void) {
         return;
     }
     /* 0xA776 */
-    if (ST(0x64) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(0xEE8) < 5 && ST(0xEEC) < 5) {
-        ST(0x64) = 2;
+    if (ST(L31_KONKALITE8_AMBUSH) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(L31_KONKALITE8_HITS) < 5 && ST(L31_KONKALITE10_HITS) < 5) {
+        ST(L31_KONKALITE8_AMBUSH) = 2;
         CB->select_pile(1, 1);
         /* 0xA7E9 */
         if (ST(ST_LOCKED_CAMERA) != 4) {
@@ -455,7 +455,7 @@ static void trig02(void) {
         CB->bloque(BLOQUE_ALL);
         CB->evenement(2, -1);
         /* 0xA826 */
-        if (ST(0xEE8) == 2) {
+        if (ST(L31_KONKALITE8_HITS) == 2) {
             CB->dialogue("L31D01", P_KONKALITE8);
         } else {
             CB->stop_joindre(-P_KONKALITE8);
@@ -464,18 +464,18 @@ static void trig02(void) {
         }
         CB->bloque(BLOQUE_NONE);
         /* 0xA88F */
-        if (ST(0xEE8) != 99) {
-            ST(0xEE8) = 5;
+        if (ST(L31_KONKALITE8_HITS) != 99) {
+            ST(L31_KONKALITE8_HITS) = 5;
         }
         /* 0xA8B0 */
-        if (ST(0xEEC) != 99) {
-            ST(0xEEC) = 5;
+        if (ST(L31_KONKALITE10_HITS) != 99) {
+            ST(L31_KONKALITE10_HITS) = 5;
         }
         CB->select_pile(0, 1);
     }
     /* 0xA8DE */
-    if (ST(0xFC) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(0xEE8) == 99) {
-        ST(0xFC) = 1;
+    if (ST(L31_KONKALITE8_CRY_ONCE) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(L31_KONKALITE8_HITS) == 99) {
+        ST(L31_KONKALITE8_CRY_ONCE) = 1;
         CB->select_pile(1, 1);
         CB->stop_joindre(-P_KONKALITE8);
         CB->animation("SP78GAR26");
@@ -483,8 +483,8 @@ static void trig02(void) {
         CB->joindre_perm(P_KONKALITE8, ST(ST_HERO));
         CB->dialogue("L31D01", P_KONKALITE8);
         /* 0xA989 */
-        if (ST(0xEE8) != 99) {
-            ST(0xEE8) = 5;
+        if (ST(L31_KONKALITE8_HITS) != 99) {
+            ST(L31_KONKALITE8_HITS) = 5;
         }
         CB->select_pile(0, 1);
     }
@@ -492,7 +492,7 @@ static void trig02(void) {
     if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_perso(P_KONKALITE8) && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD) {
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0xAA24 */
-        if (ST(ST_LOCKED_CAMERA) != 4 && ST(0xEEC) < 6) {
+        if (ST(ST_LOCKED_CAMERA) != 4 && ST(L31_KONKALITE10_HITS) < 6) {
             CB->change_camera(4, CAM_LOCKED);
         }
         CB->bloque(BLOQUE_ALL);
@@ -524,17 +524,17 @@ static void trig02(void) {
                 return;
             } else {
                 /* 0xABEB */
-                if (ST(0xEE8) <= 5 || ST(0xEE8) == 99) {
+                if (ST(L31_KONKALITE8_HITS) <= 5 || ST(L31_KONKALITE8_HITS) == 99) {
                     /* 0xAC0F */
-                    if (ST(0xAD0) == 0) {
-                        ST(0xAD0) = 1;
+                    if (ST(L31_KONKALITE8_TALK_A) == 0) {
+                        ST(L31_KONKALITE8_TALK_A) = 1;
                         /* 0xAC30 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D02", P_ARKHAN2, "SG00DIA02", NULL);
                             lieu_action_register("L31D03A", P_KONKALITE8, "SP78GAR03", "SP78GAR03_100");
                             lieu_action_register("L31D03B", P_KONKALITE8, "SP78GAR03", "SP78GAR03_100");
                             /* 0xAC8A */
-                            if (ST(0xEEC) > 5) {
+                            if (ST(L31_KONKALITE10_HITS) > 5) {
                                 lieu_action_register("L31D21C", P_KONKALITE8, "SP78DIA54", "SP78ARR01_10");
                             }
                             CB->joindre_perm(P_KONKALITE8, ST(ST_HERO));
@@ -556,7 +556,7 @@ static void trig02(void) {
                         }
                     }
                     /* 0xAD8A */
-                    if (ST(0xAD0) == 1) {
+                    if (ST(L31_KONKALITE8_TALK_A) == 1) {
                         /* 0xAD9C */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D06", P_ARKHAN2, "SG00DIA02", NULL);
@@ -582,11 +582,11 @@ static void trig02(void) {
                     }
                 }
                 /* 0xAEB2 */
-                if (ST(0xEE8) > 5 && ST(0xEE8) < 9) {
+                if (ST(L31_KONKALITE8_HITS) > 5 && ST(L31_KONKALITE8_HITS) < 9) {
                     /* 0xAED6 */
-                    if (ST(0xAD0) == 0) {
-                        ST(0xAD0) = 1;
-                        ST(0xB1C) = 1;
+                    if (ST(L31_KONKALITE8_TALK_A) == 0) {
+                        ST(L31_KONKALITE8_TALK_A) = 1;
+                        ST(L31_TALK_REPEATED) = 1;
                         lieu_action_register("L31D10", P_ARKHAN2, "SG00DIA02", NULL);
                         lieu_action_register("L31D11A", P_KONKALITE8, "SP78DIA56", "SP78ARR01_10");
                         lieu_action_register("L31D11B", P_KONKALITE8, "SP78DIA57", "SP78ARR01_10");
@@ -607,8 +607,8 @@ static void trig02(void) {
                         return;
                     }
                     /* 0xB084 */
-                    if (ST(0xAD0) == 1) {
-                        ST(0xAD0) = 2;
+                    if (ST(L31_KONKALITE8_TALK_A) == 1) {
+                        ST(L31_KONKALITE8_TALK_A) = 2;
                         lieu_action_register("L31D14", P_ARKHAN2, "SG00DIA02", NULL);
                         lieu_action_register("L31D15A", P_KONKALITE8, "SP78DIA51", "SP78ARR01_10");
                         lieu_action_register("L31D15B", P_KONKALITE8, "SP78DIA53", "SP78ARR01_10");
@@ -623,8 +623,8 @@ static void trig02(void) {
                         return;
                     }
                     /* 0xB187 */
-                    if (ST(0xAD0) == 2) {
-                        ST(0xAD0) = 3;
+                    if (ST(L31_KONKALITE8_TALK_A) == 2) {
+                        ST(L31_KONKALITE8_TALK_A) = 3;
                         lieu_action_register("L31D17", P_ARKHAN2, "SG00DIA02", NULL);
                         lieu_action_register("L31D18A", P_KONKALITE8, "SP78DIA58", "SP78ARR01_10");
                         lieu_action_register("L31D18B", P_KONKALITE8, "SP78DIA59", "SP78ARR01_10");
@@ -638,7 +638,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0xB27A */
-                    if (ST(0xAD0) == 3) {
+                    if (ST(L31_KONKALITE8_TALK_A) == 3) {
                         /* 0xB28C */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D19", P_ARKHAN2, "SG00DIA02", NULL);
@@ -688,12 +688,12 @@ static void trig02(void) {
                 return;
             } else if (ST(ST_PLAYER_WEAPON) == 24) {
                 /* 0xB4CB */
-                if (ST(0xAD4) == 0) {
-                    ST(0xAD4) = 1;
-                    ST(0xAD0) = 0;
+                if (ST(L31_KONKALITE8_TALK_B) == 0) {
+                    ST(L31_KONKALITE8_TALK_B) = 1;
+                    ST(L31_KONKALITE8_TALK_A) = 0;
                     /* 0xB508 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) != 0) {
-                        ST(0x140 + 4 * ST(ST_USED_VARIANT))--;
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) != 0) {
+                        ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT))--;
                     }
                     /* 0xB532 */
                     if (ST(ST_SPECIAL_MODE) == 1) {
@@ -707,13 +707,13 @@ static void trig02(void) {
                     lieu_action_register("L31D44", P_KONKALITE8, "P78DIA53", "SP78ARR01_10");
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE8, 24, 1, 2);
                     CB->animation("Sar_50");
-                    ST(0xEE8) = 6;
+                    ST(L31_KONKALITE8_HITS) = 6;
                     CB->animation("SP78ACT01");
                     lieu_action_register("L31D45", P_KONKALITE8, "P78ARR01", "SP78ARR01_10");
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE8, 24, 1, 2);
                     CB->joindre_perm(P_KONKALITE8, ST(ST_HERO));
                     /* 0xB63D */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) == 0) {
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) == 0) {
                         snprintf(g_buf24, sizeof(g_buf24), "OB24%c", (ST(ST_USED_VARIANT) + 65));
                         CB->etat_objet(g_buf24, -1, -1, -1, -1, -1, -1, -2, 0);
                         snprintf(g_buf77, sizeof(g_buf77), "OB77%c", (ST(ST_USED_VARIANT) + 65));
@@ -726,30 +726,30 @@ static void trig02(void) {
                     return;
                 }
                 /* 0xB701 */
-                if (ST(0xAD4) == 1) {
+                if (ST(L31_KONKALITE8_TALK_B) == 1) {
                     lieu_action_register("L31D46", P_ARKHAN2, "SG02DIA03", NULL);
                     lieu_action_register("L31D48", P_KONKALITE8, "SP78DIA53", "SP78ARR01_10");
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE8, 24, 1, 2);
                     CB->animation("Sar_50");
-                    ST(0xEE8)++;
+                    ST(L31_KONKALITE8_HITS)++;
                     /* 0xB780 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) != 0) {
-                        ST(0x140 + 4 * ST(ST_USED_VARIANT))--;
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) != 0) {
+                        ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT))--;
                     }
                     /* 0xB7AA */
-                    if (ST(0xEE8) < 8) {
+                    if (ST(L31_KONKALITE8_HITS) < 8) {
                         CB->animation("SP78ACT01");
                         lieu_action_register("L31D47", P_KONKALITE8, "P78ARR01", "SP78ARR01_10");
                     }
                     /* 0xB7E0 */
-                    if (ST(0xEE8) == 8) {
+                    if (ST(L31_KONKALITE8_HITS) == 8) {
                         CB->animation("SP78ACT01");
                         lieu_action_register("L31D49", P_KONKALITE8, "P78ARR01", "SP78ARR01_10");
                         CB->animation("SP78ACT02");
                         CB->animation("P78ACT03");
                         CB->animation("P78CAD01");
                         /* 0xB844 */
-                        if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) == 0) {
+                        if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) == 0) {
                             snprintf(g_buf24, sizeof(g_buf24), "OB24%c", (ST(ST_USED_VARIANT) + 65));
                             CB->link_objet(78, g_buf24, 27, 0);
                             snprintf(g_buf77, sizeof(g_buf77), "OB77%c", (ST(ST_USED_VARIANT) + 65));
@@ -786,7 +786,7 @@ static void trig02(void) {
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE8, 24, 1, 2);
                     CB->joindre_perm(P_KONKALITE8, ST(ST_HERO));
                     /* 0xBA60 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) == 0) {
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) == 0) {
                         snprintf(g_buf24, sizeof(g_buf24), "OB24%c", (ST(ST_USED_VARIANT) + 65));
                         CB->etat_objet(g_buf24, -1, -1, -1, -1, -1, -1, -2, 0);
                         snprintf(g_buf77, sizeof(g_buf77), "OB77%c", (ST(ST_USED_VARIANT) + 65));
@@ -849,11 +849,11 @@ static void trig03(void) {
         return;
     }
     /* 0xBDFE */
-    if (ST(0x68) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE10)) != VIE_DEAD && ST(0xEE8) < 5 && ST(0xEEC) < 5) {
-        ST(0x68) = 1;
+    if (ST(L31_KONKALITE10_AMBUSH) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE10)) != VIE_DEAD && ST(L31_KONKALITE8_HITS) < 5 && ST(L31_KONKALITE10_HITS) < 5) {
+        ST(L31_KONKALITE10_AMBUSH) = 1;
         CB->select_pile(1, 1);
         /* 0xBE71 */
-        if (ST(0xEE8) != 2) {
+        if (ST(L31_KONKALITE8_HITS) != 2) {
             CB->stop_joindre(-P_KONKALITE8);
             CB->animation("SP78GAR26");
             CB->animation("P78GAR03");
@@ -868,18 +868,18 @@ static void trig03(void) {
         CB->joindre_perm(-P_KONKALITE10, ST(ST_HERO));
         CB->dialogue("L31D54", P_KONKALITE10);
         /* 0xBF22 */
-        if (ST(0xEE8) != 99) {
-            ST(0xEE8) = 5;
+        if (ST(L31_KONKALITE8_HITS) != 99) {
+            ST(L31_KONKALITE8_HITS) = 5;
         }
         /* 0xBF43 */
-        if (ST(0xEEC) != 99) {
-            ST(0xEEC) = 5;
+        if (ST(L31_KONKALITE10_HITS) != 99) {
+            ST(L31_KONKALITE10_HITS) = 5;
         }
         CB->select_pile(0, 1);
     }
     /* 0xBF71 */
-    if (ST(0x100) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE10)) != VIE_DEAD && ST(0xEEC) == 99) {
-        ST(0x100) = 1;
+    if (ST(L31_KONKALITE10_CRY_ONCE) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE10)) != VIE_DEAD && ST(L31_KONKALITE10_HITS) == 99) {
+        ST(L31_KONKALITE10_CRY_ONCE) = 1;
         CB->select_pile(1, 1);
         CB->stop_joindre(-P_KONKALITE10);
         CB->animation("SP80GAR26");
@@ -887,8 +887,8 @@ static void trig03(void) {
         CB->joindre_perm(P_KONKALITE10, ST(ST_HERO));
         CB->dialogue("L31D54", P_KONKALITE10);
         /* 0xC01C */
-        if (ST(0xEEC) != 99) {
-            ST(0xEEC) = 5;
+        if (ST(L31_KONKALITE10_HITS) != 99) {
+            ST(L31_KONKALITE10_HITS) = 5;
         }
         CB->select_pile(0, 1);
     }
@@ -898,7 +898,7 @@ static void trig03(void) {
         CB->bloque(BLOQUE_ALL);
         CB->joindre(ST(ST_HERO), 0, 0, 0, 80);
         /* 0xC0DB */
-        if (ST(ST_LOCKED_CAMERA) != 4 && ST(0xEE8) < 6) {
+        if (ST(ST_LOCKED_CAMERA) != 4 && ST(L31_KONKALITE8_HITS) < 6) {
             CB->change_camera(4, CAM_LOCKED);
         }
         CB->select_pile(2, 1);
@@ -906,7 +906,7 @@ static void trig03(void) {
         CB->stop_joindre(P_KONKALITE10);
         CB->select_pile(0, 1);
         /* 0xC14D */
-        if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || ST(ST_PLAYER_WEAPON) == ST(0x118)) {
+        if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 2) || ST(ST_PLAYER_WEAPON) == ST(L31_WEAPON_SEEN)) {
             /* 0xC193 */
             if (ST(ST_HERO) == P_ARKHAN3) {
                 /* 0xC1A5 */
@@ -927,11 +927,11 @@ static void trig03(void) {
                 return;
             } else {
                 /* 0xC268 */
-                if (ST(0xEEC) <= 5 || ST(0xEEC) == 99) {
+                if (ST(L31_KONKALITE10_HITS) <= 5 || ST(L31_KONKALITE10_HITS) == 99) {
                     /* 0xC28C */
-                    if (ST(0xAD8) == 0) {
-                        ST(0xAD8) = 1;
-                        ST(0xB1C) = 1;
+                    if (ST(L31_KONKALITE10_TALK_A) == 0) {
+                        ST(L31_KONKALITE10_TALK_A) = 1;
+                        ST(L31_TALK_REPEATED) = 1;
                         /* 0xC2BC */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D02", P_ARKHAN2, "SG00DIA03", NULL);
@@ -956,7 +956,7 @@ static void trig03(void) {
                         }
                     }
                     /* 0xC3E8 */
-                    if (ST(0xAD8) == 1) {
+                    if (ST(L31_KONKALITE10_TALK_A) == 1) {
                         /* 0xC3FA */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D58", P_ARKHAN2, "SG00DIA03", NULL);
@@ -982,10 +982,10 @@ static void trig03(void) {
                     }
                 }
                 /* 0xC510 */
-                if (ST(0xEEC) > 5 && ST(0xEEC) < 8) {
+                if (ST(L31_KONKALITE10_HITS) > 5 && ST(L31_KONKALITE10_HITS) < 8) {
                     /* 0xC534 */
-                    if (ST(0xAD8) == 0) {
-                        ST(0xAD8) = 1;
+                    if (ST(L31_KONKALITE10_TALK_A) == 0) {
+                        ST(L31_KONKALITE10_TALK_A) = 1;
                         lieu_action_register("L31D10", P_ARKHAN2, "SG00DIA03", NULL);
                         lieu_action_register("L31D61A", P_KONKALITE10, "SP80DIA56", "SP80ARR01_10");
                         lieu_action_register("L31D61B", P_KONKALITE10, "SP80DIA53", "SP80ARR01_10");
@@ -1003,8 +1003,8 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xC688 */
-                    if (ST(0xAD8) == 1) {
-                        ST(0xAD8) = 2;
+                    if (ST(L31_KONKALITE10_TALK_A) == 1) {
+                        ST(L31_KONKALITE10_TALK_A) = 2;
                         /* 0xC6A9 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D64", P_ARKHAN2, "SG00DIA03", NULL);
@@ -1021,8 +1021,8 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xC776 */
-                    if (ST(0xAD8) == 2) {
-                        ST(0xAD8) = 3;
+                    if (ST(L31_KONKALITE10_TALK_A) == 2) {
+                        ST(L31_KONKALITE10_TALK_A) = 3;
                         lieu_action_register("L31D17", P_ARKHAN2, "SG00DIA03", NULL);
                         lieu_action_register("L31D67", P_KONKALITE10, "SP80DIA60", "SP80ARR01_10");
                         CB->joindre_perm(P_KONKALITE10, ST(ST_HERO));
@@ -1032,7 +1032,7 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xC805 */
-                    if (ST(0xAD8) == 3) {
+                    if (ST(L31_KONKALITE10_TALK_A) == 3) {
                         /* 0xC817 */
                         if (ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L31D19", P_ARKHAN2, "SG00DIA03", NULL);
@@ -1053,7 +1053,7 @@ static void trig03(void) {
             }
         }
         /* 0xC8CA */
-        if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) != ST(0x118)) {
+        if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) != ST(L31_WEAPON_SEEN)) {
             /* 0xC910 */
             if (ST(ST_HERO) == P_ARKHAN3) {
                 /* 0xC922 */
@@ -1074,12 +1074,12 @@ static void trig03(void) {
                 return;
             } else if (ST(ST_PLAYER_WEAPON) == 24) {
                 /* 0xC9F7 */
-                if (ST(0xADC) == 0) {
-                    ST(0xADC) = 1;
-                    ST(0xAD8) = 0;
+                if (ST(L31_KONKALITE10_TALK_B) == 0) {
+                    ST(L31_KONKALITE10_TALK_B) = 1;
+                    ST(L31_KONKALITE10_TALK_A) = 0;
                     /* 0xCA34 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) != 0) {
-                        ST(0x140 + 4 * ST(ST_USED_VARIANT))--;
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) != 0) {
+                        ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT))--;
                     }
                     /* 0xCA5E */
                     if (ST(ST_SPECIAL_MODE) == 1) {
@@ -1093,12 +1093,12 @@ static void trig03(void) {
                     lieu_action_register("L31D76", P_KONKALITE10, "P80DIA53", "SP80ARR01_10");
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE10, 24, 1, 2);
                     CB->animation("Sar_50");
-                    ST(0xEEC) = 6;
+                    ST(L31_KONKALITE10_HITS) = 6;
                     CB->animation("SP80ACT01");
                     lieu_action_register("L31D77", P_KONKALITE10, "P80ARR01", "SP80ARR01_10");
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE10, 24, 1, 2);
                     /* 0xCB53 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) == 0) {
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) == 0) {
                         snprintf(g_buf24, sizeof(g_buf24), "OB24%c", (ST(ST_USED_VARIANT) + 65));
                         CB->etat_objet(g_buf24, -1, -1, -1, -1, -1, -1, -2, 0);
                         snprintf(g_buf77, sizeof(g_buf77), "OB77%c", (ST(ST_USED_VARIANT) + 65));
@@ -1111,30 +1111,30 @@ static void trig03(void) {
                     return;
                 }
                 /* 0xCC22 */
-                if (ST(0xADC) == 1) {
+                if (ST(L31_KONKALITE10_TALK_B) == 1) {
                     lieu_action_register("L31D46", P_ARKHAN2, "SG02DIA03", NULL);
                     lieu_action_register("L31D72", P_KONKALITE10, "SP80DIA53", "SP80ARR01_10");
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE10, 24, 1, 2);
                     CB->animation("Sar_50");
-                    ST(0xEEC)++;
+                    ST(L31_KONKALITE10_HITS)++;
                     /* 0xCCA1 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) != 0) {
-                        ST(0x140 + 4 * ST(ST_USED_VARIANT))--;
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) != 0) {
+                        ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT))--;
                     }
                     /* 0xCCCB */
-                    if (ST(0xEEC) < 8) {
+                    if (ST(L31_KONKALITE10_HITS) < 8) {
                         CB->animation("SP80ACT01");
                         lieu_action_register("L31D78", P_KONKALITE10, "P80ARR01", "SP80ARR01_10");
                     }
                     /* 0xCD01 */
-                    if (ST(0xEEC) == 8) {
+                    if (ST(L31_KONKALITE10_HITS) == 8) {
                         CB->animation("SP80ACT01");
                         lieu_action_register("L31D79", P_KONKALITE10, "P80ARR01", "SP80ARR01_10");
                         CB->animation("SP80ACT02");
                         CB->animation("P80ACT03");
                         CB->animation("P80CAD01");
                         /* 0xCD65 */
-                        if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) == 0) {
+                        if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) == 0) {
                             snprintf(g_buf24, sizeof(g_buf24), "OB24%c", (ST(ST_USED_VARIANT) + 65));
                             CB->link_objet(80, g_buf24, 27, 0);
                             snprintf(g_buf77, sizeof(g_buf77), "OB77%c", (ST(ST_USED_VARIANT) + 65));
@@ -1170,7 +1170,7 @@ static void trig03(void) {
                     lieu_pre_scene(ST(ST_HERO), P_KONKALITE10, 24, 1, 2);
                     CB->joindre_perm(P_KONKALITE10, ST(ST_HERO));
                     /* 0xCF81 */
-                    if (ST(0x140 + 4 * ST(ST_USED_VARIANT)) == 0) {
+                    if (ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)) == 0) {
                         snprintf(g_buf24, sizeof(g_buf24), "OB24%c", (ST(ST_USED_VARIANT) + 65));
                         CB->etat_objet(g_buf24, -1, -1, -1, -1, -1, -1, -2, 0);
                         snprintf(g_buf77, sizeof(g_buf77), "OB77%c", (ST(ST_USED_VARIANT) + 65));
@@ -1184,7 +1184,7 @@ static void trig03(void) {
                     return;
                 }
             } else {
-                ST(0x118) = ST(ST_PLAYER_WEAPON);
+                ST(L31_WEAPON_SEEN) = ST(ST_PLAYER_WEAPON);
                 lieu_action_register("LCOD18", P_ARKHAN2, "SG00PRE81", NULL);
                 lieu_action_register("L31D80", P_KONKALITE10, "SP80DIA56", "SP80ARR01_10");
                 CB->joindre_perm(P_KONKALITE8, ST(ST_HERO));
@@ -1331,18 +1331,18 @@ static void trig05(void) {
 /* trigger 7 - sub_1000D88B */
 static void trig07(void) {
     /* 0xD89D */
-    if (ST(0xEF8) == 1 && ST(ST_VIE(P_BORK)) == VIE_DEAD) {
+    if (ST(L31_CHASE_ROUTE) == 1 && ST(ST_VIE(P_BORK)) == VIE_DEAD) {
         ST(ST_LEVEL) = 31;
         CB->change_piece(34, 0);
     }
     /* 0xD8DA */
-    if ((ST(0xEF8) != 1 && ST(0xEF8) != 11) || ST(0xE8C) >= 1) {
+    if ((ST(L31_CHASE_ROUTE) != 1 && ST(L31_CHASE_ROUTE) != 11) || ST(L31_CHASE_STATE) >= 1) {
         CB->divers(DV_MUSIC, 1, 4);
         /* 0xD922 */
-        if (ST(0xEE0) == 1) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 1) {
             /* 0xD931 */
             if (ST(V_ENGAGED_PERSONA) != 0) {
-                ST(0xEE0) = 10;
+                ST(L31_BORK_ROUTE_STAGE) = 10;
                 ST(V_ENGAGED_PERSONA) = 0;
             }
             ST(ST_LEVEL) = 31;
@@ -1351,10 +1351,10 @@ static void trig07(void) {
             return;
         }
         /* 0xD98B */
-        if (ST(0xEE0) == 2) {
+        if (ST(L31_BORK_ROUTE_STAGE) == 2) {
             /* 0xD99A */
             if (ST(V_ENGAGED_PERSONA) != 0) {
-                ST(0xEE0) = 30;
+                ST(L31_BORK_ROUTE_STAGE) = 30;
                 ST(V_ENGAGED_PERSONA) = 0;
             }
             ST(ST_LEVEL) = 31;
@@ -1371,10 +1371,10 @@ static void trig07(void) {
 static void trig08(void) {
     CB->retire_zone(8);
     /* 0xDA23 */
-    if (ST(0xEE0) == 1) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 1) {
         /* 0xDA32 */
         if (ST(V_ENGAGED_PERSONA) != 0) {
-            ST(0xEE0) = 10;
+            ST(L31_BORK_ROUTE_STAGE) = 10;
             ST(V_ENGAGED_PERSONA) = 0;
         }
         ST(ST_LEVEL) = 31;
@@ -1383,10 +1383,10 @@ static void trig08(void) {
         return;
     }
     /* 0xDA8C */
-    if (ST(0xEE0) == 2) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 2) {
         /* 0xDA9B */
         if (ST(V_ENGAGED_PERSONA) != 0) {
-            ST(0xEE0) = 30;
+            ST(L31_BORK_ROUTE_STAGE) = 30;
             ST(V_ENGAGED_PERSONA) = 0;
         }
         ST(ST_LEVEL) = 31;
@@ -1403,10 +1403,10 @@ static void trig08(void) {
 /* trigger 12 - sub_1000DB3C */
 static void trig12(void) {
     /* 0xDB4E */
-    if (ST(0xEE0) == 1) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 1) {
         /* 0xDB5D */
         if (ST(V_ENGAGED_PERSONA) != 0) {
-            ST(0xEE0) = 10;
+            ST(L31_BORK_ROUTE_STAGE) = 10;
             ST(V_ENGAGED_PERSONA) = 0;
         }
         ST(ST_LEVEL) = 31;
@@ -1414,10 +1414,10 @@ static void trig12(void) {
         return;
     }
     /* 0xDBA8 */
-    if (ST(0xEE0) == 2) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 2) {
         /* 0xDBB7 */
         if (ST(V_ENGAGED_PERSONA) != 0) {
-            ST(0xEE0) = 30;
+            ST(L31_BORK_ROUTE_STAGE) = 30;
             ST(V_ENGAGED_PERSONA) = 0;
         }
         ST(ST_LEVEL) = 31;
@@ -1436,8 +1436,8 @@ static void trig14(void) {
         CB->pos_perso(ST(ST_HERO), CB->divers(DV_DESC_POS, ST(ST_HERO), 0), CB->divers(DV_DESC_POS, ST(ST_HERO), 1), CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 1, 0);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0xDCF1 */
-        if (ST(0x59C) == 0) {
-            ST(0x59C) = 1;
+        if (ST(L31_OB09_TAKEN) == 0) {
+            ST(L31_OB09_TAKEN) = 1;
             CB->animation("SG00PRE07");
             CB->etat_objet("OB09", -1, -1, -1, -1, -1, -1, -3, 0);
             CB->animation("Sar_50");
