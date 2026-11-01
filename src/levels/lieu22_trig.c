@@ -64,13 +64,13 @@ void l22_trig00(void) {
         ST(ST_LEVEL) = 21;
         ST(ST_HERO) = P_ARKHAN3;
         ST(V_GUARD_FIGHT_DONE) = 1;
-        ST(0x330) = 1;
+        ST(L22_ZED_ARRIVAL) = 1;
     }
     /* 0x745F */
     if (ST(ST_START_POINT(22)) == 2) {
         ST(V_GUARD_FIGHT_DONE) = 10;
-        ST(0x32C) = 10;
-        ST(0x330) = 10;
+        ST(L22_RYLSADHAR_ARRIVAL) = 10;
+        ST(L22_ZED_ARRIVAL) = 10;
     }
     /* 0x749E */
     if (ST(ST_START_POINT(22)) == 3) {
@@ -103,11 +103,11 @@ void l22_trig00(void) {
     }
     CB->ajoute_zone(10, 3952, -5973, 150, 50, 1);
     /* 0x761E */
-    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(0x32C) == 1 && ST(0x330) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(L22_RYLSADHAR_ARRIVAL) == 1 && ST(L22_ZED_ARRIVAL) == 0) {
         CB->ajoute_zone(13, 4357, -6602, 180, 180, 0);
     }
     /* 0x7675 */
-    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(0x330) == 1 && ST(0x32C) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(L22_ZED_ARRIVAL) == 1 && ST(L22_RYLSADHAR_ARRIVAL) == 0) {
         CB->ajoute_zone(20, 4357, -6602, 180, 180, 0);
     }
     CB->ajoute_zone(14, 4374, -6754, 80, 120, 0);
@@ -130,23 +130,23 @@ void l22_trig00(void) {
     /* 0x782C */
     if (ST(V_GUARD_FIGHT_DONE) == 1) {
         /* 0x783E */
-        if (ST(0x32C) == 1) {
+        if (ST(L22_RYLSADHAR_ARRIVAL) == 1) {
             CB->pos_perso(P_RYLSADHAR21, 4393, -6641, 0x9E24, 1, "P20ARR01", 2, 0);
         }
         /* 0x7875 */
-        if (ST(0x330) == 1) {
+        if (ST(L22_ZED_ARRIVAL) == 1) {
             CB->pos_perso(P_ZED27, 4393, -6641, 0x9E24, 1, "P27ARR01", 3, 0);
         }
     }
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
+    ST(L22_ZONE20_STAGE) = 0;
+    ST(L22_DARKNESS_PULSES) = 0;
+    ST(L22_DAMAGE_TICKS) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     /* 0x78E8 */
-    if (ST(0xB88) == 0) {
-        ST(0xB88) = 1;
-        ST(0xE40) = 1;
+    if (ST(L22_ENTRY_STAGE) == 0) {
+        ST(L22_ENTRY_STAGE) = 1;
+        ST(L22_VISITED) = 1;
     }
     ST(ST_START_POINT(22)) = 0;
 }
@@ -312,8 +312,8 @@ static void trig20(void) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x8AA3 */
-        if (ST(0x64) == 0) {
-            ST(0x64) = 1;
+        if (ST(L22_ZONE20_STAGE) == 0) {
+            ST(L22_ZONE20_STAGE) = 1;
             /* 0x8AC1 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 /* 0x8AD3 */
@@ -374,12 +374,12 @@ static void trig20(void) {
             return;
         }
         /* 0x8D53 */
-        if (ST(0x64) == 1) {
+        if (ST(L22_ZONE20_STAGE) == 1) {
             ST(ST_SCRIPT_BUSY) = 0;
             CB->bloque(BLOQUE_ALL);
             CB->retire_zone(20);
             ST(ST_SCRIPT_BUSY) = 1;
-            ST(0x604) = 1;
+            ST(L22_ZONE20_ITEMS_TAKEN) = 1;
             /* 0x8DA2 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->animation("SG02PRE09");
@@ -408,10 +408,10 @@ static void trig35(void) {
             /* 0x8F28 */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 /* 0x8F3A */
-                if (ST(0xCE4) == 0) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 0) {
                     /* 0x8F54 */
                     if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D06A", P_ARKHAN2);
                         CB->dialogue("L22D06B", P_ARKHAN2);
                         CB->animation("SP02ACT59");
@@ -423,7 +423,7 @@ static void trig35(void) {
                         CB->bloque(BLOQUE_NONE);
                         return;
                     } else {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D06A", P_ARKHAN2);
                         CB->dialogue("L22D06B", P_ARKHAN2);
                         CB->animation("SP02ACT58");
@@ -437,7 +437,7 @@ static void trig35(void) {
                     }
                 }
                 /* 0x9087 */
-                if (ST(0xCE4) == 1) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 1) {
                     lieu_action_register("L22D07A", P_ARKHAN2, "SG02DIA04", NULL);
                     lieu_action_register("L22D07B", P_ARKHAN2, "SG02DIA04", NULL);
                     CB->animation("ar_50");
@@ -449,10 +449,10 @@ static void trig35(void) {
             /* 0x90EE */
             if (ST(ST_SPECIAL_MODE) == 0) {
                 /* 0x9100 */
-                if (ST(0xCE4) == 0) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 0) {
                     /* 0x911A */
                     if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D08A", P_ARKHAN2);
                         CB->dialogue("L22D08B", P_ARKHAN2);
                         CB->animation("SP02ACT60");
@@ -464,7 +464,7 @@ static void trig35(void) {
                         CB->bloque(BLOQUE_NONE);
                         return;
                     } else {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D08A", P_ARKHAN2);
                         CB->dialogue("L22D08B", P_ARKHAN2);
                         CB->animation("SP02ACT61");
@@ -478,7 +478,7 @@ static void trig35(void) {
                     }
                 }
                 /* 0x924D */
-                if (ST(0xCE4) == 1) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 1) {
                     CB->vire_col(3, 0);
                     CB->vire_col(5, 0);
                     /* 0x9281 */
@@ -501,10 +501,10 @@ static void trig35(void) {
             /* 0x930A */
             if (ST(ST_SPECIAL_MODE) == 1) {
                 /* 0x931C */
-                if (ST(0xCE4) == 0) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 0) {
                     /* 0x9336 */
                     if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D09A", P_ARKHAN3);
                         CB->dialogue("L22D09B", P_ARKHAN3);
                         CB->animation("SP03ACT59");
@@ -517,7 +517,7 @@ static void trig35(void) {
                         CB->bloque(BLOQUE_NONE);
                         return;
                     } else {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D09A", P_ARKHAN3);
                         CB->dialogue("L22D09B", P_ARKHAN3);
                         CB->animation("SP03ACT58");
@@ -532,7 +532,7 @@ static void trig35(void) {
                     }
                 }
                 /* 0x947F */
-                if (ST(0xCE4) == 1) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 1) {
                     lieu_action_register("L22D10", P_ARKHAN3, "SG03DIA18", NULL);
                     CB->animation("ar_50");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -544,10 +544,10 @@ static void trig35(void) {
             /* 0x94DB */
             if (ST(ST_SPECIAL_MODE) == 0) {
                 /* 0x94ED */
-                if (ST(0xCE4) == 0) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 0) {
                     /* 0x9507 */
                     if (CB->divers(DV_CAN_FIGHT, 9, 2)) {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D11", P_ARKHAN3);
                         CB->animation("SP03ACT60");
                         CB->evenement(2, 500);
@@ -559,7 +559,7 @@ static void trig35(void) {
                         CB->bloque(BLOQUE_NONE);
                         return;
                     } else {
-                        ST(0xCE4) = 1;
+                        ST(L22_ZONE21_REMARK_DONE) = 1;
                         CB->dialogue("L22D11", P_ARKHAN3);
                         CB->animation("SP03ACT61");
                         CB->evenement(2, 500);
@@ -573,7 +573,7 @@ static void trig35(void) {
                     }
                 }
                 /* 0x9630 */
-                if (ST(0xCE4) == 1) {
+                if (ST(L22_ZONE21_REMARK_DONE) == 1) {
                     CB->vire_col(3, 0);
                     CB->vire_col(5, 0);
                     /* 0x9664 */
