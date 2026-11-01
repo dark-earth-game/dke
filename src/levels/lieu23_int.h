@@ -52,7 +52,7 @@ void l23_trig00(void);
 #define L23_ZED_QUEST_SEEN                 0xE74  /* set to 1 once OB75_STATE is non-zero */
 #define L23_RYLSADHAR_ZED_STAGE            0xE78  /* Arkhan1 story stage: 1 start, 2 Rylsadhar20 waiting, 6 scene done, 7 finished, 10 Zed84 scene */
 #define L23_RYLSADHAR_AREA_DONE            0xE7C  /* set to 3 on the first INIT of the Arkhan1 stage (3 = Rylsadhar20 area visited) */
-#define L23_ENDING_SHOWN                   0xE8C  /* 1 = skip the hero-dead ending at INIT */
+#define L23_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L23_OB51_TAKEN                     0xF30  /* 1 once the OB51 chest was searched (zone 13 removed) */
 
 #endif /* DKE_LIEU23_INT_H */

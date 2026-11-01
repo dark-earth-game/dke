@@ -50,7 +50,7 @@ void l25_trig00(void);
 #define L25_POST_MEETING_SAID              0xE0C  /* 1 once the post-meeting line (L25D200/201) was said */
 #define L25_KALHI13_GREETED                0xE58  /* 1 once Kalhi13 greeted the hero on entry */
 #define L25_RYLSADHAR_ZED_STAGE            0xE78  /* Arkhan1 story stage: 7 Rylsadhar20 at post, 9 Kalhi13 meeting done, 10 Zed84 scene */
-#define L25_ENDING_SHOWN                   0xE8C  /* 1 = skip the hero-dead ending at INIT */
+#define L25_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L25_ARKHAN2_DIALOGUE_SEEN          0xEB0  /* 1 once the Arkhan2 conversation with Rylsadhar20 started */
 
 #endif /* DKE_LIEU25_INT_H */

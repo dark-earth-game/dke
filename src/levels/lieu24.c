@@ -915,7 +915,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L24_ENDING_SHOWN) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L24_CHASE_STATE) == 1) {
         l24_trig00();   /* 0x10011589: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
