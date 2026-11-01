@@ -26,7 +26,7 @@ void l13_trig00(void);
 #define L13_OB72_TAKEN        0x5D4   /* 1 = OB72/OB23 interaction at zone 5 already done (second use plays LCOD80) */
 #define L13_PASSAGE_USED      0x61C   /* 1 = the hero already went through the OB41 passage (second try plays LCOD79) */
 #define L13_PASSAGE_FLAG      0xB7C   /* set to 1 when the passage cutscene starts (never read in this level) */
-#define L13_BUNKER_SEEN 0xC20   /* 1 = set by L12, INIT turns it into 2 (same slot as L12_BUNKER_SEEN; read by L49) */
+#define L13_BUNKER_SEEN 0xC20   /* 1 = hero saw the bunker door, INIT turns it into 2 = told (same slot as L12_BUNKER_SEEN; read by L49) */
 #define L13_HIT_COUNT         0xC8C   /* counts damaging strikes at the trap (0..2, capped; each hit costs the hero HP) */
 #define L13_PUZZLE_SOLVED     0xC90   /* 0 = lever puzzle unsolved, 1 = solved (set after the anim slot 2 sequence); changes the event 0 sound/dialogue */
 #define L13_REPLY_STAGE       0xD54   /* answer sequence at zone 5 after solving: 0 = none, 1 = first answer (event 0 plays L13D07/D08 and the SC13/SC14 cinematic), 2 = later answer (L13D09/D10) */
