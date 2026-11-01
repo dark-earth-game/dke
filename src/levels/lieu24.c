@@ -84,7 +84,7 @@ static void tick_body(void) {
     /* 0x8AE6 */
     if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 8) && ST(V_CRI_KEY) == 1 && ST(V_CRI_USED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && CB->direction_perso(P_THANANDAR24) && ST(ST_VIE(P_THANANDAR24)) == 1) {
         ST(V_CRI_USED) = 1;
-        ST(0xBB0) = 1;
+        ST(L24_THANANDAR_FIGHT_STATE) = 1;
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         CB->animation("P24GAR01_10");
@@ -149,8 +149,8 @@ static void tick_body(void) {
             ST(V_ENGAGED_PERSONA) |= 0x71;
         }
         /* 0x8E23 */
-        if (ST(0xBB0) == 0) {
-            ST(0xBB0) = 1;
+        if (ST(L24_THANANDAR_FIGHT_STATE) == 0) {
+            ST(L24_THANANDAR_FIGHT_STATE) = 1;
         }
         /* 0x8E58 */
         if ((CB->divers(DV_HP, P_THANANDAR24, -1) - ST(V_HIT_DAMAGE)) > 0) {
@@ -160,8 +160,8 @@ static void tick_body(void) {
         }
         /* 0x8EB9 */
         if (CB->divers(DV_HP, P_THANANDAR24, -1) <= 100) {
-            ST(0xBB0) = 2;
-            ST(0xF24) = 5;
+            ST(L24_THANANDAR_FIGHT_STATE) = 2;
+            ST(L24_THANANDAR_KILLED_MARK) = 5;
             ST(ST_VIE(P_THANANDAR24)) = VIE_DEAD;
             ST(V_ENGAGED_PERSONA) &= 0xFF;
             CB->combat(P_THANANDAR24, -1);
@@ -182,11 +182,11 @@ static void tick_body(void) {
     }
     /* 0x8FB8 */
     if (ST(ST_VIE(P_THANANDAR24)) == VIE_DEAD && ((ST(V_ENGAGED_PERSONA) >> 8) & 0xFF) == 0x24) {
-        ST(0xBB0) = 2;
-        ST(0xF24) = 5;
+        ST(L24_THANANDAR_FIGHT_STATE) = 2;
+        ST(L24_THANANDAR_KILLED_MARK) = 5;
         /* 0x8FF7 */
-        if (ST(0xBA8) < 6) {
-            ST(0xBB4) = 1;
+        if (ST(L24_ARKHAN23_STEP) < 6) {
+            ST(L24_THANANDAR_COMPANION) = 1;
         }
         ST(V_ENGAGED_PERSONA) &= 0xFF;
         CB->combat(P_THANANDAR24, -1);
@@ -250,7 +250,7 @@ static void tick_body(void) {
         CB->vire_col(0x10, 0);
         ST(ST_SCRIPT_BUSY) = 0;
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0xF4) = 2;
+        ST(L24_GUARDIAN16_STATE) = 2;
         ST(ST_VIE(P_GUARDIAN16)) = VIE_DEAD;
         CB->bloque(BLOQUE_NONE);
         CB->select_pile(0, 1);
@@ -280,46 +280,46 @@ static void tick_body(void) {
         return;
     }
     /* 0x9513 */
-    if (ST(V_ENGAGED_PERSONA) == L24_ENGAGED_GUARDIAN && ST(ST_VIE(P_GUARDIAN16)) == 1 && ST(ST_LOCKED_CAMERA) == 0 && CB->divers(DV_DESC_POS, P_GUARDIAN16, 0) > 6480 && ST(0x100) == 0) {
-        ST(0x100) = 1;
+    if (ST(V_ENGAGED_PERSONA) == L24_ENGAGED_GUARDIAN && ST(ST_VIE(P_GUARDIAN16)) == 1 && ST(ST_LOCKED_CAMERA) == 0 && CB->divers(DV_DESC_POS, P_GUARDIAN16, 0) > 6480 && ST(L24_GUARDIAN16_MOVED) == 0) {
+        ST(L24_GUARDIAN16_MOVED) = 1;
         CB->pos_perso(P_GUARDIAN16, 6570, -4420, 0x41A0, 1, "P56GAR03", 9, 0);
     }
     /* 0x95A9 */
-    if (ST(V_ENGAGED_PERSONA) == L24_ENGAGED_GUARDIAN && ST(ST_VIE(P_GUARDIAN16)) == 1 && ST(ST_LOCKED_CAMERA) == 1 && ST(0x100) == 1) {
-        ST(0x100) = 0;
+    if (ST(V_ENGAGED_PERSONA) == L24_ENGAGED_GUARDIAN && ST(ST_VIE(P_GUARDIAN16)) == 1 && ST(ST_LOCKED_CAMERA) == 1 && ST(L24_GUARDIAN16_MOVED) == 1) {
+        ST(L24_GUARDIAN16_MOVED) = 0;
     }
     /* 0x9609 */
-    if (CB->distance(8, 7) < 200 && ST(0xB8) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_THANANDAR24)) == 1) {
+    if (CB->distance(8, 7) < 200 && ST(L24_FIGHT_PAIR_MODE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_THANANDAR24)) == 1) {
         ST(V_ENGAGED_PERSONA) |= 0x2400;
         CB->combat(P_THANANDAR24, 0);
         /* 0x9664 */
-        if (ST(0x4C) == 0) {
-            ST(0x4C) = 1;
+        if (ST(L24_THANANDAR_DIALOGUE_KIND) == 0) {
+            ST(L24_THANANDAR_DIALOGUE_KIND) = 1;
         }
     }
     /* 0x968B */
-    if (CB->distance(11, 7) < 200 && ST(0xB8) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE1)) == 1) {
+    if (CB->distance(11, 7) < 200 && ST(L24_FIGHT_PAIR_MODE) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE1)) == 1) {
         ST(V_ENGAGED_PERSONA) |= 0x71;
         CB->combat(P_KONKALITE1, 0);
     }
     /* 0x96EF */
-    if (CB->distance(11, 7) < 200 && ST(0xB8) == 3 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_THANANDAR24)) == 1) {
+    if (CB->distance(11, 7) < 200 && ST(L24_FIGHT_PAIR_MODE) == 3 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_THANANDAR24)) == 1) {
         ST(V_ENGAGED_PERSONA) |= 0x2471;
         CB->combat(P_THANANDAR24, 0);
         CB->combat(P_KONKALITE1, 0);
         /* 0x9757 */
-        if (ST(0x4C) == 0) {
-            ST(0x4C) = 1;
+        if (ST(L24_THANANDAR_DIALOGUE_KIND) == 0) {
+            ST(L24_THANANDAR_DIALOGUE_KIND) = 1;
         }
     }
     /* 0x9775 */
-    if (ST(ST_VIE(P_GUARDIAN16)) >= 2 && ST(0xF4) == 0) {
-        ST(0xF4) = 1;
+    if (ST(ST_VIE(P_GUARDIAN16)) >= 2 && ST(L24_GUARDIAN16_STATE) == 0) {
+        ST(L24_GUARDIAN16_STATE) = 1;
     }
     /* 0x97A8 */
     if (ST(ST_VIE(P_GUARDIAN16)) >= 2 && ST(V_ENGAGED_PERSONA) == L24_ENGAGED_GUARDIAN) {
         ST(V_ENGAGED_PERSONA) = 0;
-        ST(0x6C) = 1;
+        ST(L24_THANANDAR_WEAPON_WARNED) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x97EC */
         if (ST(ST_SPECIAL_MODE) == 1) {
@@ -332,7 +332,7 @@ static void tick_body(void) {
         CB->pos_perso(P_THANANDAR24, 6080, -3850, 0x7F7B, 1, "P24ARR01", 8, 0);
         CB->stop_joindre(-P_THANANDAR24);
         CB->animation("SP24ARR01_10");
-        CB->modify_var(&ST(0xBC), 1);
+        CB->modify_var(&ST(L24_GUARDIAN16_AFTERMATH), 1);
         CB->vire_col(0x10, 0);
         /* 0x989B */
         if (ST(ST_LOCKED_CAMERA) != 0 || CB->divers(DV_DESC_POS, ST(ST_HERO), 1) < -4320) {
@@ -340,16 +340,16 @@ static void tick_body(void) {
         }
     }
     /* 0x98D8 */
-    if (ST(0xBC) == 1 && ST(ST_LOCKED_CAMERA) == 0 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) > -4320) {
-        ST(0xBC) = 2;
+    if (ST(L24_GUARDIAN16_AFTERMATH) == 1 && ST(ST_LOCKED_CAMERA) == 0 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) > -4320) {
+        ST(L24_GUARDIAN16_AFTERMATH) = 2;
         CB->divers(DV_COMBAT_STANCE, 0, 0);
         /* 0x993D */
-        if (ST(0xBB4) == 0) {
-            ST(0xBA8) = 2;
+        if (ST(L24_THANANDAR_COMPANION) == 0) {
+            ST(L24_ARKHAN23_STEP) = 2;
             /* 0x9969 */
             if (CB->divers(DV_DESC_POS, P_ARKHAN2, 1) <= -4150 || (CB->divers(DV_DESC_POS, P_ARKHAN2, 1) > -4150 && (CB->divers(DV_DESC_POS, P_ARKHAN2, 0) < 6010 || CB->divers(DV_DESC_POS, P_ARKHAN2, 0) > 6200))) {
                 CB->divers_empile(DV_MUSIC, 1, 1);
-                ST(0x80) = 1;
+                ST(L24_THANANDAR_ARRIVAL_STEP) = 1;
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->animation("Sar_10");
@@ -359,8 +359,8 @@ static void tick_body(void) {
             if (CB->divers(DV_DESC_POS, P_ARKHAN2, 1) > -4150 && CB->divers(DV_DESC_POS, P_ARKHAN2, 0) > 6010 && CB->divers(DV_DESC_POS, P_ARKHAN2, 0) < 6200) {
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
-                ST(0x80) = 1;
-                ST(0xF8) = 1;
+                ST(L24_THANANDAR_ARRIVAL_STEP) = 1;
+                ST(L24_HERO_NEAR_AT_ENTRY) = 1;
                 CB->joindre(-ST(ST_HERO), 0, 0, 0xA, -1);
                 /* 0x9ADB */
                 if (ST(ST_SPECIAL_MODE) == 1) {
@@ -407,46 +407,46 @@ static void tick_body(void) {
             }
         }
         /* 0x9CEB */
-        if (ST(0xBB4) != 0) {
+        if (ST(L24_THANANDAR_COMPANION) != 0) {
             CB->pos_perso(P_THANANDAR24, -1, -1, -1, 4, "P24ARR01", 8, 0);
             CB->bloque(BLOQUE_NONE);
         }
     }
     /* 0x9D24 */
-    if (ST(0xFC) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
-        ST(0xFC) = 2;
+    if (ST(L24_ARRIVAL_ANIM_PAUSE) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
+        ST(L24_ARRIVAL_ANIM_PAUSE) = 2;
         CB->pause_anim(0, 7, -1);
     }
     /* 0x9D66 */
-    if (ST(0xFC) == 2 && ST(ST_LOCKED_CAMERA) == 0) {
-        ST(0xFC) = 1;
+    if (ST(L24_ARRIVAL_ANIM_PAUSE) == 2 && ST(ST_LOCKED_CAMERA) == 0) {
+        ST(L24_ARRIVAL_ANIM_PAUSE) = 1;
         CB->pause_anim(0, 7, 0);
     }
     /* 0x9DA8 */
-    if (ST(0x80) == 1 && (ST(0xF8) == 0 || (ST(0xF8) == 1 && CB->distance(7, 1) > 250))) {
-        ST(0x80) = 1000;
+    if (ST(L24_THANANDAR_ARRIVAL_STEP) == 1 && (ST(L24_HERO_NEAR_AT_ENTRY) == 0 || (ST(L24_HERO_NEAR_AT_ENTRY) == 1 && CB->distance(7, 1) > 250))) {
+        ST(L24_THANANDAR_ARRIVAL_STEP) = 1000;
         CB->animation("Sar_10");
         CB->animation("SP24ARR01_10");
         CB->joindre(-P_THANANDAR24, 6090, -4130, 0x78, -1);
-        CB->modify_var(&ST(0x80), 2);
+        CB->modify_var(&ST(L24_THANANDAR_ARRIVAL_STEP), 2);
     }
     /* 0x9E4E */
-    if (ST(0x80) == 2 && CB->divers(DV_DESC_POS, P_THANANDAR24, 1) <= -4020) {
-        ST(0x80) = 10;
-        ST(0xFC) = 1;
+    if (ST(L24_THANANDAR_ARRIVAL_STEP) == 2 && CB->divers(DV_DESC_POS, P_THANANDAR24, 1) <= -4020) {
+        ST(L24_THANANDAR_ARRIVAL_STEP) = 10;
+        ST(L24_ARRIVAL_ANIM_PAUSE) = 1;
         CB->stop_joindre(-P_THANANDAR24);
         CB->evenement(38, 750);
         CB->animation("SP24ATT02");
         CB->animation("P24_65535");
         CB->joindre(-P_THANANDAR24, -1, -1, -1, ST(ST_HERO));
-        CB->modify_var(&ST(0x80), 3);
+        CB->modify_var(&ST(L24_THANANDAR_ARRIVAL_STEP), 3);
     }
     /* 0x9F03 */
     if (ST(V_EVENT_37) == 1) {
         ST(V_EVENT_37) = 0;
         /* 0x9F24 */
-        if (ST(0x114) == 0) {
-            ST(0x114) = 1;
+        if (ST(L24_DOOR_ANIM_DONE) == 0) {
+            ST(L24_DOOR_ANIM_DONE) = 1;
             /* 0x9F45 */
             if (ST(V_GUARD_FIGHT_DONE) != 2) {
                 CB->play_anim(1, 0);
@@ -457,16 +457,16 @@ static void tick_body(void) {
             }
             CB->evenement(37, 1000);
         } else {
-            ST(0x940) = ST(V_ENGAGED_PERSONA);
+            ST(L24_ENGAGED_SAVED) = ST(V_ENGAGED_PERSONA);
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
             CB->bloque(BLOQUE_NONE);
             ST(ST_LEVEL) = 24;
             /* 0x9FD1 */
-            if (ST(0xBA8) >= 2 && ST(V_GUARD_FIGHT_DONE) < 2) {
+            if (ST(L24_ARKHAN23_STEP) >= 2 && ST(V_GUARD_FIGHT_DONE) < 2) {
                 CB->divers_empile(DV_MUSIC, 1, 4);
             }
             /* 0xA007 */
-            if (ST(0xB4C) < 3) {
+            if (ST(L24_KALHI_PART_STEP) < 3) {
                 CB->change_piece(23, 0);
             } else {
                 CB->change_piece(23, 1);
@@ -483,9 +483,9 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0xA0A4 */
-    if (ST(0x80) == 3 && (CB->distance(7, 8) <= 120 || CB->divers(DV_DESC_POS, P_THANANDAR24, 0) > 6200)) {
-        ST(0x64) = 2;
-        ST(0x80) = 4;
+    if (ST(L24_THANANDAR_ARRIVAL_STEP) == 3 && (CB->distance(7, 8) <= 120 || CB->divers(DV_DESC_POS, P_THANANDAR24, 0) > 6200)) {
+        ST(L24_THANANDAR_APPROACH_STEP) = 2;
+        ST(L24_THANANDAR_ARRIVAL_STEP) = 4;
         CB->vire_col(0x10, 1);
         CB->ajoute_zone(4, 6090, -4020, 120, 90, 0);
         CB->retire_zone(1);
@@ -503,12 +503,12 @@ static void tick_body(void) {
         }
     }
     /* 0xA214 */
-    if (ST(ST_VIE(P_THANANDAR24)) >= 2 && ST(0xBB0) == 1) {
-        ST(0xBB0) = 2;
-        ST(0xF24) = 5;
+    if (ST(ST_VIE(P_THANANDAR24)) >= 2 && ST(L24_THANANDAR_FIGHT_STATE) == 1) {
+        ST(L24_THANANDAR_FIGHT_STATE) = 2;
+        ST(L24_THANANDAR_KILLED_MARK) = 5;
         /* 0xA256 */
-        if (ST(0xBA8) < 6) {
-            ST(0xBB4) = 1;
+        if (ST(L24_ARKHAN23_STEP) < 6) {
+            ST(L24_THANANDAR_COMPANION) = 1;
         }
         /* 0xA277 */
         if (ST(ST_VIE(P_KONKALITE1)) != 1) {
@@ -516,20 +516,20 @@ static void tick_body(void) {
         }
     }
     /* 0xA295 */
-    if (ST(ST_VIE(P_KONKALITE1)) == VIE_DEAD && ST(0xBB8) == 1) {
-        ST(0xBB8) = 2;
+    if (ST(ST_VIE(P_KONKALITE1)) == VIE_DEAD && ST(L24_KONKALITE_FIGHT_STATE) == 1) {
+        ST(L24_KONKALITE_FIGHT_STATE) = 2;
         /* 0xA2C8 */
         if (ST(ST_VIE(P_THANANDAR24)) != 1) {
             ST(V_ENGAGED_PERSONA) = 0;
         }
     }
     /* 0xA2E3 */
-    if (ST(0x6C) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && CB->direction_perso(P_THANANDAR24) && CB->distance(7, 8) < 250 && ST(ST_VIE(P_THANANDAR24)) == 1 && ST(0x64) == 2) {
+    if (ST(L24_THANANDAR_WEAPON_WARNED) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 1 && CB->direction_perso(P_THANANDAR24) && CB->distance(7, 8) < 250 && ST(ST_VIE(P_THANANDAR24)) == 1 && ST(L24_THANANDAR_APPROACH_STEP) == 2) {
         /* 0xA362 */
-        if (ST(0xA64) == 0) {
-            ST(0x6C) = 1;
-            ST(0x74) = 2;
-            ST(0xA64) = 1;
+        if (ST(L24_THANANDAR_WARN_STAGE) == 0) {
+            ST(L24_THANANDAR_WEAPON_WARNED) = 1;
+            ST(L24_THANANDAR_MOOD) = 2;
+            ST(L24_THANANDAR_WARN_STAGE) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_THANANDAR24);
             CB->animation("SP24GAR01_10");
@@ -540,15 +540,15 @@ static void tick_body(void) {
             }
             CB->bloque(BLOQUE_NONE);
             /* 0xA3F6 */
-            if (ST(0x4C) == 0) {
-                ST(0x4C) = 2;
+            if (ST(L24_THANANDAR_DIALOGUE_KIND) == 0) {
+                ST(L24_THANANDAR_DIALOGUE_KIND) = 2;
             }
             return;
         }
         /* 0xA419 */
-        if (ST(0xA64) >= 2) {
-            ST(0x6C) = 1;
-            ST(0x74) = 2;
+        if (ST(L24_THANANDAR_WARN_STAGE) >= 2) {
+            ST(L24_THANANDAR_WEAPON_WARNED) = 1;
+            ST(L24_THANANDAR_MOOD) = 2;
             CB->stop_joindre(-P_THANANDAR24);
             CB->animation("SP24GAR01_10");
             /* 0xA456 */
@@ -558,18 +558,18 @@ static void tick_body(void) {
         }
     }
     /* 0xA47B */
-    if (ST(0x6C) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_VIE(P_THANANDAR24)) == 1 && CB->direction_perso(P_THANANDAR24) && CB->distance(7, 8) < 300) {
+    if (ST(L24_THANANDAR_WEAPON_WARNED) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_VIE(P_THANANDAR24)) == 1 && CB->direction_perso(P_THANANDAR24) && CB->distance(7, 8) < 300) {
         /* 0xA4EB */
-        if (ST(0xA64) == 0) {
-            ST(0x6C) = 0;
+        if (ST(L24_THANANDAR_WARN_STAGE) == 0) {
+            ST(L24_THANANDAR_WEAPON_WARNED) = 0;
         }
         /* 0xA509 */
-        if (ST(0xA64) == 1) {
+        if (ST(L24_THANANDAR_WARN_STAGE) == 1) {
             CB->combat(P_THANANDAR24, -1);
             ST(V_ENGAGED_PERSONA) &= 0xFF;
-            ST(0x6C) = 0;
-            ST(0x74) = 2;
-            ST(0xA64) = 2;
+            ST(L24_THANANDAR_WEAPON_WARNED) = 0;
+            ST(L24_THANANDAR_MOOD) = 2;
+            ST(L24_THANANDAR_WARN_STAGE) = 2;
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_THANANDAR24);
             lieu_action_register("L24D09", P_THANANDAR24, "SP24GAR01", "SP24ARR01_10");
@@ -582,9 +582,9 @@ static void tick_body(void) {
             return;
         }
         /* 0xA5D0 */
-        if (ST(0xA64) >= 2) {
-            ST(0x6C) = 0;
-            ST(0x74) = 2;
+        if (ST(L24_THANANDAR_WARN_STAGE) >= 2) {
+            ST(L24_THANANDAR_WEAPON_WARNED) = 0;
+            ST(L24_THANANDAR_MOOD) = 2;
             CB->stop_joindre(-P_THANANDAR24);
             CB->animation("SP24ARR01_100");
             /* 0xA60D */
@@ -594,33 +594,33 @@ static void tick_body(void) {
         }
     }
     /* 0xA635 */
-    if (ST(0xBA8) >= 4 && ST(ST_VIE(P_THANANDAR24)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L24_ARKHAN23_STEP) >= 4 && ST(ST_VIE(P_THANANDAR24)) == 1 && ST(V_ENGAGED_PERSONA) == 0) {
         /* 0xA665 */
-        if (ST(0x7C) != 3) {
+        if (ST(L24_THANANDAR_ESCORT_STATE) != 3) {
             /* 0xA688 */
-            if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) >= 6760 && CB->distance(7, 8) < 195 && ST(0x64) == 0) {
-                ST(0x64) = 1;
+            if (CB->divers(DV_DESC_POS, ST(ST_HERO), 0) >= 6760 && CB->distance(7, 8) < 195 && ST(L24_THANANDAR_APPROACH_STEP) == 0) {
+                ST(L24_THANANDAR_APPROACH_STEP) = 1;
             }
             /* 0xA6D9 */
-            if (CB->distance(7, 8) > 250 && ST(0x64) == 2) {
-                ST(0x64) = 3;
+            if (CB->distance(7, 8) > 250 && ST(L24_THANANDAR_APPROACH_STEP) == 2) {
+                ST(L24_THANANDAR_APPROACH_STEP) = 3;
             }
         }
         /* 0xA703 */
-        if (ST(0x64) == 1 && ST(0x88) == 0) {
+        if (ST(L24_THANANDAR_APPROACH_STEP) == 1 && ST(L24_THANANDAR_TALK_ABORTED) == 0) {
             /* 0xA727 */
-            if (ST(0x98) == 0) {
-                ST(0x98) = 1;
+            if (ST(L24_THANANDAR_MET) == 0) {
+                ST(L24_THANANDAR_MET) = 1;
             }
-            ST(0x64) = 2;
+            ST(L24_THANANDAR_APPROACH_STEP) = 2;
             CB->joindre(-ST(ST_HERO), 0, 0, 0, 24);
             CB->joindre(-P_THANANDAR24, 0, 0, 0, ST(ST_HERO));
             /* 0xA78E */
-            if (ST(0xF2C) == 0) {
-                ST(0xF2C) = 1;
+            if (ST(L24_THANANDAR_GREETED) == 0) {
+                ST(L24_THANANDAR_GREETED) = 1;
             }
             /* 0xA7AF */
-            if (ST(0xE14) >= 2) {
+            if (ST(L24_THANANDAR_VISIT_COUNT) >= 2) {
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->animation("SP24ARR01_10");
@@ -632,7 +632,7 @@ static void tick_body(void) {
                 ST(ST_SCRIPT_BUSY) = 0;
             }
             /* 0xA81C */
-            if (ST(0xE18) == 0 && ST(0xE14) < 2 && ST(0xBB0) != 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0) {
+            if (ST(L24_THANANDAR_PROVOKED) == 0 && ST(L24_THANANDAR_VISIT_COUNT) < 2 && ST(L24_THANANDAR_FIGHT_STATE) != 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_COMBAT_STANCE) == 0) {
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->bloque(BLOQUE_ALL);
                 /* 0xA887 */
@@ -644,17 +644,17 @@ static void tick_body(void) {
                     CB->dialogue("L24D11", P_ARKHAN3);
                 }
                 /* 0xA8C8 */
-                if (ST(0x68) == 0) {
-                    ST(0x7C) = 1;
+                if (ST(L24_THANANDAR_CHAT_COUNT) == 0) {
+                    ST(L24_THANANDAR_ESCORT_STATE) = 1;
                     /* 0xA8E6 */
-                    if (ST(0xE18) == 0 && ST(0xE14) == 0) {
+                    if (ST(L24_THANANDAR_PROVOKED) == 0 && ST(L24_THANANDAR_VISIT_COUNT) == 0) {
                         lieu_action_register("L24D12", P_THANANDAR24, "SP24DIA55", "SP24ARR01_10");
                     }
                     /* 0xA923 */
-                    if (ST(0xE18) == 0 && ST(0xE14) != 0) {
+                    if (ST(L24_THANANDAR_PROVOKED) == 0 && ST(L24_THANANDAR_VISIT_COUNT) != 0) {
                         lieu_action_register("L24D13", P_THANANDAR24, "SP24DIA60", "SP24ARR01_10");
                     }
-                    CB->modify_var(&ST(0x68), 1);
+                    CB->modify_var(&ST(L24_THANANDAR_CHAT_COUNT), 1);
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
                     /* 0xA98A */
@@ -664,7 +664,7 @@ static void tick_body(void) {
                     return;
                 }
                 /* 0xA9B4 */
-                if (ST(0x68) == 1) {
+                if (ST(L24_THANANDAR_CHAT_COUNT) == 1) {
                     lieu_action_register("L24D14A", P_THANANDAR24, "SP24DIA59", "SP24ARR01_10");
                     lieu_action_register("L24D14B", P_THANANDAR24, "SP24ATT50", "SP24ARR01_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -679,14 +679,14 @@ static void tick_body(void) {
                 ST(ST_SCRIPT_BUSY) = 1;
             }
             /* 0xAA52 */
-            if (ST(0xE18) == 1 || ST(0xE14) >= 2 || (ST(0xBB0) == 1 && ST(ST_COMBAT_STANCE) == 0)) {
+            if (ST(L24_THANANDAR_PROVOKED) == 1 || ST(L24_THANANDAR_VISIT_COUNT) >= 2 || (ST(L24_THANANDAR_FIGHT_STATE) == 1 && ST(ST_COMBAT_STANCE) == 0)) {
                 CB->bloque(BLOQUE_ALL);
-                ST(0xBB0) = 1;
+                ST(L24_THANANDAR_FIGHT_STATE) = 1;
                 /* 0xAAAE */
-                if (ST(0x4C) == 0) {
-                    ST(0x4C) = 1;
+                if (ST(L24_THANANDAR_DIALOGUE_KIND) == 0) {
+                    ST(L24_THANANDAR_DIALOGUE_KIND) = 1;
                 }
-                ST(0xBB8) = 1;
+                ST(L24_KONKALITE_FIGHT_STATE) = 1;
                 /* 0xAADB */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     CB->dialogue("L24D10", P_ARKHAN2);
@@ -706,12 +706,12 @@ static void tick_body(void) {
             }
         }
         /* 0xABA9 */
-        if (ST(0x64) == 3 && ST(V_ENGAGED_PERSONA) == 0 && ST(0x88) == 0) {
+        if (ST(L24_THANANDAR_APPROACH_STEP) == 3 && ST(V_ENGAGED_PERSONA) == 0 && ST(L24_THANANDAR_TALK_ABORTED) == 0) {
             /* 0xABD9 */
-            if (ST(0x7C) == 1) {
-                ST(0x7C) = 3;
+            if (ST(L24_THANANDAR_ESCORT_STATE) == 1) {
+                ST(L24_THANANDAR_ESCORT_STATE) = 3;
                 CB->bloque(BLOQUE_ALL);
-                ST(0x74) = 4;
+                ST(L24_THANANDAR_MOOD) = 4;
                 CB->stop_joindre(-P_THANANDAR24);
                 lieu_action_register("L24D20", P_THANANDAR24, "SP24DIA60", "SP24ARR01_10");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -723,35 +723,35 @@ static void tick_body(void) {
                 return;
             }
             /* 0xAC72 */
-            if (ST(0x7C) == 0) {
-                ST(0x64) = 0;
-                ST(0x68) = 1;
+            if (ST(L24_THANANDAR_ESCORT_STATE) == 0) {
+                ST(L24_THANANDAR_APPROACH_STEP) = 0;
+                ST(L24_THANANDAR_CHAT_COUNT) = 1;
                 CB->stop_joindre(-P_THANANDAR24);
                 /* 0xACA7 */
-                if (ST(0xBA8) == 4) {
+                if (ST(L24_ARKHAN23_STEP) == 4) {
                     CB->joindre(-P_THANANDAR24, 6844, -4093, 0xBB8, -1);
                     CB->animation("SP24ACT01_10");
                 }
                 /* 0xACE0 */
-                if (ST(0xBA8) == 5 || ST(0xBA8) == 6) {
+                if (ST(L24_ARKHAN23_STEP) == 5 || ST(L24_ARKHAN23_STEP) == 6) {
                     CB->joindre(-P_THANANDAR24, 6830, -4113, 0x4268, -1);
                     CB->animation("SP24ACT02_10");
                 }
             }
         }
         /* 0xAD28 */
-        if (ST(0x64) == 3 && ST(V_ENGAGED_PERSONA) == 0 && ST(0x88) != 0 && CB->distance(8, 7) > 250) {
-            ST(0x88) = 0;
-            ST(0x64) = 0;
-            ST(0x68) = 1;
+        if (ST(L24_THANANDAR_APPROACH_STEP) == 3 && ST(V_ENGAGED_PERSONA) == 0 && ST(L24_THANANDAR_TALK_ABORTED) != 0 && CB->distance(8, 7) > 250) {
+            ST(L24_THANANDAR_TALK_ABORTED) = 0;
+            ST(L24_THANANDAR_APPROACH_STEP) = 0;
+            ST(L24_THANANDAR_CHAT_COUNT) = 1;
             CB->stop_joindre(-P_THANANDAR24);
             /* 0xADA8 */
-            if (ST(0xBA8) == 4) {
+            if (ST(L24_ARKHAN23_STEP) == 4) {
                 CB->joindre(-P_THANANDAR24, 6844, -4093, 0xBB8, -1);
                 CB->animation("SP24ACT01_10");
             }
             /* 0xADE1 */
-            if (ST(0xBA8) == 5 || ST(0xBA8) == 6) {
+            if (ST(L24_ARKHAN23_STEP) == 5 || ST(L24_ARKHAN23_STEP) == 6) {
                 CB->joindre(-P_THANANDAR24, 6830, -4113, 0x4268, -1);
                 CB->animation("SP24ACT02_10");
             }
@@ -779,11 +779,11 @@ static void tick_body(void) {
         return;
     }
     /* 0xAF74 */
-    if (ST(0x94) == 1) {
+    if (ST(L24_THANANDAR_WALK_BACK) == 1) {
         i32 t1 = CB->divers(DV_DESC_POS, ST(ST_HERO), 1);
         /* 0xAFA8 */
         if (t1 >= CB->divers(DV_DESC_POS, P_THANANDAR24, 1)) {
-            ST(0x94) = 2;
+            ST(L24_THANANDAR_WALK_BACK) = 2;
             CB->stop_joindre(-P_THANANDAR24);
             CB->joindre(-ST(ST_HERO), 0, 0, 0xC738, -1);
             /* 0xAFF4 */
@@ -850,7 +850,7 @@ static void tick_body(void) {
     /* 0xB2B1 */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
-        ST(0x74) = 2;
+        ST(L24_THANANDAR_MOOD) = 2;
         CB->stop_joindre(-P_THANANDAR24);
         CB->animation("Sar_10");
         /* 0xB2F4 */
@@ -867,11 +867,11 @@ static void tick_body(void) {
         return;
     }
     /* 0xB38D */
-    if (ST(V_GUARD_FIGHT_DONE) < 2 && ST(0xBB0) == 2 && CB->distance(7, 34) < 200 && CB->direction_zone(34) && ST(0xD4) == 0 && ST(0xC4C) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) < 2 && ST(L24_THANANDAR_FIGHT_STATE) == 2 && CB->distance(7, 34) < 200 && CB->direction_zone(34) && ST(L24_ZONE34_ONCE) == 0 && ST(L24_ZONE34_DONE) == 0) {
         CB->bloque(BLOQUE_ALL);
-        ST(0xD4) = 1;
+        ST(L24_ZONE34_ONCE) = 1;
         ST(ST_SCRIPT_BUSY) = 1;
-        ST(0xC4C) = 1;
+        ST(L24_ZONE34_DONE) = 1;
         /* 0xB438 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             lieu_action_register("L24D93", P_ARKHAN2, "SG00DIA04", "Sar_10");
@@ -915,7 +915,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L24_ENDING_SHOWN) == 1) {
         l24_trig00();   /* 0x10011589: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
