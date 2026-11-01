@@ -43,7 +43,7 @@ static void trig_noop(void) {
 /* trigger 00 — sub_100073F0 — level setup: zones, hero placement, story reset */
 void l52_trig00(void) {
     if (ST(ST_START_POINT(52)) == 1) {
-        ST(0xEC) = 1;
+        ST(L52_ENDING_VISIT) = 1;
     }
     CB->ajoute_zone(15, 514, -2094, 110, 125, 0);
     CB->ajoute_zone(2, 517, -3105, 150, 130, 0);
@@ -57,12 +57,12 @@ void l52_trig00(void) {
     CB->ajoute_zone(10, 995, -2657, 115, 140, 0);
     CB->ajoute_zone(11, 867, -2770, 140, 130, 0);
     /* 0x1000756A */
-    if (ST(0xEC) == 0) {
+    if (ST(L52_ENDING_VISIT) == 0) {
         CB->pos_perso(ST(ST_HERO), 508, -2095, 0x8000, 1, "ar", 1, 0);
     }
     /* 0x100075A7 */
-    if (ST(0xEC) == 1) {
-        ST(0xE3C) = 0;
+    if (ST(L52_ENDING_VISIT) == 1) {
+        ST(L52_STORY_STAGE) = 0;
         CB->divers(DV_DARKNESS, 0, 0);
         CB->divers(DV_HP, 0, 0x3FF);
         CB->divers(DV_INVENTORY, 2, 0);
@@ -71,10 +71,10 @@ void l52_trig00(void) {
     /* 0x1000761D */
     CB->divers(DV_MUSIC, 1, 0);
     CB->bruitage("L27AMB1", -1, -1);
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0xB8) = 0;
-    ST(0xBC) = 0;
+    ST(L52_UNUSED_64) = 0;
+    ST(L52_UNUSED_68) = 0;
+    ST(L52_UNUSED_B8) = 0;
+    ST(L52_UNUSED_BC) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     ST(V_EVENT_0) = 0;
@@ -92,7 +92,7 @@ void l52_trig00(void) {
 
 /* trigger 41 — sub_10007739 */
 static void trig41(void) {
-    if (ST(0xEC) == 1) {
+    if (ST(L52_ENDING_VISIT) == 1) {
         CB->evenement(0, 750);
     }
 }
@@ -135,7 +135,7 @@ static void trig11(void) { credits_trigger(0x8000, 9); }
 
 /* trigger 15 — sub_10007DFB */
 static void trig15(void) {
-    if (ST(0xEC) == 0 && CB->direction_spec(0)) {
+    if (ST(L52_ENDING_VISIT) == 0 && CB->direction_spec(0)) {
         ST(ST_LEVEL) = 52;
         CB->animation("SG00OUV01");
         CB->animation("ar");
