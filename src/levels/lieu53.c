@@ -43,20 +43,20 @@ static void tick_body(void) {
     snprintf(g_txt, sizeof(g_txt), "gun:%d", t1);
     CB->print_msg(g_txt, 0, 240);
     /* 0x6A9F */
-    if (ST(0x70) == 0 && ST(ST_LOCKED_CAMERA) == 0) {
-        ST(0x70) = 1;
+    if (ST(L53_IDLE_ANIM_ON) == 0 && ST(ST_LOCKED_CAMERA) == 0) {
+        ST(L53_IDLE_ANIM_ON) = 1;
         CB->play_anim(5, 1);
     }
     /* 0x6ADC */
-    if (ST(0x70) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
-        ST(0x70) = 0;
+    if (ST(L53_IDLE_ANIM_ON) == 1 && ST(ST_LOCKED_CAMERA) != 0) {
+        ST(L53_IDLE_ANIM_ON) = 0;
     }
     /* 0x6B0C */
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         CB->select_pile(1, 1);
         /* 0x6B3D */
-        if (ST(0xC90) == 0) {
+        if (ST(L53_POWER_ON) == 0) {
             CB->bruitage("L13B01", 2147, 5160);
             /* 0x6B64 */
             if (ST(ST_HERO) == P_ARKHAN2) {
@@ -72,7 +72,7 @@ static void tick_body(void) {
             return;
         } else {
             /* 0x6BD6 */
-            if (ST(0xC94) == 1) {
+            if (ST(L53_CONSOLE_STAGE) == 1) {
                 CB->bruitage("L13B02", 2147, 5160);
                 /* 0x6BFD */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -100,7 +100,7 @@ static void tick_body(void) {
                 return;
             }
             /* 0x6CDE */
-            if (ST(0xC94) == 2) {
+            if (ST(L53_CONSOLE_STAGE) == 2) {
                 CB->bruitage("L13B03", 2147, 5160);
                 /* 0x6D05 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -123,29 +123,29 @@ static void tick_body(void) {
         ST(V_EVENT_1) = 0;
         CB->select_pile(1, 1);
         /* 0x6DB9 */
-        if (ST(0x64) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
+        if (ST(L53_PANEL_ACTION) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
             CB->play_anim(1, 0);
             CB->select_pile(0, 1);
             return;
         }
         /* 0x6DF9 */
-        if (ST(0x64) == 2 && ST(ST_LOCKED_CAMERA) == 3) {
+        if (ST(L53_PANEL_ACTION) == 2 && ST(ST_LOCKED_CAMERA) == 3) {
             CB->play_anim(2, 1);
             CB->select_pile(2, 1);
             CB->play_anim(1, 0);
             CB->select_pile(0, 1);
-            ST(0xC90) = 1;
+            ST(L53_POWER_ON) = 1;
             return;
         }
     }
     /* 0x6E68 */
-    if (ST(0x68) == 0 && ST(0xC90) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
-        ST(0x68) = 1;
+    if (ST(L53_LIGHTS_ANIM_ON) == 0 && ST(L53_POWER_ON) == 1 && ST(ST_LOCKED_CAMERA) == 3) {
+        ST(L53_LIGHTS_ANIM_ON) = 1;
         CB->play_anim(2, 1);
     }
     /* 0x6EB7 */
-    if (ST(0x68) == 1 && ST(ST_LOCKED_CAMERA) != 3) {
-        ST(0x68) = 0;
+    if (ST(L53_LIGHTS_ANIM_ON) == 1 && ST(ST_LOCKED_CAMERA) != 3) {
+        ST(L53_LIGHTS_ANIM_ON) = 0;
     }
     /* 0x6EE7 */
     if (ST(V_EVENT_2) == 1) {
