@@ -43,4 +43,15 @@ extern i32 g_l43_flag[10];   /* dword_10015A50..A74: per-move flags; index (addr
 #define G_A70   g_l43_flag[8]   /* dword_10015A70 */
 #define G_A74   g_l43_flag[9]   /* dword_10015A74 */
 
+/* Level-43 script variables */
+#define L43_UNUSED_64              0x64  /* scratch; only zeroed by trigger 0 */
+#define L43_UNUSED_68              0x68  /* scratch; only zeroed by trigger 0 */
+#define L43_LEVER_ANIM_STATE       0x6C  /* lever anims with locked camera 4: 0 = not started, 1 = playing, 2 = camera left (pause pending), 3 = paused */
+#define L43_UNUSED_88              0x88  /* scratch; only zeroed by trigger 0 */
+#define L43_END_GAME_TIMER_SET     0x90  /* 1 = hero died, the EV_END_GAME timer is armed */
+#define L43_GUARD_FREED            0xEC  /* 1 = both levers set (left -1, right 1): persona 40 is released and comes down, levers locked; 0 = puzzle active */
+#define L43_INTRO_DONE             0x504  /* 1 = SC20 intro and the fight with persona 40 have started */
+#define L43_STORY_STAGE            0xE3C  /* game-wide story stage; raised 0 -> 1 on the first tick */
+#define L43_NO_DEATH_ENDING        0xE8C  /* 1 = INIT skips the dead-hero ending even if the hero is dead */
+
 #endif /* DKE_LIEU43_INT_H */

@@ -51,15 +51,15 @@ void l43_reset_dll_globals(void) {
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x152A */
-    if (ST(0xE3C) == 0) {
-        ST(0xE3C) = 1;
+    if (ST(L43_STORY_STAGE) == 0) {
+        ST(L43_STORY_STAGE) = 1;
     }
     snprintf(g_l43_txt, sizeof(g_l43_txt), "current_gauche=%d", g_l43_cur_left);
     CB->print_msg(g_l43_txt, 0, 200);
     snprintf(g_l43_txt, sizeof(g_l43_txt), "current_droit=%d", g_l43_cur_right);
     CB->print_msg(g_l43_txt, 0, 208);
     /* 0x159F — persona 40 was hit (first reaction, counter < 4) */
-    if (CB->divers(DV_WAS_HIT, 40, 0) && ST(0xEC) == 0 && !CB->divers(DV_P40_TIMER, 0, 0)) {
+    if (CB->divers(DV_WAS_HIT, 40, 0) && ST(L43_GUARD_FREED) == 0 && !CB->divers(DV_P40_TIMER, 0, 0)) {
         i32 loc_m4 = g_l43_hits;
         g_l43_hits++;
         /* 0x15F0 */
@@ -75,8 +75,8 @@ static void tick_body(void) {
         }
     }
     /* 0x167F */
-    if ((CB->divers(DV_WAS_HIT, 40, 0) && g_l43_hits == 4 && ST(0xEC) == 0)
-        || (ST(ST_PLAYER_WEAPON) == 27 && CB->divers(DV_WAS_HIT, 40, 0) && !CB->divers(DV_P40_TIMER, 0, 0) && ST(0xEC) == 0)) {
+    if ((CB->divers(DV_WAS_HIT, 40, 0) && g_l43_hits == 4 && ST(L43_GUARD_FREED) == 0)
+        || (ST(ST_PLAYER_WEAPON) == 27 && CB->divers(DV_WAS_HIT, 40, 0) && !CB->divers(DV_P40_TIMER, 0, 0) && ST(L43_GUARD_FREED) == 0)) {
         /* 0x170D */
         CB->select_pile(0, 2);
         CB->divers(DV_WAS_HIT, 40, 1);
@@ -90,8 +90,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x1798 */
-    if ((CB->divers(DV_WAS_HIT, 40, 0) && CB->divers(DV_P40_TIMER, 0, 0) == 2 && ST(0xEC) == 0)
-        || (ST(ST_PLAYER_WEAPON) == 27 && CB->divers(DV_WAS_HIT, 40, 0) && CB->divers(DV_P40_TIMER, 0, 0) == 2 && ST(0xEC) == 0)) {
+    if ((CB->divers(DV_WAS_HIT, 40, 0) && CB->divers(DV_P40_TIMER, 0, 0) == 2 && ST(L43_GUARD_FREED) == 0)
+        || (ST(ST_PLAYER_WEAPON) == 27 && CB->divers(DV_WAS_HIT, 40, 0) && CB->divers(DV_P40_TIMER, 0, 0) == 2 && ST(L43_GUARD_FREED) == 0)) {
         /* 0x1832 */
         CB->select_pile(0, 2);
         CB->divers(DV_WAS_HIT, 40, 1);
@@ -100,8 +100,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x1874 */
-    if (ST(ST_HERO) == 4 && ST(0x90) == 0) {
-        ST(0x90) = 1;
+    if (ST(ST_HERO) == 4 && ST(L43_END_GAME_TIMER_SET) == 0) {
+        ST(L43_END_GAME_TIMER_SET) = 1;
         CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x18B7 */
@@ -135,27 +135,27 @@ static void tick_body(void) {
         return;
     }
     /* 0x19D0 — lever animations start when the locked camera 4 is entered */
-    if (ST(ST_LOCKED_CAMERA) == 4 && ST(0x6C) == 0) {
+    if (ST(ST_LOCKED_CAMERA) == 4 && ST(L43_LEVER_ANIM_STATE) == 0) {
         CB->select_pile(1, 1);
         CB->play_anim(0, 0);
         CB->select_pile(2, 1);
         CB->play_anim(1, 0);
         CB->select_pile(0, 1);
-        ST(0x6C) = 1;
+        ST(L43_LEVER_ANIM_STATE) = 1;
     }
     /* 0x1A41 */
     if (ST(ST_LOCKED_CAMERA) != 4) {
         /* 0x1A53 */
-        if (ST(0x6C) == 1) {
-            ST(0x6C) = 2;
+        if (ST(L43_LEVER_ANIM_STATE) == 1) {
+            ST(L43_LEVER_ANIM_STATE) = 2;
         }
         /* 0x1A6E */
-        if (ST(0x6C) == 3) {
-            ST(0x6C) = 2;
+        if (ST(L43_LEVER_ANIM_STATE) == 3) {
+            ST(L43_LEVER_ANIM_STATE) = 2;
         }
     }
     /* 0x1A89 */
-    if (ST(ST_LOCKED_CAMERA) == 4 && ST(0x6C) == 2) {
+    if (ST(ST_LOCKED_CAMERA) == 4 && ST(L43_LEVER_ANIM_STATE) == 2) {
         CB->pause_anim(0, 4, 0);
         CB->pause_anim(1, 4, 0);
         CB->select_pile(2, 2);
@@ -183,7 +183,7 @@ static void tick_body(void) {
         if (g_l43_cur_right == 14) {
             CB->pause_anim(14, 3, 0);
         }
-        ST(0x6C) = 3;
+        ST(L43_LEVER_ANIM_STATE) = 3;
         CB->select_pile(0, 1);
     }
     /* 0x1BAE */
@@ -342,8 +342,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x2016 — both levers set right: persona 40 turns up */
-    if (g_l43_left_pos == -1 && g_l43_right_pos == 1 && ST(0xEC) == 0) {
-        ST(0xEC) = 1;
+    if (g_l43_left_pos == -1 && g_l43_right_pos == 1 && ST(L43_GUARD_FREED) == 0) {
+        ST(L43_GUARD_FREED) = 1;
         CB->select_pile(0, 2);
         CB->bloque(BLOQUE_ALL);
         CB->combat(40, -1);
@@ -406,7 +406,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L43_NO_DEATH_ENDING) == 1) {
         l43_trig00();   /* 0x1000A2E9: call sub_10001073 -> trig00_10001200 */
         return 0;
     }

@@ -61,13 +61,13 @@ void l43_trig00(void) {
         ST(V_GUARD_FIGHT_DONE) = 2;
     }
     ST(ST_START_POINT(43)) = 0;
-    ST(0xEC) = 0;
+    ST(L43_GUARD_FREED) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 40;
-    ST(0x64) = 0;
-    ST(0x68) = 0;
-    ST(0x6C) = 0;
-    ST(0x88) = 0;
+    ST(L43_UNUSED_64) = 0;
+    ST(L43_UNUSED_68) = 0;
+    ST(L43_LEVER_ANIM_STATE) = 0;
+    ST(L43_UNUSED_88) = 0;
     /* 0x12AB — the original tests ST_LEVEL == 44 (jump to the placement) and
      * then ST_LEVEL == 44 again (skip it), the second test falls through
      * to the placement too: it always runs. */
@@ -94,10 +94,10 @@ void l43_trig00(void) {
 /* trigger 41 — trig41_1000149B */
 static void trig41(void) {
     /* 0x14A1 */
-    if (ST(0x504) == 0) {
+    if (ST(L43_INTRO_DONE) == 0) {
         CB->cinematique("SC20");
         CB->divers(DV_RUN, 40, 1);
-        ST(0x504) = 1;
+        ST(L43_INTRO_DONE) = 1;
         CB->combat(40, 0);
         ST(V_ENGAGED_PERSONA) = 40;
         CB->divers_empile(DV_MUSIC, 1, 1);
@@ -130,7 +130,7 @@ static void lever_head(i32 a, i32 b, i32 p, const char *ar) {
 /* trigger 2 — trig02_100021C2 */
 static void trig02(void) {
     /* 0x21C8 */
-    if (ST(ST_ACTION_KEY) == 1 && ST(0xEC) == 0 && ST(ST_SCRIPT_BUSY) == 0
+    if (ST(ST_ACTION_KEY) == 1 && ST(L43_GUARD_FREED) == 0 && ST(ST_SCRIPT_BUSY) == 0
         && ST(V_ENGAGED_PERSONA) == 40 && ST(ST_COMBAT_STANCE) == 0) {
         /* 0x2216 */
         if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 5) && CB->direction_spec(0xE5C3)) {
@@ -154,7 +154,7 @@ static void trig02(void) {
         }
     }
     /* 0x230A */
-    if (ST(ST_ACTION_KEY) == 1 && ST(0xEC) == 0 && ST(ST_SCRIPT_BUSY) == 0
+    if (ST(ST_ACTION_KEY) == 1 && ST(L43_GUARD_FREED) == 0 && ST(ST_SCRIPT_BUSY) == 0
         && ST(V_ENGAGED_PERSONA) == 40 && ST(ST_COMBAT_STANCE) == 0
         && ST(ST_VIE(40)) != 2 && CB->direction_perso(40)) {
         /* 0x237D */
@@ -188,7 +188,7 @@ static void trig02(void) {
 /* trigger 5 — trig05_100024C5 (left lever, facing 0xE5C3) */
 static void trig05(void) {
     /* 0x24CB */
-    if (ST(ST_ACTION_KEY) == 1 && ST(0xEC) == 0 && ST(ST_SCRIPT_BUSY) == 0
+    if (ST(ST_ACTION_KEY) == 1 && ST(L43_GUARD_FREED) == 0 && ST(ST_SCRIPT_BUSY) == 0
         && ST(V_ENGAGED_PERSONA) == 40 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0xE5C3)) {
         lever_head(0, 5, 4, "ar_10");
         /* 0x25FF */
@@ -226,7 +226,7 @@ static void trig05(void) {
 /* trigger 6 — trig06_10002761 (right lever, facing 0xF464) */
 static void trig06(void) {
     /* 0x276C */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(0xEC) == 0
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(L43_GUARD_FREED) == 0
         && ST(V_ENGAGED_PERSONA) == 40 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0xF464)) {
         lever_head(1, 3, 2, "ar_10");
         /* 0x289E */
@@ -321,7 +321,7 @@ static void trig10(void) {
 /* trigger 12 — trig12_10002C8A (right lever, facing 0xAB9E) */
 static void trig12(void) {
     /* 0x2C90 */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(0xEC) == 0
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(L43_GUARD_FREED) == 0
         && ST(V_ENGAGED_PERSONA) == 40 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0xAB9E)) {
         lever_head(1, 2, 3, "ar_10");
         /* 0x2DC7 */
@@ -359,7 +359,7 @@ static void trig12(void) {
 /* trigger 13 — trig13_10002F29 (left lever, facing 0x9C73) */
 static void trig13(void) {
     /* 0x2F2F */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(0xEC) == 0
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(L43_GUARD_FREED) == 0
         && ST(V_ENGAGED_PERSONA) == 40 && ST(ST_COMBAT_STANCE) == 0 && CB->direction_spec(0x9C73)) {
         lever_head(0, 4, 5, "ar_10");
         /* 0x3063 */
