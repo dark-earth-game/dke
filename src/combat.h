@@ -10,6 +10,7 @@
 #include "libsys/common.h"
 #include "entity.h"
 #include "object.h"
+#include "effect.h"
 #include "libsys/system.h"
 #include "libsys/graphics/graphic.h"
 
@@ -36,5 +37,8 @@ void combat_enemy_bar(entity_t *e);
 void combat_enemy_bar_draw(bmap_t *game_context);
 void combat_enemy_bar_fb(u32 *fb, i32 fw, i32 fh);
 void combat_regen_tick(void);                  /* update_game_progression */
+void combat_projectile_reset(void);            /* level load: the flame projectile off */
+void combat_projectile_tick(void);             /* process_entity_direction_and_state @ 0x411333 */
+i32  combat_projectile_draw(effect_draw_t *out);   /* the flying fireball (OB54), or 0 */
 
 #endif /* DKE_COMBAT_H */

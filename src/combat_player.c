@@ -75,6 +75,7 @@ extern i32  combat_hook_block(entity_t *p, entity_t *enemy); /* process_combat_b
 extern i32  combat_hook_entity_damage(entity_t *atk, entity_t *vic); /* calculate_entity_damage */
 extern i32  combat_hook_check_revival(entity_t *vic);        /* check_entity_revival */
 extern i32  combat_hook_contact(entity_t *atk, entity_t *vic); /* sub_429695: weapon contact test */
+extern void combat_hook_blood(entity_t *vic);                   /* play_sound_at_position @ 0x42CDA6 */
 extern i32  combat_hook_has_ammo(const c8 *weapon_name);     /* sub_475990 @ 0x475990 */
 extern i32  combat_hook_ray_dist(entity_t *atk, f64 *out);   /* get_distance_between_points */
 extern i32  combat_hook_in_cone(const i32 *tgt, const i32 *from, const i32 *dir, f64 dist); /* is_point_in_view_cone */
@@ -354,6 +355,7 @@ static i32 combat_gate(void) {
 static void combat_damage(entity_t *atk, entity_t *vic, i32 dist) {
     (void)dist;
     if (st_hurt(vic)) return;
+    combat_hook_blood(vic);                              /* 0x401590: blood spray at the contact point */
     /* damage_counter++, impact sounds "impactd" (anim+0xFC 0x1F/0x22) or
      * "impacta" — sfx.c. */
     i32 id = E32(vic, 0xB0);

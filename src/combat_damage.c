@@ -49,6 +49,8 @@
 #include "libsys/graphics/shading.h"   /* cosine_table */
 #include "object.h"
 #include "effect.h"
+#include "fx.h"
+#include "combat.h"
 
 void combat_enemy_bar(entity_t *e);
 
@@ -133,8 +135,10 @@ static i32 g_last_block_time = 0;  /* last_block_time */
 static i32 g_damage_counter  = 0;  /* damage_counter / dword_506520 (unused stats) */
 
 static void blood_burst(const entity_t *victim) {
-    /* TODO port play_sound_at_position @ 0x42CDA6 (particle spray).  */
-    (void)victim;
+    /* process_entity_damage @ 0x401590 / sub_470507 @ 0x470564: x = param1,
+     * y = param3, z = param2, heading = victim root rot[2] + 0x4000. */
+    const obc_node_t *r = EROOT(victim);
+    fx_blood_start(g_blood_pos[0], g_blood_pos[1], g_blood_pos[2], (r ? r->rot[2] : 0) + 0x4000);
 }
 
 /* =========================================================================
@@ -761,9 +765,189 @@ static void muzzle_flash(entity_t *e) {
 }
 static void miss_spark(entity_t *e) {
     if (E32(e, 0xD20) || E32(e, 0xD24) || E32(e, 0xD28)) {
-        /* TODO sub_42F476 @ 0x42F476: wall spark at (D20, D24 + 0x8CA0, D28). */
+        i32 p[3] = { E32(e, 0xD20), E32(e, 0xD24) + 0x8CA0, E32(e, 0xD28) };
+        fx_puff_spark(p);                          /* sub_42F476 @ 0x41BC2E / 0x41BE4E */
         E32(e, 0xD20) = 0; E32(e, 0xD24) = 0; E32(e, 0xD28) = 0;
     }
+}
+
+/* =========================================================================
+ * Enemy flame projectile ("lance-feu", weapon class flag 0x20).
+ *   process_counter_attack(.., 1) @ 0x410F76   launch from the weapon tip
+ *   process_entity_direction_and_state @ 0x411333   flight, hit, impact
+ *   get_distance_between_points @ 0x410490   range = distance to the wall
+ * The original keeps the shot in a global pseudo-entity (current_entity) with
+ * the weapon's OB54 tree in +0x50; +0xA0 = in flight, +0x70 = 2 once spent.
+ * Here it is the file-static g_fl, drawn by the scene like an actor.
+ * ========================================================================= */
+static struct {
+    i32           active;          /* current_entity +0xA0 */
+    obc_node_t   *root;            /* +0x50 */
+    const ome_matr_t *matr;        /* +0x88 */
+    i32           start[3];        /* global_dword_543C20.. */
+    i32           trail[3];        /* dword_543BF0: where the last puff went */
+    f64           speed, grav;     /* global_dbl_543C30 / 543C38 */
+    f64           hcos, vsin;      /* dbl_543B28 / dbl_543C10 */
+    f64           range;           /* dbl_543C00 */
+    i32           mode;            /* global_dword_543C08: 3072 flame */
+    i32           heading;         /* global_dword_543BEC */
+    i32           t0;              /* level_timer */
+} g_fl;
+
+void combat_projectile_reset(void) { memset(&g_fl, 0, sizeof(g_fl)); }
+
+/* get_distance_between_points @ 0x410490: from `from`, along the player's
+ * facing (+0x4000), the nearest forward crossing of any wall edge: the world
+ * boundary and every live "col" polygon. Result in units of 16384 world. */
+static i32 ray_to_wall(const entity_t *p, const i32 *from, f64 *out) {
+    const obc_node_t *r = EROOT(p);
+    i32 yaw;
+    if (ANIM(p) && (CAN_FLAGS(ANIM(p)) & 1) && r->child)
+        yaw = (r->rot[2] - (r->child->rot[0] - CAN_ROOT_YAW(ANIM(p)))) & 0xFFFF;
+    else
+        yaw = r->rot[2] & 0xFFFF;
+    i32 a = yaw + 0x4000;
+    f64 c = cosine_table[(((u32)a + 8u) >> 4) & 0xFFF];
+    f64 s = cosine_table[(((u32)a - 16376u) >> 4) & 0xFFF];
+    f64 best = 0.0;
+    i32 have = 0;
+    const sol_limit_t *polys[1 + WORLD_MAX_COLLISIONS];
+    i32 np = 0;
+    if (g_world.world_controller) polys[np++] = g_world.world_controller;
+    for (i32 i = 0; i < g_world.num_collisions && i < WORLD_MAX_COLLISIONS; i++) {
+        const sol_limit_t *z = g_world.collision_zones[i];
+        if (z && (z->flags & 1) && !(z->flags & 2)) polys[np++] = z;
+    }
+    for (i32 k = 0; k < np; k++) {
+        const sol_limit_t *z = polys[k];
+        for (i32 i = 0; i < z->vertex_count; i++) {
+            const i32 *v0 = z->vertices[i];
+            const i32 *v1 = z->vertices[i == z->vertex_count - 1 ? 0 : i + 1];
+            f64 e0 = s * (f64)(v0[0] - from[0]) - c * (f64)(v0[2] - from[2]);
+            f64 e1 = s * (f64)(v1[0] - from[0]) - c * (f64)(v1[2] - from[2]);
+            if (!((e0 <= 0.0 && e1 >= 0.0) || (e0 >= 0.0 && e1 <= 0.0))) continue;
+            f64 dx = (f64)(v1[0] - v0[0]), dz = (f64)(v0[2] - v1[2]);
+            f64 t = ((f64)(v0[2] - from[2]) * dx + (f64)(v0[0] - from[0]) * dz) / (s * dx + c * dz);
+            if (t <= 0.0) continue;
+            if (!have || t < best) { best = t; have = 1; }
+        }
+    }
+    if (!have) return 0;
+    *out = best;
+    return 1;
+}
+
+/* process_counter_attack @ 0x410F76, a3 = 1. */
+static void flame_launch(entity_t *e) {
+    game_object_t *w = (game_object_t *)EPTR(e, 0xD64);
+    entity_t *pl = g_player_entity;
+    if (!w || !w->proj || !pl || !EROOT(e) || !EROOT(pl)) return;
+    obc_node_t *tip = EBONE(e, 31);                    /* run_entity_callback(e, 31, ..) */
+    if (!tip) return;
+    while (tip->child) tip = tip->child;
+    obc_node_t *t = w->proj;
+    const obc_node_t *sr = EROOT(e);
+    g_fl.speed = 12.0 * 3.662109375;
+    g_fl.grav  = 5.0;
+    g_fl.mode  = 3072;
+    g_fl.root  = t;
+    g_fl.matr  = &w->proj_matr;
+    t->rot[0] = sr->rot[0]; t->rot[2] = sr->rot[2]; t->rot[1] = sr->rot[1];
+    fmat_t tm;                                          /* sub_492310: the tip's world position */
+    node_matrix(EROOT(e), tip, &tm);
+    t->pos[0] = tm.t[0]; t->pos[1] = tm.t[1]; t->pos[2] = tm.t[2];
+    t->raw_88[2] = t->pos[0]; t->raw_88[3] = t->pos[1]; t->raw_88[4] = t->pos[2];
+    g_fl.hcos = (f64)cosine_table[(((u32)g_fl.mode + 8u) >> 4) & 0xFFF] * 0.00006103515625;
+    g_fl.vsin = (f64)cosine_table[(((u32)g_fl.mode - 16376u) >> 4) & 0xFFF] * 0.00006103515625;
+    memcpy(g_fl.start, t->pos, sizeof(g_fl.start));
+    memcpy(g_fl.trail, t->pos, sizeof(g_fl.trail));
+    if (ANIM(e) && (CAN_FLAGS(ANIM(e)) & 1) && sr->child)
+        g_fl.heading = (sr->rot[2] - (sr->child->rot[0] - CAN_ROOT_YAW(ANIM(e)))) & 0xFFFF;
+    else
+        g_fl.heading = (sr->rot[2] & 0xFFFF) + 0x4000;
+    if (!ray_to_wall(pl, g_fl.start, &g_fl.range)) g_fl.range = 0.0;
+    g_fl.t0 = now_ms();
+    g_fl.active = 1;
+}
+
+static f64 dist2_xz(const obc_node_t *a, const obc_node_t *b) {
+    f64 dx = (f64)(a->raw_88[2] - b->raw_88[2]), dz = (f64)(a->raw_88[4] - b->raw_88[4]);
+    return dx * dx + dz * dz;
+}
+
+/* The flame is spent at world (x, y, z): burst, sound, damage within 120000 units. */
+static void flame_impact(const i32 *at) {
+    entity_t *pl = g_player_entity;
+    fx_flame_burst(at[0], at[1], at[2]);                 /* process_entity_random_transformations */
+    if (pl) sfx_entity_named(pl, "impactf");
+    obc_node_t pt;
+    memset(&pt, 0, sizeof(pt));                          /* only raw_88 is read by dist2_xz */
+    pt.raw_88[2] = at[0]; pt.raw_88[4] = at[2];
+    if (pl && EROOT(pl) && dist2_xz(EROOT(pl), &pt) < 1.44e10) {
+        HP(pl) -= 100;
+        if (HP(pl) <= 0) {
+            play_death(pl);                              /* D04 = 0x1A */
+            lieu_set_death_state(4);                     /* game_death_state = 4 */
+        } else {
+            E32(pl, 0xD04) = 0x18;
+        }
+        scene_hud_refresh();                             /* update_player_interface(.., 1) */
+    }
+    entity_t *c[2] = { g_companion_entity, g_secondary_companion_entity };
+    for (i32 i = 0; i < 2; i++)
+        if (c[i] && EROOT(c[i]) && !EDESC(c[i])[0x96] && dist2_xz(EROOT(c[i]), &pt) < 1.44e10)
+            E32(c[i], 0xC74) = 1;                        /* hit flag the scripts read */
+}
+
+// 00411333
+void combat_projectile_tick(void) {
+    if (!g_fl.active || !g_fl.root) return;
+    entity_t *pl = g_player_entity;
+    obc_node_t *r = g_fl.root;
+    f64 t = (f64)(now_ms() - g_fl.t0) * 0.001;
+    f64 s = t * g_fl.speed;
+    f64 vc = (f64)cosine_table[(((u32)g_fl.heading + 8u) >> 4) & 0xFFF];
+    f64 vs = (f64)cosine_table[(((u32)g_fl.heading - 16376u) >> 4) & 0xFFF];
+    i32 dir[3] = { (i32)vc, 0, (i32)vs };
+    f64 a = g_fl.hcos * s;                               /* angle_threshold: ground travelled */
+    f64 dy = g_fl.vsin * s - g_fl.grav * 4.905 * t * t;
+    i32 flying = !((f64)r->pos[1] - 12000.0 <= (f64)scene_fx_floor(r->pos[0], r->pos[2])) &&
+                 a < g_fl.range;
+    i32 hit = !flying;
+    if (flying) {
+        r->pos[0] = (i32)((f64)g_fl.start[0] + a * vc);
+        r->pos[1] = (i32)(dy * 16384.0 + (f64)g_fl.start[1]);
+        r->pos[2] = (i32)((f64)g_fl.start[2] + vs * a);
+        r->raw_88[2] = r->pos[0]; r->raw_88[3] = r->pos[1]; r->raw_88[4] = r->pos[2];
+        if (g_fl.mode != -16384) {
+            r->rot[0] += 0x2000;
+            r->rot[2] += 0x2000;
+            fx_puff_flame(g_fl.trail, 180);              /* initialize_entity_positions x2 */
+            fx_puff_flame(g_fl.trail, 180);
+            memcpy(g_fl.trail, r->pos, sizeof(g_fl.trail));
+            entity_t *c[2] = { g_companion_entity, g_secondary_companion_entity };
+            for (i32 i = 0; i < 2 && !hit; i++) {
+                if (!c[i] || !EROOT(c[i]) || EDESC(c[i])[0x96]) continue;
+                if (pl && in_cone(EROOT(pl)->pos, EROOT(c[i])->pos, dir, a) &&
+                    dist2_xz(EROOT(c[i]), r) < 900000000.0)
+                    hit = 1;
+            }
+        }
+    }
+    if (!hit) return;
+    if (g_fl.mode != -16384) {
+        i32 at[3] = { r->raw_88[2], r->raw_88[3], r->raw_88[4] };
+        flame_impact(at);
+    }
+    g_fl.active = 0;                                     /* current_entity +0xA0 = 0 */
+}
+
+i32 combat_projectile_draw(effect_draw_t *out) {
+    if (!g_fl.active || !g_fl.root || !out) return 0;
+    out->root = g_fl.root;
+    out->matr = g_fl.matr;
+    out->ground_y = scene_fx_floor(g_fl.root->pos[0], g_fl.root->pos[2]);
+    return 1;
 }
 
 /* =========================================================================
@@ -777,11 +961,8 @@ void combat_anim_message(entity_t *e, i32 type, i32 p) {
             if (!(wf & 0x40)) muzzle_flash(e);     /* no flash for the cracker */
             miss_spark(e);
         }
-        if (wf & 0x20) {
-            /* TODO process_entity_action -> process_counter_attack(current_entity, e, 1):
-             * flame projectile; flight/explosion in process_entity_direction_and_state
-             * @ 0x411333 ("impactf", player -100 HP in range, enemies C74 = 1). */
-        }
+        if (wf & 0x20)
+            flame_launch(e);       /* process_entity_action @ 0x411C06 -> process_counter_attack(.., 1) */
     }
     if (type == 0x15 && e == g_player_entity) {    /* 0x41BC8F: player fires */
         muzzle_flash(e);
@@ -866,6 +1047,7 @@ void combat_hook_score_add(i32 v)          { scene_score_set(scene_score_get() +
 void combat_hook_hud_refresh(void)         { scene_hud_refresh(); }
 i32  combat_hook_block(entity_t *p, entity_t *en) { combat_block(p, en); return 0; }   /* process_combat_block */
 i32  combat_hook_entity_damage(entity_t *atk, entity_t *vic) { (void)vic; return calc_damage(atk); }
+void combat_hook_blood(entity_t *vic) { if (g_blood && !(g_debug_flags & 2)) blood_burst(vic); }
 i32  combat_hook_check_revival(entity_t *vic) { return cramped(vic); }               /* check_entity_revival */
 i32  combat_hook_contact(entity_t *atk, entity_t *vic) { return strike_hits(atk, vic); } /* sub_429695 */
 i32  combat_hook_has_ammo(const c8 *w)     { (void)w; return 1; }                     /* TODO sub_475990 */

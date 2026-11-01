@@ -44,6 +44,8 @@ void object_reset(void) {
         game_object_t *o = &g_obj[i];
         if (o->root) obc_free(o->root);
         ome_matr_free(&o->matr);
+        if (o->proj) obc_free(o->proj);
+        ome_matr_free(&o->proj_matr);
     }
     memset(g_obj, 0, sizeof(g_obj));
     memset(&g_anim, 0, sizeof(g_anim));
@@ -94,6 +96,16 @@ static game_object_t *obj_get(const c8 *name) {
     if (ls_resolve_path(base, vpath, host, (i32)sizeof(host)) && model_ome_open(host, &ome)) {
         ome_load_matr(ome.raw, ome.raw_size, &o->matr);
         model_ome_free(&ome);
+    }
+    /* sub_472C5C @ 0x472D80: weapon "27" loads OB54 into +0xF4 (the flame projectile). */
+    if (!o->is_prop && strncmp(name + 2, "27", 2) == 0) {
+        o->proj = obc_load_ome("OBJETS>OB54.OME", base);
+        memset(&ome, 0, sizeof(ome));
+        if (o->proj && ls_resolve_path(base, "OBJETS>OB54.OME", host, (i32)sizeof(host)) &&
+            model_ome_open(host, &ome)) {
+            ome_load_matr(ome.raw, ome.raw_size, &o->proj_matr);
+            model_ome_free(&ome);
+        }
     }
     o->used = 1;
     o->flags = 0;

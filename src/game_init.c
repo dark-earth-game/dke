@@ -1870,3 +1870,6 @@ bmap_t *game_init_get_ginette(void) { return (bmap_t *)g_ginette_bmap; }
 bmap_t *game_init_get_health_bmap(i32 slot) {
     return (bmap_t *)(slot ? g_health_bmap_b : g_health_bmap_a);
 }
+
+/* SMOKE0..4.GIF (dword_509260 @ 0x509260, loaded by sub_43040A): the smoke puffs. */
+bmap_t *game_init_get_smoke(i32 i) { return (i >= 0 && i < 5) ? (bmap_t *)g_smoke_sprites[i] : NULL; }

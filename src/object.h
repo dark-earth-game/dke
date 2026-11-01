@@ -47,6 +47,10 @@ typedef struct {
     i32         has_poly;
     i32         foot[4][2];
     i32         yaw_sign;
+    /* +0xF4 (sub_472C5C @ 0x472D80): weapon "27" (lance-feu) also carries OB54, the
+     * flame projectile model. */
+    obc_node_t *proj;
+    ome_matr_t  proj_matr;
 } game_object_t;
 
 /* Drop every object (level change). */

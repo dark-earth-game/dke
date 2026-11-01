@@ -64,6 +64,7 @@
 #include "world.h"
 #include "nav_grid.h"
 #include "effect.h"
+#include "fx.h"
 #include "anim2d.h"
 #include "object.h"
 #include "sfx.h"
@@ -2149,6 +2150,8 @@ i32 scene_load_level(i32 level_id) {
     if (!g_world_controller) {
         print("scene: world_controller is NULL — memset dword_543C60 + sub_46D305\n");
         effect_reset();   /* memset(dword_543C60, 0, 0xF00) */
+        fx_reset();
+        combat_projectile_reset();
         load_world_controller();   /* sub_46D305 @ 0x46D305 — world controller alloc */
     } else {
         print("scene: world_controller already set, skip alloc\n");
@@ -2810,6 +2813,28 @@ static i32 scene_actor_zval(i32 x, i32 y, i32 z) {
     if (i > 40) i = 40;
     return zt[i];
 }
+
+/* sub_45ACC5 (camera projection with the depth the sprite size uses): world
+ * point -> screen. Returns 1 when on screen and in front of the camera;
+ * *cz is the camera-space depth (negative in front). */
+i32 scene_fx_project(i32 wx, i32 wy, i32 wz, i32 *sx, i32 *sy, i32 *cz) {
+    if (!g_proj_valid) return 0;
+    const i32 *R = g_proj_R;
+    i64 cx = (((i64)wx * R[0] + (i64)wy * R[3] + (i64)wz * R[6]) >> 14) + g_proj_T[0];
+    i64 cy = (((i64)wx * R[1] + (i64)wy * R[4] + (i64)wz * R[7]) >> 14) + g_proj_T[1];
+    i64 zz = (((i64)wx * R[2] + (i64)wy * R[5] + (i64)wz * R[8]) >> 14) + g_proj_T[2];
+    if (zz >= 0 || zz < -0x7FFFFFFF) return 0;
+    f64 k = ((f64)g_proj_gscale / 32.0) / (f64)(-zz);
+    i32 x = (i32)((f64)cx * k + 320.0), y = (i32)(240.0 - (f64)cy * k);
+    if (sx) *sx = x;
+    if (sy) *sy = y;
+    if (cz) *cz = (i32)zz;
+    return x >= 0 && x < 640 && y >= 0 && y < 480;
+}
+/* calculate_model_scale @ 0x4207FA for effects. */
+i32 scene_fx_zval(i32 wx, i32 wy, i32 wz) { return g_proj_valid ? scene_actor_zval(wx, wy, wz) : 0; }
+/* generate_effect @ 0x457345: floor height under (x, z). */
+i32 scene_fx_floor(i32 x, i32 z) { return actor_floor_height(x, z, NULL); }
 
 /* sub_473756: the weapon an actor holds (bone slot 0x1F) and its materials. */
 static obc_node_t       *g_held_node = NULL;
@@ -3497,10 +3522,26 @@ i32 scene_render(system_t *sys) {
                 }
             }
             effect_frame_end();
+            /* The enemy flame projectile (current_entity, process_entity_direction_and_state
+             * @ 0x411333) flies and is posed like an actor; the puffs age (sub_42F31B). */
+            combat_projectile_tick();
+            fx_tick(state ? (i32)state->current_game_time : 0);
+            {
+                effect_draw_t pd;
+                if (combat_projectile_draw(&pd)) {
+                    i32 zv = scene_actor_zval(pd.root->pos[0], pd.root->pos[1], pd.root->pos[2]);
+                    n_items = scene_collect_tree(pd.root, pd.matr, zv, pd.ground_y,
+                                                 items, n_items, 512, 0, 0);
+                }
+            }
             model_render_batch(items, n_items, g_proj_gscale, g_scene_l_bmap, zact,
                                g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
                                (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
                                lcx, lcy, lcz);
+            /* Smoke puffs, blood spray, flame burst: update_game_hud cases 7, 10, 11. */
+            fx_draw(fb, fb_w, fb_h, zact, g_scene_bg_bmap ? g_scene_bg_bmap->palette : NULL,
+                    (g_scene_grd_loaded && !getenv("DKE_NOGRD")) ? g_scene_grd : NULL,
+                    state ? (i32)state->current_game_time : 0);
             combat_enemy_bar_fb(fb, fb_w, fb_h);       /* enemy energy bars */
             scene_draw_zone_overlay();
         }
