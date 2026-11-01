@@ -42,10 +42,6 @@ void l20_trig00(void);
 #define L20_CAMERA_PAN_STATE               0x0FC   /* Lory/Phedoria camera: 0 idle, 1 panning, 99 done */
 #define L20_UNUSED_100                     0x100   /* reset at INIT, never used */
 #define L20_INIT_TIME                      0x114   /* game time at INIT; camera/walk logic waits 4000 ms after it */
-#define L20_RYLSADHAR_ARRIVAL              0x32C   /* 1 = Rylsadhar21 route (Arkhan2) active, 0 none */
-#define L20_ZED_ARRIVAL                    0x330   /* 1 = Zed27 route (Arkhan3) active, 0 none */
-#define L20_EVENT6_SLOT                    0x338   /* op-4 event 6 slot; INIT sets 1 when L20_GUARD4_STAGE == 4 */
-#define L20_EVENT10_SLOT                   0x348   /* op-4 event 10 slot; INIT sets 1 when L20_GUARD4_STAGE == 4 */
 #define L20_GUARDIAN1_FACING               0x830   /* 1 = Guardian1 follows the hero with his eyes, reset when the hero is >220 away */
 #define L20_TALK_GUARDIAN1                 0x834   /* Arkhan1 conversation stage with Guardian1: 0, 1, 2, then counts up; 666+ = final lines */
 #define L20_SWORD_CHALLENGE_DONE           0x83C   /* 1 once Guardian1 reacted to the sword (OB38) after 4 s in zone 20 */
@@ -57,18 +53,10 @@ void l20_trig00(void);
 #define L20_TALK_LORY                      0x870   /* Lory conversation stage, 0..1 */
 #define L20_TALK_PHEDORIA                  0x874   /* Phedoria conversation stage, 0..5 */
 #define L20_TALK_GUARDIAN9_A2              0x880   /* Arkhan2 conversation stage with Guardian9, 0..2 */
-#define L20_STORY_ADVANCED                 0xAF8   /* 0 = Arkhan1 prison phase (gate and Guardian1), 1 = Arkhan2/3 phase */
-#define L20_NIGHT_FLAG                     0xB10   /* day/night pending flag (read by the zone 10 exit: 1 plays the night cinematic SC10) */
 #define L20_OB03_STAGE                     0xB28   /* alcove object OB03: 0 closed, 1 hero knows, 2 opened */
-#define L20_ALERT_STAGE                    0xB3C   /* 0 = calm music 1, 1 = alarm music 2 (after cinematic SC35), 2 = alarm at start point 6 */
-#define L20_ROOM10_ENTRY                   0xB4C   /* which entrance of room 10 the Arkhan2/3 exit uses (0..2, 3 = room 51) */
 #define L20_ESCORT_STAGE                   0xB58   /* Lory/Phedoria escort: 0 none, 1 arrived in room, 2..5 walking steps, 10 = over, 100 = scared by weapon */
-#define L20_GUARD4_STAGE                   0xB98   /* Guardian4 patrol: 0, 2 or 4 (4 arms events 6 and 10) */
 #define L20_GUARD_SQUAD_STAGE              0xE74   /* Guardian9/10/11 squad: 1/10 = two guards, 111/112 = Guardian9 only, 2/20 = Guardian11 and persona 52, 11/115/21 = dead, 99 = off */
-#define L20_FLAG_0E78                      0xE78   /* set to 7 when the Lory gate chain restarts at INIT; not read here */
 #define L20_LORY_CHAIN_STAGE               0xE7C   /* Lory chain: 1 started, 2 Lory sent to the gate, 3 finished (door passed) */
-#define L20_DEATH_ENDING_DONE              0xE8C   /* 1 = death ending already played, INIT runs the normal setup (same slot in every level) */
-#define L20_PASSAGE_OPEN                   0xF38   /* 1 = the way back is open after the fight (same slot in L21) */
 #define L20_THANANDAR_SCENE                0xF64   /* 0 = the Thanandar25 arrival scene has not run, 1 = started */
 
 #endif /* DKE_LIEU20_INT_H */

@@ -41,14 +41,14 @@ void l27_trig00(void) {
     }
     /* 0x7441 */
     if (ST(ST_START_POINT(27)) == 2) {
-        ST(L27_ARKHAN23_PART) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_EVENT_17) = 3;
         ST(L27_PHEDORIA_STAGE) = 10;
     }
     /* 0x748F */
     if (ST(ST_START_POINT(27)) == 3) {
-        ST(L27_ARKHAN23_PART) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(ST_HERO) = P_ARKHAN2;
         ST(L27_PHEDORIA_STAGE) = 5;
@@ -62,18 +62,18 @@ void l27_trig00(void) {
     }
     /* 0x752B */
     if (ST(ST_START_POINT(27)) == 5) {
-        ST(L27_ARKHAN23_PART) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L27_LORY_STAGE) = 1;
+        ST(V_LORY_STAGE) = 1;
         ST(L27_STORY_MARK_C48) = 99;
         ST(V_GUARD_FIGHT_DONE) = 2;
     }
     /* 0x7588 */
     if (ST(ST_START_POINT(27)) == 6) {
-        ST(L27_ARKHAN23_PART) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L27_LORY_STAGE) = 2;
+        ST(V_LORY_STAGE) = 2;
         ST(ST_LEVEL) = 29;
         ST(L27_STORY_MARK_C48) = 100;
     }
@@ -90,11 +90,11 @@ void l27_trig00(void) {
     ST(V_EVENT_39) = 0;
     ST(V_EVENT_41) = 0;
     /* 0x76A5 */
-    if (ST(L27_LORY_STAGE) == 0) {
+    if (ST(V_LORY_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 0);
     }
     /* 0x76C9 */
-    if (ST(L27_LORY_STAGE) != 0) {
+    if (ST(V_LORY_STAGE) != 0) {
         CB->divers(DV_MUSIC, 2, 0);
     }
     ST(L27_UNUSED_64) = 0;
@@ -108,17 +108,17 @@ void l27_trig00(void) {
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_ENGAGED_PERSONA) = 0;
     /* 0x776B */
-    if (ST(L27_ARKHAN23_PART) == 0 && ST(V_GUARD_FIGHT_DONE) == 0 && ST(V_EVENT_17) == 2) {
+    if (ST(V_RETURN_PART) == 0 && ST(V_GUARD_FIGHT_DONE) == 0 && ST(V_EVENT_17) == 2) {
         CB->load_anim("227CIN01", 0);
     } else {
         /* 0x77B3 */
-        if (ST(V_GUARD_FIGHT_DONE) == 0 || (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L27_GUARD_FIGHT_PART) == 0)) {
+        if (ST(V_GUARD_FIGHT_DONE) == 0 || (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_PASSAGE_OPEN) == 0)) {
             CB->load_anim("227OUV28", 1);
             CB->load_anim("227OUV29", 2);
             CB->load_anim("227OUV27", 3);
         }
         /* 0x7819 */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L27_GUARD_FIGHT_PART) == 1) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_PASSAGE_OPEN) == 1) {
             CB->load_anim("227NUI28", 1);
             CB->load_anim("227NUI29", 2);
             CB->load_anim("227OUV20", 3);
@@ -150,11 +150,11 @@ void l27_trig00(void) {
     }
     CB->ajoute_zone(2, 7517, -4823, 80, 150, 0);
     /* 0x79FF */
-    if (ST(L27_ARKHAN23_PART) == 1 && ST(ST_VIE(36)) != 1 && ST(L27_STORY_MARK_C48) != 100) {
+    if (ST(V_RETURN_PART) == 1 && ST(ST_VIE(36)) != 1 && ST(L27_STORY_MARK_C48) != 100) {
         CB->ajoute_zone(6, 5625, -4509, 300, 150, 0);
     }
     /* 0x7A56 */
-    if (ST(L27_ARKHAN23_PART) == 1) {
+    if (ST(V_RETURN_PART) == 1) {
         CB->ajoute_zone(40, 5712, -5051, 150, 140, 0);
         CB->ajoute_zone(39, 5716, -4782, 165, 220, 0);
         CB->vire_col(0x28, 1);
@@ -366,11 +366,11 @@ static void tick_body(void) {
         /* 0x886E */
         if (g_dest_room == 29) {
             /* 0x8880 */
-            if (ST(L27_LORY_STAGE) == 0 || ST(L27_LORY_STAGE) == 3) {
+            if (ST(V_LORY_STAGE) == 0 || ST(V_LORY_STAGE) == 3) {
                 CB->change_piece(29, 0);
             }
             /* 0x88B1 */
-            if (ST(L27_LORY_STAGE) == 1 || ST(L27_LORY_STAGE) == 2) {
+            if (ST(V_LORY_STAGE) == 1 || ST(V_LORY_STAGE) == 2) {
                 CB->change_piece(29, 1);
             }
         }
@@ -623,7 +623,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L27_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l27_trig00();   /* 0x1000D899: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

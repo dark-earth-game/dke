@@ -23,6 +23,5 @@ void l44_trig00(void);
 #define L44_CAUGHT_STATE           0x68  /* 0 = safe, 1 = a creature came within 100 (death sequence pending), 2 = death sequence started */
 #define L44_CAMERA_RELEASE_PENDING 0x6C  /* 1 = intro dialogue done; the next up/down key press returns the camera to auto, then 0 */
 #define L44_ACTION_ANIM_DONE       0x70  /* 1 = zone-7 action animation finished; the next action-edge plays Sar_10 and resets 0x64/0x70 */
-#define L44_NO_DEATH_ENDING        0xE8C  /* 1 = INIT skips the dead-hero ending even if the hero is dead */
 
 #endif /* DKE_LIEU44_INT_H */

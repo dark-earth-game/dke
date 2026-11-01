@@ -371,7 +371,7 @@ static void trig06(void) {
             if (ST(ST_HERO) == P_ARKHAN2) {
                 lieu_action_register("L38D07", P_ARKHAN2, "SG00DIA01", NULL);
                 /* 0x8870 */
-                if (ST(L38_FLAG_0B10) == 1) {
+                if (ST(V_CRYSTAL_KEY_STAGE) == 1) {
                     lieu_action_register("L38D08", P_ARKHAN2, "SG00DIA01", NULL);
                 }
                 talk_end();
@@ -381,7 +381,7 @@ static void trig06(void) {
             if (ST(ST_HERO) == P_ARKHAN3) {
                 lieu_action_register("L38D09", P_ARKHAN3, "SG00DIA01", NULL);
                 /* 0x88E9 */
-                if (ST(L38_FLAG_0B10) == 1) {
+                if (ST(V_CRYSTAL_KEY_STAGE) == 1) {
                     lieu_action_register("L38D10", P_ARKHAN3, "SG00DIA01", NULL);
                 }
                 talk_end();

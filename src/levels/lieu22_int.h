@@ -22,17 +22,11 @@ void l22_trig00(void);
 #define L22_ZONE20_STAGE                   0x064   /* 0 = first press of the action key at zone 20 comments, 1 = second press takes OB58/OB35/OB73A */
 #define L22_DARKNESS_PULSES                0x068   /* counter of event 2 pulses (max 10): each darkens the screen and drains hero HP */
 #define L22_DAMAGE_TICKS                   0x06C   /* counter of event 33 hits (max 50) draining hero HP */
-#define L22_RYLSADHAR_ARRIVAL              0x32C   /* Rylsadhar21 arrival (Arkhan2 route): 0 none, 1 pending, 5 arrived, 10 done */
-#define L22_ZED_ARRIVAL                    0x330   /* Zed27 arrival (Arkhan3 route): 0 none, 1 pending, 5 arrived, 10 done */
-#define L22_EVENT6_SLOT                    0x338   /* op-4 event 6 slot; set to 2 when the guard fight starts */
-#define L22_EVENT10_SLOT                   0x348   /* op-4 event 10 slot; set to 2 when the guard fight starts */
 #define L22_ZONE20_ITEMS_TAKEN             0x604   /* set to 1 when OB58/OB35/OB73A are taken at zone 20 (same slot as L32 zone 20) */
 #define L22_CAMERA_RESTORED                0x88C   /* 0 = arrival camera still locked, 1 = camera back to auto once the hero is >250 from persona 12 */
-#define L22_GUARD_PHASE                    0xB40   /* set to 4 at the start of the guard fight (shared event code steps it 1..3 in other rooms) */
 #define L22_ENTRY_STAGE                    0xB88   /* first-entry flag: 0 -> 1 on the first INIT (also used by L01 start points and L21) */
 #define L22_ARRIVAL_PLAYED                 0xCE0   /* set to 1 after the Rylsadhar/Zed arrival cutscene */
 #define L22_ZONE21_REMARK_DONE             0xCE4   /* 0 = first remark about the zone 21 object pending, 1 = already said (per fight stage) */
 #define L22_VISITED                        0xE40   /* set to 1 on the first visit to level 22 (L05 and L15 test it) */
-#define L22_DEATH_ENDING_DONE              0xE8C   /* 1 = death ending already played, INIT runs the normal setup (same slot in every level) */
 
 #endif /* DKE_LIEU22_INT_H */

@@ -50,11 +50,11 @@ static void tick_body(void) {
         CB->pos_perso(P_THANANDAR25, 4301, -6292, CB->divers(DV_DESC_POS, P_THANANDAR25, 2), 1, "P25ARR01", 5, 0);
         CB->select_pile(2, 2);
         /* 0x2205 */
-        if (ST(L21_RYLSADHAR_ARRIVAL) == 1) {
+        if (ST(V_EVENT_3) == 1) {
             CB->joindre(-P_RYLSADHAR21, 3791, -6207, -1, -1);
         }
         /* 0x2230 */
-        if (ST(L21_ZED_ARRIVAL) == 1) {
+        if (ST(V_EVENT_4) == 1) {
             CB->joindre(-P_ZED27, 3791, -6207, -1, -1);
         }
         CB->select_pile(0, 1);
@@ -69,11 +69,11 @@ static void tick_body(void) {
         ST(V_EVENT_39) = 0;
         CB->change_camera(2, CAM_LOCKED);
         /* 0x22E0 */
-        if (ST(L21_RYLSADHAR_ARRIVAL) == 1) {
+        if (ST(V_EVENT_3) == 1) {
             CB->pos_perso(P_RYLSADHAR21, -1, -1, -1, 4, "", -1, 0);
         }
         /* 0x2311 */
-        if (ST(L21_ZED_ARRIVAL) == 1) {
+        if (ST(V_EVENT_4) == 1) {
             CB->pos_perso(P_ZED27, -1, -1, -1, 4, "", -1, 0);
         }
         CB->joindre(ST(ST_HERO), 0, 0, 0, P_THANANDAR25);
@@ -89,7 +89,7 @@ static void tick_body(void) {
         }
         lieu_action_register("L21D45B", P_THANANDAR25, "SP25DIA03", "SP25ARR01");
         /* 0x23FA */
-        if (ST(L21_RYLSADHAR_ARRIVAL) == 1 && ST(L21_ZED_ARRIVAL) == 0) {
+        if (ST(V_EVENT_3) == 1 && ST(V_EVENT_4) == 0) {
             lieu_action_register("L21D46A", P_THANANDAR25, "SP25DIA01", "SP25ARR01");
             lieu_action_register("L21D46B", P_THANANDAR25, "SP25DIA02", "SP25ARR01");
             lieu_action_register("L21D46C", P_THANANDAR25, "SP25DIA03", "SP25ARR01");
@@ -97,7 +97,7 @@ static void tick_body(void) {
             CB->bloque(BLOQUE_NONE);
         }
         /* 0x248A */
-        if (ST(L21_RYLSADHAR_ARRIVAL) == 0 && ST(L21_ZED_ARRIVAL) == 1) {
+        if (ST(V_EVENT_3) == 0 && ST(V_EVENT_4) == 1) {
             lieu_action_register("L21D46A", P_THANANDAR25, "SP25DIA04", "SP25ARR01");
             lieu_action_register("L21D47", P_THANANDAR25, "SP25DIA03", "SP25ARR01");
             lieu_action_register("L21D46C", P_THANANDAR25, "SP25DIA02", "SP25ARR01");
@@ -287,7 +287,7 @@ static void tick_body(void) {
     /* 0x2E83 */
     if (ST(V_GUARD_FIGHT_DONE) == 2) {
         /* 0x2E95 */
-        if (ST(L21_PASSAGE_OPEN) == 0) {
+        if (ST(V_PASSAGE_OPEN) == 0) {
             /* 0x2EA7 */
             if (ST(L21_CAMERA_STATE) == 0 && CB->distance(1, 20) < 50) {
                 CB->change_camera(7, CAM_LOCKED);
@@ -301,7 +301,7 @@ static void tick_body(void) {
         }
     }
     /* 0x2F59 */
-    if (ST(L21_ALERT_STAGE) == 2) {
+    if (ST(V_ALERT_STAGE) == 2) {
         /* 0x2F6B */
         if (ST(L21_CAMERA_STATE) == 0 && CB->distance(1, 20) < 50) {
             CB->change_camera(7, CAM_LOCKED);
@@ -422,7 +422,7 @@ static void tick_body(void) {
         }
     }
     /* 0x364F */
-    if (ST(V_GUARD_FIGHT_DONE) == 0 && ST(L21_RYLSADHAR_ARRIVAL) == 0 && ST(L21_ZED_ARRIVAL) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 0 && ST(V_EVENT_3) == 0 && ST(V_EVENT_4) == 0) {
         /* 0x3685 */
         if (ST(L21_SUNSEER1_STATE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_SUNSEER1)) != VIE_DEAD && CB->distance(1, 2) > 300) {
             CB->divers(DV_LOOK_AT_PLAYER, P_SUNSEER1, 0);
@@ -562,7 +562,7 @@ static void tick_body(void) {
         }
     }
     /* 0x3E57 */
-    if (ST(L21_STORY_ADVANCED) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
+    if (ST(V_RETURN_PART) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
         /* 0x3E7B */
         if (ST(V_EVENT_33) == 1) {
             ST(V_EVENT_33) = 0;
@@ -576,7 +576,7 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x3EF2 */
-        if (ST(L21_SUNSEER2_STAGE) != 0 && ST(ST_VIE(P_SUNSEER2)) != VIE_DEAD) {
+        if (ST(V_LORY_STAGE) != 0 && ST(ST_VIE(P_SUNSEER2)) != VIE_DEAD) {
             /* 0x3F16 */
             if (ST(L21_SUNSEER2_GREETED) == 0 && CB->distance(1, 7) < 300) {
                 ST(L21_SUNSEER2_GREETED) = 1;
@@ -665,7 +665,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L21_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l21_trig00();   /* 0x1000F029: call sub_10001073 -> sub_10001200 */
         return 0;
     }

@@ -36,12 +36,8 @@ void l49_trig00(void);
 #define L49_OB97_OPENED                0x6FC   /* 0 = OB97 closed (placed at setup), 1 = opened */
 #define L49_MALROT8_AMMO_TAKEN         0x90C   /* 1 once the OB_SM_TH_AMMO was taken from the Malrot8 corpse */
 #define L49_KALHI_STORY_STAGE          0xBBC   /* Kalhi13 chase chapter (shared): 2 = Kalhi with hero, 3 = Kalhi left, 10 = Kalhi dead, 20 = Malrot8 taunt */
-#define L49_PLATE_USED                 0xC20   /* 1 once the plate item was used on the wall */
 #define L49_AMBUSH_PHASE               0xC2C   /* 0 none, 1 Kalhi taken, 2 Malrot8 taunt / fight, 3 Kalhi dead, Malrot8 hunts */
 #define L49_DHORKAN_SEARCHED           0xC6C   /* 1 once the Dhorkan11 corpse was searched */
-#define L49_ENDING_PLAYED              0xE8C   /* 1 = death ending already played (test at INIT) */
-#define L49_MAIN_PROGRESS              0xE98   /* main story counter shared by many levels; 0x3C -> 0x41 on entry */
-#define L49_LOOT_COUNT                 0xED0   /* corpse loot counter 0..5, advanced by each search */
 #define L49_LOOT_FLAG                  0xED4   /* 1 = a corpse was searched */
 #define L49_FLAG_F24                   0xF24   /* set to 1 when F78 is 0 and Dhorkan11 died; meaning shared with several levels */
 #define L49_FLAG_F78                   0xF78   /* tested against 0 before setting F24 */

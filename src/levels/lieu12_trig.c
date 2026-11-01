@@ -836,20 +836,20 @@ static void trig02(void) {
                         lieu_action_register("L12D57C", P_BANDOR, "SP07DIA60", "SP07ARR01_10");
                         ST(L12_PROOF_SHOWN) = 1;
                         /* 0xAD88 */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 5) {
-                            ST(L12_CRYSTAL_PROGRESS) = 5;
+                        if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                            ST(V_CRYSTAL_PROGRESS) = 5;
                         }
                         /* 0xADA9 */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 2) {
-                            ST(L12_CRYSTAL_PROGRESS) = 3;
+                        if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                            ST(V_CRYSTAL_PROGRESS) = 3;
                         }
                         /* 0xADCA */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 1) {
-                            ST(L12_CRYSTAL_PROGRESS) = 2;
+                        if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                            ST(V_CRYSTAL_PROGRESS) = 2;
                         }
                         /* 0xADEB */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 0) {
-                            ST(L12_CRYSTAL_PROGRESS) = 1;
+                        if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                            ST(V_CRYSTAL_PROGRESS) = 1;
                         }
                         /* 0xAE0C */
                         if (ST(ST_PLAYER_WEAPON) != 0) {
@@ -887,20 +887,20 @@ static void trig02(void) {
                         lieu_action_register("L12D57C", P_BANDOR, "SP07DIA60", "SP07ARR01_10");
                         ST(L12_PROOF_SHOWN) = 1;
                         /* 0xAFDB */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 5) {
-                            ST(L12_CRYSTAL_PROGRESS) = 5;
+                        if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                            ST(V_CRYSTAL_PROGRESS) = 5;
                         }
                         /* 0xAFFC */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 2) {
-                            ST(L12_CRYSTAL_PROGRESS) = 3;
+                        if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                            ST(V_CRYSTAL_PROGRESS) = 3;
                         }
                         /* 0xB01D */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 1) {
-                            ST(L12_CRYSTAL_PROGRESS) = 2;
+                        if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                            ST(V_CRYSTAL_PROGRESS) = 2;
                         }
                         /* 0xB03E */
-                        if (ST(L12_CRYSTAL_PROGRESS) == 0) {
-                            ST(L12_CRYSTAL_PROGRESS) = 1;
+                        if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                            ST(V_CRYSTAL_PROGRESS) = 1;
                         }
                         CB->link_objet(7, "OB12", 0x1B, 1);
                         /* 0xB073 */
@@ -1063,7 +1063,7 @@ static void trig02(void) {
                         /* 0xB84E */
                         if (ST(L12_LATE_TALK_STAGE) == 3) {
                             /* 0xB860 */
-                            if (ST(L12_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
+                            if (ST(V_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
                                 /* 0xB884 */
                                 if (ST(ST_SPECIAL_MODE) == 1) {
                                     lieu_action_register("L12D91A", P_ARKHAN2, "SG02DIA06", NULL);
@@ -1219,7 +1219,7 @@ static void trig02(void) {
                         /* 0xC038 */
                         if (ST(L12_LATE_TALK_STAGE) == 3) {
                             /* 0xC04A */
-                            if (ST(L12_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
+                            if (ST(V_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
                                 ST(V_EVENT15_STEP) = 1;
                                 lieu_action_register("L12D96A", P_ARKHAN3, "SG03DIA07", NULL);
                                 lieu_action_register("L12D96B", P_ARKHAN3, "SG03DIA05", NULL);
@@ -1302,20 +1302,20 @@ static void trig02(void) {
                 CB->etat_objet("OB12", -1, -1, -1, -1, -1, -1, -3, 0);
                 ST(L12_PROOF_SHOWN) = 1;
                 /* 0xC4EB */
-                if (ST(L12_CRYSTAL_PROGRESS) == 5) {
-                    ST(L12_CRYSTAL_PROGRESS) = 5;
+                if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                    ST(V_CRYSTAL_PROGRESS) = 5;
                 }
                 /* 0xC50C */
-                if (ST(L12_CRYSTAL_PROGRESS) == 2) {
-                    ST(L12_CRYSTAL_PROGRESS) = 3;
+                if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                    ST(V_CRYSTAL_PROGRESS) = 3;
                 }
                 /* 0xC52D */
-                if (ST(L12_CRYSTAL_PROGRESS) == 1) {
-                    ST(L12_CRYSTAL_PROGRESS) = 2;
+                if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                    ST(V_CRYSTAL_PROGRESS) = 2;
                 }
                 /* 0xC54E */
-                if (ST(L12_CRYSTAL_PROGRESS) == 0) {
-                    ST(L12_CRYSTAL_PROGRESS) = 1;
+                if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                    ST(V_CRYSTAL_PROGRESS) = 1;
                 }
                 CB->animation("Sar_10");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -2264,20 +2264,20 @@ static void trig23(void) {
                     CB->etat_objet("OB12", -1, -1, -1, -1, -1, -1, -3, 0);
                     ST(L12_PROOF_SHOWN) = 1;
                     /* 0xF167 */
-                    if (ST(L12_CRYSTAL_PROGRESS) == 5) {
-                        ST(L12_CRYSTAL_PROGRESS) = 5;
+                    if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                        ST(V_CRYSTAL_PROGRESS) = 5;
                     }
                     /* 0xF188 */
-                    if (ST(L12_CRYSTAL_PROGRESS) == 2) {
-                        ST(L12_CRYSTAL_PROGRESS) = 3;
+                    if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                        ST(V_CRYSTAL_PROGRESS) = 3;
                     }
                     /* 0xF1A9 */
-                    if (ST(L12_CRYSTAL_PROGRESS) == 1) {
-                        ST(L12_CRYSTAL_PROGRESS) = 2;
+                    if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                        ST(V_CRYSTAL_PROGRESS) = 2;
                     }
                     /* 0xF1CA */
-                    if (ST(L12_CRYSTAL_PROGRESS) == 0) {
-                        ST(L12_CRYSTAL_PROGRESS) = 1;
+                    if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                        ST(V_CRYSTAL_PROGRESS) = 1;
                     }
                     CB->animation("Sar_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);

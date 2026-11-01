@@ -62,7 +62,7 @@ void l23_trig00(void) {
     if (ST(ST_START_POINT(23)) == 1) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 10;
-        ST(L23_RYLSADHAR_ZED_STAGE) = 1;
+        ST(V_RYLSADHAR_ZED_STAGE) = 1;
         ST(L23_ARKHAN23_STEP) = 0;
         ST(L23_ELAPSED_MS) = 2000;
     }
@@ -71,14 +71,14 @@ void l23_trig00(void) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 10;
         ST(L23_ARKHAN23_STEP) = 0;
-        ST(L23_RYLSADHAR_ZED_STAGE) = 1;
+        ST(V_RYLSADHAR_ZED_STAGE) = 1;
         ST(L23_ELAPSED_MS) = 10000;
     }
     /* 29878 */
     if (ST(ST_START_POINT(23)) == 3) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 25;
-        ST(L23_RYLSADHAR_ZED_STAGE) = 10;
+        ST(V_RYLSADHAR_ZED_STAGE) = 10;
     }
     /* 29938 */
     if (ST(ST_START_POINT(23)) == 4) {
@@ -130,7 +130,7 @@ void l23_trig00(void) {
     if (ST(ST_START_POINT(23)) == 11) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 10;
-        ST(L23_ARKHAN23_PART) = 1;   /* (patch) */
+        ST(V_RETURN_PART) = 1;   /* (patch) */
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(L23_ARKHAN23_STEP) = 6;
     }
@@ -174,28 +174,28 @@ void l23_trig00(void) {
     CB->ajoute_zone(3, 6070, -3896, 100, 90, 0);
     CB->vire_col(12, 0);
     /* 31190 */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L23_KALHI_PART_STEP) == 3 && ST(L23_OB51_TAKEN) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_ROUTE_STAGE) == 3 && ST(L23_OB51_TAKEN) == 0) {
         CB->etat_objet("OB51", 5810, -1551, -2852, 0, 0xA7F8, 0x11F8, -1, 0);
         CB->ajoute_zone(13, 5890, -2860, 230, 235, 0);
     }
     CB->bruitage("L23AMB1", -1, -1);
     /* 31337 */
-    if (ST(L23_OB75_STATE) != 0 && ST(L23_ZED_QUEST_SEEN) == 0) {
+    if (ST(V_CRYSTAL_KEY_STAGE) != 0 && ST(L23_ZED_QUEST_SEEN) == 0) {
         ST(L23_ZED_QUEST_SEEN) = 1;
     }
     /* 31388 */
-    if (ST(L23_GUARD_PAIR_STEP_A) == 0 && ST(L23_GUARD_PAIR_STEP_B) == 0 && ST(L23_ARKHAN23_PART) == 0) {
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0) {
         /* 31442 */
-        if (ST(L23_GUARD34_FIGHT_STATE) == 0) {
-            ST(L23_GUARD34_FIGHT_STATE) = 2;
-        } else if (ST(L23_GUARD34_FIGHT_STATE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-            ST(L23_GUARD34_FIGHT_STATE) = 0;
+        if (ST(V_GUARDIAN4_STAGE) == 0) {
+            ST(V_GUARDIAN4_STAGE) = 2;
+        } else if (ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+            ST(V_GUARDIAN4_STAGE) = 0;
         }
     }
     /* 31531 */
-    if (ST(L23_GUARD_PAIR_STEP_A) == 0 && ST(L23_GUARD_PAIR_STEP_B) == 0 && ST(L23_ARKHAN23_PART) == 1 && ST(L23_GUARD34_FIGHT_STATE) == 4) {
-        ST(L23_GUARD_PAIR_STEP_A) = 1;
-        ST(L23_GUARD_PAIR_STEP_B) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
     /* 31630 */
     if (ST(ST_LEVEL) == 10) {
@@ -224,8 +224,8 @@ void l23_trig00(void) {
         }
     }
     /* 32114 */
-    if (ST(L23_RYLSADHAR_ZED_STAGE) == 1 && ST(ST_HERO) == P_ARKHAN1) {
-        ST(L23_RYLSADHAR_ZED_STAGE) = 2;
+    if (ST(V_RYLSADHAR_ZED_STAGE) == 1 && ST(ST_HERO) == P_ARKHAN1) {
+        ST(V_RYLSADHAR_ZED_STAGE) = 2;
         ST(L23_RYLSADHAR_AREA_DONE) = 3;
         CB->ajoute_zone(7, 6721, -3716, 100, 100, 1);
         CB->pos_perso(P_PHEDORIA, 5000, 3000, 0xC350, 1, "P26ARR03", 5, 0);
@@ -240,18 +240,18 @@ void l23_trig00(void) {
         }
         /* 32419 */
         if (ST(L23_ELAPSED_MS) > 10000) {
-            ST(L23_RYLSADHAR_ZED_STAGE) = 7;
+            ST(V_RYLSADHAR_ZED_STAGE) = 7;
         }
     }
     /* 32452 */
-    if (ST(L23_RYLSADHAR_ZED_STAGE) == 10 && ST(ST_HERO) == P_ARKHAN1) {
+    if (ST(V_RYLSADHAR_ZED_STAGE) == 10 && ST(ST_HERO) == P_ARKHAN1) {
         CB->vire_col(13, 0);
         CB->retire_zone(2);
         CB->pos_perso(P_ZED84, 6306, -3774, 0xE4C5, 1, "P84ARR01", 7, 0);
         CB->link_objet(0x54, "OB68", 0x1D, 1);
     }
     /* 32569 */
-    if (ST(L23_ARKHAN23_PART) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
+    if (ST(V_RETURN_PART) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->ajoute_zone(12, 6320, -3330, 250, 250, 0);
         /* 32638 */
         if (ST(L23_GUARDS1314_STAGE) == 0) {
@@ -304,12 +304,12 @@ static void trig41(void) {
         ST(L23_GUARDS_AMBUSH_ARMED) = 1;
     }
     /* 33469 */
-    if (ST(L23_RYLSADHAR_ZED_STAGE) == 2 && ST(ST_HERO) == P_ARKHAN1) {
+    if (ST(V_RYLSADHAR_ZED_STAGE) == 2 && ST(ST_HERO) == P_ARKHAN1) {
         CB->joindre(-P_RYLSADHAR20, 6450, -3640, 0xC350, -1);
         CB->modify_var(&ST(L23_RYLSADHAR_SCENE_STEP), 1);
     }
     /* 33553 */
-    if (ST(L23_RYLSADHAR_ZED_STAGE) == 10 && ST(ST_HERO) == P_ARKHAN1) {
+    if (ST(V_RYLSADHAR_ZED_STAGE) == 10 && ST(ST_HERO) == P_ARKHAN1) {
         CB->bloque(BLOQUE_ALL);
         CB->joindre(-ST(ST_HERO), 6288, -3485, 0x2083, -1);
         lieu_action_register("L23D23", P_ZED84, "SP84DIA54", "SP84ARR02_10");
@@ -334,7 +334,7 @@ static void trig41(void) {
         CB->modify_var(&ST(L23_PHEDORIA_APPROACH), 1);
     }
     /* 33964 */
-    if (ST(L23_GUARDS1314_STAGE) == 0 && ST(L23_ARKHAN23_PART) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
+    if (ST(L23_GUARDS1314_STAGE) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARD_FIGHT_DONE) == 2) {
         CB->bloque(BLOQUE_ALL);
         CB->change_camera(2, CAM_LOCKED);
         ST(L23_GUARDS1314_STAGE) = 1;
@@ -362,8 +362,8 @@ static void trig41(void) {
 static void trig01(void) {
     ST(ST_LEVEL) = 23;
     /* 42365 */
-    if (ST(ST_HERO) == P_ARKHAN1 && ST(L23_RYLSADHAR_ZED_STAGE) < 7) {
-        ST(L23_RYLSADHAR_ZED_STAGE) = 7;
+    if (ST(ST_HERO) == P_ARKHAN1 && ST(V_RYLSADHAR_ZED_STAGE) < 7) {
+        ST(V_RYLSADHAR_ZED_STAGE) = 7;
     }
     /* 42416 */
     if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L23_GUARDS1314_STAGE) == 1 && ST(V_ENGAGED_PERSONA) != 0) {
@@ -379,19 +379,19 @@ static void trig01(void) {
         CB->change_piece(10, 0);
     }
     /* 42594 */
-    if (ST(ST_HERO) > 1 && ST(L23_KALHI_PART_STEP) == 0) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 0) {
         CB->change_piece(10, 1);
     }
     /* 42646 */
-    if (ST(ST_HERO) > 1 && ST(L23_KALHI_PART_STEP) == 1) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 1) {
         CB->change_piece(10, 2);
     }
     /* 42698 */
-    if (ST(ST_HERO) > 1 && ST(L23_KALHI_PART_STEP) == 2) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 2) {
         CB->change_piece(10, 3);
     }
     /* 42750 */
-    if (ST(ST_HERO) > 1 && ST(L23_KALHI_PART_STEP) == 3) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 3) {
         CB->change_piece(51, 0);
     }
 }
@@ -403,7 +403,7 @@ static void trig02(void) {
         /* 42874 */
         if (ST(ST_HERO) == P_ARKHAN1) {
             /* 42892 */
-            if (ST(L23_RYLSADHAR_ZED_STAGE) == 2) {
+            if (ST(V_RYLSADHAR_ZED_STAGE) == 2) {
                 CB->bloque(BLOQUE_ALL);
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->animation("SG00OUV12");
@@ -420,7 +420,7 @@ static void trig02(void) {
                 CB->bloque(BLOQUE_NONE);
             }
             /* 43073 */
-            if (ST(L23_RYLSADHAR_ZED_STAGE) > 2) {
+            if (ST(V_RYLSADHAR_ZED_STAGE) > 2) {
                 CB->bloque(BLOQUE_ALL);
                 CB->load_anim("223OUV02", 0);
                 ST(ST_SCRIPT_BUSY) = 1;
@@ -738,7 +738,7 @@ static void trig15(void) {
 /* trigger 16 -- sub_1000B456 */
 static void trig16(void) {
     /* 46184 */
-    if (ST(L23_KALHI_PART_STEP) >= 2) {
+    if (ST(V_ROUTE_STAGE) >= 2) {
         return;
     }
     /* 46204 */

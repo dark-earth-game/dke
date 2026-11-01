@@ -66,11 +66,11 @@ static void trig02(void) {
         CB->bloque(BLOQUE_ALL);
         g_dest_room = 28;
         /* 0x95AA */
-        if (ST(L27_LORY_STAGE) == 0) {
+        if (ST(V_LORY_STAGE) == 0) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0x95CE */
-        if (ST(L27_LORY_STAGE) != 0) {
+        if (ST(V_LORY_STAGE) != 0) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         /* 0x95F2 */
@@ -99,11 +99,11 @@ static void trig03(void) {
         CB->bloque(BLOQUE_ALL);
         g_dest_room = 29;
         /* 0x96C1 */
-        if (ST(L27_LORY_STAGE) == 0) {
+        if (ST(V_LORY_STAGE) == 0) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0x96E5 */
-        if (ST(L27_LORY_STAGE) != 0) {
+        if (ST(V_LORY_STAGE) != 0) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         /* 0x9709 */
@@ -139,11 +139,11 @@ static void trig06(void) {
         CB->bloque(BLOQUE_ALL);
         g_dest_room = 20;
         /* 0x9847 */
-        if (ST(L27_LORY_STAGE) == 0) {
+        if (ST(V_LORY_STAGE) == 0) {
             CB->divers_empile(DV_MUSIC, 1, 4);
         }
         /* 0x986B */
-        if (ST(L27_LORY_STAGE) != 0) {
+        if (ST(V_LORY_STAGE) != 0) {
             CB->divers_empile(DV_MUSIC, 2, 4);
         }
         /* 0x988F */
@@ -506,7 +506,7 @@ static void trig16(void) {
                 CB->dialogue("L27D05A", P_ARKHAN2);
                 CB->dialogue("L27D05B", P_ARKHAN2);
                 /* 0xA999 */
-                if (ST(L27_RYLSADHAR_STAGE) > 0) {
+                if (ST(V_CRYSTAL_KEY_STAGE) > 0) {
                     CB->dialogue("L27D05C", P_ARKHAN3);
                 }
             }
@@ -515,7 +515,7 @@ static void trig16(void) {
                 CB->dialogue("L27D06A", P_ARKHAN3);
                 CB->dialogue("L27D06B", P_ARKHAN3);
                 /* 0xA9ED */
-                if (ST(L27_RYLSADHAR_STAGE) > 0) {
+                if (ST(V_CRYSTAL_KEY_STAGE) > 0) {
                     CB->dialogue("L27D06C", P_ARKHAN3);
                 }
             }
@@ -799,11 +799,11 @@ static void trig19(void) {
 /* trigger 32 - trig32_1000B51C */
 static void trig32(void) {
     /* 0xB52E */
-    if (ST(L27_LORY_STAGE) == 0) {
+    if (ST(V_LORY_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 4);
     }
     /* 0xB552 */
-    if (ST(L27_LORY_STAGE) != 0) {
+    if (ST(V_LORY_STAGE) != 0) {
         CB->divers(DV_MUSIC, 2, 4);
     }
     ST(ST_LEVEL) = 27;
@@ -1085,11 +1085,11 @@ static void trig41(void) {
     /* 0x8174 */
     if (ST(V_EVENT_17) != 2) {
         /* 0x8186 */
-        if (ST(L27_LORY_STAGE) == 0) {
+        if (ST(V_LORY_STAGE) == 0) {
             CB->divers(DV_MUSIC, 1, 1);
         }
         /* 0x81AA */
-        if (ST(L27_LORY_STAGE) != 0) {
+        if (ST(V_LORY_STAGE) != 0) {
             CB->divers(DV_MUSIC, 2, 1);
         }
     }

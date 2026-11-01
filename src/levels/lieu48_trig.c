@@ -136,8 +136,8 @@ void l48_trig00(void) {
         CB->pos_perso(ST(ST_HERO), 2026, 3830, CB->divers(DV_DESC_POS, ST(ST_HERO), 2), 1, "ar", 6, 0);
     }
     /* 0x791B */
-    if (ST(L48_ENDING_PLAYED) == 2) {
-        ST(L48_ENDING_PLAYED) = 0xA;
+    if (ST(V_CHASE_STATE) == 2) {
+        ST(V_CHASE_STATE) = 0xA;
     }
     /* 0x793C */
     if (ST(ST_VIE(P_MALROT7)) < 2 && ST(L48_KALHI_STORY_STAGE) != 8 && ST(L48_MALROT7_ALERT) != 10) {
@@ -1129,7 +1129,7 @@ static void trig30(void) {
 static void trig41(void) {
     CB->divers_empile(DV_MUSIC, 1, 1);
     /* 0x7E89 */
-    if (ST(L48_MAIN_PROGRESS) == 2 && ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD && ST(ST_VIE(94)) != VIE_DEAD && ST(L48_KONKALITE_D01_SAID) == 0) {
+    if (ST(V_KONKALITE2_FIGHT) == 2 && ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD && ST(ST_VIE(94)) != VIE_DEAD && ST(L48_KONKALITE_D01_SAID) == 0) {
         CB->dialogue("L48D01", P_KONKALITE5);
         ST(L48_KONKALITE_D01_SAID) = 1;
     }

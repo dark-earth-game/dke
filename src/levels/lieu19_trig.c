@@ -68,7 +68,7 @@ void l19_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(19)) == 1) {
         ST(ST_HERO) = P_ARKHAN3;
-        ST(L19_STORY_ADVANCED) = 1;
+        ST(V_RETURN_PART) = 1;
         /* 0x742F */
         if (ST(ST_LEVEL) != 16 && ST(ST_LEVEL) != 19 && ST(ST_LEVEL) != 48) {
             ST(ST_LEVEL) = 14;
@@ -178,7 +178,7 @@ void l19_trig00(void) {
         CB->divers_empile(DV_LOOK_AT_PLAYER, P_MALROT5, 1);
     }
     /* 0x7B22 */
-    if (ST(L19_STORY_ADVANCED) == 1) {
+    if (ST(V_RETURN_PART) == 1) {
         /* 0x7B34 */
         if (ST(L19_MALROT_PLACE) == 0 && ST(ST_VIE(P_MALROT5)) != VIE_DEAD && ST(L19_MALROT_HOSTILE) == 0) {
             CB->pos_perso(P_MALROT5, 4052, 3033, 0x7439, 1, "P65ARR01", 3, 0);
@@ -213,8 +213,8 @@ void l19_trig00(void) {
         CB->divers_empile(DV_LOOK_AT_PLAYER, P_MALROT5, 1);
     }
     /* 0x7E10 */
-    if (ST(L19_KONKALITE_STATE) == 60) {
-        ST(L19_KONKALITE_STATE) = 65;
+    if (ST(V_KONKALITE2_FIGHT) == 60) {
+        ST(V_KONKALITE2_FIGHT) = 65;
     }
     /* 0x7E31 */
     if (ST(L19_ENTRY_STEP) == 1) {
@@ -368,7 +368,7 @@ static void trig03(void) {
                             lieu_action_register("L19D28", P_ARKHAN2, "SG02DIA02", NULL);
                             lieu_action_register("L19D29", P_MALROT5, "SP65DIA58", "SP65ARR01");
                             /* 0x9BFC */
-                            if (ST(L19_ARMAL_STAGE) == 2) {
+                            if (ST(V_ARMAL_STAGE) == 2) {
                                 lieu_action_register("L19D30", P_ARKHAN2, "SG02DIA06", NULL);
                             }
                             CB->animation("ar_10");
@@ -378,7 +378,7 @@ static void trig03(void) {
                             return;
                         }
                         /* 0x9C5C */
-                        if (ST(L19_TALK_MALROT_A2) == 4 && ST(L19_ARMAL_STAGE) <= 1 && ST(ST_SPECIAL_MODE) == 1) {
+                        if (ST(L19_TALK_MALROT_A2) == 4 && ST(V_ARMAL_STAGE) <= 1 && ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L19D31", P_ARKHAN2, "SG02DIA05", NULL);
                             lieu_action_register("L19D32A", P_MALROT5, "SP65DIA60", "SP65ARR01");
                             lieu_action_register("L19D32B", P_MALROT5, "SP65DIA61", "SP65ARR01");
@@ -389,7 +389,7 @@ static void trig03(void) {
                             return;
                         }
                         /* 0x9D12 */
-                        if (ST(L19_TALK_MALROT_A2) == 5 && ST(L19_ARMAL_STAGE) <= 1 && ST(ST_SPECIAL_MODE) == 1) {
+                        if (ST(L19_TALK_MALROT_A2) == 5 && ST(V_ARMAL_STAGE) <= 1 && ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L19D33A", P_ARKHAN2, "SG02DIA08", NULL);
                             lieu_action_register("L19D33B", P_ARKHAN2, "SG02DIA10", NULL);
                             lieu_action_register("L19D34A", P_MALROT5, "SP65DIA54", "SP65ARR01");
@@ -407,7 +407,7 @@ static void trig03(void) {
                             return;
                         }
                         /* 0x9E71 */
-                        if ((ST(L19_TALK_MALROT_A2) == 6 || (ST(L19_TALK_MALROT_A2) >= 4 && ST(L19_ARMAL_STAGE) >= 2)) && ST(ST_SPECIAL_MODE) == 1) {
+                        if ((ST(L19_TALK_MALROT_A2) == 6 || (ST(L19_TALK_MALROT_A2) >= 4 && ST(V_ARMAL_STAGE) >= 2)) && ST(ST_SPECIAL_MODE) == 1) {
                             lieu_action_register("L19D37", P_ARKHAN2, "SG02DIA05", NULL);
                             ST(V_DLG_RANDOM) = CB->random(2);
                             /* 0x9EE6 */
@@ -485,7 +485,7 @@ static void trig03(void) {
                         /* 0xA2A4 */
                         if (ST(L19_TALK_MALROT_A3) == 3 && ST(ST_SPECIAL_MODE) == 1) {
                             /* 0xA2C8 */
-                            if (ST(L19_ARMAL_STAGE) <= 1) {
+                            if (ST(V_ARMAL_STAGE) <= 1) {
                                 lieu_action_register("L19D50", P_ARKHAN3, "SG03DIA10", NULL);
                                 lieu_action_register("L19D51A", P_MALROT5, "SP65DIA54", "SP65ARR01");
                                 lieu_action_register("L19D51B", P_MALROT5, "SP65DIA60", "SP65ARR01");
@@ -496,7 +496,7 @@ static void trig03(void) {
                                 return;
                             }
                             /* 0xA35A */
-                            if (ST(L19_ARMAL_STAGE) >= 2) {
+                            if (ST(V_ARMAL_STAGE) >= 2) {
                                 lieu_action_register("L19D52", P_ARKHAN3, "SG03DIA10", NULL);
                                 lieu_action_register("L19D53A", P_MALROT5, "SP65DIA60", "SP65ARR01");
                                 lieu_action_register("L19D53B", P_MALROT5, "SP65DIA61", "SP65ARR01");

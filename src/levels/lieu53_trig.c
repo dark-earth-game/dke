@@ -96,8 +96,8 @@ void l53_trig00(void) {
     ST(L53_IDLE_ANIM_ON) = 0;
     ST(V_WEAPON_WARNED) = 0;
     /* 0x697F */
-    if (ST(L53_PLATE_STATE) == 1) {
-        ST(L53_PLATE_STATE) = 2;
+    if (ST(V_BUNKER_SEEN) == 1) {
+        ST(V_BUNKER_SEEN) = 2;
     }
 }
 

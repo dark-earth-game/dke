@@ -16,7 +16,6 @@
 #define L99_CINE_TOGGLE                  0x70   /* alternates 0/1 each timeout: picks cinematic SC01_500 or SC02_500 (and Malrot2's P62ATT02/04 pose) */
 #define L99_LEONA_LOOK_DONE              0x74   /* 1 once Leona was told to look at the player in phase 2; reset at the end of phase 2 */
 #define L99_SCENE_PHASE                  0x100   /* test-room scene phase, runs 0 -> 1 -> 2 -> 0 as the event timers fire (cast and camera per phase) */
-#define L99_DEATH_ENDING_BYPASS          0xE8C   /* 1 = hero death does not play the death ending in INIT (runs trigger 0 instead); shared flag */
 
 /* ST() reads g_lvl_S, the DLL's dword_100183DC. */
 

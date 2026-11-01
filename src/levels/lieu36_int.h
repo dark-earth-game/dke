@@ -33,7 +33,6 @@
 #define L36_PLAYER_HIT_COUNT             0x8D4   /* engine counter of hits received by the player; a change costs the hero 50 HP (also read by levels 7 and 32) */
 #define L36_GUARD_VARIANT                0xA50   /* 0 = Guardian1 passes through camera 2, 1 = persona 85 does (set before this room; read only) */
 #define L36_HELMET_STAGE                 0xC14   /* Lodar's helmet: 0 untouched, 1 pair alerted, 2 Konkalite called over, 3 helmet already taken/given */
-#define L36_DEATH_ENDING_BYPASS          0xE8C   /* 1 = hero death does not play the death ending in INIT (runs trigger 0 instead); shared flag */
 #define L36_GUARD_PAIR_PHASE             0xF50   /* Lodar/Konkalite encounter phase: 1 both on guard, 2 Lodar dead, 3 left room, 4 Konkalite dead, 5 Lodar left alone, 6/7 after-fight, 8 finished */
 #define L36_FIGHT_TARGET_STATE           0xF54   /* 0 = no fight, 1 = Guardian20 fight, 2 = Konkalite engaged, 3 = Lodar engaged */
 

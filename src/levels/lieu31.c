@@ -33,7 +33,7 @@ static c8 g_txt[512];   /* debug sprintf buffer, dword_100219A0 */
  * `return` == original `jmp` to the epilogue.
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
-    snprintf(g_txt, sizeof(g_txt), "Alcool:%d", ST(L31_ALCOHOL_COUNTERS + 4 * ST(ST_USED_VARIANT)));
+    snprintf(g_txt, sizeof(g_txt), "Alcool:%d", ST(ST_VARIANT_COUNT(ST(ST_USED_VARIANT))));
     CB->print_msg(g_txt, 0, 240);
     /* 0x88B8 */
     if (CB->divers(DV_PERSONA_PRESENT, P_KONKALITE8, 0) && CB->divers(DV_WAS_HIT, P_KONKALITE8, 0) && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD) {
@@ -186,7 +186,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x911C */
-    if ((ST(L31_CHASE_ROUTE) == 1 || ST(L31_CHASE_ROUTE) == 11) && ST(V_EVENT_0) == 1) {
+    if ((ST(V_CHASE_ROUTE) == 1 || ST(V_CHASE_ROUTE) == 11) && ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         CB->divers(DV_HP, ST(ST_HERO), 1);
         /* 0x9179 */
@@ -217,12 +217,12 @@ static void tick_body(void) {
         /* 0x9296 */
         if (ST(L31_ARRIVAL_KIND) == 1) {
             /* 0x92A8 */
-            if (ST(L31_CHASE_STATE) == 0 && ST(L31_SORDOS_DUEL_STATE) < 2 && ST(L31_STORY_PART) == 10 && (ST(ST_VIE(P_GORK)) < 2 || ST(ST_VIE(P_KONKALITE11)) < 2)) {
-                ST(L31_CHASE_STATE) = 1;
+            if (ST(V_CHASE_STATE) == 0 && ST(V_SORDOS_DUEL) < 2 && ST(L31_STORY_PART) == 10 && (ST(ST_VIE(P_GORK)) < 2 || ST(ST_VIE(P_KONKALITE11)) < 2)) {
+                ST(V_CHASE_STATE) = 1;
                 ST(L31_BORK_ROUTE_STAGE) = 10;
                 /* 0x9368 */
-                if (ST(L31_CHASE_ROUTE) != 1 && ST(L31_CHASE_ROUTE) != 11) {
-                    ST(L31_CHASE_ROUTE) = 1;
+                if (ST(V_CHASE_ROUTE) != 1 && ST(V_CHASE_ROUTE) != 11) {
+                    ST(V_CHASE_ROUTE) = 1;
                 }
                 ST(ST_VIE(69)) = 0;
                 ST(ST_LEVEL) = 31;
@@ -259,12 +259,12 @@ static void tick_body(void) {
         /* 0x94CB */
         if (ST(L31_ARRIVAL_KIND) == 0 || ST(L31_ARRIVAL_KIND) == 2) {
             /* 0x94EF */
-            if (ST(L31_CHASE_STATE) == 0 && ST(L31_SORDOS_DUEL_STATE) < 2 && ST(L31_STORY_PART) == 2 && (ST(ST_VIE(P_GORK)) < 2 || ST(ST_VIE(P_KONKALITE11)) < 2)) {
-                ST(L31_CHASE_STATE) = 1;
+            if (ST(V_CHASE_STATE) == 0 && ST(V_SORDOS_DUEL) < 2 && ST(L31_STORY_PART) == 2 && (ST(ST_VIE(P_GORK)) < 2 || ST(ST_VIE(P_KONKALITE11)) < 2)) {
+                ST(V_CHASE_STATE) = 1;
                 ST(L31_BORK_ROUTE_STAGE) = 30;
                 /* 0x95AF */
-                if (ST(L31_CHASE_ROUTE) != 1 && ST(L31_CHASE_ROUTE) != 11) {
-                    ST(L31_CHASE_ROUTE) = 1;
+                if (ST(V_CHASE_ROUTE) != 1 && ST(V_CHASE_ROUTE) != 11) {
+                    ST(V_CHASE_ROUTE) = 1;
                 }
                 ST(ST_VIE(69)) = 1;
                 ST(ST_LEVEL) = 31;
@@ -300,7 +300,7 @@ static void tick_body(void) {
         }
     }
     /* 0x9712 */
-    if (ST(L31_CHASE_ROUTE) != 1 && ST(L31_BORK_ROUTE_STAGE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(ST_VIE(P_KONKALITE10)) != VIE_DEAD) {
+    if (ST(V_CHASE_ROUTE) != 1 && ST(L31_BORK_ROUTE_STAGE) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(ST_VIE(P_KONKALITE10)) != VIE_DEAD) {
         /* 0x9766 */
         if (ST(L31_KONKALITE8_AMBUSH) == 0 && ST(ST_VIE(P_KONKALITE8)) != VIE_DEAD && ST(L31_KONKALITE8_HITS) < 5 && ST(L31_KONKALITE10_HITS) < 5 && ST(ST_LOCKED_CAMERA) == 0 && CB->distance(1, 2) < 700) {
             ST(L31_KONKALITE8_AMBUSH) = 1;
@@ -493,7 +493,7 @@ static void tick_body(void) {
         }
     }
     /* 0xA1F6 */
-    if (ST(L31_BORK_ROUTE_STAGE) == 1 && ST(L31_CHASE_ROUTE) != 1 && ST(L31_AMBUSH_CAMERA_RELEASED) == 0 && ST(ST_LOCKED_CAMERA) == 4 && CB->distance(1, 7) > 900 && (ST(L31_KONKALITE8_HITS) >= 5 || ST(L31_KONKALITE10_HITS) >= 5)) {
+    if (ST(L31_BORK_ROUTE_STAGE) == 1 && ST(V_CHASE_ROUTE) != 1 && ST(L31_AMBUSH_CAMERA_RELEASED) == 0 && ST(ST_LOCKED_CAMERA) == 4 && CB->distance(1, 7) > 900 && (ST(L31_KONKALITE8_HITS) >= 5 || ST(L31_KONKALITE10_HITS) >= 5)) {
         CB->change_camera(99, CAM_AUTO);
         ST(L31_AMBUSH_CAMERA_RELEASED) = 1;
     }
@@ -601,7 +601,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L31_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l31_trig00();   /* 0x10011239: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

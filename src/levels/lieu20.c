@@ -94,7 +94,7 @@ static void tick_body(void) {
             return;
         }
     }
-    if (ST(L20_STORY_ADVANCED) == 0 && ST(V_GUARD_FIGHT_DONE) == 0) {
+    if (ST(V_RETURN_PART) == 0 && ST(V_GUARD_FIGHT_DONE) == 0) {
         /* 0x8BC5 */
         if (ST(V_EVENT_2) == 1) {
             ST(V_EVENT_2) = 0;
@@ -317,7 +317,7 @@ static void tick_body(void) {
                 }
             }
             /* 0x9863 */
-            if (ST(L20_LORY_CHAIN_STAGE) != 3 && ST(L20_STORY_ADVANCED) == 0 && ST(V_EVENT_17) != 3) {
+            if (ST(L20_LORY_CHAIN_STAGE) != 3 && ST(V_RETURN_PART) == 0 && ST(V_EVENT_17) != 3) {
                 /* 0x9896 */
                 if (ST(L20_LORY_GATE_STEP) == 0 && CB->distance(3, 16) < 250) {
                     CB->select_pile(1, 1);
@@ -814,7 +814,7 @@ static void tick_body(void) {
     if (ST(V_EVENT_34) == 1) {
         ST(V_EVENT_34) = 0;
         /* 0xB44B */
-        if (ST(L20_STORY_ADVANCED) != 0) {
+        if (ST(V_RETURN_PART) != 0) {
             CB->evenement(38, 500);
         }
         CB->select_pile(1, 1);
@@ -890,7 +890,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L20_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l20_trig00();   /* 0x100132C9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

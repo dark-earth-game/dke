@@ -27,8 +27,6 @@
 #define L07_ZONE_ENTER_LOCK      0x0BC   /* 1 = zone 0x21/0x22 entry handled, reset when the hero engages */
 #define L07_SCENE_100            0x100   /* 1 = one-shot scene armed */
 #define L07_PHEDORIA_APPROACH    0x114   /* 1 = Phedoria approach handled */
-#define L07_EVENT_6              0x338   /* event 6 step (0x320 + 4*6); set with EVENT_10 by the Guardian4 check */
-#define L07_EVENT_10             0x348   /* event 10 step (0x320 + 4*10) */
 #define L07_FLAG_750             0x750   /* 0/1 scene toggle in the tick body */
 #define L07_PHEDORIA_D2_DONE     0x754   /* 5 = L07D02 Phedoria scene done, 0 = pending */
 #define L07_D22_STAGE            0x758   /* L07D22..29 talk stage 0..2 */
@@ -40,14 +38,10 @@
 #define L07_ZED_REF_A            0x8E0   /* read only: see L07_ZED_REF_B */
 #define L07_D16_SAID             0x8FC   /* 1 = L07D16 said */
 #define L07_PHEDORIA_BLOCK       0x900   /* 1 = Phedoria blocks the passage */
-#define L07_ZED_SCENE_OFF        0xAF4   /* read only: Zed27 scene runs while 0 */
-#define L07_RETURN_PHASE         0xAF8   /* 0 first pass, 1 return pass */
 #define L07_L2_SPAWN             0xAFC   /* arrival spot: 1..4 set by start points, 3/4 selected when leaving */
-#define L07_GUARDIAN4_STATE      0xB98   /* Guardian4 encounter state: 2 -> reset to 0 while he is alive, 4 with AF8==1 sets events 6/10 */
 #define L07_ZED_BRIEFING         0xBDC   /* Zed briefing flag: 0 = Zed27 scene active, 2/3 = done */
 #define L07_ZED27_TRAINING       0xE5C   /* Zed27 training progress 0..5 (4 = ready, 5 = fought) */
 #define L07_PHEDORIA_TALK_STAGE  0xE60   /* Phedoria L07D11..30 talk stage 0..3 */
-#define L07_FORCE_DEFAULT_INIT   0xE8C   /* 1 = run default INIT even when the hero is dead */
 #define L07_PHEDORIA_FIGHT       0xEB8   /* read only: 0 = Phedoria fight pending (L07D02 scene) */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu07_trig.c). */

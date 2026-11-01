@@ -38,7 +38,6 @@ void l31_trig00(void);
 #define L31_KONKALITE8_CRY_ONCE            0x0FC  /* trigger 2: 1 once Konkalite8 reacted at EE8 == 99 */
 #define L31_KONKALITE10_CRY_ONCE           0x100  /* trigger 3: 1 once Konkalite10 reacted at EEC == 99 */
 #define L31_WEAPON_SEEN                    0x118  /* weapon the Konkalites already reacted to (compares with ST_PLAYER_WEAPON) */
-#define L31_ALCOHOL_COUNTERS               0x140  /* base of the per-variant OB24 (alcohol) counters, +4 per variant; preset 1 at start point 1 */
 #define L31_OB09_TAKEN                     0x59C  /* 1 once OB09 was picked up (trigger 14) */
 #define L31_KONKALITE8_TALK_A              0xAD0  /* trigger 2 first line stage: 0 not said, 1 said */
 #define L31_KONKALITE8_TALK_B              0xAD4  /* trigger 2 second line stage: 0 not said, 1 said */
@@ -48,12 +47,9 @@ void l31_trig00(void);
 #define L31_TALK_REPEATED                  0xB1C  /* set to 1 when the Konkalite talk had to be repeated */
 #define L31_STORY_PART                     0xBB0  /* arriving state: 0 fresh, 2 after the Konkalite fight, 10 later; picks the exit fights */
 #define L31_ARRIVAL_KIND                   0xC64  /* room-32 chase variant: 1 first chase, 0 or 2 second chase */
-#define L31_SORDOS_DUEL_STATE                    0xE20  /* 2 = duel Sordos vs Thanandar24 decided (room 34); the chase starts only while < 2 */
-#define L31_CHASE_STATE              0xE8C  /* chase state: 0 none, 1 chase to room 32 requested */
 #define L31_BORK_ROUTE_STAGE               0xEE0  /* Konkalite/Bork route: 1 Konkalites, 2 Bork, 10/20/30/35 return and second chase */
 #define L31_KONKALITE8_HITS                0xEE8  /* Konkalite8 hit count: 1..5 fighting, 6 beaten, 99 retreated */
 #define L31_KONKALITE10_HITS               0xEEC  /* Konkalite10 hit count: 1..5 fighting, 6 beaten, 99 retreated */
-#define L31_CHASE_ROUTE                    0xEF8  /* 1 or 11 = hero is on the chase route (11 = alternate), otherwise normal */
 #define L31_STORY_MARK_F24                 0xF24  /* set to 5 at start point 2 */
 
 #endif /* DKE_LIEU31_INT_H */

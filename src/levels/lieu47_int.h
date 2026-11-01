@@ -21,13 +21,7 @@
 #define L47_END_EVENT_SENT     0x07C  /* hero dead: EV_END_GAME queued once; 0 = not yet, 1 = sent */
 #define L47_SHOUT_STATE        0x080  /* shout (cri) at the guard: 32 = pending (event 0 fires 1 s later), 99 = already handled */
 #define L47_LEVER_ANIM_PAUSED  0x084  /* LEVIER anim paused while the camera is locked on 3 after the guard fight (V_GUARD_FIGHT_DONE == 2); event5 OB_PARCHMENT sets 1 in level 28 */
-#define L47_EVENT6_STATE       0x338  /* event 6 slot (V_EVENT_6): set to 1 together with L47_EVENT10_STATE once L47_GUARDIAN4_STAGE == 4 on the Arkhan2/3 path */
-#define L47_EVENT10_STATE      0x348  /* event 10 slot (V_EVENT_10): see L47_EVENT6_STATE */
 #define L47_GUARD_HOSTILE      0x4E4  /* 1 = the guard has been provoked and fights (hit, shout, bad gift, attack); room-10 view then reposts him; same slot in LIEU11 */
-#define L47_STORY_STAGE        0xAF4  /* story chapter: 1 = Lory and Rylsadhar20 stand in room 10; 3 set by LIEU54; Arkhan1 briefing tests 0 */
-#define L47_HERO_PHASE         0xAF8  /* 0 = Arkhan1 phase, 1 = Arkhan2/3 phase (set by the start-point branch in trigger 0) */
-#define L47_EXIT_STAGE         0xB4C  /* room-11 exit selector for Arkhan2/3: 0..2 = change_piece(10, 1..3), 3 = go on to level 51 */
-#define L47_GUARDIAN4_STAGE    0xB98  /* Guardian4 quest stage shared by many rooms: 0 / 2 (INIT toggles on Arkhan1 path), 4 = done (set by LIEU54) */
 #define L47_GUARD_TALK_STAGE   0xC9C  /* Arkhan2 talk chain with the guard (action key in special mode): 0..4 = L11D08..L11D16 in order, 5 = chain done, food trading follows */
 #define L47_GUARD_FOOD_STAGE   0xEA4  /* debug "F37": 0 = not asked, 1 = guard hungry (L11D17..19), 2 = fed fish/meat (wants a drink), 3 = drunk (gourd given, guard asleep) */
 

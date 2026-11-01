@@ -69,13 +69,13 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 1) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 1;
+        ST(V_ARMAL_STAGE) = 1;
     }
     /* 0x744E */
     if (ST(ST_START_POINT(18)) == 2) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 1;
+        ST(V_ARMAL_STAGE) = 1;
         ST(L18_MAIN_QUEST_STAGE) = 0;
         ST(ST_VIE(P_SORDOS)) = VIE_DEAD;
     }
@@ -83,21 +83,21 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 3) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 1;
     }
     /* 0x74F3 */
     if (ST(ST_START_POINT(18)) == 4) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 2;
     }
     /* 0x753E */
     if (ST(ST_START_POINT(18)) == 5) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 4;
         ST(ST_VIE(P_DHORKAN11)) = 1;
     }
@@ -105,7 +105,7 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 6) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 4;
         ST(ST_VIE(P_DHORKAN11)) = VIE_DEAD;
     }
@@ -113,7 +113,7 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 7) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 7;
         ST(L18_FINAL_REMARK_A) = 0;
         ST(V_GUARD_FIGHT_DONE) = 0;
@@ -122,7 +122,7 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 8) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 7;
         ST(L18_FINAL_REMARK_A) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
@@ -131,27 +131,27 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 9) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 7;
         ST(L18_FINAL_REMARK_A) = 1;
         ST(L18_FINAL_REMARK_B) = 0;
-        ST(L18_NIGHT_FLAG) = 0;
+        ST(V_CRYSTAL_KEY_STAGE) = 0;
     }
     /* 0x773C */
     if (ST(ST_START_POINT(18)) == 10) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 7;
         ST(L18_FINAL_REMARK_A) = 1;
         ST(L18_FINAL_REMARK_B) = 0;
-        ST(L18_NIGHT_FLAG) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
     }
     /* 0x77B4 */
     if (ST(ST_START_POINT(18)) == 11) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 7;
         ST(L18_FINAL_REMARK_A) = 1;
         ST(L18_FINAL_REMARK_B) = 1;
@@ -162,7 +162,7 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 12) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 2;
+        ST(V_ARMAL_STAGE) = 2;
         ST(L18_MAIN_QUEST_STAGE) = 7;
         ST(L18_FINAL_REMARK_A) = 1;
         ST(L18_FINAL_REMARK_B) = 1;
@@ -172,7 +172,7 @@ void l18_trig00(void) {
     if (ST(ST_START_POINT(18)) == 13) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L18_ARMAL_STAGE) = 0;
+        ST(V_ARMAL_STAGE) = 0;
         ST(L18_MALROT_CHASE_STAGE) = 1;
     }
     ST(L18_DOOR_ZONE_PRESSED) = 0;
@@ -298,11 +298,11 @@ void l18_trig00(void) {
     CB->load_anim("218FRED", 8);
     CB->load_anim("218FIX2", 9);
     /* 0x812B */
-    if (ST(L18_ARMAL_STAGE) < 2) {
+    if (ST(V_ARMAL_STAGE) < 2) {
         CB->divers(DV_MUSIC, 1, 0);
     }
     /* 0x814F */
-    if (ST(L18_ARMAL_STAGE) >= 2) {
+    if (ST(V_ARMAL_STAGE) >= 2) {
         CB->divers(DV_MUSIC, 2, 0);
     }
     ST(ST_START_POINT(18)) = 0;
@@ -324,7 +324,7 @@ static void trig02(void) {
     /* 0xC7E5 */
     if (CB->divers(DV_IN_ZONE, ST(ST_HERO), 2) && ST(ST_SCRIPT_BUSY) == 0 && CB->direction_spec(0xC350) && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_ARMAL)) == 1) {
         /* 0xC83A */
-        if (ST(L18_ARMAL_TALK_MODE) == 0 && ST(L18_ARMAL_STAGE) < 2 && ST(ST_ACTION_KEY) == 1) {
+        if (ST(L18_ARMAL_TALK_MODE) == 0 && ST(V_ARMAL_STAGE) < 2 && ST(ST_ACTION_KEY) == 1) {
             CB->bloque(BLOQUE_ALL);
             CB->joindre(-ST(ST_HERO), 0, 0, 0, P_ARMAL);
             CB->joindre(-P_ARMAL, 0, 0, 0, ST(ST_HERO));
@@ -373,7 +373,7 @@ static void trig02(void) {
             return;
         }
         /* 0xCADC */
-        if ((ST(L18_ARMAL_TALK_MODE) == 0 && ST(L18_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) == 0) || (ST(L18_ARMAL_TALK_MODE) == 0 && ST(L18_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) >= 1) || ST(L18_ARMAL_TALK_MODE) == 1 || ST(L18_ARMAL_TALK_MODE) == 4 || ST(L18_ARMAL_MOOD) == 1) {
+        if ((ST(L18_ARMAL_TALK_MODE) == 0 && ST(V_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) == 0) || (ST(L18_ARMAL_TALK_MODE) == 0 && ST(V_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) >= 1) || ST(L18_ARMAL_TALK_MODE) == 1 || ST(L18_ARMAL_TALK_MODE) == 4 || ST(L18_ARMAL_MOOD) == 1) {
             ST(L18_ZONE2_REMOVED) = 1;
             CB->retire_zone(2);
             CB->joindre(-ST(ST_HERO), 0, 0, 0, P_ARMAL);
@@ -383,7 +383,7 @@ static void trig02(void) {
             CB->bloque(BLOQUE_ALL);
             CB->stop_joindre(-P_ARMAL);
             /* 0xCC00 */
-            if (ST(L18_ARMAL_TALK_MODE) == 0 && ST(L18_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) == 0) {
+            if (ST(L18_ARMAL_TALK_MODE) == 0 && ST(V_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) == 0) {
                 /* 0xCC36 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     lieu_action_register("L18D08", P_ARKHAN2, "SG00DIA07", NULL);
@@ -395,7 +395,7 @@ static void trig02(void) {
                 lieu_action_register("L18D202", P_ARMAL, "SP06DIA53", "SP06ARR01_10");
             }
             /* 0xCC9F */
-            if (ST(L18_ARMAL_TALK_MODE) == 0 && ST(L18_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) >= 1) {
+            if (ST(L18_ARMAL_TALK_MODE) == 0 && ST(V_ARMAL_STAGE) >= 2 && ST(L18_MAIN_QUEST_STAGE) >= 1) {
                 /* 0xCCD5 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     lieu_action_register("L18D08", P_ARKHAN2, "SG00DIA07", NULL);
@@ -479,7 +479,7 @@ static void trig03(void) {
             /* 0xD0C7 */
             if (ST(ST_PLAYER_WEAPON) != 24 || ST(ST_PLAYER_WEAPON) == 0 || (ST(ST_PLAYER_WEAPON) != 0 && CB->divers(DV_CAN_FIGHT, 0, 0)) || (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 0) && ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON))) {
                 /* 0xD157 */
-                if (ST(L18_ARMAL_STAGE) == 0 || (ST(L18_ARMAL_STAGE) == 1 && ST(L18_MALROT2_TALK_STAGE) == 666)) {
+                if (ST(V_ARMAL_STAGE) == 0 || (ST(V_ARMAL_STAGE) == 1 && ST(L18_MALROT2_TALK_STAGE) == 666)) {
                     ST(L18_MALROT2_FLAG_0F4C) = 1;
                     /* 0xD19C */
                     if (ST(ST_SPECIAL_MODE) == 1) {
@@ -527,7 +527,7 @@ static void trig03(void) {
                     return;
                 }
                 /* 0xD382 */
-                if (ST(L18_ARMAL_STAGE) == 1 && ST(L18_MALROT2_TALK_STAGE) == 0) {
+                if (ST(V_ARMAL_STAGE) == 1 && ST(L18_MALROT2_TALK_STAGE) == 0) {
                     /* 0xD3A3 */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L18D23A", P_ARKHAN2, "SG00DIA07", "Sar_10");
@@ -547,7 +547,7 @@ static void trig03(void) {
                     return;
                 }
                 /* 0xD49B */
-                if (ST(L18_ARMAL_STAGE) == 2) {
+                if (ST(V_ARMAL_STAGE) == 2) {
                     /* 0xD4AD */
                     if (ST(ST_SPECIAL_MODE) == 1) {
                         /* 0xD4BF */
@@ -607,7 +607,7 @@ static void trig03(void) {
             /* 0xD6FD */
             if (ST(ST_PLAYER_WEAPON) == 24) {
                 /* 0xD70F */
-                if (ST(L18_ARMAL_STAGE) < 2) {
+                if (ST(V_ARMAL_STAGE) < 2) {
                     /* 0xD721 */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L18D184", P_ARKHAN2, "SG00PRE80", "SG00PRE81_10");
@@ -625,7 +625,7 @@ static void trig03(void) {
                     return;
                 }
                 /* 0xD7D8 */
-                if (ST(L18_ARMAL_STAGE) >= 2) {
+                if (ST(V_ARMAL_STAGE) >= 2) {
                     /* 0xD7EA */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L18D184", P_ARKHAN2, "SG00PRE80", "SG00PRE81_10");
@@ -648,7 +648,7 @@ static void trig03(void) {
                         CB->dialogue("L18D189", P_MALROT2);
                     }
                     lieu_pre_scene(ST(ST_HERO), P_MALROT2, 24, 6, 3);
-                    ST(0x140 + 4 * ST(ST_USED_VARIANT)) = 0;
+                    ST(ST_VARIANT_COUNT(ST(ST_USED_VARIANT))) = 0;
                     snprintf(buf1, sizeof(buf1), "SOB24%c", (char)(ST(ST_USED_VARIANT) + 65));
                     CB->etat_objet(buf1, -1, -1, -1, -1, -1, -1, -2, 3);
                     snprintf(buf2, sizeof(buf2), "OB77%c", (char)(ST(ST_USED_VARIANT) + 65));
@@ -734,11 +734,11 @@ static void trig04(void) {
             CB->evenement(1, -1);
             ST(V_EVENT_1) = 0;
             /* 0xDDB1 */
-            if (ST(L18_ARMAL_STAGE) != 2) {
+            if (ST(V_ARMAL_STAGE) != 2) {
                 /* 0xDDC3 */
                 if (ST(ST_PLAYER_WEAPON) == 0 || CB->divers(DV_CAN_FIGHT, 0, 0) || (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 0) && ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON))) {
                     /* 0xDE2F */
-                    if (ST(L18_ARMAL_STAGE) == 0) {
+                    if (ST(V_ARMAL_STAGE) == 0) {
                         ST(L18_MALROT2_FLAG_0F4C) = 1;
                         /* 0xDE50 */
                         if (ST(L18_TALK_ARMAL_B) == 0) {
@@ -816,9 +816,9 @@ static void trig04(void) {
                         }
                     }
                     /* 0xE124 */
-                    if (ST(L18_ARMAL_STAGE) == 1) {
+                    if (ST(V_ARMAL_STAGE) == 1) {
                         ST(L18_ARMAL_PATROL_STEP) = 24;
-                        ST(L18_ARMAL_STAGE) = 2;
+                        ST(V_ARMAL_STAGE) = 2;
                         ST(V_EVENT_1) = 10;
                         CB->evenement(1, -1);
                         /* 0xE170 */
@@ -892,7 +892,7 @@ static void trig04(void) {
                         }
                         CB->dialogue("L18D28A", P_ARMAL);
                         /* 0xE50C */
-                        if (ST(L18_ARMAL_STAGE) >= 1) {
+                        if (ST(V_ARMAL_STAGE) >= 1) {
                             CB->dialogue("L18D28B", P_ARMAL);
                         }
                         CB->animation("G00PRE82");
@@ -927,7 +927,7 @@ static void trig04(void) {
                 CB->bloque(BLOQUE_NONE);
             }
             /* 0xE685 */
-            if (ST(L18_ARMAL_STAGE) == 2) {
+            if (ST(V_ARMAL_STAGE) == 2) {
                 cf0 = CB->divers(DV_CAN_FIGHT, 0, 0);
                 cf1_b = CB->divers(DV_CAN_FIGHT, 0, 1);
                 /* 0xE6C1 */
@@ -1199,7 +1199,7 @@ static void trig04(void) {
                         /* 0xF498 */
                         if (ST(L18_MAIN_QUEST_STAGE) == 1) {
                             /* 0xF4AA */
-                            if (ST(L18_EVENT3_SLOT) == 0 && ST(V_GUARD_FIGHT_DONE) < 2 && ST(L18_ARMAL_L18D90_SEEN) == 0) {
+                            if (ST(V_EVENT_3) == 0 && ST(V_GUARD_FIGHT_DONE) < 2 && ST(L18_ARMAL_L18D90_SEEN) == 0) {
                                 ST(L18_ARMAL_L18D90_SEEN) = 1;
                                 /* 0xF4EF */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1360,7 +1360,7 @@ static void trig04(void) {
                         } else if (ST(L18_MAIN_QUEST_STAGE) == 3) {
                             ST(L18_MAIN_QUEST_STAGE) = 4;
                             /* 0xFCF1 */
-                            if (ST(L18_SORDOS_STATE) == 0 && ST(ST_VIE(P_SORDOS)) != VIE_DEAD) {
+                            if (ST(V_KONKALITE2_FIGHT) == 0 && ST(ST_VIE(P_SORDOS)) != VIE_DEAD) {
                                 /* 0xFD15 */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
                                     lieu_action_register("L18D72A", P_ARKHAN2, "SG00DIA07", "Sar_10");
@@ -1377,7 +1377,7 @@ static void trig04(void) {
                                 return;
                             }
                             /* 0xFDCF */
-                            if (ST(L18_SORDOS_STATE) != 0 && ST(ST_VIE(P_SORDOS)) != VIE_DEAD) {
+                            if (ST(V_KONKALITE2_FIGHT) != 0 && ST(ST_VIE(P_SORDOS)) != VIE_DEAD) {
                                 /* 0xFDF3 */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
                                     lieu_action_register("L18D75", P_ARKHAN2, "SG00DIA04", "Sar_10");
@@ -1396,7 +1396,7 @@ static void trig04(void) {
                                 return;
                             }
                             /* 0xFEDF */
-                            if (ST(L18_SORDOS_STATE) != 0 && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(L18_SORDOS_LOOTED) == 0) {
+                            if (ST(V_KONKALITE2_FIGHT) != 0 && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(L18_SORDOS_LOOTED) == 0) {
                                 ST(L18_SORDOS_LOOTED) = 1;
                                 /* 0xFF24 */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1503,7 +1503,7 @@ static void trig04(void) {
                         if (ST(L18_MAIN_QUEST_STAGE) >= 6 || (ST(L18_MAIN_QUEST_STAGE) >= 5 && ST(ST_VIE(P_DHORKAN11)) >= 2)) {
                             ST(L18_MAIN_QUEST_STAGE) = 7;
                             /* 0x4E5 */
-                            if (ST(L18_FINAL_REMARK_A) == 0 && ST(L18_ALERT_FLAG) == 0 && ST(V_GUARD_FIGHT_DONE) != 0) {
+                            if (ST(L18_FINAL_REMARK_A) == 0 && ST(V_ALERT_STAGE) == 0 && ST(V_GUARD_FIGHT_DONE) != 0) {
                                 /* 0x51B */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
                                     lieu_action_register("L18D84A", P_ARKHAN2, "SG00DIA06", "Sar_10");
@@ -1523,7 +1523,7 @@ static void trig04(void) {
                                 return;
                             }
                             /* 0x620 */
-                            if (ST(L18_FINAL_REMARK_B) == 0 && ST(V_GUARD_FIGHT_DONE) != 0 && ST(L18_NIGHT_FLAG) == 1) {
+                            if (ST(L18_FINAL_REMARK_B) == 0 && ST(V_GUARD_FIGHT_DONE) != 0 && ST(V_CRYSTAL_KEY_STAGE) == 1) {
                                 ST(L18_FINAL_REMARK_B) = 1;
                                 /* 0x665 */
                                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1680,7 +1680,7 @@ static void trig04(void) {
                         }
                         CB->dialogue("L18D28A", P_ARMAL);
                         /* 0xE1A */
-                        if (ST(L18_ARMAL_STAGE) >= 1) {
+                        if (ST(V_ARMAL_STAGE) >= 1) {
                             CB->dialogue("L18D28B", P_ARMAL);
                         }
                         CB->animation("G00PRE82");
@@ -1840,7 +1840,7 @@ static void trig04(void) {
                         }
                         CB->dialogue("L18D28A", P_ARMAL);
                         /* 0x166D */
-                        if (ST(L18_ARMAL_STAGE) >= 1) {
+                        if (ST(V_ARMAL_STAGE) >= 1) {
                             CB->dialogue("L18D28B", P_ARMAL);
                         }
                         CB->animation("G00PRE82");
@@ -1905,7 +1905,7 @@ static void trig04(void) {
         ST(V_EVENT_1) = 10;
         CB->evenement(1, -1);
         /* 0x197E */
-        if (ST(L18_ARMAL_STAGE) != 2) {
+        if (ST(V_ARMAL_STAGE) != 2) {
             ST(L18_FIGHT_REQ_ZONE) = 1;
             ST(ST_SCRIPT_BUSY) = 1;
             CB->animation("SP06ATT01_10");
@@ -1923,7 +1923,7 @@ static void trig04(void) {
             return;
         }
         /* 0x1A3D */
-        if (ST(L18_ARMAL_STAGE) == 2) {
+        if (ST(V_ARMAL_STAGE) == 2) {
             ST(L18_FIGHT_REQ_TRIG) = 1;
             ST(L18_ARMAL_PATROL_STEP) = 100;
             CB->stop_joindre(-P_ARMAL);
@@ -2392,7 +2392,7 @@ static void trig16(void) {
         ST(L18_MALROT2_ENCOUNTER_STEP) = 0;
         CB->stop_joindre(-P_MALROT2);
         /* 0x2CCF */
-        if (ST(ST_VIE(P_ARMAL)) == 1 && ST(L18_ARMAL_STAGE) < 2) {
+        if (ST(ST_VIE(P_ARMAL)) == 1 && ST(V_ARMAL_STAGE) < 2) {
             /* 0x2CF3 */
             if (ST(L18_MALROT2_TALK_B) == 1) {
                 lieu_action_register("L18D183A", P_MALROT2, "SP62DIA63", "SP62ARR01_10");
@@ -2412,7 +2412,7 @@ static void trig16(void) {
         }
         CB->pos_perso(ST(ST_HERO), 2805, 1970, 0x3CC6, 1, "ar", 6, 0);
         /* 0x2DF2 */
-        if (ST(ST_VIE(P_ARMAL)) == VIE_DEAD || ST(L18_ARMAL_STAGE) >= 2) {
+        if (ST(ST_VIE(P_ARMAL)) == VIE_DEAD || ST(V_ARMAL_STAGE) >= 2) {
             /* 0x2E16 */
             if (ST(ST_PLAYER_WEAPON) != 24 && ST(ST_PLAYER_WEAPON) != 77) {
                 /* 0x2E3A */
@@ -2463,7 +2463,7 @@ static void trig16(void) {
                 }
                 CB->select_pile(0, 1);
                 CB->bruitage("L08B07", 2740, 1983);
-                ST(0x140 + 4 * ST(ST_USED_VARIANT)) = 3;
+                ST(ST_VARIANT_COUNT(ST(ST_USED_VARIANT))) = 3;
                 snprintf(buf1, sizeof(buf1), "SOB77%c", (char)(ST(ST_USED_VARIANT) + 65));
                 CB->etat_objet(buf1, -1, -1, -1, -1, -1, -1, -2, 3);
                 snprintf(buf2, sizeof(buf2), "OB24%c", (char)(ST(ST_USED_VARIANT) + 65));
@@ -2676,11 +2676,11 @@ static void trig25(void) {
 static void trig41(void) {
     CB->animation("Sar_10");
     /* 0x8198 */
-    if (ST(L18_ARMAL_STAGE) < 2) {
+    if (ST(V_ARMAL_STAGE) < 2) {
         CB->divers_empile(DV_MUSIC, 1, 1);
     }
     /* 0x81BC */
-    if (ST(L18_ARMAL_STAGE) >= 2) {
+    if (ST(V_ARMAL_STAGE) >= 2) {
         CB->divers_empile(DV_MUSIC, 2, 1);
     }
     /* 0x81E0 */
@@ -2709,7 +2709,7 @@ static void trig41(void) {
     /* 0x8322 */
     if (ST(L18_MALROT_CHASE_STAGE) != 2 && ST(L18_MALROT2_FIGHT_STARTED) == 0) {
         /* 0x8343 */
-        if (ST(L18_ARMAL_STAGE) < 2 && ST(ST_VIE(P_ARMAL)) == 1) {
+        if (ST(V_ARMAL_STAGE) < 2 && ST(ST_VIE(P_ARMAL)) == 1) {
             CB->bloque(BLOQUE_ALL);
             /* 0x8372 */
             if (ST(L18_ARMAL_INTRO_STAGE) == 1) {
@@ -2726,7 +2726,7 @@ static void trig41(void) {
             CB->evenement(1, 3000);
         }
         /* 0x8415 */
-        if (ST(L18_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1) {
+        if (ST(V_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1) {
             CB->bloque(BLOQUE_ALL);
             /* 0x8444 */
             if (ST(L18_ARMAL_INTRO_STAGE) == 2) {
@@ -2772,13 +2772,13 @@ static void trig41(void) {
         CB->joindre(-ST(ST_HERO), 0, 0, 0, P_MALROT6);
         CB->joindre(-P_ARMAL, 0, 0, 0, ST(ST_HERO));
         /* 0x86A6 */
-        if (ST(L18_ARMAL_STAGE) == 2) {
+        if (ST(V_ARMAL_STAGE) == 2) {
             lieu_action_register("L18D192A", P_ARMAL, "SP06DIA58", "SP06ARR01_10");
             lieu_action_register("L18D192B", P_ARMAL, "SP06DIA58", "SP06ARR01_10");
         }
         /* 0x86EA */
-        if (ST(L18_ARMAL_STAGE) != 2) {
-            ST(L18_ARMAL_STAGE) = 2;
+        if (ST(V_ARMAL_STAGE) != 2) {
+            ST(V_ARMAL_STAGE) = 2;
             lieu_action_register("L18D193A", P_ARMAL, "SP06DIA54", "SP06ARR01_10");
             lieu_action_register("L18D193B", P_ARMAL, "SP06ATT60", "SP06ARR01_10");
             lieu_action_register("L18D193C", P_ARMAL, "SP06DIA58", "SP06ARR01_10");

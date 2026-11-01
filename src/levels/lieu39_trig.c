@@ -248,11 +248,11 @@ static void trig02(void) {
                         lieu_action_register("L39D23B", P_ARKHAN2, "SG02DIA07", NULL);
                         lieu_action_register("L39D23C", P_ARKHAN2, "SG02DIA01", NULL);
                         /* 0x284C */
-                        if (ST(L39_FATHER_INFECTED) != 0) {
+                        if (ST(V_EVENT_3) != 0) {
                             lieu_action_register("L39D24", P_ARKHAN2, "SG02DIA04", NULL);
                         }
                         /* 0x2874 */
-                        if (ST(L39_ZED_INFECTED) != 0) {
+                        if (ST(V_EVENT_4) != 0) {
                             lieu_action_register("L39D25", P_ARKHAN2, "SG02DIA04", NULL);
                         }
                         lieu_action_register("L39D26A", P_ARKHAN2, "SG02DIA08", NULL);
@@ -273,7 +273,7 @@ static void trig02(void) {
                             lieu_action_register("L39D33A", P_ARKHAN2, "SG02DIA07", NULL);
                             lieu_action_register("L39D33B", P_ARKHAN2, "SG02DIA06", NULL);
                             /* 0x2992 */
-                            if (ST(L39_NOTES_QUEST) != 2) {
+                            if (ST(V_CRYSTAL_KEY_STAGE) != 2) {
                                 lieu_action_register("L39D34A", P_ARKHAN2, "SG02DIA01", NULL);
                                 lieu_action_register("L39D34B", P_ARKHAN2, "SG02DIA04", NULL);
                             }
@@ -283,7 +283,7 @@ static void trig02(void) {
                             lieu_action_register("L39D35A", P_ARKHAN2, "SG02DIA07", NULL);
                             lieu_action_register("L39D35B", P_ARKHAN2, "SG02DIA06", NULL);
                             /* 0x2A0E */
-                            if (ST(L39_NOTES_QUEST) != 2) {
+                            if (ST(V_CRYSTAL_KEY_STAGE) != 2) {
                                 lieu_action_register("L39D36A", P_ARKHAN2, "SG02DIA01", NULL);
                                 lieu_action_register("L39D36B", P_ARKHAN2, "SG02DIA04", NULL);
                             }
@@ -351,11 +351,11 @@ static void trig02(void) {
                         lieu_action_register("L39D47G", P_LEONA, "SP14DIA51", "SP14ARR01");
                         lieu_action_register("L39D47H", P_LEONA, "SP14DIA53", "SP14ARR01");
                         /* 0x2E50 */
-                        if (ST(L39_FATHER_INFECTED) != 0) {
+                        if (ST(V_EVENT_3) != 0) {
                             lieu_action_register("L39D48", P_ARKHAN2, "SG02DIA03", NULL);
                         }
                         /* 0x2E78 */
-                        if (ST(L39_ZED_INFECTED) != 0) {
+                        if (ST(V_EVENT_4) != 0) {
                             lieu_action_register("L39D49", P_ARKHAN2, "SG02DIA03", NULL);
                         }
                         lieu_action_register("L39D50", P_ARKHAN2, "SG02DIA04", NULL);
@@ -388,11 +388,11 @@ static void trig02(void) {
                         lieu_action_register("L39D59B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D59C", P_LEONA, "SP14DIA58", "SP14ARR01");
                         /* 0x3070 */
-                        if (ST(L39_FATHER_INFECTED) != 0) {
+                        if (ST(V_EVENT_3) != 0) {
                             lieu_action_register("L39D60", P_LEONA, "SP14DIA51", "SP14ARR01");
                         }
                         /* 0x309B */
-                        if (ST(L39_ZED_INFECTED) != 0) {
+                        if (ST(V_EVENT_4) != 0) {
                             lieu_action_register("L39D61", P_LEONA, "SP14DIA51", "SP14ARR01");
                         }
                         ST(L39_ARKHAN2_TALK) = 6;
@@ -552,7 +552,7 @@ static void trig02(void) {
                 lieu_action_register("L39D99", P_ARKHAN2, "SG02PRE80", "SG02PRE81");
                 lieu_action_register("L39D100", P_LEONA, "SP14DIA50", "SP14ARR01");
                 /* 0x3A00 */
-                if (ST(L39_NOTES_QUEST) != 2) {
+                if (ST(V_CRYSTAL_KEY_STAGE) != 2) {
                     lieu_action_register("L39D101", P_LEONA, "SP14DIA50", "SP14ARR01");
                 }
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));
@@ -626,11 +626,11 @@ static void trig02(void) {
                         lieu_action_register("L39D29B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D29C", P_ARKHAN3, "SG03DIA04", NULL);
                         /* 0x3E12 */
-                        if (ST(L39_FATHER_INFECTED) != 0) {
+                        if (ST(V_EVENT_3) != 0) {
                             lieu_action_register("L39D30", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         /* 0x3E3A */
-                        if (ST(L39_ZED_INFECTED) != 0) {
+                        if (ST(V_EVENT_4) != 0) {
                             lieu_action_register("L39D31", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         lieu_action_register("L39D32A", P_ARKHAN3, "SG03DIA04", NULL);
@@ -651,7 +651,7 @@ static void trig02(void) {
                         lieu_action_register("L39D38B", P_ARKHAN3, "SG03DIA04", NULL);
                         lieu_action_register("L39D38C", P_ARKHAN3, "SG03DIA04", NULL);
                         /* 0x3F72 */
-                        if (ST(L39_NOTES_QUEST) != 2) {
+                        if (ST(V_CRYSTAL_KEY_STAGE) != 2) {
                             lieu_action_register("L39D39A", P_ARKHAN3, "SG03DIA04", NULL);
                             lieu_action_register("L39D39B", P_ARKHAN3, "SG03DIA04", NULL);
                         }
@@ -709,11 +709,11 @@ static void trig02(void) {
                         lieu_action_register("L39D47G", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D47H", P_LEONA, "SP14DIA53", "SP14ARR01");
                         /* 0x434E */
-                        if (ST(L39_FATHER_INFECTED) != 0) {
+                        if (ST(V_EVENT_3) != 0) {
                             lieu_action_register("L39D52", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         /* 0x4376 */
-                        if (ST(L39_ZED_INFECTED) != 0) {
+                        if (ST(V_EVENT_4) != 0) {
                             lieu_action_register("L39D53", P_ARKHAN3, "SG03DIA04", NULL);
                         }
                         lieu_action_register("L39D54", P_ARKHAN3, "SG03DIA04", NULL);
@@ -738,11 +738,11 @@ static void trig02(void) {
                         lieu_action_register("L39D59B", P_LEONA, "SP14DIA53", "SP14ARR01");
                         lieu_action_register("L39D59C", P_LEONA, "SP14DIA50", "SP14ARR01");
                         /* 0x451E */
-                        if (ST(L39_FATHER_INFECTED) != 0) {
+                        if (ST(V_EVENT_3) != 0) {
                             lieu_action_register("L39D60", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         /* 0x4549 */
-                        if (ST(L39_ZED_INFECTED) != 0) {
+                        if (ST(V_EVENT_4) != 0) {
                             lieu_action_register("L39D61", P_LEONA, "SP14DIA50", "SP14ARR01");
                         }
                         ST(L39_ARKHAN3_TALK) = 6;
@@ -886,7 +886,7 @@ static void trig02(void) {
                 lieu_action_register("L39D106", P_ARKHAN3, "SG03PRE80", "SG03PRE81");
                 lieu_action_register("L39D100", P_LEONA, "SP14DIA50", "SP14ARR01");
                 /* 0x4E16 */
-                if (ST(L39_NOTES_QUEST) != 2) {
+                if (ST(V_CRYSTAL_KEY_STAGE) != 2) {
                     lieu_action_register("L39D101", P_LEONA, "SP14DIA50", "SP14ARR01");
                 }
                 CB->joindre_perm(-P_LEONA, ST(ST_HERO));

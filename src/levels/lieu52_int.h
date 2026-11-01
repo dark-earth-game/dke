@@ -25,6 +25,5 @@ void l52_trig00(void);
 #define L52_UNUSED_BC              0xBC  /* scratch; only zeroed by trigger 0 */
 #define L52_ENDING_VISIT           0xEC  /* 1 = arrived at the end of the game (start point 1; exit trigger 15 ends the game), 0 = normal visit (exit to room 2) */
 #define L52_STORY_STAGE            0xE3C  /* game-wide story stage; reset to 0 for the ending visit */
-#define L52_NO_DEATH_ENDING        0xE8C  /* 1 = INIT skips the dead-hero ending even if the hero is dead */
 
 #endif /* DKE_LIEU52_INT_H */

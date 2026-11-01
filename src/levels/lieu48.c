@@ -450,11 +450,11 @@ static void tick_body(void) {
     if (ST(L48_KALHI_STORY_STAGE) != 8 && ST(ST_VIE(P_MALROT3)) == 0 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) < 0x960 && ST(L48_MALROT7_ALERT) == 0 && ST(ST_VIE(P_MALROT7)) < 2 && ST(V_ENGAGED_PERSONA) != 0x6700) {
         ST(L48_MALROT7_ALERT) = 1;
         /* 0x9BC1 */
-        if (ST(L48_STORY_CHAPTER) < 2) {
+        if (ST(V_ARMAL_STAGE) < 2) {
             CB->animation("SP67SIF01");
         }
         /* 0x9BDE */
-        if (ST(L48_STORY_CHAPTER) >= 2) {
+        if (ST(V_ARMAL_STAGE) >= 2) {
             CB->animation("SP67SIF02");
         }
         CB->animation("P67ARR01_10");
@@ -556,7 +556,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L48_ENDING_PLAYED) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l48_trig00();   /* 0x1000E589: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

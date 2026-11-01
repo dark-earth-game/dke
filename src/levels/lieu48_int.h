@@ -43,11 +43,8 @@ void l48_trig00(void);
 #define L48_DOOR_COMMENT_SAID          0x0DC   /* 0 = first locked-door comment (L48D666/667), 1 = repeat (L48D668/669) */
 #define L48_UNUSED_F0                  0x0F0   /* only reset at INIT */
 #define L48_KALHI_STORY_STAGE          0xBBC   /* Kalhi13 chase chapter (shared with levels 15, 19, 49, 54): 8 = Kalhi/Malrot3 duo here, 9 = Malrot3 dead, 20 = Kalhi dead */
-#define L48_STORY_CHAPTER              0xBC8   /* story chapter; >=2 selects the later Malrot7 growl animation */
 #define L48_SCENE_STAGE                0xC30   /* Kalhi/Malrot3 scene: 0 start, 1 idle chatter, 2 cinematic, 3 Kalhi alone, 4 Kalhi dead, 10 left room, 100 hostile */
 #define L48_KONKALITE_D01_SAID         0xC5C   /* 1 once L48D01 (Konkalite5) said */
-#define L48_ENDING_PLAYED              0xE8C   /* 1 = death ending already played (test at INIT); 2 -> 10 on entry */
-#define L48_MAIN_PROGRESS              0xE98   /* main story counter shared by many levels; 2 = Konkalite5 line pending */
 #define L48_COL10_OPENED               0xF0C   /* 1 once collision 10 was lifted on the first pass through the door */
 #define L48_MALROT7_MODE               0xF10   /* 0 = absent, 1 = at his post (idle), 2 = alerted / hostile */
 

@@ -239,7 +239,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L11_ENDING_OVERRIDE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l11_trig00();   /* 0x1000B529: call sub_10001078 -> sub_10007463 */
         return 0;
     }

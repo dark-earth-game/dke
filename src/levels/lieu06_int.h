@@ -31,9 +31,6 @@
 #define L06_DHORKAN_POS_Y        0x0D8   /* Dhorkan11 position Y saved at the chase start */
 #define L06_TAUNT_INDEX          0x0DC   /* next Dhorkan11 taunt line 0..5 (wraps) */
 #define L06_E0_FLAG              0x0E0   /* trigger 4 one-shot flag 0/1 */
-#define L06_EVENT_6              0x338   /* event 6 step (0x320 + 4*6); set with EVENT_10 by the Guardian4 check */
-#define L06_EVENT_10             0x348   /* event 10 step (0x320 + 4*10) */
-#define L06_DHORKAN_MET          0x358   /* Dhorkan11 first meeting: 0 not yet, 2 happened */
 #define L06_UNUSED_35C           0x35C   /* never read, only cleared at INIT */
 #define L06_D51_SAID             0x4FC   /* 1 = L06D51A..C / L06D209B..210 said */
 #define L06_D55C_SAID_A          0x5CC   /* 1 = L06D55C said in zone 6 */
@@ -45,13 +42,9 @@
 #define L06_DHORKAN_STORY        0x740   /* Dhorkan11 story stage 0..5 (selects the L06D43/44/49 lines) */
 #define L06_D82_FLAG             0x7C0   /* 1 = L06D82 scene played */
 #define L06_TAUNT_VARIANT        0x944   /* nonzero selects taunt variant B (L06D18C..) */
-#define L06_RETURN_PHASE         0xAF8   /* 0 first pass, 1 return pass */
 #define L06_D66_STAGE            0xB1C   /* L06D66/68/69 stage 0/1 */
 #define L06_ROOM_STAGE_B34       0xB34   /* stage of the room 6 events: 1, 2 (selects exit/entry variants) */
-#define L06_FLAG_B4C             0xB4C   /* read only: >= 3 changes the L06D82 scene (written by other rooms) */
-#define L06_GUARDIAN4_STATE      0xB98   /* Guardian4 encounter state: 2 -> reset to 0 while he is alive, 4 with AF8==1 sets events 6/10 */
 #define L06_FLAG_CA0             0xCA0   /* read only: == 5 enables L06D669/L06D82 variant */
-#define L06_FORCE_DEFAULT_INIT   0xE8C   /* 1 = run default INIT even when the hero is dead */
 #define L06_FLAG_EB0             0xEB0   /* read only: nonzero changes the zone 4 talk */
 #define L06_PHEDORIA_FIGHT       0xEB8   /* Phedoria/Dhorkan11 guard stage: < 2 = fight not over, 2 = over */
 #define L06_FLAG_F24             0xF24   /* read only: compared with 2 for L06D669 */

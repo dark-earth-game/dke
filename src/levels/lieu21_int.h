@@ -32,8 +32,6 @@ void l21_trig00(void);
 #define L21_LORY_ARRIVED_TIME              0x0A8   /* game time Lory reached zone 11; -666 when INIT re-enters with Lory mid-walk */
 #define L21_MUSIC_START_TIME               0x0B8   /* game time the current music track started */
 #define L21_CAMERA_STATE                   0x0E0   /* exit-zone 20 camera: 0 free, 1 locked; also the shout target: 18 = Sunseer18, 19 = Sunseer19, 99 = shout disabled */
-#define L21_RYLSADHAR_ARRIVAL              0x32C   /* 1 = Rylsadhar21 came with the Arkhan2 route, 5 = walked on to room 22, 0 none */
-#define L21_ZED_ARRIVAL                    0x330   /* 1 = Zed27 came with the Arkhan3 route, 5 = walked on to room 22, 0 none */
 #define L21_SUNSEER1_STATE                 0x85C   /* Sunseer18 patrol: 0 wandering, 1 following the hero, 2 walking to the hero, 5 talk starting */
 #define L21_TALK_SUNSEER1_A1               0x860   /* Arkhan1 conversation stage with Sunseer18 (special mode on), 0..2 */
 #define L21_TALK_SUNSEER1_A2               0x864   /* Arkhan2 conversation stage with Sunseer18, 0..2 */
@@ -44,15 +42,10 @@ void l21_trig00(void);
 #define L21_THANANDAR_SCENE                0x878   /* 1 once the Thanandar25 arrival cutscene started (guard fight stage 1) */
 #define L21_TALK_SUNSEER1_A3               0x87C   /* Arkhan3 conversation stage with Sunseer18, 0..1 */
 #define L21_TALK_SUNSEER2                  0x884   /* conversation stage with Sunseer19, 0..2 (2 = hostile line L21D84B) */
-#define L21_STORY_ADVANCED                 0xAF8   /* 1 = later story phase, set by start points 2, 3, 5 and 6 */
 #define L21_RED_KEY_STAGE                  0xB28   /* red key door at the cell: 0 first try, 1 second, 2 third (L21D57/58/59) */
-#define L21_SUNSEER2_STAGE                 0xB38   /* Sunseer19 presence after the fight: 0 absent, 1 or 2 present (comment variants L21D81/82), 5 gone */
-#define L21_ALERT_STAGE                    0xB3C   /* 0 = calm (music 1), 1 = alarm after the break-in, 2 = alarm and exit zones 16/20 open */
 #define L21_LORY_SCENE_ARMED               0xB58   /* 1 = after the fight the Lory/Phedoria events 2/34/35 may run */
 #define L21_AFTERMATH_STAGE                0xB88   /* after the guard fight: 1 = Lory and Phedoria to be placed, 2 = placed, 3 = cutscene started (also L01 start points) */
 #define L21_SUNSEER1_FATE                  0xE24   /* Sunseer18: 0 alive and unseen, 1 seen, 2 dead */
-#define L21_DEATH_ENDING_DONE              0xE8C   /* 1 = death ending already played, INIT runs the normal setup (same slot in every level) */
-#define L21_PASSAGE_OPEN                   0xF38   /* 1 = the way to room 22 is open after the fight; zone 20 then changes room */
 #define L21_THANANDAR_KNOCKED_OUT          0xF64   /* set to 1 when the hero was beaten down by Thanandar25 (L21D71 scene) */
 
 #endif /* DKE_LIEU21_INT_H */

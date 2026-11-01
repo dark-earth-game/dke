@@ -296,6 +296,9 @@ enum {
                                      still sees the room it came from */
 #define ST_SCRIPT_BUSY    0x030
 #define ST_USED_VARIANT   0x128   /* dword_505D68: held item letter - 'A' */
+/* dword_505D80[v]: per-variant charge counter of the used item (OB24 alcohol,
+ * OB77 ...); the engine reads the held variant's as ST(ST_VARIANT_COUNT(ST(ST_USED_VARIANT))). */
+#define ST_VARIANT_COUNT(v) (0x140 + 4 * (v))
 #define ST_VIE(id)        (0x190 + (id) * 4)   /* persona state, id >= 4 */
 #define ST_HERO           0x194   /* current hero persona; 4 = dead */
 #define ST_SPECIAL_MODE   0x198   /* dword_505DD8: Tab walk-set toggle */

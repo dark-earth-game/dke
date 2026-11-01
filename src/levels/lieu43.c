@@ -406,7 +406,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L43_NO_DEATH_ENDING) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l43_trig00();   /* 0x1000A2E9: call sub_10001073 -> trig00_10001200 */
         return 0;
     }

@@ -19,7 +19,6 @@
 #define L35_OB72_EXAMINED                0x698   /* 0 = first examine (SG00PRE08, L35D21/22, OB72 state -3), 1 = repeat examine (SG00PRE09, L35D19/20) */
 #define L35_GUARD92_SEEN                 0x908   /* 0 = guard 92 not triggered yet (parked far away at z 75600), 1 = triggered, placed at z 6903/7560 */
 #define L35_MALROT_STAGE                 0xC28   /* Malrot6 / hostile stage: 0 or 10 idle, 2 start-point preset, 3 Malrot6 already placed with OB90 (shared with other levels) */
-#define L35_DEATH_ENDING_BYPASS          0xE8C   /* 1 = hero death does not play the death ending in INIT (runs trigger 0 instead); shared flag */
 #define L35_STORY_STAGE                  0xF24   /* story stage; 3 forces Malrot6 present (shared with other levels) */
 #define L35_TIMER2_MS                    0xF40   /* 1200000 ms (20 min) countdown value seeded by trigger 0, next to V_HUD_TIMER_MS (600000) */
 

@@ -12,7 +12,6 @@
 /* ST() reads g_lvl_S, the DLL's dword_10022A8C. */
 
 /* Script variables of level 4: state block slots this level reuses as its own scratch (not game-wide). */
-#define L04_FRAME_COUNTER       0x038   /* engine frame counter; scripts throttle with % 20 */
 #define L04_HERO_WALK_STEP      0x04C   /* hero walk scripted after the arrival scene: 1 queued, 0x63 walking, 0 done */
 #define L04_D212_SAID           0x064   /* 1 = L04D10 sound + L04D212 line already played */
 #define L04_ARRIVAL_STEP        0x068   /* arrival cutscene step 1..6 (Kalhi13 walks to the hero, L04D03A/B) */
@@ -43,18 +42,12 @@
 #define L04_D213_SAID           0x8EC   /* 1 = L04D213A/B said */
 #define L04_KALHI_CHAT_STAGE    0x948   /* Kalhi chatter lines L04D07..09, 0..2 */
 #define L04_GUARD_TALK_STATE    0xAE4   /* guard talk state: 0 first, 1 Guardian2 done, 0x29A/0x29B Guardian25 lines */
-#define L04_RETURN_PHASE        0xAF8   /* 0 first pass, 1 return pass */
-#define L04_KALHI_RECRUIT       0xB40   /* Kalhi recruit stage: 0 none, 1 Guardian2 guard, 2 Kalhi rescued, 3 recruited, 4 Guardian25 path */
 #define L04_ARRIVAL_PATH        0xBD0   /* arrival path: 1 first arrival, 2 second (promotes B40 0 -> 1) */
 #define L04_G25_INTRO_DONE      0xD48   /* 1 = Guardian25 first patrol finished and camera released */
 #define L04_KONKALITE_STAGE     0xE30   /* Konkalite6 stage: 1 fight begun, 3 killed */
 #define L04_FLAG_E3C            0xE3C   /* set to 1 by start point 2, used by later rooms */
-#define L04_COMPANION_KILLED    0xE58   /* 1 = Kalhi13/33 killed */
-#define L04_FORCE_DEFAULT_INIT  0xE8C   /* 1 = run default INIT even when the hero is dead */
 #define L04_GUARD2_LINES        0xE90   /* Guardian2 lines L04D10/11 stage 0, 1, 2 */
-#define L04_KALHI_COMPANION     0xE9C   /* companion state, set to 6 by start points */
 #define L04_ARENA_ON            0xEA0   /* 1 = Konkalite6 arena active (gate anim 0), 0 = normal (anim 1) */
-#define L04_TERMINAL_USES       0xED0   /* terminal use count 0..5 */
 #define L04_TERMINAL_USED       0xED8   /* 1 = terminal used */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu04_trig.c). */

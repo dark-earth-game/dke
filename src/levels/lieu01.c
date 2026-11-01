@@ -777,7 +777,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L01_FORCE_DEFAULT_INIT) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l01_trig00();   /* sub_10001073 default path */
     } else {
         CB->divers_empile(DV_SCREEN, 1, 0);

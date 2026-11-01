@@ -75,12 +75,12 @@ void l14_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(14)) == 1) {
         ST(L14_CAMERA2_ENTERED) = 0;
-        ST(L14_GUARD_ARC_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         /* 0x7432 */
         /* 0x7432: empty in the DLL (both branches jump to 0x743D) */
         if (ST(V_GUARD_FIGHT_DONE) != 2) {
         }
-        ST(L14_KALHI_QUEST_STAGE) = 10;
+        ST(V_KALHI_PHASE) = 10;
         ST(ST_HERO) = P_ARKHAN3;
         ST(ST_VIE(P_KALHI13)) = 1;
         /* 0x7473 */
@@ -93,7 +93,7 @@ void l14_trig00(void) {
     if (ST(ST_START_POINT(14)) == 2) {
         ST(L14_CAMERA2_ENTERED) = 0;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L14_GUARD_ARC_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(ST_HERO) = P_ARKHAN2;
         /* 0x7509 */
         if (ST(ST_LEVEL) != 15 && ST(ST_LEVEL) != 19 && ST(ST_LEVEL) != 46) {
@@ -123,7 +123,7 @@ void l14_trig00(void) {
     if (ST(ST_START_POINT(14)) == 5) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L14_DELIA_PRESENT) = 1;
+        ST(V_DELIA_GONE) = 1;
         ST(ST_LEVEL) = 19;
         ST(ST_VIE(P_MALROT1)) = VIE_DEAD;
         ST(ST_VIE(P_MALROT4)) = VIE_DEAD;
@@ -132,7 +132,7 @@ void l14_trig00(void) {
     if (ST(ST_START_POINT(14)) == 6) {
         ST(L14_CAMERA2_ENTERED) = 0;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L14_GUARD_ARC_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_DELIA_PHASE) = 1;
         /* 0x76E9 */
@@ -272,8 +272,8 @@ void l14_trig00(void) {
         ST(ST_VIE(P_THANANDAR24)) = 4;
     }
     /* 0x7FC8 */
-    if (ST(L14_PLOT_B38) == 2) {
-        ST(L14_PLOT_B38) = 3;
+    if (ST(V_LORY_STAGE) == 2) {
+        ST(V_LORY_STAGE) = 3;
     }
     /* 0x7FE9 */
     if (ST(ST_VIE(P_DHORKAN11)) == VIE_DEAD && ST(L14_PLOT_F78) == 0) {
@@ -291,11 +291,11 @@ void l14_trig00(void) {
     /* 0x8088 */
     if (ST(ST_LEVEL) == 10) {
         /* 0x809A */
-        if (ST(L14_KALHI_QUEST_STAGE) != 10) {
+        if (ST(V_KALHI_PHASE) != 10) {
             CB->pos_perso(ST(ST_HERO), 4445, 852, 0x41A0, 1, "ar", 1, 0);
         }
         /* 0x80D7 */
-        if (ST(L14_KALHI_QUEST_STAGE) == 10) {
+        if (ST(V_KALHI_PHASE) == 10) {
             CB->pos_perso(ST(ST_HERO), 4573, 562, 0x518, 1, "ar", 1, 0);
         }
     }
@@ -325,11 +325,11 @@ void l14_trig00(void) {
         CB->pos_perso(P_MALROT4, 5592, 1439, 0x2D9D, 1, "P64ARR01", 2, 1);
     }
     /* 0x8318 */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_VIE(P_MALROT4)) != VIE_DEAD && ST(V_DELIA_PHASE) != 3 && ST(V_DELIA_PHASE) != 4 && ST(L14_DELIA_KILLED_14) != 1 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_VIE(P_MALROT4)) != VIE_DEAD && ST(V_DELIA_PHASE) != 3 && ST(V_DELIA_PHASE) != 4 && ST(L14_DELIA_KILLED_14) != 1 && ST(V_DELIA_GONE) == 0) {
         CB->pos_perso(P_MALROT4, 5592, 1439, 0x2D9D, 1, "P64ARR01", 2, 1);
     }
     /* 0x83A9 */
-    if (ST(L14_DELIA_PRESENT) == 1 && ST(ST_VIE(35)) != VIE_DEAD) {
+    if (ST(V_DELIA_GONE) == 1 && ST(ST_VIE(35)) != VIE_DEAD) {
         CB->ajoute_zone(40, 4520, 701, 605, 613, 0);
         /* 0x83EE */
         if (ST(L14_PERSONA35_ENGAGED) == 0) {
@@ -364,7 +364,7 @@ void l14_trig00(void) {
         }
     }
     /* 0x856B */
-    if (ST(L14_FIGHT_STARTED) == 1 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(L14_FIGHT_STARTED) == 1 && ST(V_DELIA_GONE) == 0) {
         /* 0x858F */
         if (ST(ST_VIE(P_MALROT4)) != VIE_DEAD && ST(L14_DELIA_KILLED_14) != 1 && ST(V_DELIA_PHASE) != 3 && ST(V_DELIA_PHASE) != 4) {
             /* 0x85D4 */
@@ -405,20 +405,20 @@ void l14_trig00(void) {
         }
     }
     /* 0x879B */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L14_DELIA_PRESENT) == 0 && ST(L14_FIGHT_STARTED) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_DELIA_GONE) == 0 && ST(L14_FIGHT_STARTED) == 0) {
         CB->pos_perso(P_MALROT1, 3649, 1268, 0xE98, 1, "P61ATT04", 0x18, 0);
         CB->evenement(2, 2000);
         CB->retire_zone(19);
     }
     /* 0x8811 */
-    if (ST(L14_KALHI_QUEST_STAGE) == 10 && ST(L14_PROVIDER_ACTIVE) == 0 && ST(ST_VIE(P_KALHI13)) != VIE_DEAD) {
+    if (ST(V_KALHI_PHASE) == 10 && ST(L14_PROVIDER_ACTIVE) == 0 && ST(ST_VIE(P_KALHI13)) != VIE_DEAD) {
         CB->vire_col(0x1A, 0);
         CB->evenement(0x28, 300000);
-        ST(L14_KALHI_QUEST_STAGE) = 40;
+        ST(V_KALHI_PHASE) = 40;
         CB->pos_perso(P_KALHI13, 4321, 745, 0xB0B1, 1, "P13ARR01", 4, 0);
     }
     /* 0x8898 */
-    if (ST(ST_VIE(P_MALROT4)) == VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(ST_VIE(P_MALROT4)) == VIE_DEAD && ST(V_GUARD_FIGHT_DONE) != 2 && ST(V_DELIA_GONE) == 0) {
         /* 0x88CE */
         if (ST(L14_MALROT4_ENGAGED) == 0) {
             ST(L14_MALROT4_ENGAGED) = 1;
@@ -448,8 +448,8 @@ void l14_trig00(void) {
     if (ST(V_DELIA_PHASE) == 3 && ST(ST_VIE(P_DELIA)) != VIE_DEAD) {
         CB->pos_perso(P_DELIA, 3756, 2073, 0x7BC3, 1, "P10ARR01", 0x21, 0);
         /* 0x8A5A */
-        if (ST(L14_RETURN_ROOM_STEP) == 0) {
-            ST(L14_RETURN_ROOM_STEP) = 1;
+        if (ST(V_ROUTE_STAGE) == 0) {
+            ST(V_ROUTE_STAGE) = 1;
         }
     }
     /* 0x8A7B */
@@ -468,7 +468,7 @@ void l14_trig00(void) {
         }
     }
     /* 0x8B63 */
-    if (ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(V_DELIA_KILLED) == 14 && ST(L14_DELIA_PRESENT) == 0 && ST(L14_DELIA_KILLED_14) == 1) {
+    if (ST(ST_VIE(P_DELIA)) == VIE_DEAD && ST(V_DELIA_KILLED) == 14 && ST(V_DELIA_GONE) == 0 && ST(L14_DELIA_KILLED_14) == 1) {
         CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 2, "P10cad", 0x21, 0);
     }
     /* 0x8BFB */
@@ -480,15 +480,15 @@ void l14_trig00(void) {
         ST(L14_PLOT_E24) = 3;
     }
     /* 0x8C4F */
-    if (ST(L14_PLOT_EF8) == 2 || ST(L14_PLOT_EF8) == 3) {
-        ST(L14_PLOT_EF8) = 10;
+    if (ST(V_CHASE_ROUTE) == 2 || ST(V_CHASE_ROUTE) == 3) {
+        ST(V_CHASE_ROUTE) = 10;
         /* 0x8C82 */
         if (ST(ST_VIE(29)) != VIE_DEAD) {
             ST(L14_PLOT_F24) = 5;
         }
     }
     /* 0x8CA3 */
-    if (ST(L14_PLOT_B10) != 0 && ST(L14_FLAG_E74) == 0) {
+    if (ST(V_CRYSTAL_KEY_STAGE) != 0 && ST(L14_FLAG_E74) == 0) {
         ST(L14_FLAG_E74) = 1;
     }
     /* 0x8CD6 */
@@ -1965,15 +1965,15 @@ static void trig08(void) {
             }
             ST(ST_LEVEL) = 14;
             /* 0xDC1 */
-            if (ST(L14_RETURN_ROOM_STEP) == 0) {
+            if (ST(V_ROUTE_STAGE) == 0) {
                 CB->change_piece(10, 1);
             }
             /* 0xDE3 */
-            if (ST(L14_RETURN_ROOM_STEP) == 1) {
+            if (ST(V_ROUTE_STAGE) == 1) {
                 CB->change_piece(10, 2);
             }
             /* 0xE05 */
-            if (ST(L14_RETURN_ROOM_STEP) == 2) {
+            if (ST(V_ROUTE_STAGE) == 2) {
                 CB->change_piece(10, 3);
             }
         }
@@ -2068,15 +2068,15 @@ static void trig08(void) {
         }
         ST(ST_LEVEL) = 14;
         /* 0x11F5 */
-        if (ST(L14_RETURN_ROOM_STEP) == 0) {
+        if (ST(V_ROUTE_STAGE) == 0) {
             CB->change_piece(10, 1);
         }
         /* 0x1217 */
-        if (ST(L14_RETURN_ROOM_STEP) == 1) {
+        if (ST(V_ROUTE_STAGE) == 1) {
             CB->change_piece(10, 2);
         }
         /* 0x1239 */
-        if (ST(L14_RETURN_ROOM_STEP) == 2) {
+        if (ST(V_ROUTE_STAGE) == 2) {
             CB->change_piece(10, 3);
         }
     }
@@ -2275,7 +2275,7 @@ static void trig17(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x1A9A */
-        if (ST(V_GUARD_FIGHT_DONE) != 2 || (ST(L14_DELIA_PRESENT) == 1 && ST(V_GUARD_FIGHT_DONE) == 2)) {
+        if (ST(V_GUARD_FIGHT_DONE) != 2 || (ST(V_DELIA_GONE) == 1 && ST(V_GUARD_FIGHT_DONE) == 2)) {
             /* 0x1AD0 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->dialogue("L14D100", P_ARKHAN2);
@@ -2294,7 +2294,7 @@ static void trig17(void) {
             }
         }
         /* 0x1B66 */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L14_DELIA_PRESENT) != 1) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_DELIA_GONE) != 1) {
             /* 0x1B8A */
             if (ST(L14_MALROT1_STORY_STAGE) != 2) {
                 /* 0x1B9C */
@@ -3466,7 +3466,7 @@ static void trig41(void) {
         CB->divers_empile(DV_MUSIC, 2, 1);
     }
     /* 0x8CE6 */
-    if (ST(V_SAVED_HERO) != ST(ST_HERO) && ST(V_DELIA_PHASE) == 4 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(V_SAVED_HERO) != ST(ST_HERO) && ST(V_DELIA_PHASE) == 4 && ST(V_DELIA_GONE) == 0) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x8D33 */
@@ -3499,7 +3499,7 @@ static void trig41(void) {
         CB->bloque(BLOQUE_NONE);
     }
     /* 0x8E7C */
-    if (ST(L14_PROVIDER_ACTIVE) == 0 && ST(L14_DELIA_PRESENT) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
+    if (ST(L14_PROVIDER_ACTIVE) == 0 && ST(V_DELIA_GONE) == 0 && ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->bloque(BLOQUE_ALL);
         /* 0x8EBD */
         if (ST(ST_VIE(P_KALHI13)) == 1 && ST(ST_VIE(P_DANRYS)) != VIE_DEAD) {
@@ -3515,7 +3515,7 @@ static void trig41(void) {
         ST(L14_DELIA_FOLLOW_ON) = 1;
     }
     /* 0x8F72 */
-    if (ST(L14_FIGHT_STARTED) == 1 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(L14_FIGHT_STARTED) == 1 && ST(V_DELIA_GONE) == 0) {
         /* 0x8F96 */
         if (ST(V_GUARD_FIGHT_DONE) != 2 && ST(ST_VIE(P_MALROT4)) != VIE_DEAD) {
             ST(V_ENGAGED_PERSONA) = P_MALROT4;

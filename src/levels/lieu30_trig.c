@@ -66,15 +66,15 @@ void l30_trig00(void) {
     if (ST(ST_START_POINT(30)) == 1) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
-        ST(L30_ARKHAN23_PART) = 1;
+        ST(V_RETURN_PART) = 1;
     }
     /* 0x7450 */
     if (ST(ST_START_POINT(30)) == 2) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 48;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L30_ARKHAN23_PART) = 1;
-        ST(L30_KONKALITE_FIGHT_STAGE) = 65;
+        ST(V_RETURN_PART) = 1;
+        ST(V_KONKALITE2_FIGHT) = 65;
         ST(ST_VIE(P_KONKALITE2)) = VIE_DEAD;
     }
     /* 0x74B9 */
@@ -83,8 +83,8 @@ void l30_trig00(void) {
         ST(ST_LEVEL) = 35;
         ST(V_SOB86_ACTIVE) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L30_ARKHAN23_PART) = 1;
-        ST(L30_KONKALITE_FIGHT_STAGE) = 65;
+        ST(V_RETURN_PART) = 1;
+        ST(V_KONKALITE2_FIGHT) = 65;
         ST(ST_VIE(P_KONKALITE2)) = VIE_DEAD;
     }
     ST(V_EVENT_0) = 0;
@@ -145,24 +145,24 @@ void l30_trig00(void) {
         }
     }
     /* 0x79AC */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L30_KONKALITE_FIGHT_STAGE) != 65) {
-        ST(L30_KONKALITE_FIGHT_STAGE) = 65;
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_KONKALITE2_FIGHT) != 65) {
+        ST(V_KONKALITE2_FIGHT) = 65;
         ST(ST_VIE(P_KONKALITE2)) = VIE_DEAD;
         ST(ST_VIE(P_KONKALITE5)) = VIE_DEAD;
         ST(ST_VIE(94)) = VIE_DEAD;
     }
     /* 0x7A0C */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) == 60) {
+    if (ST(V_KONKALITE2_FIGHT) == 60) {
         CB->pos_perso(P_KONKALITE2, 0, 0, 0, 2, "P72CAD", 0xA, 0);
     }
     /* 0x7A3A */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) == 0 || ST(L30_KONKALITE_FIGHT_STAGE) == 1) {
-        ST(L30_KONKALITE_FIGHT_STAGE) = 1;
+    if (ST(V_KONKALITE2_FIGHT) == 0 || ST(V_KONKALITE2_FIGHT) == 1) {
+        ST(V_KONKALITE2_FIGHT) = 1;
         CB->pos_perso(P_KONKALITE5, 2792, 3942, 0x131B, 1, "P75ARR01", 2, 0);
         CB->pos_perso(94, 5207, 3824, 0x1628, 1, "P94ARR03", 3, 0);
     } else {
         /* 0x7ABC */
-        if (ST(L30_KONKALITE_FIGHT_STAGE) == 2 && ST(ST_LEVEL) == 48) {
+        if (ST(V_KONKALITE2_FIGHT) == 2 && ST(ST_LEVEL) == 48) {
             /* 0x7ADD */
             if (ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD) {
                 ST(V_ENGAGED_PERSONA) = P_KONKALITE5;
@@ -180,12 +180,12 @@ void l30_trig00(void) {
             }
         }
         /* 0x7B83 */
-        if ((ST(L30_KONKALITE_FIGHT_STAGE) == 20 || ST(L30_KONKALITE_FIGHT_STAGE) == 21 || ST(L30_KONKALITE_FIGHT_STAGE) == 22 || (ST(ST_VIE(P_KONKALITE2)) == VIE_DEAD && ST(L30_KONKALITE_FIGHT_STAGE) != 65)) && ST(ST_LEVEL) != 48) {
+        if ((ST(V_KONKALITE2_FIGHT) == 20 || ST(V_KONKALITE2_FIGHT) == 21 || ST(V_KONKALITE2_FIGHT) == 22 || (ST(ST_VIE(P_KONKALITE2)) == VIE_DEAD && ST(V_KONKALITE2_FIGHT) != 65)) && ST(ST_LEVEL) != 48) {
             ST(L30_KONKALITE2_SAVED_LIFE) = 2;
             CB->pos_perso(P_KONKALITE2, 0, 0, 0, 2, "P72CAD", 0xA, 0);
         }
         /* 0x7C17 */
-        if (ST(L30_KONKALITE_FIGHT_STAGE) == 56 && ST(L30_CAMERA_AREA_STATE) == 1) {
+        if (ST(V_KONKALITE2_FIGHT) == 56 && ST(L30_CAMERA_AREA_STATE) == 1) {
             CB->pos_perso(P_KONKALITE2, 0, 0, 0, 1, "P72GAR03", 0xA, 0);
         }
     }
@@ -223,7 +223,7 @@ void l30_trig00(void) {
 static void trig41(void) {
     CB->divers(DV_MUSIC, 1, 1);
     /* 0x7F15 */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) == 2 && ST(ST_LEVEL) == 48) {
+    if (ST(V_KONKALITE2_FIGHT) == 2 && ST(ST_LEVEL) == 48) {
         /* 0x7F36 */
         if (ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD) {
             CB->combat(P_KONKALITE5, 0);
@@ -234,7 +234,7 @@ static void trig41(void) {
         }
     }
     /* 0x7F74 */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) == 56 && ST(ST_LEVEL) == 48 && ST(L30_CAMERA_AREA_STATE) == 1 && ST(ST_VIE(P_KONKALITE2)) != VIE_DEAD) {
+    if (ST(V_KONKALITE2_FIGHT) == 56 && ST(ST_LEVEL) == 48 && ST(L30_CAMERA_AREA_STATE) == 1 && ST(ST_VIE(P_KONKALITE2)) != VIE_DEAD) {
         CB->combat(P_KONKALITE2, 1);
     }
     /* 0x7FC9 */
@@ -377,21 +377,21 @@ static void trig03(void) {
 static void trig04(void) {
     ST(ST_LEVEL) = 30;
     /* 0x984E */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) == 1) {
+    if (ST(V_KONKALITE2_FIGHT) == 1) {
         /* 0x9860 */
         if (ST(L30_KONKALITE5_BEATEN) != 2 && ST(L30_KONKALITE94_BEATEN) != 2) {
-            ST(L30_KONKALITE_FIGHT_STAGE) = 20;
+            ST(V_KONKALITE2_FIGHT) = 20;
             ST(L30_CAMERA_AREA_VISITED) = 1;
         } else if (ST(L30_KONKALITE5_BEATEN) != 2) {
-            ST(L30_KONKALITE_FIGHT_STAGE) = 21;
+            ST(V_KONKALITE2_FIGHT) = 21;
         } else {
-            ST(L30_KONKALITE_FIGHT_STAGE) = 22;
+            ST(V_KONKALITE2_FIGHT) = 22;
         }
         ST(L30_CAMERA_AREA_VISITED) = 1;
     }
     /* 0x98EB */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) == 56) {
-        ST(L30_KONKALITE_FIGHT_STAGE) = 60;
+    if (ST(V_KONKALITE2_FIGHT) == 56) {
+        ST(V_KONKALITE2_FIGHT) = 60;
     }
     CB->change_piece(31, 0);
     return;
@@ -401,9 +401,9 @@ static void trig04(void) {
 static void trig05(void) {
     CB->retire_zone(5);
     /* 0x9934 */
-    if (ST(L30_KONKALITE_FIGHT_STAGE) > 0 && ST(L30_KONKALITE_FIGHT_STAGE) < 60) {
+    if (ST(V_KONKALITE2_FIGHT) > 0 && ST(V_KONKALITE2_FIGHT) < 60) {
         /* 0x9958 */
-        if (ST(L30_KONKALITE_FIGHT_STAGE) == 56 && ST(ST_VIE(P_KONKALITE2)) != VIE_DEAD) {
+        if (ST(V_KONKALITE2_FIGHT) == 56 && ST(ST_VIE(P_KONKALITE2)) != VIE_DEAD) {
             CB->divers(DV_MUSIC, 1, 4);
             ST(ST_LEVEL) = 30;
             ST(V_ENGAGED_PERSONA) = 0;
@@ -411,9 +411,9 @@ static void trig05(void) {
             return;
         }
         /* 0x99B8 */
-        if (ST(L30_KONKALITE_FIGHT_STAGE) == 56 && ST(ST_VIE(P_KONKALITE2)) == VIE_DEAD) {
+        if (ST(V_KONKALITE2_FIGHT) == 56 && ST(ST_VIE(P_KONKALITE2)) == VIE_DEAD) {
             CB->divers(DV_MUSIC, 1, 4);
-            ST(L30_KONKALITE_FIGHT_STAGE) = 60;
+            ST(V_KONKALITE2_FIGHT) = 60;
             ST(ST_LEVEL) = 30;
             ST(V_ENGAGED_PERSONA) = 0;
             CB->change_piece(48, 0);
@@ -424,7 +424,7 @@ static void trig05(void) {
             CB->divers(DV_MUSIC, 1, 4);
             /* 0x9A5A */
             if (ST(V_ENGAGED_PERSONA) != 0) {
-                ST(L30_KONKALITE_FIGHT_STAGE) = 2;
+                ST(V_KONKALITE2_FIGHT) = 2;
                 ST(V_ENGAGED_PERSONA) = 0;
             }
             ST(ST_LEVEL) = 30;
@@ -489,21 +489,21 @@ static void trig06(void) {
             }
             ST(ST_LEVEL) = 30;
             /* 0x9D7A */
-            if (ST(L30_KONKALITE_FIGHT_STAGE) == 1) {
+            if (ST(V_KONKALITE2_FIGHT) == 1) {
                 /* 0x9D8C */
                 if (ST(L30_KONKALITE5_BEATEN) != 2 && ST(L30_KONKALITE94_BEATEN) != 2) {
-                    ST(L30_KONKALITE_FIGHT_STAGE) = 20;
+                    ST(V_KONKALITE2_FIGHT) = 20;
                     ST(L30_CAMERA_AREA_VISITED) = 1;
                 } else if (ST(L30_KONKALITE5_BEATEN) != 2) {
-                    ST(L30_KONKALITE_FIGHT_STAGE) = 21;
+                    ST(V_KONKALITE2_FIGHT) = 21;
                 } else {
-                    ST(L30_KONKALITE_FIGHT_STAGE) = 22;
+                    ST(V_KONKALITE2_FIGHT) = 22;
                 }
                 ST(L30_CAMERA_AREA_VISITED) = 1;
             }
             /* 0x9E17 */
-            if (ST(L30_KONKALITE_FIGHT_STAGE) == 56) {
-                ST(L30_KONKALITE_FIGHT_STAGE) = 60;
+            if (ST(V_KONKALITE2_FIGHT) == 56) {
+                ST(V_KONKALITE2_FIGHT) = 60;
             }
             /* 0x9E40 */
             if (CB->divers(DV_CAN_FIGHT, 9, 2)) {

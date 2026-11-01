@@ -28,7 +28,7 @@
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
     /* 0x7A93 */
-    if (ST(L29_PHEDORIA_SENT_AWAY) == 0 && ST(L29_LORY_STAGE) != 1 && ST(V_GUARD_FIGHT_DONE) == 2 && CB->distance(1, 3) > 350) {
+    if (ST(L29_PHEDORIA_SENT_AWAY) == 0 && ST(V_LORY_STAGE) != 1 && ST(V_GUARD_FIGHT_DONE) == 2 && CB->distance(1, 3) > 350) {
         ST(L29_PHEDORIA_SENT_AWAY) = 1;
         CB->select_pile(2, 1);
         CB->joindre(-P_PHEDORIA, 7672, -4468, 0xD042, -1);
@@ -145,7 +145,7 @@ static void tick_body(void) {
         CB->modify_var(&ST(ST_HERO), 4);
     }
     /* 0x8065 */
-    if (ST(ST_COMBAT_STANCE) == 1 && CB->divers(DV_CAN_FIGHT, 9, 2) && ST(L29_PHEDORIA_STANCE_WARNED) == 0 && ST(ST_VIE(P_PHEDORIA)) != VIE_DEAD && ST(L29_LORY_STAGE) == 0) {
+    if (ST(ST_COMBAT_STANCE) == 1 && CB->divers(DV_CAN_FIGHT, 9, 2) && ST(L29_PHEDORIA_STANCE_WARNED) == 0 && ST(ST_VIE(P_PHEDORIA)) != VIE_DEAD && ST(V_LORY_STAGE) == 0) {
         CB->bloque(BLOQUE_ALL);
         ST(L29_PHEDORIA_STANCE_WARNED) = 1;
         CB->animation("SP26GAR03");
@@ -293,11 +293,11 @@ static void tick_body(void) {
             CB->cinematique("SC22_500");
         }
         /* 0x888D */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L29_GUARD_FIGHT_PART) == 0) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_PASSAGE_OPEN) == 0) {
             CB->cinematique("SC22_500");
         }
         /* 0x88BC */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L29_GUARD_FIGHT_PART) >= 1) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_PASSAGE_OPEN) >= 1) {
             CB->cinematique("SC23_500");
         }
         CB->divers_empile(DV_END_GAME, 0, 0);
@@ -333,7 +333,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L29_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l29_trig00();   /* 0x1000C509: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

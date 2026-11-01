@@ -27,9 +27,7 @@
 #define L51_DIST_X4475_B       0x114  /* |4475 - L51_ENTRY_X| again, folded into L51_DIST_X5170 (debug "test26") */
 #define L51_CAM5_SEEN          0x51C  /* camera 5 first lock: L51D107 said once; 0 = not yet, 1 = done */
 #define L51_ZONE5_FIRST_LOOK   0x530  /* zone 5 (broken pulley) first examine: 0 = L51D100 plays, 1 = short L51D03/D04 afterwards */
-#define L51_EXIT_STAGE         0xB4C  /* route progress stage shared with LIEU47/46/23 (47 uses 3 to enter this level); INIT forces 3 */
 #define L51_ROOM8_EXIT         0xB54  /* room-8 link: written 2 (trigger 1) / 1 (trigger 2) when leaving to room 8; LIEU10 writes 3/4 on the way back and INIT places hero at x 2712, z -1622 (3) / -1100 (4); cleared at end of INIT */
-#define L51_DEATH_ENDING_DONE   0xE8C  /* engine-set: 1 = death ending already handled, INIT then runs the normal setup even when the hero is dead; same slot in all level scripts */
 #define L51_PULLEY_STATE       0xF30  /* well pulley: 0 = untouched, 1 = seen (set by LIEU23), 2 = Pulley Blade (item 51) fitted, OB29A replaces OB48 */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu51_trig.c). */

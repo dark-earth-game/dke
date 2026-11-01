@@ -38,13 +38,10 @@ void l30_trig00(void);
 #define L30_KONKALITE2_SAVED_LIFE          0x8C4  /* ST_VIE(P_KONKALITE2) saved while the camera is in the side view; 2 = dead */
 #define L30_KONKALITE94_BEATEN             0x904  /* 2 once persona 94 was beaten */
 #define L30_KONKALITE5_BEATEN              0x914  /* 2 once Konkalite5 was beaten */
-#define L30_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
 #define L30_ZONE6_DIALOGUE_FLAG            0xC50  /* 0 = third line (L31D83C/84C) still to say */
 #define L30_ROOM35_HUD_RESET               0xC58  /* 1 = clear the HUD timer on return from room 35 */
 #define L30_CAMERA_AREA_STATE              0xDB8  /* camera area of the Konkalite fight: 1 area A (camera 3), 2 area B (camera 4) */
 #define L30_CAMERA_AREA_VISITED            0xDBC  /* 1 once camera area B was entered */
-#define L30_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
-#define L30_KONKALITE_FIGHT_STAGE          0xE98  /* Konkalite2 sequence: 0/1 start, 2 fight, 20-22 hit variants, 56 won, 60 cleared, 65 already done (preset) */
 #define L30_STORY_MARK_F24                 0xF24  /* 1 = story mark that cancels ROOM35_RETURN */
 
 #endif /* DKE_LIEU30_INT_H */

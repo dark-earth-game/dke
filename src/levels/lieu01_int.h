@@ -33,15 +33,10 @@
 #define L01_G23_FOLLOW_STEP     0x0DC   /* Guardian23 follow driver: 0x0A = set after repositioning, 1 -> 2 joindre_perm on the hero */
 #define L01_GUARD_HIT           0x0E0   /* 1 = a guard (23/24) was hit; blocks the OB94 relink at the Guardian23 ambush */
 #define L01_OB94_LINKED         0x0F0   /* 1 = OB94 (Kabak's weapon object) linked to Kabak, 0 = unlinked */
-#define L01_EVENT_6             0x338   /* event 6 step (0x320 + 4*6); set with EVENT_10 by the Guardian4 check */
-#define L01_EVENT_10            0x348   /* event 10 step (0x320 + 4*10) */
 #define L01_KALHI12_WARNED      0x714   /* 1 = Kalhi12 already warned the hero (L01D41) */
-#define L01_RETURN_PHASE        0xAF8   /* 0 = first pass through the story, 1 = return pass (hero Arkhan2 back in the house) */
 #define L01_SECOND_ROUND        0xB88   /* 0 = first Kabak round, 1 = second round after the guard fight (start points 5/6) */
-#define L01_GUARDIAN4_STATE     0xB98   /* Guardian4 encounter state: 2 -> reset to 0 while he is alive, 4 with AF8==1 sets events 6/10 */
 #define L01_GUARD_WAVE2_DONE    0xBE4   /* 1 = second guard wave finished (start point 6), 0 otherwise */
 #define L01_G23_AMBUSH          0xCCC   /* Guardian23 ambush intro: 0 = not played, 1 = played (second part waits for the script to be free) */
-#define L01_FORCE_DEFAULT_INIT  0xE8C   /* 1 = run default INIT even when the hero is dead (ST_HERO == 4) */
 
 /* Trigger dispatch (op 3) and trigger 0 (INIT), lieu01_trig.c. */
 void l01_trigger(i32 idx);

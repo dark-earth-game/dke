@@ -64,13 +64,13 @@ void l22_trig00(void) {
         ST(ST_LEVEL) = 21;
         ST(ST_HERO) = P_ARKHAN3;
         ST(V_GUARD_FIGHT_DONE) = 1;
-        ST(L22_ZED_ARRIVAL) = 1;
+        ST(V_EVENT_4) = 1;
     }
     /* 0x745F */
     if (ST(ST_START_POINT(22)) == 2) {
         ST(V_GUARD_FIGHT_DONE) = 10;
-        ST(L22_RYLSADHAR_ARRIVAL) = 10;
-        ST(L22_ZED_ARRIVAL) = 10;
+        ST(V_EVENT_3) = 10;
+        ST(V_EVENT_4) = 10;
     }
     /* 0x749E */
     if (ST(ST_START_POINT(22)) == 3) {
@@ -103,11 +103,11 @@ void l22_trig00(void) {
     }
     CB->ajoute_zone(10, 3952, -5973, 150, 50, 1);
     /* 0x761E */
-    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(L22_RYLSADHAR_ARRIVAL) == 1 && ST(L22_ZED_ARRIVAL) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(V_EVENT_3) == 1 && ST(V_EVENT_4) == 0) {
         CB->ajoute_zone(13, 4357, -6602, 180, 180, 0);
     }
     /* 0x7675 */
-    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(L22_ZED_ARRIVAL) == 1 && ST(L22_RYLSADHAR_ARRIVAL) == 0) {
+    if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(V_EVENT_4) == 1 && ST(V_EVENT_3) == 0) {
         CB->ajoute_zone(20, 4357, -6602, 180, 180, 0);
     }
     CB->ajoute_zone(14, 4374, -6754, 80, 120, 0);
@@ -130,11 +130,11 @@ void l22_trig00(void) {
     /* 0x782C */
     if (ST(V_GUARD_FIGHT_DONE) == 1) {
         /* 0x783E */
-        if (ST(L22_RYLSADHAR_ARRIVAL) == 1) {
+        if (ST(V_EVENT_3) == 1) {
             CB->pos_perso(P_RYLSADHAR21, 4393, -6641, 0x9E24, 1, "P20ARR01", 2, 0);
         }
         /* 0x7875 */
-        if (ST(L22_ZED_ARRIVAL) == 1) {
+        if (ST(V_EVENT_4) == 1) {
             CB->pos_perso(P_ZED27, 4393, -6641, 0x9E24, 1, "P27ARR01", 3, 0);
         }
     }

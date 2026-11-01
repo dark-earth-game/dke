@@ -636,7 +636,7 @@ static void tick_body(void) {
         CB->animation("SP09ARR01_10");
         /* 0xB335 */
         if (ST(L15_TRADE_TYPE) == 0) {
-            ST(L15_CRYSTAL_PROGRESS) = 5;
+            ST(V_CRYSTAL_PROGRESS) = 5;
             /* 0xB353 */
             if (ST(L15_CRYSTAL_GIVEN_A) != 18 && ST(L15_CRYSTAL_GIVEN_B) != 18) {
                 CB->link_objet(9, "OB45", 0x1C, 0);
@@ -728,7 +728,7 @@ static void tick_body(void) {
         CB->divers_empile(DV_PERSONA_ITEMS, P_DANRYS, -OB_CRYST_SLIV);
         /* 0xB78C */
         if (ST(L15_TRADE_TYPE) == 0) {
-            ST(L15_CRYSTAL_PROGRESS) = 5;
+            ST(V_CRYSTAL_PROGRESS) = 5;
             lieu_action_register("L15D900A", P_DANRYS, "SP09DIA55", "SP09ARR01_10");
             lieu_action_register("L15D900B", P_DANRYS, "SP09DIA55", "SP09ARR01_10");
             /* 0xB7DC */
@@ -839,7 +839,7 @@ static void tick_body(void) {
         CB->divers_empile(DV_PERSONA_ITEMS, P_DANRYS, -OB_CRYST_SLIV);
         /* 0xBD39 */
         if (ST(L15_TRADE_TYPE) == 0) {
-            ST(L15_CRYSTAL_PROGRESS) = 5;
+            ST(V_CRYSTAL_PROGRESS) = 5;
             lieu_action_register("L15D900A", P_DANRYS, "SP09DIA55", "SP09ARR01_10");
             lieu_action_register("L15D900B", P_DANRYS, "SP09DIA55", "SP09ARR01_10");
             /* 0xBD89 */
@@ -1133,7 +1133,7 @@ static void tick_body(void) {
     /* 0xCB11 */
     if (ST(V_EVENT_0) == 1 && ST(ST_VIE(P_DANRYS)) == VIE_DEAD) {
         ST(V_EVENT_0) = 0;
-        ST(L15_CRYSTAL_PROGRESS) = 5;
+        ST(V_CRYSTAL_PROGRESS) = 5;
         CB->etat_objet("SOB45", -1, -1, -1, -1, -1, -1, -2, 0);
         /* 0xCB71 */
         if (ST(L15_CRYSTAL18_GIVEN) == 0) {
@@ -1296,7 +1296,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L15_ENDING_OVERRIDE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l15_trig00();   /* 0x1001A419: call sub_10001073 -> trig00_10007543 */
         return 0;
     }

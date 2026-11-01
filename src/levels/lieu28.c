@@ -58,7 +58,7 @@ static void tick_body(void) {
         return;
     }
     /* 0x7D26 */
-    if (ST(L28_ARCHIVIST_LEFT_POST) == 0 && ST(L28_ARCHIVIST_STAGE) != 1 && ST(L28_ARCHIVIST_STAGE) != 2 && ST(L28_ARCHIVIST_STAGE) != 3 && ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD && CB->distance(1, 2) > 250 && ST(V_ENGAGED_PERSONA) == 0) {
+    if (ST(L28_ARCHIVIST_LEFT_POST) == 0 && ST(V_LORY_STAGE) != 1 && ST(V_LORY_STAGE) != 2 && ST(V_LORY_STAGE) != 3 && ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD && CB->distance(1, 2) > 250 && ST(V_ENGAGED_PERSONA) == 0) {
         CB->select_pile(1, 1);
         ST(L28_ARCHIVIST_LEFT_POST) = 1;
         CB->joindre(P_ARCHIVIST, 7890, -4827, 0xEA60, -1);
@@ -79,7 +79,7 @@ static void tick_body(void) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0x7E7D */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(L28_ARCHIVIST_STAGE) >= 1) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(V_LORY_STAGE) >= 1) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         /* 0x7EB3 */
@@ -216,7 +216,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L28_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l28_trig00();   /* 0x1000DAA9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

@@ -33,7 +33,7 @@ static void tick_body(void) {
     snprintf(g_txt, sizeof(g_txt), "test:%d", t1);
     CB->print_msg(g_txt, 0, 0xF0);
     /* 0x91B1 */
-    if (ST(L14_DELIA_PRESENT) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 6 && ST(V_ENGAGED_PERSONA) == 35 && ST(ST_VIE(35)) != VIE_DEAD && ST(L14_PERSONA35_COMBAT) == 0) {
+    if (ST(V_DELIA_GONE) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) == 6 && ST(V_ENGAGED_PERSONA) == 35 && ST(ST_VIE(35)) != VIE_DEAD && ST(L14_PERSONA35_COMBAT) == 0) {
         CB->select_pile(1, 2);
         ST(L14_PERSONA35_COMBAT) = 1;
         CB->combat(35, -1);
@@ -42,7 +42,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x9277 */
-    if (ST(L14_DELIA_PRESENT) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) != 6 && ST(V_ENGAGED_PERSONA) == 35 && ST(ST_VIE(35)) != VIE_DEAD && ST(L14_PERSONA35_COMBAT) == 1) {
+    if (ST(V_DELIA_GONE) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(ST_LOCKED_CAMERA) != 6 && ST(V_ENGAGED_PERSONA) == 35 && ST(ST_VIE(35)) != VIE_DEAD && ST(L14_PERSONA35_COMBAT) == 1) {
         CB->stop_joindre(-35);
         CB->combat(35, 0);
         ST(L14_PERSONA35_COMBAT) = 0;
@@ -176,7 +176,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x99EA */
-    if (ST(V_EVENT_2) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD && ST(V_DELIA_PHASE) == 0 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(V_EVENT_2) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD && ST(V_DELIA_PHASE) == 0 && ST(V_DELIA_GONE) == 0) {
         CB->select_pile(2, 1);
         ST(V_EVENT_2) = 0;
         /* 0x9A7D */
@@ -351,7 +351,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0xA343 */
-    if (ST(ST_VIE(P_MALROT4)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(ST_VIE(P_MALROT4)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0 && ST(V_DELIA_GONE) == 0) {
         /* 0xA373 */
         if (ST(V_ENGAGED_PERSONA) == P_MALROT4) {
             ST(L14_FIGHT_STARTED) = 0;
@@ -387,7 +387,7 @@ static void tick_body(void) {
         CB->ajoute_zone(39, 3318, 957, 50, 50, 0);
     }
     /* 0xA493 */
-    if (ST(ST_VIE(P_MALROT1)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0 && ST(L14_DELIA_PRESENT) == 0) {
+    if (ST(ST_VIE(P_MALROT1)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0 && ST(V_DELIA_GONE) == 0) {
         /* 0xA4C3 */
         if (ST(V_ENGAGED_PERSONA) == P_MALROT1) {
             ST(L14_FIGHT_STARTED) = 0;
@@ -447,7 +447,7 @@ static void tick_body(void) {
         }
     }
     /* 0xA89D */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L14_DELIA_PRESENT) == 0 && CB->distance(1, 24) < 200 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_DELIA_GONE) == 0 && CB->distance(1, 24) < 200 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD) {
         /* 0xA8FD */
         if (ST(ST_HERO) == P_ARKHAN2 && ST(L14_MALROT1_MEET_DONE) == 0 && ST(L14_MALROT1_TALKED) == 0) {
             CB->select_pile(2, 2);
@@ -551,7 +551,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0xAE97 */
-    if (CB->distance(1, 4) > 700 && ST(L14_SCRATCH_80) == 0 && ST(L14_DELIA_PRESENT) == 0) {
+    if (CB->distance(1, 4) > 700 && ST(L14_SCRATCH_80) == 0 && ST(V_DELIA_GONE) == 0) {
         CB->select_pile(2, 1);
         ST(L14_SCRATCH_80) = 1;
         CB->bloque(BLOQUE_NONE);
@@ -786,7 +786,7 @@ static void tick_body(void) {
             CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0x21, 0);
         }
         /* 0xBE68 */
-        if (ST(L14_DELIA_FOLLOW_ON) == 1 && (ST(L14_FRAME_COUNTER) % 20) == 0) {
+        if (ST(L14_DELIA_FOLLOW_ON) == 1 && (ST(V_FRAME_COUNTER) % 20) == 0) {
             /* 0xBE9B */
             if (CB->distance(33, 1) >= 180) {
                 CB->divers(DV_RUN, P_DELIA, 0);
@@ -908,7 +908,7 @@ static void tick_body(void) {
         return;
     }
     /* 0xC41F */
-    if (ST(L14_PERSONA35_ENGAGED) == 0 && ST(L14_DELIA_PRESENT) == 1 && ST(ST_VIE(35)) != VIE_DEAD && ST(ST_LOCKED_CAMERA) == 0 && ST(V_ENGAGED_PERSONA) == 0 && CB->distance(1, 4) < 650) {
+    if (ST(L14_PERSONA35_ENGAGED) == 0 && ST(V_DELIA_GONE) == 1 && ST(ST_VIE(35)) != VIE_DEAD && ST(ST_LOCKED_CAMERA) == 0 && ST(V_ENGAGED_PERSONA) == 0 && CB->distance(1, 4) < 650) {
         CB->bloque(BLOQUE_ALL);
         ST(L14_PERSONA35_ENGAGED) = 1;
         CB->combat(35, 0);
@@ -947,7 +947,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L14_ENDING_OVERRIDE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l14_trig00();   /* 0x10018CA9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

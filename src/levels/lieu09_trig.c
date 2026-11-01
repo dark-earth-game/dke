@@ -72,10 +72,10 @@ void l09_trig00(void) {
     }
     /* 0x7423 */
     if (ST(ST_START_POINT(9)) == 2) {
-        ST(L09_GUARD_ARC_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L09_GUARDIAN8_STAGE) = 2;
+        ST(V_GUARDIAN8_STAGE) = 2;
     }
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
@@ -111,7 +111,7 @@ void l09_trig00(void) {
     CB->etat_objet("IM23", 730, 38, -98, 0, 0x8000, 0, 0, 3);
     CB->pos_perso(ST(ST_HERO), 538, -512, 0x2D1, 1, "ar", 4, 0);
     /* 0x772D */
-    if (ST(L09_GUARDIAN8_STAGE) == 2) {
+    if (ST(V_GUARDIAN8_STAGE) == 2) {
         /* 0x773F */
         if (ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
             CB->pos_perso(P_GUARDIAN8, 858, -305, 0x2231, 1, "P48ARR04", 3, 0);
@@ -120,13 +120,13 @@ void l09_trig00(void) {
         }
     }
     /* 0x778B */
-    if (ST(L09_EVENT6_DONE) == 0 && ST(L09_EVENT10_DONE) == 0 && ST(L09_GUARD_ARC_PHASE) == 0 && ST(L09_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-        ST(L09_GUARDIAN4_STAGE) = 0;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0 && ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+        ST(V_GUARDIAN4_STAGE) = 0;
     }
     /* 0x77F4 */
-    if (ST(L09_EVENT6_DONE) == 0 && ST(L09_EVENT10_DONE) == 0 && ST(L09_GUARD_ARC_PHASE) == 1 && ST(L09_GUARDIAN4_STAGE) == 4) {
-        ST(L09_EVENT6_DONE) = 1;
-        ST(L09_EVENT10_DONE) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
     ST(V_WEAPON_WARNED) = 0;
 }
@@ -134,7 +134,7 @@ void l09_trig00(void) {
 /* trigger 41 — sub_1000786E — guardian 8 challenges the hero (cutscene) */
 static void trig41(void) {
     /* 0x7880 */
-    if (ST(L09_GUARD_ARC_PHASE) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(L09_GUARDIAN8_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
+    if (ST(V_RETURN_PART) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_GUARDIAN8_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
         CB->select_pile(1, 1);
         CB->bloque(BLOQUE_ALL);
         CB->joindre(-ST(ST_HERO), 0, 0, 0, P_GUARDIAN8);

@@ -27,7 +27,6 @@
 #define L42_HINT_B_SAID            0xF0   /* 1 once the second L42D13B line has been said, 0 = not yet */
 #define L42_GATE_OPEN              0x56C   /* 0 = gate closed, 1 = all six levers set right, zone 20 swapped for zone 25 (exit) */
 #define L42_INTRO_STAGE            0x8B0   /* 0 = intro SC31_500 not played, 1 = played (trigger 41), 2 = Arkhan3 dialogue registered */
-#define L42_DEATH_ENDING_SKIP      0xE8C   /* engine flag: 1 = INIT skips the hero-dead ending even if ST_HERO == 4 */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu42_trig.c). */
 void l42_trigger(i32 idx);

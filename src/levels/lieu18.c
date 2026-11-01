@@ -379,7 +379,7 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x9A60 */
-        if (ST(L18_ARMAL_ARRIVAL_LOCK) == 0 && ST(L18_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) == 1 && ST(L18_ARMAL_PATROL_STEP) == 0 && ST(L18_ARMAL_ATTACKED) == 0) {
+        if (ST(L18_ARMAL_ARRIVAL_LOCK) == 0 && ST(V_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) == 1 && ST(L18_ARMAL_PATROL_STEP) == 0 && ST(L18_ARMAL_ATTACKED) == 0) {
             ST(L18_ARMAL_PATROL_STEP) = 10;
             CB->bloque(BLOQUE_ALL);
             CB->joindre(-ST(ST_HERO), 0, 0, 0, P_ARMAL);
@@ -395,7 +395,7 @@ static void tick_body(void) {
             return;
         }
         /* 0x9B8D */
-        if (ST(L18_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) != 1 && ST(L18_ARMAL_PATROL_STEP) != 0 && ST(L18_ARMAL_STANCE_STATE) == 0) {
+        if (ST(V_ARMAL_STAGE) >= 2 && ST(ST_VIE(P_ARMAL)) == 1 && ST(ST_LOCKED_CAMERA) != 1 && ST(L18_ARMAL_PATROL_STEP) != 0 && ST(L18_ARMAL_STANCE_STATE) == 0) {
             ST(L18_ARMAL_PATROL_STEP) = 0;
             ST(L18_ARMAL_ARRIVAL_LOCK) = 0;
             CB->select_pile(1, 1);
@@ -531,7 +531,7 @@ static void tick_body(void) {
             CB->joindre_perm(P_MALROT2, ST(ST_HERO));
             CB->animation("SP62ARR01_10");
             /* 0xA275 */
-            if (ST(L18_ARMAL_STAGE) == 2 && ST(L18_ARMAL_DIALOGUE_SEEN) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0) {
+            if (ST(V_ARMAL_STAGE) == 2 && ST(L18_ARMAL_DIALOGUE_SEEN) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0) {
                 ST(L18_ARMAL_DIALOGUE_SEEN) = 1;
                 lieu_action_register("L18D190A", P_MALROT2, "SP62DIA62", "SP62ARR01_10");
                 lieu_action_register("L18D190B", P_MALROT2, "SP62DIA63", "SP62ARR01_10");
@@ -1238,7 +1238,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L18_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l18_trig00();   /* 0x10016FB9: call sub_10001078 -> sub_10007400 */
         return 0;
     }

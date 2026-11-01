@@ -84,7 +84,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(41, -1);
 
     /* 0x8D2A */
-    if (ST(ST_HERO) != 4 || ST(L40_DEATH_ENDING_BYPASS) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l40_trig00();   /* 0x10008E69: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

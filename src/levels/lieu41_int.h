@@ -14,7 +14,6 @@
 #define L41_SEARCH_REMARK_COUNT          0x68   /* line counter of the hero's remarks on the action key away from zones 3..7: 0 = first (L41D10/11), 1 = second (L41D12/13), 2 = repeat (L41D14/15) */
 #define L41_SIDE_ZONE_REMARK_DONE        0x6C   /* 0 = side zone 6/7 remark L41D09 not said yet, 1 = said */
 #define L41_ENTRY_REMARK_DONE            0x8E8   /* 0 = room-entry line L41D02 not said yet, 1 = said (persists across visits) */
-#define L41_DEATH_ENDING_BYPASS          0xE8C   /* 1 = hero death does not play the death ending in INIT (runs trigger 0 instead); shared flag */
 
 /* ST() reads g_lvl_S, the DLL's dword_1001BE4C. */
 

@@ -686,7 +686,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0xB419 */
-                    if (ST(L05_D53_SAID) == 0 && ST(V_GUARD_FIGHT_DONE) != 0 && ST(L05_OB75_COMBINED) == 1 && ST(L05_FLAG_ED0) < 3) {
+                    if (ST(L05_D53_SAID) == 0 && ST(V_GUARD_FIGHT_DONE) != 0 && ST(V_CRYSTAL_KEY_STAGE) == 1 && ST(V_CRYSTAL_PROGRESS) < 3) {
                         ST(L05_D53_SAID) = 1;
                         /* 0xB470 */
                         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -724,7 +724,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0xB64D */
-                    if (ST(L05_D59_SAID) == 0 && ST(L05_FLAG_EB0) != 0 && ST(L05_EVENT_3) == 0 && ST(L05_EVENT_4) == 0) {
+                    if (ST(L05_D59_SAID) == 0 && ST(L05_FLAG_EB0) != 0 && ST(V_EVENT_3) == 0 && ST(V_EVENT_4) == 0) {
                         ST(L05_D59_SAID) = 1;
                         /* 0xB6A4 */
                         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -741,7 +741,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0xB747 */
-                    if (ST(L05_D62_SAID) == 0 && ST(L05_EVENT_3) == 0 && ST(L05_EVENT_4) == 0) {
+                    if (ST(L05_D62_SAID) == 0 && ST(V_EVENT_3) == 0 && ST(V_EVENT_4) == 0) {
                         ST(L05_D62_SAID) = 1;
                         /* 0xB78C */
                         if (ST(ST_HERO) == P_ARKHAN2) {

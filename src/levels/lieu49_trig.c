@@ -178,8 +178,8 @@ void l49_trig00(void) {
         CB->pos_perso(P_DHORKAN11, 0, 0, 0, 2, "P11CAD", 4, 0);
     }
     /* 0x7BD5 */
-    if (ST(L49_MAIN_PROGRESS) == 0x3C) {
-        ST(L49_MAIN_PROGRESS) = 0x41;
+    if (ST(V_KONKALITE2_FIGHT) == 0x3C) {
+        ST(V_KONKALITE2_FIGHT) = 0x41;
     }
     /* 0x7BF6 */
     if (ST(L49_DHORKAN_STAGE) == 3) {
@@ -350,20 +350,20 @@ static void trig04(void) {
         ST(L49_DHORKAN_SEARCHED) = 1;
         ST(L49_LOOT_FLAG) = 1;
         /* 0xA0CE */
-        if (ST(L49_LOOT_COUNT) == 5) {
-            ST(L49_LOOT_COUNT) = 5;
+        if (ST(V_CRYSTAL_PROGRESS) == 5) {
+            ST(V_CRYSTAL_PROGRESS) = 5;
         }
         /* 0xA0EF */
-        if (ST(L49_LOOT_COUNT) == 2) {
-            ST(L49_LOOT_COUNT) = 3;
+        if (ST(V_CRYSTAL_PROGRESS) == 2) {
+            ST(V_CRYSTAL_PROGRESS) = 3;
         }
         /* 0xA110 */
-        if (ST(L49_LOOT_COUNT) == 1) {
-            ST(L49_LOOT_COUNT) = 2;
+        if (ST(V_CRYSTAL_PROGRESS) == 1) {
+            ST(V_CRYSTAL_PROGRESS) = 2;
         }
         /* 0xA131 */
-        if (ST(L49_LOOT_COUNT) == 0) {
-            ST(L49_LOOT_COUNT) = 1;
+        if (ST(V_CRYSTAL_PROGRESS) == 0) {
+            ST(V_CRYSTAL_PROGRESS) = 1;
         }
         CB->fouille(P_DHORKAN11);
     }
@@ -438,7 +438,7 @@ static void trig13(void) {
         /* 0xA4D6 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             /* 0xA4E8 */
-            if (ST(L49_PLATE_USED) == 0) {
+            if (ST(V_BUNKER_SEEN) == 0) {
                 /* 0xA4FA */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     CB->animation("SG00OUV12");
@@ -460,7 +460,7 @@ static void trig13(void) {
                 }
             }
             /* 0xA5B6 */
-            if (ST(L49_PLATE_USED) >= 1) {
+            if (ST(V_BUNKER_SEEN) >= 1) {
                 CB->dialogue("LCOD16", P_ARKHAN2);
                 CB->animation("Sar_10");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -471,7 +471,7 @@ static void trig13(void) {
         /* 0xA601 */
         if (ST(ST_HERO) == P_ARKHAN3) {
             /* 0xA613 */
-            if (ST(L49_PLATE_USED) == 0) {
+            if (ST(V_BUNKER_SEEN) == 0) {
                 /* 0xA625 */
                 if (ST(ST_SPECIAL_MODE) == 1) {
                     CB->animation("SG00OUV12");
@@ -492,7 +492,7 @@ static void trig13(void) {
                 }
             }
             /* 0xA6D1 */
-            if (ST(L49_PLATE_USED) >= 1) {
+            if (ST(V_BUNKER_SEEN) >= 1) {
                 CB->dialogue("LCOD17", P_ARKHAN3);
                 CB->animation("Sar_10");
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
@@ -527,8 +527,8 @@ static void trig14(void) {
         /* 0xA80C */
         if (ST(ST_PLAYER_WEAPON) == OB_PLATE_BEFORE) {
             /* 0xA81E */
-            if (ST(L49_PLATE_USED) == 0) {
-                ST(L49_PLATE_USED) = 1;
+            if (ST(V_BUNKER_SEEN) == 0) {
+                ST(V_BUNKER_SEEN) = 1;
             }
             CB->joindre(ST(ST_HERO), 0, 0, 0xDF55, -1);
             /* 0xA85B */

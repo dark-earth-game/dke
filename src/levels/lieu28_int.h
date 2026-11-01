@@ -36,10 +36,8 @@ void l28_trig00(void);
 #define L28_ARCHIVIST_GREETED              0x774  /* 1 once the greeting was played at B38 >= 1 */
 #define L28_PARCHMENT_HINT_COUNT           0x8DC  /* trigger 6 hint: 0 first, 1 repeated */
 #define L28_ARCHIVIST_TALK_DONE            0xB28  /* set to 1 at the end of the trigger 2 conversation */
-#define L28_ARCHIVIST_STAGE                0xB38  /* story stage in the Archivist room: 0 first visit, 1 returning, 2 later, 3 finished (shared with L26, L27, L29) */
 #define L28_STORY_MARK_C48                 0xC48  /* 99 = preset, 100 = past (shared with L26, L27, L29) */
 #define L28_ARCHIVIST_ITEM_STAGE           0xD30  /* trigger 2 item request: 0 first, 1 repeated */
-#define L28_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L28_ARCHIVIST_QUEST_STAGE          0xEB0  /* Archivist quest: 0 not started, 1 started (start point 1), 2 asked, 3 answered */
 #define L28_ARCHIVIST_ANSWER_STAGE         0xEBC  /* answer sub-stage of trigger 2 round 3: 0 first, 1 given, 2 pending, 3 done */
 

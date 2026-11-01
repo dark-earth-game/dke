@@ -74,21 +74,21 @@ void l11_trig00(void) {
     if (ST(ST_START_POINT(11)) == 1) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 10;
-        ST(L11_GUARD_ARC_PHASE) = 0;
+        ST(V_RETURN_PART) = 0;
         ST(V_GUARD_FIGHT_DONE) = 0;
     }
     /* 0x74C0 */
     if (ST(ST_START_POINT(11)) == 2) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 10;
-        ST(L11_GUARD_ARC_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
     }
     /* 0x750B */
     if (ST(ST_START_POINT(11)) == 3) {
         ST(ST_HERO) = P_ARKHAN3;
         ST(ST_LEVEL) = 10;
-        ST(L11_GUARD_ARC_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
     }
     ST(ST_START_POINT(11)) = 0;
@@ -116,25 +116,25 @@ void l11_trig00(void) {
         CB->pos_perso(ST(ST_HERO), 7535, -1259, 0x9AA8, 1, "ar", 6, 0);
     }
     /* 0x7722 */
-    if (ST(L11_EVENT6_DONE) == 0 && ST(L11_EVENT10_DONE) == 0 && ST(L11_GUARD_ARC_PHASE) == 0) {
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0) {
         /* 0x7758 */
-        if (ST(L11_GUARDIAN4_STAGE) == 0) {
-            ST(L11_GUARDIAN4_STAGE) = 2;
-        } else if (ST(L11_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-            ST(L11_GUARDIAN4_STAGE) = 0;
+        if (ST(V_GUARDIAN4_STAGE) == 0) {
+            ST(V_GUARDIAN4_STAGE) = 2;
+        } else if (ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+            ST(V_GUARDIAN4_STAGE) = 0;
         }
     }
     /* 0x77B1 */
-    if (ST(L11_EVENT6_DONE) == 0 && ST(L11_EVENT10_DONE) == 0 && ST(L11_GUARD_ARC_PHASE) == 1 && ST(L11_GUARDIAN4_STAGE) == 4) {
-        ST(L11_EVENT6_DONE) = 1;
-        ST(L11_EVENT10_DONE) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
     /* 0x7817 */
     if (ST(V_GUARD_FIGHT_DONE) != 2) {
         CB->vire_col(7, 1);
         CB->ajoute_zone(7, 6333, -1300, 105, 140, 0);
         /* 0x7857 */
-        if (ST(L11_LORY_QUEST_STAGE) == 1) {
+        if (ST(V_ARKHAN1_PROGRESS) == 1) {
             CB->pos_perso(P_LORY, 4288, -2702, 0xBDD0, 1, "P15ARR01", 0x1A, 0);
             CB->pos_perso(P_RYLSADHAR20, 4454, -2713, 0x4266, 1, "P20ARR01", 0x1B, 0);
         }
@@ -171,19 +171,19 @@ static void trig01(void) {
         CB->change_piece(10, -1);
     }
     /* 0x83C8 */
-    if (ST(ST_HERO) > 1 && ST(L11_RETURN_ROOM_STEP) == 0) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 0) {
         CB->change_piece(10, 1);
     }
     /* 0x83FC */
-    if (ST(ST_HERO) > 1 && ST(L11_RETURN_ROOM_STEP) == 1) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 1) {
         CB->change_piece(10, 2);
     }
     /* 0x8430 */
-    if (ST(ST_HERO) > 1 && ST(L11_RETURN_ROOM_STEP) == 2) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 2) {
         CB->change_piece(10, 3);
     }
     /* 0x8464 */
-    if (ST(ST_HERO) > 1 && ST(L11_RETURN_ROOM_STEP) == 3) {
+    if (ST(ST_HERO) > 1 && ST(V_ROUTE_STAGE) == 3) {
         CB->change_piece(51, -1);
     }
 }
@@ -664,7 +664,7 @@ static void trig12(void) {
                 lieu_action_register("L11D38", P_ARKHAN2, "SG02DIA02", NULL);
                 CB->dialogue("L11D39", P_GUARD);
                 l11_preload_anims(ST(ST_HERO), P_GUARD, OB_FULL_GOURD, 6, 12);
-                ST(0x140 + 4 * ST(ST_USED_VARIANT)) = 0;
+                ST(ST_VARIANT_COUNT(ST(ST_USED_VARIANT))) = 0;
                 CB->link_objet(P_GUARD, g_txt, 27, 1);
                 CB->animation("P32ACT03");
                 CB->link_objet(P_GUARD, g_txt, 27, 0);

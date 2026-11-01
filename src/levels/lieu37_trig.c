@@ -179,7 +179,7 @@ void l37_trig00(void) {
     ST(ST_START_POINT(37)) = 0;
     /* 0x7B8C */
     if (ST(ST_VIE(P_DELIA)) == VIE_DEAD || ST(V_DELIA_PHASE) >= 10) {
-        ST(L37_DELIA_GONE) = 1;
+        ST(V_DELIA_GONE) = 1;
     }
     CB->divers(DV_MUSIC, 1, 0);
 }

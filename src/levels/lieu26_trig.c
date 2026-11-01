@@ -84,8 +84,8 @@ void l26_trig00(void) {
     CB->pos_perso(ST(ST_HERO), 7073, -3267, 0xBDA8, 1, "ar", 1, 0);
     CB->bruitage("L26AMB1", 7445, -3272);
     /* 0x76D5 */
-    if (ST(L26_LEVEL_INIT_DONE) == 0) {
-        ST(L26_LEVEL_INIT_DONE) = 1;
+    if (ST(V_LORY_STAGE) == 0) {
+        ST(V_LORY_STAGE) = 1;
         ST(L26_STORY_MARK_E74) = 99;
         ST(L26_STORY_MARK_C48) = 99;
     }
@@ -331,7 +331,7 @@ static void trig07(void) {
             /* 0x8685 */
             if (ST(L26_ZONE7_STAGE) == 1) {
                 ST(L26_ZONE7_STAGE) = 2;
-                ST(L26_KALHI_PART_STEP) = 1;
+                ST(V_ROUTE_STAGE) = 1;
                 lieu_action_register("L26D16", P_ARKHAN2, "SG02PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -378,7 +378,7 @@ static void trig07(void) {
             /* 0x889E */
             if (ST(L26_ZONE7_STAGE) == 1) {
                 ST(L26_ZONE7_STAGE) = 2;
-                ST(L26_KALHI_PART_STEP) = 1;
+                ST(V_ROUTE_STAGE) = 1;
                 lieu_action_register("L26D21", P_ARKHAN3, "SG03PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -611,7 +611,7 @@ static void trig12(void) {
             /* 0x91DD */
             if (ST(L26_ZONE7_STAGE) == 1) {
                 ST(L26_ZONE7_STAGE) = 2;
-                ST(L26_KALHI_PART_STEP) = 1;
+                ST(V_ROUTE_STAGE) = 1;
                 lieu_action_register("L26D16", P_ARKHAN2, "SG02PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");
@@ -656,7 +656,7 @@ static void trig12(void) {
             /* 0x93D0 */
             if (ST(L26_ZONE7_STAGE) == 1) {
                 ST(L26_ZONE7_STAGE) = 2;
-                ST(L26_KALHI_PART_STEP) = 1;
+                ST(V_ROUTE_STAGE) = 1;
                 lieu_action_register("L26D21", P_ARKHAN3, "SG02PRE02", NULL);
                 CB->etat_objet("OB96", -1, -1, -1, -1, -1, -1, -3, 0);
                 CB->animation("Sar_50");

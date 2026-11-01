@@ -88,10 +88,10 @@ static void tick_body(void) {
     if (ST(V_GUARD_FIGHT_DONE) == 1 && ST(ST_LOCKED_CAMERA) == 2) {
         CB->bloque(BLOQUE_ALL);
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L22_EVENT6_SLOT) = 2;
-        ST(L22_EVENT10_SLOT) = 2;
+        ST(V_EVENT_6) = 2;
+        ST(V_EVENT_10) = 2;
         ST(V_GUARD_WAVE) = 1;
-        ST(L22_GUARD_PHASE) = 4;
+        ST(V_KALHI_RECRUIT) = 4;
         CB->divers_empile(DV_COMBAT_STANCE, 0, 0);
         CB->joindre(-ST(ST_HERO), 4457, -6426, 0x79D5, -1);
         CB->evenement(0, 1000);
@@ -100,8 +100,8 @@ static void tick_body(void) {
     if (ST(V_EVENT_0) == 1) {
         ST(V_EVENT_0) = 0;
         /* 0x7D6E */
-        if (ST(L22_RYLSADHAR_ARRIVAL) == 1 && ST(L22_ZED_ARRIVAL) == 0) {
-            ST(L22_RYLSADHAR_ARRIVAL) = 5;
+        if (ST(V_EVENT_3) == 1 && ST(V_EVENT_4) == 0) {
+            ST(V_EVENT_3) = 5;
             CB->select_pile(1, 1);
             CB->pos_perso(P_PHEDORIA, 4449, -5941, 0x8974, 1, "P26ARR01", 4, 0);
             CB->joindre(-P_PHEDORIA, 4484, -6208, 0x849B, -1);
@@ -138,8 +138,8 @@ static void tick_body(void) {
             return;
         }
         /* 0x7F51 */
-        if (ST(L22_ZED_ARRIVAL) == 1 && ST(L22_RYLSADHAR_ARRIVAL) == 0) {
-            ST(L22_ZED_ARRIVAL) = 5;
+        if (ST(V_EVENT_4) == 1 && ST(V_EVENT_3) == 0) {
+            ST(V_EVENT_4) = 5;
             CB->select_pile(1, 1);
             CB->pos_perso(P_PHEDORIA, 4449, -5941, 0x8974, 1, "P26ARR01", 4, 0);
             CB->joindre(-P_PHEDORIA, 4484, -6208, 0x849B, -1);
@@ -259,7 +259,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L22_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l22_trig00();   /* 0x1000A989: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

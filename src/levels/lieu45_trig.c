@@ -116,7 +116,7 @@ void l45_trig00(void) {
     }
     /* 0x781A */
     if (ST(L45_OB24A_TAKEN) == 0) {
-        ST(0x140) = 3;
+        ST(ST_VARIANT_COUNT(0)) = 3;
         CB->etat_objet("OB24A", -1744, 158, -216, 0x4000, 0, 0x53F8, -1, 3);
     }
     /* 0x7865 */
@@ -638,7 +638,7 @@ static void trig08(void) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             CB->animation("SG00PRE05");
-            ST(0x140) = 3;
+            ST(ST_VARIANT_COUNT(0)) = 3;
             CB->etat_objet("OB24A", -1, -1, -1, -1, -1, -1, -3, 0);
             CB->animation("ar_10");
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);

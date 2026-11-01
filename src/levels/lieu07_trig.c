@@ -67,7 +67,7 @@ void l07_trig00(void) {
     if (ST(ST_START_POINT(7)) == 2) {
         ST(ST_LEVEL) = 2;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L07_RETURN_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(L07_L2_SPAWN) = 3;
     }
     /* 0x7498 */
@@ -75,7 +75,7 @@ void l07_trig00(void) {
         ST(ST_LEVEL) = 2;
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L07_RETURN_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(L07_L2_SPAWN) = 4;
     }
     /* 0x74F2 */
@@ -150,7 +150,7 @@ void l07_trig00(void) {
         }
     }
     /* 0x79AF */
-    if (ST(ST_VIE(P_ZED27)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN1 && ST(L07_ZED_SCENE_OFF) == 0 && ST(V_ZED_BRIEFING) == 3) {
+    if (ST(ST_VIE(P_ZED27)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN1 && ST(V_ARKHAN1_PROGRESS) == 0 && ST(V_ZED_BRIEFING) == 3) {
         /* 0x79F7 */
         if (ST(L07_ZED_BRIEFING) == 0) {
             CB->pos_perso(P_ZED27, 400, -978, 0x3574, 1, "P27ARR03", 2, 601);
@@ -217,13 +217,13 @@ void l07_trig00(void) {
     ST(L07_PHEDORIA_APPROACH) = 0;
     ST(V_WEAPON_WARNED) = 0;
     /* 0x7D9F */
-    if (ST(L07_EVENT_6) == 0 && ST(L07_EVENT_10) == 0 && ST(L07_RETURN_PHASE) == 0 && ST(L07_GUARDIAN4_STATE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-        ST(L07_GUARDIAN4_STATE) = 0;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0 && ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+        ST(V_GUARDIAN4_STAGE) = 0;
     }
     /* 0x7E08 */
-    if (ST(L07_EVENT_6) == 0 && ST(L07_EVENT_10) == 0 && ST(L07_RETURN_PHASE) == 1 && ST(L07_GUARDIAN4_STATE) == 4) {
-        ST(L07_EVENT_6) = 1;
-        ST(L07_EVENT_10) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
 }
 

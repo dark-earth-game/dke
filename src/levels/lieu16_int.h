@@ -19,7 +19,6 @@ void l16_trigger(i32 idx);
 void l16_trig00(void);
 
 /* Level 16 script variables (scratch slots 0x4C..0x118 are per level) */
-#define L16_TICK_COUNTER                   0x038   /* engine tick counter; Delia's follow logic runs every 20th tick */
 #define L16_CAM_RESET_PENDING              0x04C   /* 1 = reset the camera to 4 when the up/down key is pressed */
 #define L16_MAOR_ANGRY_LINE_SAID           0x050   /* 1 once Maor said L16D998 (he turned hostile) */
 #define L16_DELIA_WAIT_RUN                 0x054   /* 1 = Delia must run to catch up after the creature died; 666 once she was sent */
@@ -64,12 +63,10 @@ void l16_trig00(void);
 #define L16_DELIA_ESCAPE_STAGE             0x770   /* Delia leaves with the hero: 0 none, 1 may leave, 2 dead, 99 refused */
 #define L16_CHEST_OB24C_STAGE              0x788   /* chest OB24C (zone 11): 0 closed, 1 opened */
 #define L16_DELIA_TALK_STAGE               0xAE8   /* main conversation stage with Delia, 0..7 */
-#define L16_ARMAL_STAGE                    0xBC8   /* Armal story stage (L18 sets it); changes the Delia talk */
 #define L16_MAOR_ENCOUNTER                 0xBF0   /* Maor encounter: 0 none, 1 started, 2 Delia sent away */
 #define L16_MAOR_PATROL_STEP               0xCF4   /* Maor patrol: 0 idle, 1..3 next leg (event 1 steps it) */
 #define L16_TALK_MAOR_A2_B                 0xD00   /* Arkhan2 second conversation with Maor, 0..3 */
 #define L16_DELIA_WARNING_STAGE            0xE08   /* Delia warning about Maor: 0 none, 1 given */
-#define L16_DEATH_ENDING_DONE              0xE8C   /* 1 = death ending already played, INIT runs the normal setup (same slot in every level) */
 #define L16_DELIA_WEAPON_STAGE             0xEE4   /* Delia weapon talk: 0 none, 1 asked, 2 axe shown, 3 done */
 
 #endif /* DKE_LIEU16_INT_H */

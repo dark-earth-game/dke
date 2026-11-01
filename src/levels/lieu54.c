@@ -180,7 +180,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x46C2 */
-    if (ST(V_EVENT_2) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD && ST(V_DELIA_PHASE) == 0 && ST(L54_GUARD35_PURSUIT) == 0) {
+    if (ST(V_EVENT_2) == 1 && ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD && ST(V_DELIA_PHASE) == 0 && ST(V_DELIA_GONE) == 0) {
         CB->select_pile(2, 1);
         CB->divers(DV_SCREEN, 3, 0);
         ST(V_EVENT_2) = 0;
@@ -384,7 +384,7 @@ static void tick_body(void) {
         ST(L54_PROVIDER_WARN_ARMED) = 1;
     }
     /* 0x51A1 */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L54_GUARD35_PURSUIT) == 0 && ST(L54_MALROT1_INTRO_DONE) == 0 && CB->distance(1, 24) < 200 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_DELIA_GONE) == 0 && ST(L54_MALROT1_INTRO_DONE) == 0 && CB->distance(1, 24) < 200 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_MALROT1)) != VIE_DEAD) {
         /* 0x5213 */
         if (ST(ST_HERO) == P_ARKHAN2) {
             CB->select_pile(2, 2);
@@ -486,7 +486,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x572B */
-    if (CB->distance(1, 4) > 700 && ST(L54_ZONE4_UNBLOCKED) == 0 && ST(L54_GUARD35_PURSUIT) == 0) {
+    if (CB->distance(1, 4) > 700 && ST(L54_ZONE4_UNBLOCKED) == 0 && ST(V_DELIA_GONE) == 0) {
         CB->select_pile(2, 1);
         ST(L54_ZONE4_UNBLOCKED) = 1;
         CB->bloque(BLOQUE_NONE);
@@ -709,7 +709,7 @@ static void tick_body(void) {
             CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0x21, 0);
         }
         /* 0x6604 */
-        if (ST(L54_DELIA_ESCORT_ON) == 1 && (ST(L54_ENGINE_TICK) % 20) == 0) {
+        if (ST(L54_DELIA_ESCORT_ON) == 1 && (ST(V_FRAME_COUNTER) % 20) == 0) {
             /* 0x6637 */
             if (CB->distance(33, 1) >= 180) {
                 CB->divers(DV_RUN, P_DELIA, 0);

@@ -38,21 +38,13 @@ void l23_trig00(void);
 #define L23_GUARDS_ENGAGE_STATE            0x0B8  /* guards 13/14 fight gate: 0 idle, 1 charging the hero, 99 in a dialogue */
 #define L23_STRIKE_SEEN                    0x0BC  /* 1 once the player's first strike was registered (delays the guards' reaction event 38) */
 #define L23_GUARDS_AMBUSH_ARMED            0x0D4  /* 1 once the guards 13/14 ambush is armed (set by trigger 41) */
-#define L23_GUARD_PAIR_STEP_A              0x338  /* guard-pair progress (event 6 slot); 1 once Guardian3/4 pair is beaten (shared with levels 1, 3, 6-11) */
-#define L23_GUARD_PAIR_STEP_B              0x348  /* guard-pair progress (event 10 slot); kept equal to GUARD_PAIR_STEP_A */
 #define L23_GUARDS1314_STAGE               0x4EC  /* Guardians 13/14 encounter: 0 not started, 1 talked, 2 fighting, 3 both dead */
 #define L23_GUARDS1314_TALKING             0x4F0  /* 1 while the guards 13/14 dialogue/ambush runs, 0 otherwise */
 #define L23_THANANDAR_STAGE                0xA5C  /* Thanandar24 encounter stage preset at start points 7/9/10 (1 = met) */
-#define L23_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started (guards 13/14 appear) */
-#define L23_OB75_STATE                     0xB10  /* story counter on the OB75 item: engine sets 2 on the OB75 combination; non-zero arms ZED_QUEST_SEEN */
-#define L23_KALHI_PART_STEP                0xB4C  /* Arkhan2/3 story step: 0..3 selects the exit target of trigger 1 (room 10 variants / room 51); 3 = OB51 chest present */
-#define L23_GUARD34_FIGHT_STATE            0xB98  /* Guardian3/4 fight: 0 none, 2 Guardian4 beaten first, 4 both dead (shared with levels 1, 3, 6-11) */
 #define L23_ARKHAN23_STEP                  0xBA8  /* Arkhan2/3 storyline step 0..8 (exit variant of room 24: <2, 2..4, >=5) */
 #define L23_PHEDORIA_WITH_HERO             0xBB4  /* 1 = Phedoria accompanies the Arkhan2/3 hero in this room */
 #define L23_ZED_QUEST_SEEN                 0xE74  /* set to 1 once OB75_STATE is non-zero */
-#define L23_RYLSADHAR_ZED_STAGE            0xE78  /* Arkhan1 story stage: 1 start, 2 Rylsadhar20 waiting, 6 scene done, 7 finished, 10 Zed84 scene */
 #define L23_RYLSADHAR_AREA_DONE            0xE7C  /* set to 3 on the first INIT of the Arkhan1 stage (3 = Rylsadhar20 area visited) */
-#define L23_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L23_OB51_TAKEN                     0xF30  /* 1 once the OB51 chest was searched (zone 13 removed) */
 
 #endif /* DKE_LIEU23_INT_H */

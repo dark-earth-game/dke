@@ -675,7 +675,7 @@ static void trig03(void) {
                             /* 0xC0A5 */
                             if (ST(L16_DELIA_TALK_STAGE) == 3) {
                                 /* 0xC0B7 */
-                                if (ST(L16_ARMAL_STAGE) != 2) {
+                                if (ST(V_ARMAL_STAGE) != 2) {
                                     lieu_action_register("L16D108", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D109A", P_DELIA, "SP10DIA56", "SP10ARR01_10");
                                     lieu_action_register("L16D109B", P_DELIA, "SP10DIA54", "SP10ARR01_10");
@@ -683,7 +683,7 @@ static void trig03(void) {
                                     lieu_action_register("L16D111", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                 }
                                 /* 0xC140 */
-                                if (ST(L16_ARMAL_STAGE) == 2) {
+                                if (ST(V_ARMAL_STAGE) == 2) {
                                     lieu_action_register("L16D112", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D113", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                 }
@@ -696,7 +696,7 @@ static void trig03(void) {
                             /* 0xC1B9 */
                             if (ST(L16_DELIA_TALK_STAGE) == 4) {
                                 /* 0xC1CB */
-                                if (ST(L16_ARMAL_STAGE) != 2) {
+                                if (ST(V_ARMAL_STAGE) != 2) {
                                     ST(L16_DELIA_WEAPON_STAGE) = 1;
                                     lieu_action_register("L16D114", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D115A", P_DELIA, "SP10DIA53", "SP10ARR01_10");
@@ -708,7 +708,7 @@ static void trig03(void) {
                                     return;
                                 }
                                 /* 0xC26C */
-                                if (ST(L16_ARMAL_STAGE) == 2) {
+                                if (ST(V_ARMAL_STAGE) == 2) {
                                     lieu_action_register("L16D116", P_ARKHAN2, "SG00DIA05", NULL);
                                     lieu_action_register("L16D117", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                                     CB->animation("Sar_20");
@@ -884,7 +884,7 @@ static void trig03(void) {
                     /* 0xCAE3 */
                     if (ST(ST_PLAYER_WEAPON) == 20 && ST(L16_DELIA_WEAPON_STAGE) == 1 && ST(L16_DELIA_TALK_STAGE) == 5) {
                         ST(L16_DELIA_WEAPON_STAGE) = 2;
-                        ST(L16_ARMAL_STAGE) = 1;
+                        ST(V_ARMAL_STAGE) = 1;
                         CB->animation("SG00PRE80_1000");
                         lieu_action_register("L16D70", P_ARKHAN2, "SG00DIA05", NULL);
                         lieu_action_register("L16D72", P_DELIA, "SP10DIA54", "SP10ARR01_10");
@@ -902,7 +902,7 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xCC51 */
-                    if (ST(L16_DELIA_WEAPON_STAGE) == 2 && ST(L16_DELIA_TALK_STAGE) == 6 && ST(L16_ARMAL_STAGE) != 2) {
+                    if (ST(L16_DELIA_WEAPON_STAGE) == 2 && ST(L16_DELIA_TALK_STAGE) == 6 && ST(V_ARMAL_STAGE) != 2) {
                         ST(L16_DELIA_WEAPON_STAGE) = 3;
                         lieu_action_register("L16D78", P_ARKHAN2, "SG00DIA05", NULL);
                         lieu_action_register("L16D79A", P_DELIA, "SP10DIA53", "SP10ARR01_10");
@@ -918,7 +918,7 @@ static void trig03(void) {
                         return;
                     }
                     /* 0xCD77 */
-                    if ((ST(L16_DELIA_WEAPON_STAGE) == 3 && ST(L16_DELIA_TALK_STAGE) == 7 && ST(ST_PLAYER_WEAPON) == 0) || (ST(L16_DELIA_WEAPON_STAGE) == 2 && ST(L16_ARMAL_STAGE) == 2)) {
+                    if ((ST(L16_DELIA_WEAPON_STAGE) == 3 && ST(L16_DELIA_TALK_STAGE) == 7 && ST(ST_PLAYER_WEAPON) == 0) || (ST(L16_DELIA_WEAPON_STAGE) == 2 && ST(V_ARMAL_STAGE) == 2)) {
                         lieu_action_register("L16D83", P_ARKHAN2, "SG00DIA05", NULL);
                         lieu_action_register("L16D84", P_DELIA, "SP10DIA53", "SP10ARR01_10");
                         lieu_action_register("L16D85", P_DELIA, "SP10DIA54", "SP10ARR01_10");
@@ -2075,7 +2075,7 @@ static void trig30(void) {
                 }
             }
             CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
-            ST(0x140 + 4 * ST(ST_USED_VARIANT)) = 3;
+            ST(ST_VARIANT_COUNT(ST(ST_USED_VARIANT))) = 3;
             snprintf(g_txt, sizeof(g_txt), "OB77%c", ST(ST_USED_VARIANT) + 65);
             snprintf(g_txt2, sizeof(g_txt2), "OB24%c", ST(ST_USED_VARIANT) + 65);
             CB->etat_objet(g_txt, -1, -1, -1, -1, -1, -1, -2, 3);

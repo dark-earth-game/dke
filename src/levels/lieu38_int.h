@@ -24,13 +24,11 @@
 #define L38_TALK_RANDOM_INTRO            0x524   /* 0 = first talk with the zone 7..11 persona (three lines), 1 = random single line */
 #define L38_VISITED                      0x55C   /* 1 once the level has been entered (set by trigger 0; no other reader) */
 #define L38_OB45_EXAMINED                0x62C   /* 0 = first time the hero uses the item on OB45 (L38D11/L38D13), 1 = repeat (L38D12) */
-#define L38_FLAG_0B10                    0xB10   /* story flag shared with other levels; 1 adds the extra line L38D08/L38D10 at zone 6 */
 #define L38_GUARD91_STATE                0xC40   /* skeleton guard (persona 91): 0 = unaware, 1 = noticed hero / fighting, 2 = dead */
 #define L38_EXIT39_DOOR                  0xD5C   /* door used to leave towards room 39: 1 = zone 4, 2 = zone 5 */
 #define L38_KEYSPOT_NEAR                 0xD60   /* 1 while the hero stands at the key spot (descriptor distance < 90) on camera 5/6; 0 when he moves away (> 100) */
 #define L38_KEYSPOT_USES                 0xD64   /* times the key spot was used (0..2); the third use only says L38D05/06 */
 #define L38_ENTRY_DOOR_FROM39            0xD84   /* door the hero came through from room 39 (1 or 2); selects arrival position, 2 also opens zone 25 */
-#define L38_DEATH_ENDING_BYPASS          0xE8C   /* 1 = hero death does not play the death ending in INIT (runs trigger 0 instead); shared flag */
 #define L38_INTRO_DONE                   0xF34   /* 0 = intro dialogue L38D01/L38D02 not yet played, 1 = played */
 
 /* ST() reads g_lvl_S, the DLL's dword_1001BE4C. */

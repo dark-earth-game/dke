@@ -50,7 +50,7 @@ void l28_trig00(void) {
     }
     /* 0x743E */
     if (ST(ST_START_POINT(28)) == 2) {
-        ST(L28_ARCHIVIST_STAGE) = 1;
+        ST(V_LORY_STAGE) = 1;
         ST(ST_LEVEL) = 27;
     }
     /* 0x746B */
@@ -58,7 +58,7 @@ void l28_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 27;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L28_ARCHIVIST_STAGE) = 3;
+        ST(V_LORY_STAGE) = 3;
     }
     ST(ST_START_POINT(28)) = 0;
     ST(ST_SCRIPT_BUSY) = 0;
@@ -68,7 +68,7 @@ void l28_trig00(void) {
         CB->divers(DV_MUSIC, 1, 0);
     }
     /* 0x7501 */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(L28_ARCHIVIST_STAGE) == 1) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(V_LORY_STAGE) == 1) {
         CB->divers(DV_MUSIC, 2, 0);
     }
     ST(L28_UNUSED_64) = 0;
@@ -99,7 +99,7 @@ void l28_trig00(void) {
         CB->pos_perso(P_ARCHIVIST, 0, 0, 0, 2, "P05cad", 2, 0);
     }
     /* 0x7744 */
-    if (ST(L28_ARCHIVIST_STAGE) >= 1 && ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD) {
+    if (ST(V_LORY_STAGE) >= 1 && ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD) {
         CB->pos_perso(P_ARCHIVIST, 7976, -5015, 0x2691, 1, "P05ARR01", 2, 500);
     }
 }
@@ -123,7 +123,7 @@ static void trig02(void) {
             CB->select_pile(0, 1);
             CB->joindre(ST(ST_HERO), 0, 0, 0, 5);
             /* 0x84B4 */
-            if (ST(L28_ARCHIVIST_STAGE) == 0) {
+            if (ST(V_LORY_STAGE) == 0) {
                 /* 0x84C6 */
                 if (ST(ST_PLAYER_WEAPON) == 0 || (ST(ST_PLAYER_WEAPON) != 0 && CB->divers(DV_CAN_FIGHT, 0, 2)) || (ST(ST_PLAYER_WEAPON) != 0 && ST(ST_PLAYER_WEAPON) == ST(V_LAST_WEAPON))) {
                     /* 0x852D */
@@ -767,7 +767,7 @@ static void trig02(void) {
                 }
             }
             /* 0xA70C */
-            if (ST(L28_ARCHIVIST_STAGE) == 1) {
+            if (ST(V_LORY_STAGE) == 1) {
                 /* 0xA71E */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     /* 0xA730 */
@@ -855,7 +855,7 @@ static void trig02(void) {
                 }
             }
             /* 0xAB92 */
-            if (ST(L28_ARCHIVIST_STAGE) >= 2) {
+            if (ST(V_LORY_STAGE) >= 2) {
                 /* 0xABA4 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     /* 0xABB6 */
@@ -1332,7 +1332,7 @@ static void trig12(void) {
 /* trigger 41 - sub_10007789 */
 static void trig41(void) {
     /* 0x779B */
-    if (ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD && ST(L28_ARCHIVIST_STAGE) >= 1 && ST(L28_ARCHIVIST_GREETED) == 0) {
+    if (ST(ST_VIE(P_ARCHIVIST)) != VIE_DEAD && ST(V_LORY_STAGE) >= 1 && ST(L28_ARCHIVIST_GREETED) == 0) {
         CB->bloque(BLOQUE_ALL);
         ST(L28_ARCHIVIST_GREETED) = 1;
         lieu_action_register("L28D100", P_ARCHIVIST, "SP05DIA57", "SP05ARR01_10");
@@ -1349,7 +1349,7 @@ static void trig41(void) {
         lieu_action_register("L28D103B", P_ARCHIVIST, "SP05DIA51", "SP05ARR01_10");
     }
     /* 0x788E */
-    if (ST(L28_ARCHIVIST_ENTER_ONCE) == 0 && ST(L28_ARCHIVIST_STAGE) == 0) {
+    if (ST(L28_ARCHIVIST_ENTER_ONCE) == 0 && ST(V_LORY_STAGE) == 0) {
         ST(L28_ARCHIVIST_ENTER_ONCE) = 1;
         CB->joindre(ST(ST_HERO), 0, 0, 0, 5);
         CB->joindre(P_ARCHIVIST, 0, 0, 0, ST(ST_HERO));
@@ -1402,7 +1402,7 @@ static void trig41(void) {
         CB->divers(DV_MUSIC, 1, 1);
     }
     /* 0x7B8C */
-    if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(L28_ARCHIVIST_STAGE) == 1) {
+    if (ST(V_GUARD_FIGHT_DONE) == 2 || ST(V_LORY_STAGE) == 1) {
         CB->divers(DV_MUSIC, 2, 1);
     }
 }

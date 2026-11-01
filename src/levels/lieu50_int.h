@@ -43,10 +43,8 @@ void l50_trig00(void);
 #define L50_LEONA_SEEN             0xB0C  /* 1 = hero has met Leona (changes Bandor's dialogue); set outside this level */
 #define L50_GREETING_STAGE         0xC18  /* 0 = none, 1 = first greeting pending (L12D01/02), 2 = greeted (random greeting at start-up) */
 #define L50_TALK_STAGE             0xC1C  /* Bandor/Khorad story conversation stage 0-4 (0 first meeting ... 4 Leona/bunker questions) */
-#define L50_BUNKER_SEEN            0xC20  /* 1 = hero saw the bunker door in the Darklands, 2 = told (shared with levels 12, 13, 49, 53) */
 #define L50_TALK_MARK_CB0          0xCB0  /* set to 2 after the Bandor/Khorad warning talk; also used by levels 12, 14, 54 */
 #define L50_TALK_MARK_CB4          0xCB4  /* set to 1 after Arkhan3's apology talk; also used by levels 12, 14, 54 */
-#define L50_CRYSTAL_PROGRESS       0xED0  /* crystal quest step 0-3 (5 = done), advanced when the hero shows proof (shared with levels 4, 5, 12, 15, 32, 49) */
 #define L50_PROOF_SHOWN            0xEDC  /* 1 = hero showed the crystal bow-key as proof (shrine loot is then OB21B, not OB12) */
 #define L50_ALT_MUSIC              0xEFC  /* 1 = alternate music set and room music variant 2 (start point 2); also levels 12, 13, 53 */
 

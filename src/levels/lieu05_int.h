@@ -34,8 +34,6 @@
 #define L05_FIRST_TALK_DONE      0x0DC   /* 1 = Arkhan2/3 first talk with Bogdaran (L05D11A/12B) done */
 #define L05_UNUSED_E0            0x0E0   /* never read, only cleared at INIT */
 #define L05_TALK_IN_FIGHT_OK     0x0F0   /* 1 = dialogue allowed while in combat stance */
-#define L05_EVENT_3              0x32C   /* event 3 step (0x320 + 4*3) */
-#define L05_EVENT_4              0x330   /* event 4 step (0x320 + 4*4) */
 #define L05_OB16_STATE           0x5B8   /* OB16 object: 0 present, 1/2 taken or used */
 #define L05_D48_SAID             0x728   /* 1 = L05D48 said */
 #define L05_BOGDARAN_TOGGLE      0x744   /* alternates 0/1 on each approach (SP08MAR29 variants) */
@@ -51,7 +49,6 @@
 #define L05_BOGDARAN_D13_STATE   0x8F4   /* 1 = hero struck, 2 = L05D13A/B played */
 #define L05_D53_SAID             0x8F8   /* 1 = L05D53A/B said */
 #define L05_FLAG_B08             0xB08   /* start point preset 0/1, no reader here */
-#define L05_OB75_COMBINED        0xB10   /* set by the OB75 combination (engine) */
 #define L05_BOGDARAN_QUEST       0xB7C   /* Bogdaran quest stage: 0 start, 2 L05D65, 3/4 later talks, 5 weapon given, 10 done */
 #define L05_BOGDARAN_STAGE       0xB9C   /* Bogdaran talk/fight stage: 0 first, 1 greeted, 10/11/12 fight armed */
 #define L05_DUEL_MODE            0xC60   /* 1 = Delia fights Bogdaran, 2 = Delia dead and Bogdaran fights the hero */
@@ -60,9 +57,7 @@
 #define L05_D59_SAID             0xDD8   /* 1 = L05D59 said */
 #define L05_START_PRESET_E3C     0xE3C   /* start point preset 1 / 2 (read by later rooms) */
 #define L05_FLAG_E40             0xE40   /* read only: 0 enables L05D48 line (written by other rooms) */
-#define L05_FORCE_DEFAULT_INIT   0xE8C   /* 1 = run default INIT even when the hero is dead */
 #define L05_FLAG_EB0             0xEB0   /* read only: nonzero enables L05D59 line (written by other rooms) */
-#define L05_FLAG_ED0             0xED0   /* read only: < 3 enables L05D53 line (written by other rooms) */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu05_trig.c). */
 void l05_trigger(i32 idx);

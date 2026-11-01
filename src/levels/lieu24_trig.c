@@ -52,8 +52,8 @@ void l24_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(24)) == 1) {
         ST(ST_LEVEL) = 27;
-        ST(L24_ARKHAN1_PART_DONE) = 1;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 100;
+        ST(V_ARKHAN1_PROGRESS) = 1;
+        ST(V_RYLSADHAR_ZED_STAGE) = 100;
         ST(ST_HERO) = P_ARKHAN2;
     }
     /* 0x744D */
@@ -62,7 +62,7 @@ void l24_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 23;
         ST(ST_VIE(P_THANANDAR24)) = 1;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 100;
+        ST(V_RYLSADHAR_ZED_STAGE) = 100;
         CB->pos_perso(P_GUARDIAN16, 6100, -4210, 0, 2, "P56cad", 9, 0);
     }
     /* 0x74C9 */
@@ -71,7 +71,7 @@ void l24_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 23;
         ST(ST_VIE(P_THANANDAR24)) = VIE_DEAD;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 100;
+        ST(V_RYLSADHAR_ZED_STAGE) = 100;
         CB->pos_perso(P_THANANDAR24, 6093, -4043, 0x7BAC, 2, "P24cad", 8, 0);
         CB->pos_perso(P_GUARDIAN16, 6100, -4210, 0, 2, "P56cad", 9, 0);
     }
@@ -81,7 +81,7 @@ void l24_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 23;
         ST(ST_VIE(P_THANANDAR24)) = 1;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 100;
+        ST(V_RYLSADHAR_ZED_STAGE) = 100;
         ST(L24_THANANDAR_ENCOUNTER) = 1;
         CB->pos_perso(P_GUARDIAN16, 6100, -4210, 0, 2, "P56cad", 9, 0);
     }
@@ -89,7 +89,7 @@ void l24_trig00(void) {
     if (ST(ST_START_POINT(24)) == 5) {
         ST(L24_ARKHAN23_STEP) = 5;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 100;
+        ST(V_RYLSADHAR_ZED_STAGE) = 100;
         ST(ST_LEVEL) = 23;
         ST(ST_VIE(P_THANANDAR24)) = 1;
         ST(L24_THANANDAR_ENCOUNTER) = 1;
@@ -100,7 +100,7 @@ void l24_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 23;
         ST(ST_VIE(P_THANANDAR24)) = 1;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 100;
+        ST(V_RYLSADHAR_ZED_STAGE) = 100;
     }
     /* 0x76B8 */
     if (ST(ST_START_POINT(24)) == 7) {
@@ -192,9 +192,9 @@ void l24_trig00(void) {
         ST(L24_UNUSED_734) = 0;
         CB->bruitage("L24AMB1", -1, -1);
         ST(ST_SCRIPT_BUSY) = 1;
-        ST(L24_RYLSADHAR_ZED_STAGE) = 7;
-        ST(L24_ARKHAN23_PART) = 1;
-        ST(L24_GUARD34_FIGHT_STATE) = 3;
+        ST(V_RYLSADHAR_ZED_STAGE) = 7;
+        ST(V_RETURN_PART) = 1;
+        ST(V_GUARDIAN4_STAGE) = 3;
         CB->bloque(BLOQUE_ALL);
         CB->divers(DV_INVENTORY, 1, 0);
         CB->vire_col(0xC, 0);

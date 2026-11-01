@@ -62,8 +62,6 @@ void l15_pre_scene2(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);
 #define L15_KALHI_FOLLOW_STEP      0x100   /* 1 = Kalhi13 asked to follow, 2 = walking, 3 = arrived and joined the hero */
 #define L15_DANRYS_INTRO_114       0x114   /* 1 = intro line at trigger 4 already played */
 #define L15_LAST_WEAPON_KALHI      0x118   /* weapon the hero showed Kalhi13 last (avoids repeating the warning) */
-#define L15_EVENT_32C              0x32C   /* game-wide event flag; must be 0 for the L15D307 scene */
-#define L15_EVENT_330              0x330   /* game-wide event flag; must be 0 for the L15D307 scene */
 #define L15_TRIG_564               0x564   /* 0 -> 1 after Danrys' L15D606/607 lines */
 #define L15_FIGHT_DONE_LINES       0x574   /* 1 = L15D407 lines (after V_GUARD_FIGHT_DONE) already said */
 #define L15_TRIG9_SEEN             0x6A0   /* 1 = zone 9 message (LCOD76) already shown */
@@ -81,9 +79,7 @@ void l15_pre_scene2(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);
 #define L15_CONVO_ABC              0xABC   /* 0..2 L15D322..330 conversation stage */
 #define L15_CONVO_AC0              0xAC0   /* 1 = L15D410/411 conversation done (needs L15_STORY_BCC) */
 #define L15_KONKALITE9_TALK        0xAC8   /* 0 -> 1 first talk with Konkalite9 (L15D91..94) */
-#define L15_INTRO_B10              0xB10   /* game-wide; start points 3.. set 1 (suppresses the intro) */
 #define L15_PROGRESS_STEP          0xBBC   /* game-wide mission step 0..10 (start points 2-4 set 1..3; 2 = Kalhi/Danrys met, 5/8 = done, 10 = Kalhi13 killed, 20 = ended); shared with L14 */
-#define L15_CONVO_BC8              0xBC8   /* 0..2 L15D57/58 conversation stage (Armal) */
 #define L15_STORY_BCC              0xBCC   /* game-wide flag; non-zero allows the L15D410 line */
 #define L15_DANRYS_INTERRUPTIBLE   0xBD4   /* 1 = Danrys scene can be cancelled by hitting him (he plays the 215MEU anim); reset at scene end */
 #define L15_FLAG_BE4               0xBE4   /* game-wide; start points set 0 / read at trigger 3 (value 1 = special state) */
@@ -102,14 +98,12 @@ void l15_pre_scene2(i32 hero, i32 n, i32 a1, i32 a2, i32 a3);
 #define L15_KONKALITE9_ENGAGED     0xE34   /* game-wide; 0 = peaceful, 1 = Konkalite9 hostile, 2 = he is dead */
 #define L15_ROOM_SEEN_E40          0xE40   /* game-wide; start point 1 sets 1; gates the L15D312/317 conversation */
 #define L15_DANRYS_TALK_STAGE_E80  0xE80   /* Danrys talk 0..2 (L15D23, L15D21..) */
-#define L15_ENDING_OVERRIDE        0xE8C   /* game-wide; 1 = skip the hero-death ending in the tick and re-run INIT (set to 1 in L31 near the end) */
 #define L15_STORY_EB0              0xEB0   /* game-wide story counter; >= 2 allows the L15D307 conversation */
 #define L15_CRYSTAL_ROUND          0xECC   /* game-wide; 0 = first crystal round, 1..3 = later rounds (3 = no more trades) */
-#define L15_CRYSTAL_PROGRESS       0xED0   /* crystal quest step 0..5 (5 = done); game-wide, shared with L12, L50 and others */
 #define L15_CRYSTAL18_GIVEN        0xED4   /* game-wide; 1 = crystal OB18/OB19 already handed over (SOB18/SOB19 not restored in the trade scene) */
 #define L15_CRYSTAL19_GIVEN        0xED8   /* game-wide; 1 = crystal OB18/OB19 already handed over (SOB18/SOB19 not restored in the trade scene) */
 #define L15_CRYSTAL12_GIVEN            0xEDC   /* game-wide; 1 = crystal OB12 handed over (same slot as L12_PROOF_SHOWN) */
-#define L15_ARMAL_STAGE            0xF4C   /* 0 -> 1 Armal conversation stage (with L15_CONVO_BC8) */
+#define L15_ARMAL_STAGE            0xF4C   /* 0 -> 1 Armal conversation stage (with V_ARMAL_STAGE) */
 #define L15_KALHI_DEAD_HANDLED     0xF58   /* 1 = Kalhi13's death already handled (progress step 10) */
 
 #endif /* DKE_LIEU15_INT_H */

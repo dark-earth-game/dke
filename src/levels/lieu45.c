@@ -70,7 +70,7 @@ static void tick_body(void) {
             CB->joindre(-P_DELIA, 0, 0, 0, ST(ST_HERO));
         }
         /* 0x7E72 */
-        if (ST(L45_DELIA_FOLLOW) == 1 && (ST(L45_FRAME_COUNTER) % 20) == 0) {
+        if (ST(L45_DELIA_FOLLOW) == 1 && (ST(V_FRAME_COUNTER) % 20) == 0) {
             /* 0x7EA5 */
             if (CB->distance(7, 1) >= 180) {
                 ST(L45_DELIA_STOPPED) = 0;
@@ -157,7 +157,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L45_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l45_trig00();   /* 0x1000A929: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

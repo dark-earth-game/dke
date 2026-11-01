@@ -91,8 +91,8 @@ static void tick_body(void) {
         if (ST(L25_DOOR_EVENT0_DONE) == 0) {
             ST(L25_DOOR_EVENT0_DONE) = 1;
             /* 0x8394 */
-            if (ST(L25_RYLSADHAR_INTRO_DONE) == 1 && ST(L25_RYLSADHAR_ZED_STAGE) != 7) {
-                ST(L25_RYLSADHAR_ZED_STAGE) = 7;
+            if (ST(L25_RYLSADHAR_INTRO_DONE) == 1 && ST(V_RYLSADHAR_ZED_STAGE) != 7) {
+                ST(V_RYLSADHAR_ZED_STAGE) = 7;
             }
             CB->select_pile(2, 1);
             CB->evenement(0, 1250);
@@ -104,11 +104,11 @@ static void tick_body(void) {
         } else {
             ST(ST_LEVEL) = 25;
             /* 0x8436 */
-            if (ST(ST_HERO) == P_ARKHAN1 && ST(L25_RYLSADHAR_ZED_STAGE) == 10) {
+            if (ST(ST_HERO) == P_ARKHAN1 && ST(V_RYLSADHAR_ZED_STAGE) == 10) {
                 CB->change_piece(23, 2);
             }
             /* 0x846A */
-            if (ST(L25_KALHI_PART_STEP) == 3) {
+            if (ST(V_ROUTE_STAGE) == 3) {
                 CB->change_piece(23, 1);
             } else {
                 CB->change_piece(23, 0);
@@ -146,7 +146,7 @@ static void tick_body(void) {
         }
     }
     /* 0x85CA */
-    if (ST(ST_HERO) == P_ARKHAN1 && ST(L25_RYLSADHAR_INTRO_DONE) == 0 && ST(L25_RYLSADHAR_ZED_STAGE) < 7 && !CB->on_joindre(P_RYLSADHAR20)) {
+    if (ST(ST_HERO) == P_ARKHAN1 && ST(L25_RYLSADHAR_INTRO_DONE) == 0 && ST(V_RYLSADHAR_ZED_STAGE) < 7 && !CB->on_joindre(P_RYLSADHAR20)) {
         ST(L25_RYLSADHAR_INTRO_DONE) = 1;
         CB->select_pile(1, 1);
         CB->vire_col(8, 0);
@@ -154,13 +154,13 @@ static void tick_body(void) {
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP20LEV01");
         CB->animation("P20ARR02_50");
-        CB->modify_var(&ST(L25_RYLSADHAR_ZED_STAGE), 7);
+        CB->modify_var(&ST(V_RYLSADHAR_ZED_STAGE), 7);
         CB->animation("P20ARR02");
         CB->bloque(BLOQUE_NONE);
         CB->select_pile(0, 1);
     }
     /* 0x86AD */
-    if ((ST(ST_HERO) == P_ARKHAN2 || ST(ST_HERO) == P_ARKHAN3) && ST(L25_RYLSADHAR_ZED_STAGE) != 9 && ST(L25_RYLSADHAR_SCENE_ENDED) == 0) {
+    if ((ST(ST_HERO) == P_ARKHAN2 || ST(ST_HERO) == P_ARKHAN3) && ST(V_RYLSADHAR_ZED_STAGE) != 9 && ST(L25_RYLSADHAR_SCENE_ENDED) == 0) {
         /* 0x86F2 */
         if (ST(L25_RYLSADHAR_TALK_STATE) == 1) {
             ST(L25_RYLSADHAR_KALHI_STATE) = 1;
@@ -284,7 +284,7 @@ static void tick_body(void) {
         /* 0x8EF0 */
         if (ST(L25_KALHI_MEETING_STEP) == 6 && !CB->on_joindre(P_RYLSADHAR20)) {
             ST(L25_KALHI_MEETING_STEP) = 10;
-            ST(L25_RYLSADHAR_ZED_STAGE) = 9;
+            ST(V_RYLSADHAR_ZED_STAGE) = 9;
             CB->select_pile(1, 1);
             CB->stop_joindre(-P_RYLSADHAR20);
             CB->change_camera(0, CAM_LOCKED);
@@ -352,12 +352,12 @@ static void tick_body(void) {
     /* 0x9294 */
     if (ST(ST_VIE(P_RYLSADHAR20)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0) {
         ST(L25_RYLSADHAR_SCENE_ENDED) = 1;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 10;
+        ST(V_RYLSADHAR_ZED_STAGE) = 10;
         ST(V_ENGAGED_PERSONA) = 0;
     }
     /* 0x92DF */
     if (ST(ST_VIE(P_KALHI13)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0) {
-        ST(L25_KALHI13_GREETED) = 1;
+        ST(V_KALHI_KILLED) = 1;
         ST(V_ENGAGED_PERSONA) = 0;
     }
 }
@@ -391,7 +391,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L25_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l25_trig00();   /* 0x1000F149: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

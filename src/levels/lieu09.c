@@ -189,7 +189,7 @@ static void tick_body(void) {
         return;
     }
     /* 0x8037 */
-    if (ST(L09_GUARDIAN8_STAGE) == 2 && CB->divers(DV_WAS_HIT, P_GUARDIAN8, 0) && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
+    if (ST(V_GUARDIAN8_STAGE) == 2 && CB->divers(DV_WAS_HIT, P_GUARDIAN8, 0) && ST(ST_VIE(P_GUARDIAN8)) != VIE_DEAD) {
         CB->select_pile(1, 2);
         CB->divers_empile(DV_WAS_HIT, P_GUARDIAN8, 1);
         CB->combat(P_GUARDIAN8, -1);
@@ -223,8 +223,8 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8216 */
-    if (ST(L09_GUARDIAN8_STAGE) == 2 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GUARDIAN8)) == VIE_DEAD) {
-        ST(L09_GUARDIAN8_STAGE) = 3;
+    if (ST(V_GUARDIAN8_STAGE) == 2 && ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_GUARDIAN8)) == VIE_DEAD) {
+        ST(V_GUARDIAN8_STAGE) = 3;
         ST(V_ENGAGED_PERSONA) = 0;
     }
 }
@@ -258,7 +258,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L09_ENDING_OVERRIDE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l09_trig00();   /* 0x1000AEE9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

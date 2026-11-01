@@ -20,7 +20,6 @@ void l32_trig00(void);
 
 /* Script variables: slots of the shared state block this level uses as its own
  * (the low slots are scratch and mean something different in every level). */
-#define L32_FRAME_COUNTER                  0x038  /* engine frame counter, used modulo 20 to re-aim Konkalite7 at the hero */
 #define L32_SORDOS_SCENE_STEP              0x064  /* Sordos/Gork chase scene: 0 start, 2/3/51/100/250 first-variant steps, 20-25 second variant, 100 waits for Sordos */
 #define L32_GORK_TAUNT_ACTIVE              0x068  /* 1 while the random Gork taunt (event 2) is pending, then cleared */
 #define L32_TAUNT_VARIANT                  0x06C  /* random(3)+1 selects the taunt line (switch), reused for the second taunt */
@@ -37,12 +36,9 @@ void l32_trig00(void);
 #define L32_HIT_COUNT_SEEN                 0x0FC  /* last PLAYER_HIT_COUNT value that was handled (cuts speech when the hero takes a new hit) */
 #define L32_DEATH_HANDLED                  0x100  /* 1 once the hero-dead check ran in the tick */
 #define L32_ZONE14_HINT_STAGE              0x114  /* trigger 14: 0 first hint, 1 later hint */
-#define L32_EVENT3_STATE                   0x32C  /* event 3 slot: 1 set when the OB_KONK_KEY door was opened */
-#define L32_EVENT4_STATE                   0x330  /* event 4 slot: 0 while the door is not yet opened (checked with the key) */
 #define L32_DHORKAN95_TALK_STAGE           0x4F4  /* trigger 6 conversation with Dhorkan95: 0 first, 1..4 */
 #define L32_ZONE20_STAGE                   0x604  /* trigger 20 object: 0 first, 1 second */
 #define L32_PLAYER_HIT_COUNT               0x8D4  /* counts hits the hero takes (written by other rooms/engine); HIT_COUNT_SEEN follows it */
-#define L32_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
 #define L32_ROOM_ANIM_KIND                 0xB70  /* which ambient anim runs: 1 or 2 (pauses anim slot 0 or 15 with the camera) */
 #define L32_STORY_PART                     0xBB0  /* arriving state: 2 after the Konkalite fight, 10 later (shared with L31) */
 #define L32_MALROT6_DEAD                   0xC28  /* 10 once Malrot6 was killed; 1 = set by trigger 14 */
@@ -50,13 +46,8 @@ void l32_trig00(void);
 #define L32_ZONE11_HANDLED                 0xC3C  /* 1 once the trigger 11 scene ran (zone 11 instead of zone 30) */
 #define L32_DHORKAN11_SEARCHED             0xC6C  /* 1 once Dhorkan11 was searched (trigger 6) */
 #define L32_GORK_FIGHT_STARTED             0xD80  /* 1 once the Gork fight started (engaged persona set) */
-#define L32_SORDOS_DUEL_STATE                    0xE20  /* 2 = duel Sordos vs Thanandar24 decided (room 34); the chase starts only while < 2 */
-#define L32_CHASE_STATE                    0xE8C  /* 0 none, 1 chase requested, 2 chase scene running, 10 over */
-#define L32_KONKALITE_FIGHT_STAGE          0xE98  /* 60 = Konkalite2 fight cleared; INIT sets 65 (already done) */
-#define L32_DHORKAN11_ITEM_STAGE           0xED0  /* trigger 6 item stage after the search (2, 3, 5) */
 #define L32_DHORKAN11_SEARCH_DONE          0xED4  /* 1 once the Dhorkan11 search ended */
 #define L32_BORK_ROUTE_STAGE               0xEE0  /* preset 1 at start point 2 (see L31) */
-#define L32_CHASE_ROUTE                    0xEF8  /* 1 or 11 = chase route, 10 = Gork already met */
 #define L32_GORK_KONKALITE7_STATE          0xF00  /* Gork/Konkalite7 fight: 0 none, 1-3 fighting, 10 both beaten */
 #define L32_ROOM_PLOT_STAGE                0xF24  /* room plot: 0 start, 1 Dhorkan95 present, 2 seen, 3 Konkalite3/Malrot6, 5 Gork, 6 door opened */
 #define L32_KONKALITE3_STATE               0xF28  /* Konkalite3 fight: 0 fresh, 1 wounded, 2 dead, 3 beaten by the Malrot6 scene */

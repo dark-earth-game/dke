@@ -168,9 +168,9 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8750 */
-    if (ST(ST_VIE(P_DHORKAN11)) != VIE_DEAD && ST(L06_DHORKAN_MET) < 2 && ST(ST_HERO) == P_ARKHAN1 && ST(L06_DHORKAN_INTRO_STEP) == 1) {
+    if (ST(ST_VIE(P_DHORKAN11)) != VIE_DEAD && ST(V_EVENT_14) < 2 && ST(ST_HERO) == P_ARKHAN1 && ST(L06_DHORKAN_INTRO_STEP) == 1) {
         ST(L06_DHORKAN_INTRO_STEP) = 2;
-        ST(L06_DHORKAN_MET) = 2;
+        ST(V_EVENT_14) = 2;
         CB->bloque(BLOQUE_ALL);
         CB->animation("SP11ATT04_10");
         CB->animation("sar_10");
@@ -222,7 +222,7 @@ static void tick_body(void) {
         CB->change_piece(2, -1);
     }
     /* 0x8A88 */
-    if (ST(ST_VIE(P_DHORKAN11)) != VIE_DEAD && ST(L06_DHORKAN_MET) >= 2 && ST(L06_DHORKAN_INTRO_STEP) == 1 && ST(ST_HERO) == P_ARKHAN1 && ST(L06_D03_DONE) == 0) {
+    if (ST(ST_VIE(P_DHORKAN11)) != VIE_DEAD && ST(V_EVENT_14) >= 2 && ST(L06_DHORKAN_INTRO_STEP) == 1 && ST(ST_HERO) == P_ARKHAN1 && ST(L06_D03_DONE) == 0) {
         ST(V_EVENT_7) = 0;
         ST(L06_DHORKAN_INTRO_STEP) = 2;
         CB->bloque(BLOQUE_ALL);
@@ -593,7 +593,7 @@ static void tick_body(void) {
         CB->divers_empile(DV_MUSIC, 1, 4);
         CB->evenement(53, -1);
         /* 0x9E3A */
-        if (ST(L06_FLAG_B4C) >= 3) {
+        if (ST(V_ROUTE_STAGE) >= 3) {
             CB->change_piece(46, 1);
         } else {
             CB->change_piece(46, -1);
@@ -676,7 +676,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L06_FORCE_DEFAULT_INIT) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l06_trig00();   /* 0x100101E9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

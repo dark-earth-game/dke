@@ -64,13 +64,13 @@ void l06_trig00(void) {
     if (ST(ST_START_POINT(6)) == 1) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 2;
-        ST(L06_DHORKAN_MET) = 0;
+        ST(V_EVENT_14) = 0;
     }
     /* 0x743E */
     if (ST(ST_START_POINT(6)) == 2) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 2;
-        ST(L06_DHORKAN_MET) = 2;
+        ST(V_EVENT_14) = 2;
     }
     /* 0x747A */
     if (ST(ST_START_POINT(6)) == 3) {
@@ -244,13 +244,13 @@ void l06_trig00(void) {
     CB->load_anim("206OUV04", 2);
     ST(ST_START_POINT(6)) = 0;
     /* 0x7EEB */
-    if (ST(L06_EVENT_6) == 0 && ST(L06_EVENT_10) == 0 && ST(L06_RETURN_PHASE) == 0 && ST(L06_GUARDIAN4_STATE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-        ST(L06_GUARDIAN4_STATE) = 0;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0 && ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+        ST(V_GUARDIAN4_STAGE) = 0;
     }
     /* 0x7F54 */
-    if (ST(L06_EVENT_6) == 0 && ST(L06_EVENT_10) == 0 && ST(L06_RETURN_PHASE) == 1 && ST(L06_GUARDIAN4_STATE) == 4) {
-        ST(L06_EVENT_6) = 1;
-        ST(L06_EVENT_10) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
     /* 0x7FBA */
     if (ST(L06_PHEDORIA_FIGHT) < 2) {
@@ -268,8 +268,8 @@ static void trig01(void) {
         /* 0xA4A9 */
         if (ST(ST_HERO) == P_ARKHAN1) {
             /* 0xA4BB */
-            if (ST(L06_DHORKAN_MET) == 0) {
-                ST(L06_DHORKAN_MET) = 2;
+            if (ST(V_EVENT_14) == 0) {
+                ST(V_EVENT_14) = 2;
                 CB->change_camera(2, CAM_LOCKED);
                 CB->animation("SP11ATT02");
                 CB->dialogue("L06D05G", P_DHORKAN11);

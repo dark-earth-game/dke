@@ -72,10 +72,6 @@ extern i32 g_l24_heisgoing;
 #define L24_KONKALITE_ZONE_STAGE           0xA68  /* trigger 11 scene: 0 first, 1 second, 2 done */
 #define L24_ZONE20_ONCE                    0xA74  /* one-shot guard of the trigger 20 scene */
 #define L24_ZONE25_LOOK_STAGE              0xA78  /* trigger 25 object: 0 first message (LCOD13), 1 repeat (LCOD16) */
-#define L24_ARKHAN1_PART_DONE              0xAF4  /* preset 1 at start point 1 (earlier story step already done) */
-#define L24_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
-#define L24_KALHI_PART_STEP                0xB4C  /* Arkhan2/3 story step; < 3 leaves for room 23 */
-#define L24_GUARD34_FIGHT_STATE            0xB98  /* guard-pair fight state; set to 3 on arrival from room 27 (shared with L23) */
 #define L24_ARKHAN23_STEP                  0xBA8  /* Arkhan2/3 storyline step 0..8 (2 meet Thanandar24, 4 reconciled, 5/6 later) */
 #define L24_THANANDAR_FIGHT_STATE          0xBB0  /* 0 not fought, 1 fighting, 2 dead */
 #define L24_THANANDAR_COMPANION            0xBB4  /* 1 = Thanandar24 joined/follows the hero (set when he dies before step 6) */
@@ -85,8 +81,6 @@ extern i32 g_l24_heisgoing;
 #define L24_THANANDAR_VISIT_COUNT          0xE14  /* 0..4 visits/warnings counted at BA8 == 6; 2+ makes Thanandar24 hostile */
 #define L24_THANANDAR_PROVOKED             0xE18  /* set by other rooms; 1 = Thanandar24 attacks at once */
 #define L24_ENTERED_FROM_27                0xE3C  /* 1 when arriving from room 27 or after the trigger 8 scene */
-#define L24_RYLSADHAR_ZED_STAGE            0xE78  /* Arkhan1 story stage (shared with L23); set to 100 (past) by start points 1/2/3 */
-#define L24_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L24_THANANDAR_KILLED_MARK          0xF24  /* set to 5 when Thanandar24 dies */
 #define L24_THANANDAR_GREETED              0xF2C  /* 1 once Thanandar24 greeted the hero */
 

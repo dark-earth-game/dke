@@ -34,10 +34,6 @@ void l25_trig00(void);
 #define L25_UNUSED_118                     0x118  /* only zeroed at INIT, never read in this level */
 #define L25_TRIG8_MESSAGE_SHOWN            0x5D0  /* 1 once the trigger 8 message was shown */
 #define L25_ARKHAN2_TALKED                 0x958  /* 1 once Arkhan2 talked with Rylsadhar20 (trigger 2) */
-#define L25_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
-#define L25_RYLSADHAR_STAGE                0xB10  /* story stage of the Rylsadhar20 encounter: 1 set at start point, 5 = music B (resolved) */
-#define L25_RYLSADHAR_DIALOGUE_COUNT       0xB40  /* < 2 adds the second line (L25D200B/L25D201B) after the fight */
-#define L25_KALHI_PART_STEP                0xB4C  /* Arkhan2/3 story step; 3 leaves for variant 1 of room 23 */
 #define L25_RYLSADHAR_SCENE_ENDED          0xBB4  /* 1 once the Rylsadhar20 scene ended (hero may move freely) */
 #define L25_RYLSADHAR_KALHI_STATE          0xBD0  /* 0 none, 1 Kalhi13 present in the room, 2 meeting finished */
 #define L25_RYLSADHAR_GATE_OPENED          0xBE4  /* 1 once the room 26 gate event ran */
@@ -48,9 +44,6 @@ void l25_trig00(void);
 #define L25_KALHI13_TALK_A                 0xD24  /* Kalhi13 talk stage for Arkhan2 (0..2) */
 #define L25_KALHI13_TALK_B                 0xD28  /* Kalhi13 talk stage for Arkhan3 (0..2) */
 #define L25_POST_MEETING_SAID              0xE0C  /* 1 once the post-meeting line (L25D200/201) was said */
-#define L25_KALHI13_GREETED                0xE58  /* 1 once Kalhi13 greeted the hero on entry */
-#define L25_RYLSADHAR_ZED_STAGE            0xE78  /* Arkhan1 story stage: 7 Rylsadhar20 at post, 9 Kalhi13 meeting done, 10 Zed84 scene */
-#define L25_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L25_ARKHAN2_DIALOGUE_SEEN          0xEB0  /* 1 once the Arkhan2 conversation with Rylsadhar20 started */
 
 #endif /* DKE_LIEU25_INT_H */

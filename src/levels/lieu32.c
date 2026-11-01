@@ -116,14 +116,14 @@ static void tick_body(void) {
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         /* 0x8B89 */
-        if (ST(L32_CHASE_STATE) == 0 && ST(L32_SORDOS_DUEL_STATE) < 2 && (ST(L32_STORY_PART) == 2 || ST(L32_STORY_PART) == 10) &&
+        if (ST(V_CHASE_STATE) == 0 && ST(V_SORDOS_DUEL) < 2 && (ST(L32_STORY_PART) == 2 || ST(L32_STORY_PART) == 10) &&
             (ST(ST_VIE(P_GORK)) < 2 || ST(ST_VIE(P_KONKALITE11)) < 2) &&
             !CB->divers(DV_PERSONA_PRESENT, 29, 0)) {
-            ST(L32_CHASE_STATE) = 1;
+            ST(V_CHASE_STATE) = 1;
             ST(ST_VIE(69)) = VIE_DEAD;
             /* 0x8C75 */
-            if (ST(L32_CHASE_ROUTE) != 1 && ST(L32_CHASE_ROUTE) != 11 && ST(L32_STORY_PART) == 10) {
-                ST(L32_CHASE_ROUTE) = 1;
+            if (ST(V_CHASE_ROUTE) != 1 && ST(V_CHASE_ROUTE) != 11 && ST(L32_STORY_PART) == 10) {
+                ST(V_CHASE_ROUTE) = 1;
             }
             CB->bloque(BLOQUE_ALL);
             CB->divers_empile(DV_SCREEN, 5, 0);
@@ -194,8 +194,8 @@ static void tick_body(void) {
         }
         CB->divers_empile(DV_SCREEN, 3, 0);
         /* 0x9070 */
-        if (ST(L32_CHASE_STATE) == 1) {
-            ST(L32_CHASE_STATE) = 2;
+        if (ST(V_CHASE_STATE) == 1) {
+            ST(V_CHASE_STATE) = 2;
             ST(L32_GORK_KONKALITE7_STATE) = 0;
             ST(V_ENGAGED_PERSONA) = 0;
             CB->bloque(BLOQUE_ALL);
@@ -215,7 +215,7 @@ static void tick_body(void) {
         }
     }
     /* 0x9184 */
-    if (ST(L32_CHASE_STATE) != 0 && (ST(L32_GORK_KONKALITE7_STATE) == 0 || ST(L32_GORK_KONKALITE7_STATE) >= 10) && ST(L32_ROOM_PLOT_STAGE) != 3 && ST(L32_ROOM_PLOT_STAGE) != 4) {
+    if (ST(V_CHASE_STATE) != 0 && (ST(L32_GORK_KONKALITE7_STATE) == 0 || ST(L32_GORK_KONKALITE7_STATE) >= 10) && ST(L32_ROOM_PLOT_STAGE) != 3 && ST(L32_ROOM_PLOT_STAGE) != 4) {
         /* 0x91DE */
         if (ST(L32_GORK_DEAD) == 1) {
             /* 0x91F0 */
@@ -541,7 +541,7 @@ static void tick_body(void) {
         }
     }
     /* 0xA285 */
-    if ((ST(L32_GORK_KONKALITE7_STATE) == 1 || ST(L32_GORK_KONKALITE7_STATE) == 2) && (ST(L32_CHASE_STATE) == 0 || ST(L32_CHASE_STATE) == 10) && ST(L32_ROOM_PLOT_STAGE) == 0) {
+    if ((ST(L32_GORK_KONKALITE7_STATE) == 1 || ST(L32_GORK_KONKALITE7_STATE) == 2) && (ST(V_CHASE_STATE) == 0 || ST(V_CHASE_STATE) == 10) && ST(L32_ROOM_PLOT_STAGE) == 0) {
         /* 0xA2DC */
         if (ST(L32_KONKALITE7_AMBUSH_ONCE) == 0 && ST(ST_VIE(P_KONKALITE7)) != VIE_DEAD && ST(ST_VIE(P_GORK)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0 && CB->distance(1, 12) > 400) {
             ST(L32_KONKALITE7_AMBUSH_ONCE) = 1;
@@ -591,7 +591,7 @@ static void tick_body(void) {
                 }
                 CB->divers(DV_RUN, P_KONKALITE7, 1);
                 /* 0xA5BB */
-                if ((ST(L32_FRAME_COUNTER) % 20) == 0) {
+                if ((ST(V_FRAME_COUNTER) % 20) == 0) {
                     CB->joindre(-P_KONKALITE7, -1, -1, -1, ST(ST_HERO));
                 }
                 CB->select_pile(0, 1);
@@ -918,7 +918,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L32_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l32_trig00();   /* 0x100110D9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

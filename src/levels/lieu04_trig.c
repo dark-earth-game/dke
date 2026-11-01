@@ -92,7 +92,7 @@ void l04_trig00(void) {
     /* 0x7489 */
     if (ST(ST_START_POINT(4)) == 3) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L04_RETURN_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 0;
         ST(L04_ARENA_ON) = 0;
         ST(L04_ARRIVAL_PATH) = 2;
@@ -101,29 +101,29 @@ void l04_trig00(void) {
     /* 0x74F2 */
     if (ST(ST_START_POINT(4)) == 4) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L04_KALHI_RECRUIT) = 3;
-        ST(L04_KALHI_COMPANION) = 6;
+        ST(V_KALHI_RECRUIT) = 3;
+        ST(V_KALHI_PHASE) = 6;
         ST(V_GUARD_FIGHT_DONE) = 0;
         ST(L04_ARENA_ON) = 1;
     }
     /* 0x754F */
     if (ST(ST_START_POINT(4)) == 5) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L04_KALHI_RECRUIT) = 4;
-        ST(L04_KALHI_COMPANION) = 6;
+        ST(V_KALHI_RECRUIT) = 4;
+        ST(V_KALHI_PHASE) = 6;
         ST(L04_ARENA_ON) = 0;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L04_RETURN_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(ST_VIE(P_GUARDIAN25)) = 1;
     }
     /* 0x75CA */
     if (ST(ST_START_POINT(4)) == 6) {
         ST(ST_HERO) = P_ARKHAN3;
-        ST(L04_KALHI_RECRUIT) = 3;
-        ST(L04_KALHI_COMPANION) = 6;
+        ST(V_KALHI_RECRUIT) = 3;
+        ST(V_KALHI_PHASE) = 6;
         ST(L04_ARENA_ON) = 0;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L04_RETURN_PHASE) = 1;
+        ST(V_RETURN_PART) = 1;
     }
     ST(L04_D212_SAID) = 0;
     ST(L04_ARRIVAL_STEP) = 0;
@@ -183,16 +183,16 @@ void l04_trig00(void) {
     CB->vire_col(0x12, 0);
     CB->bruitage("L04AMB1", -1, -1);
     /* 0x7A0B */
-    if (ST(L04_ARRIVAL_PATH) == 2 && ST(L04_KALHI_RECRUIT) == 0) {
-        ST(L04_KALHI_RECRUIT) = 1;
+    if (ST(L04_ARRIVAL_PATH) == 2 && ST(V_KALHI_RECRUIT) == 0) {
+        ST(V_KALHI_RECRUIT) = 1;
     }
     CB->pos_perso(ST(ST_HERO), -1851, -2277, 0x8461, 1, "ar", 6, 0);
     /* 0x7A69 */
-    if (ST(ST_HERO) >= 2 && ST(L04_KALHI_RECRUIT) > 0 && ST(L04_KALHI_RECRUIT) < 4 && ST(ST_VIE(P_GUARDIAN2)) == VIE_DEAD) {
+    if (ST(ST_HERO) >= 2 && ST(V_KALHI_RECRUIT) > 0 && ST(V_KALHI_RECRUIT) < 4 && ST(ST_VIE(P_GUARDIAN2)) == VIE_DEAD) {
         CB->pos_perso(P_GUARDIAN2, CB->divers(DV_DESC_POS, P_GUARDIAN2, 0), CB->divers(DV_DESC_POS, P_GUARDIAN2, 1), CB->divers(DV_DESC_POS, P_GUARDIAN2, 2), 2, "P42cad", 0xD, 0);
     }
     /* 0x7B01 */
-    if (ST(ST_HERO) >= 2 && ST(L04_KALHI_RECRUIT) > 0 && ST(L04_KALHI_RECRUIT) < 3 && ST(V_GUARD_FIGHT_DONE) == 0) {
+    if (ST(ST_HERO) >= 2 && ST(V_KALHI_RECRUIT) > 0 && ST(V_KALHI_RECRUIT) < 3 && ST(V_GUARD_FIGHT_DONE) == 0) {
         /* 0x7B49 */
         if (ST(ST_VIE(P_KALHI13)) == VIE_DEAD) {
             CB->pos_perso(P_KALHI13, CB->divers(DV_DESC_POS, P_KALHI13, 0), CB->divers(DV_DESC_POS, P_KALHI13, 1), CB->divers(DV_DESC_POS, P_KALHI13, 2), 2, "P13cad", 5, 0);
@@ -203,11 +203,11 @@ void l04_trig00(void) {
         }
     }
     /* 0x7C0D */
-    if (ST(L04_KALHI_RECRUIT) == 0 && ST(V_GUARD_FIGHT_DONE) == 0) {
+    if (ST(V_KALHI_RECRUIT) == 0 && ST(V_GUARD_FIGHT_DONE) == 0) {
         ST(L04_ARENA_ON) = 0;
     }
     /* 0x7C40 */
-    if (ST(L04_KALHI_RECRUIT) == 1 && ST(V_GUARD_FIGHT_DONE) == 0) {
+    if (ST(V_KALHI_RECRUIT) == 1 && ST(V_GUARD_FIGHT_DONE) == 0) {
         ST(L04_ARENA_ON) = 0;
         CB->vire_col(6, 1);
         /* 0x7C83 */
@@ -230,7 +230,7 @@ void l04_trig00(void) {
         }
     }
     /* 0x7DBC */
-    if (ST(L04_KALHI_RECRUIT) == 2 && ST(V_GUARD_FIGHT_DONE) == 0) {
+    if (ST(V_KALHI_RECRUIT) == 2 && ST(V_GUARD_FIGHT_DONE) == 0) {
         ST(L04_ARENA_ON) = 1;
         CB->pos_perso(P_GUARDIAN2, CB->divers(DV_DESC_POS, P_GUARDIAN2, 0), CB->divers(DV_DESC_POS, P_GUARDIAN2, 1), CB->divers(DV_DESC_POS, P_GUARDIAN2, 2), 2, "P42cad", 0xD, 0);
         /* 0x7E3F */
@@ -262,12 +262,12 @@ void l04_trig00(void) {
         }
     }
     /* 0x7FA6 */
-    if (ST(L04_KALHI_RECRUIT) == 3 && ST(V_GUARD_FIGHT_DONE) == 0) {
+    if (ST(V_KALHI_RECRUIT) == 3 && ST(V_GUARD_FIGHT_DONE) == 0) {
         ST(L04_ARENA_ON) = 1;
         CB->pos_perso(P_GUARDIAN2, CB->divers(DV_DESC_POS, P_GUARDIAN2, 0), CB->divers(DV_DESC_POS, P_GUARDIAN2, 1), CB->divers(DV_DESC_POS, P_GUARDIAN2, 2), 2, "P42cad", 0xD, 0);
     }
     /* 0x8029 */
-    if (ST(L04_KALHI_RECRUIT) == 4) {
+    if (ST(V_KALHI_RECRUIT) == 4) {
         /* 0x803B */
         if (ST(ST_VIE(P_GUARDIAN25)) <= 1) {
             ST(L04_ARENA_ON) = 0;
@@ -611,8 +611,8 @@ static void trig02(void) {
         CB->bloque(BLOQUE_NONE);
         ST(ST_LEVEL) = 4;
         /* 0xC1A2 */
-        if (ST(L04_KALHI_RECRUIT) == 2 && ST(V_KALHI13_TALK_C) < 3) {
-            ST(L04_KALHI_RECRUIT) = 3;
+        if (ST(V_KALHI_RECRUIT) == 2 && ST(V_KALHI13_TALK_C) < 3) {
+            ST(V_KALHI_RECRUIT) = 3;
         }
         CB->divers_empile(DV_MUSIC, 1, 4);
         CB->change_piece(3, 0);
@@ -658,7 +658,7 @@ static void trig03(void) {
                 CB->dialogue("L04D45", P_ARKHAN3);
             }
             /* 0xC3F6 */
-            if (ST(L04_KALHI_RECRUIT) == 1) {
+            if (ST(V_KALHI_RECRUIT) == 1) {
                 CB->dialogue("L04D46", P_KALHI13);
             }
             /* 0xC418 */
@@ -686,7 +686,7 @@ static void trig03(void) {
             CB->dialogue("LCOD14", P_ARKHAN3);
         }
         /* 0xC4F4 */
-        if (ST(L04_KALHI_RECRUIT) == 1) {
+        if (ST(V_KALHI_RECRUIT) == 1) {
             CB->dialogue("L04D46", P_KALHI13);
         }
         /* 0xC516 */
@@ -1076,20 +1076,20 @@ static void trig07(void) {
                 CB->animation("P00_65535");
                 ST(L04_TERMINAL_USED) = 1;
                 /* 0xD669 */
-                if (ST(L04_TERMINAL_USES) == 5) {
-                    ST(L04_TERMINAL_USES) = 5;
+                if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                    ST(V_CRYSTAL_PROGRESS) = 5;
                 }
                 /* 0xD68A */
-                if (ST(L04_TERMINAL_USES) == 2) {
-                    ST(L04_TERMINAL_USES) = 3;
+                if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                    ST(V_CRYSTAL_PROGRESS) = 3;
                 }
                 /* 0xD6AB */
-                if (ST(L04_TERMINAL_USES) == 1) {
-                    ST(L04_TERMINAL_USES) = 2;
+                if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                    ST(V_CRYSTAL_PROGRESS) = 2;
                 }
                 /* 0xD6CC */
-                if (ST(L04_TERMINAL_USES) == 0) {
-                    ST(L04_TERMINAL_USES) = 1;
+                if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                    ST(V_CRYSTAL_PROGRESS) = 1;
                 }
                 /* 0xD6ED */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1116,20 +1116,20 @@ static void trig07(void) {
                 CB->animation("P00_65535");
                 ST(L04_TERMINAL_USED) = 1;
                 /* 0xD80F */
-                if (ST(L04_TERMINAL_USES) == 5) {
-                    ST(L04_TERMINAL_USES) = 5;
+                if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                    ST(V_CRYSTAL_PROGRESS) = 5;
                 }
                 /* 0xD830 */
-                if (ST(L04_TERMINAL_USES) == 2) {
-                    ST(L04_TERMINAL_USES) = 3;
+                if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                    ST(V_CRYSTAL_PROGRESS) = 3;
                 }
                 /* 0xD851 */
-                if (ST(L04_TERMINAL_USES) == 1) {
-                    ST(L04_TERMINAL_USES) = 2;
+                if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                    ST(V_CRYSTAL_PROGRESS) = 2;
                 }
                 /* 0xD872 */
-                if (ST(L04_TERMINAL_USES) == 0) {
-                    ST(L04_TERMINAL_USES) = 1;
+                if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                    ST(V_CRYSTAL_PROGRESS) = 1;
                 }
                 /* 0xD893 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1259,7 +1259,7 @@ static void trig08(void) {
             CB->animation("Sar_10");
         }
         /* 0xDDFB */
-        if (ST(L04_KALHI_RECRUIT) != 0) {
+        if (ST(V_KALHI_RECRUIT) != 0) {
             /* 0xDE0D */
             if (ST(ST_VIE(P_GUARDIAN25)) != VIE_DEAD) {
                 CB->dialogue("L04D222", -1);
@@ -1323,7 +1323,7 @@ static void trig09(void) {
             CB->animation("Sar_10");
         }
         /* 0xE090 */
-        if (ST(L04_KALHI_RECRUIT) != 0) {
+        if (ST(V_KALHI_RECRUIT) != 0) {
             /* 0xE0A2 */
             if (ST(ST_VIE(P_GUARDIAN25)) != VIE_DEAD && ST(ST_HERO) > 1) {
                 CB->dialogue("L04D226A", -1);
@@ -1553,13 +1553,13 @@ static void trig13(void) {
         /* 0xEACD */
         if (ST(ST_ACTION_KEY) == 1 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_SCRIPT_BUSY) == 0 && ST(ST_VIE(P_GUARDIAN2)) == VIE_DEAD) {
             /* 0xEB0F */
-            if (ST(L04_KALHI_RECRUIT) < 2 || ST(ST_VIE(P_KALHI33)) == 1) {
+            if (ST(V_KALHI_RECRUIT) < 2 || ST(ST_VIE(P_KALHI33)) == 1) {
                 CB->select_pile(0, 2);
                 CB->fouille(P_GUARDIAN2);
                 CB->select_pile(0, 1);
             }
             /* 0xEB58 */
-            if (ST(L04_KALHI_RECRUIT) >= 2 && ST(ST_VIE(P_KALHI33)) != 1) {
+            if (ST(V_KALHI_RECRUIT) >= 2 && ST(ST_VIE(P_KALHI33)) != 1) {
                 CB->bloque(BLOQUE_ALL);
                 CB->fouille(P_GUARDIAN2);
                 /* 0xEB92 */
@@ -1748,11 +1748,11 @@ static void trig19(void) {
 static void trig41(void) {
     CB->divers_empile(DV_MUSIC, 1, 1);
     /* 0x8355 */
-    if (ST(L04_KALHI_RECRUIT) == 1) {
+    if (ST(V_KALHI_RECRUIT) == 1) {
         CB->evenement(0x22, 2500);
     }
     /* 0x8377 */
-    if (ST(L04_KALHI_RECRUIT) == 4) {
+    if (ST(V_KALHI_RECRUIT) == 4) {
         CB->evenement(0x21, 2000);
     }
 }

@@ -73,7 +73,7 @@ void l21_trig00(void) {
     if (ST(ST_START_POINT(21)) == 2) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 22;
-        ST(L21_STORY_ADVANCED) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(L21_AFTERMATH_STAGE) = 1;
     }
@@ -81,35 +81,35 @@ void l21_trig00(void) {
     if (ST(ST_START_POINT(21)) == 3) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 20;
-        ST(L21_STORY_ADVANCED) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 0;
-        ST(L21_ALERT_STAGE) = 2;
-        ST(L21_ZED_ARRIVAL) = 1;
+        ST(V_ALERT_STAGE) = 2;
+        ST(V_EVENT_4) = 1;
     }
     /* 0x1323 */
     if (ST(ST_START_POINT(21)) == 4) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L21_ALERT_STAGE) = 1;
+        ST(V_ALERT_STAGE) = 1;
         ST(L21_RED_KEY_STAGE) = 2;
-        ST(L21_RYLSADHAR_ARRIVAL) = 0;
-        ST(L21_ZED_ARRIVAL) = 0;
+        ST(V_EVENT_3) = 0;
+        ST(V_EVENT_4) = 0;
     }
     /* 0x1380 */
     if (ST(ST_START_POINT(21)) == 5) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L21_STORY_ADVANCED) = 1;
+        ST(V_RETURN_PART) = 1;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L21_SUNSEER2_STAGE) = 1;
-        ST(L21_RYLSADHAR_ARRIVAL) = 0;
-        ST(L21_ZED_ARRIVAL) = 0;
+        ST(V_LORY_STAGE) = 1;
+        ST(V_EVENT_3) = 0;
+        ST(V_EVENT_4) = 0;
     }
     /* 0x13EC */
     if (ST(ST_START_POINT(21)) == 6) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L21_STORY_ADVANCED) = 1;
-        ST(L21_ALERT_STAGE) = 2;
-        ST(L21_PASSAGE_OPEN) = 1;
+        ST(V_RETURN_PART) = 1;
+        ST(V_ALERT_STAGE) = 2;
+        ST(V_PASSAGE_OPEN) = 1;
     }
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
@@ -130,11 +130,11 @@ void l21_trig00(void) {
         CB->ajoute_zone(21, 4853, -5683, 20, 20, 0);
     }
     /* 0x1581 */
-    if (ST(V_GUARD_FIGHT_DONE) == 0 && (ST(L21_ZED_ARRIVAL) == 1 || ST(L21_RYLSADHAR_ARRIVAL) == 1)) {
+    if (ST(V_GUARD_FIGHT_DONE) == 0 && (ST(V_EVENT_4) == 1 || ST(V_EVENT_3) == 1)) {
         CB->ajoute_zone(13, 3935, -6194, 20, 20, 0);
     }
     /* 0x15D2 */
-    if (ST(V_GUARD_FIGHT_DONE) == 1 || ST(L21_ALERT_STAGE) == 2) {
+    if (ST(V_GUARD_FIGHT_DONE) == 1 || ST(V_ALERT_STAGE) == 2) {
         CB->ajoute_zone(20, 3927, -6182, 50, 235, 1);
         CB->ajoute_zone(16, 3782, -6127, 120, 70, 1);
     }
@@ -152,7 +152,7 @@ void l21_trig00(void) {
         CB->ajoute_zone(16, 3782, -6127, 120, 70, 1);
         CB->pos_perso(ST(ST_HERO), 3841, -6209, 0xB800, 1, "ar", 1, 0);
         /* 0x173C */
-        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(L21_PASSAGE_OPEN) == 1) {
+        if (ST(V_GUARD_FIGHT_DONE) == 2 && ST(V_PASSAGE_OPEN) == 1) {
             CB->pos_perso(ST(ST_HERO), 4011, -6209, 0xC923, 1, "ar", 1, 0);
         }
     }
@@ -161,7 +161,7 @@ void l21_trig00(void) {
         CB->pos_perso(ST(ST_HERO), 4605, -5924, 0x7ADF, 1, "ar", 1, 0);
     }
     /* 0x17D4 */
-    if (ST(V_GUARD_FIGHT_DONE) == 0 && (ST(L21_ZED_ARRIVAL) == 1 || ST(L21_RYLSADHAR_ARRIVAL) == 1)) {
+    if (ST(V_GUARD_FIGHT_DONE) == 0 && (ST(V_EVENT_4) == 1 || ST(V_EVENT_3) == 1)) {
         ST(V_GUARD_FIGHT_DONE) = 1;
         CB->pos_perso(P_THANANDAR25, 4359, -7173, 0xF57A, 1, "P25ARR01", 5, 0);
         CB->vire_col(-1, 0);
@@ -172,16 +172,16 @@ void l21_trig00(void) {
         CB->vire_col(-6, 0);
         CB->vire_col(-7, 0);
         /* 0x1899 */
-        if (ST(L21_RYLSADHAR_ARRIVAL) == 1) {
+        if (ST(V_EVENT_3) == 1) {
             CB->pos_perso(P_RYLSADHAR21, 4003, -6217, 0x319A, 1, "P20ARR01", -1, 0);
         }
         /* 0x18D0 */
-        if (ST(L21_ZED_ARRIVAL) == 1) {
+        if (ST(V_EVENT_4) == 1) {
             CB->pos_perso(P_ZED27, 4003, -6217, 0x319A, 1, "P27ARR01", -1, 0);
         }
     }
     /* 0x1907 */
-    if (ST(V_GUARD_FIGHT_DONE) == 0 && ST(L21_ALERT_STAGE) == 0 && ST(V_LCOD23_SEEN) != 2) {
+    if (ST(V_GUARD_FIGHT_DONE) == 0 && ST(V_ALERT_STAGE) == 0 && ST(V_LCOD23_SEEN) != 2) {
         /* 0x193D */
         if (ST(L21_SUNSEER1_FATE) < 2) {
             CB->pos_perso(P_SUNSEER1, 4483, -7321, 0x850C, 1, "P18ARR01", 2, 1);
@@ -200,7 +200,7 @@ void l21_trig00(void) {
             ST(L21_AFTERMATH_STAGE) = 2;
         }
         /* 0x1A1F */
-        if (ST(L21_SUNSEER2_STAGE) != 0 && ST(L21_SUNSEER2_STAGE) != 5) {
+        if (ST(V_LORY_STAGE) != 0 && ST(V_LORY_STAGE) != 5) {
             /* 0x1A43 */
             if (ST(ST_VIE(P_SUNSEER2)) != VIE_DEAD) {
                 CB->pos_perso(P_SUNSEER2, 4984, -6499, 0xA356, 1, "P19DIA51", 7, 1);
@@ -210,15 +210,15 @@ void l21_trig00(void) {
         }
     }
     /* 0x1ACF */
-    if (ST(L21_ALERT_STAGE) == 0) {
+    if (ST(V_ALERT_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 0);
     }
     /* 0x1AF3 */
-    if ((ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) != 1) {
+    if ((ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) != 1) {
         CB->divers(DV_MUSIC, 2, 0);
     }
     /* 0x1B3B */
-    if ((ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) == 1) {
+    if ((ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) == 1) {
         CB->divers(DV_MUSIC, 2, 0);
     }
     /* 0x1B83 */
@@ -749,11 +749,11 @@ static void trig07(void) {
             /* 0x5CFE */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 /* 0x5D10 */
-                if (ST(L21_SUNSEER2_STAGE) == 1) {
+                if (ST(V_LORY_STAGE) == 1) {
                     lieu_action_register("L21D81", P_ARKHAN2, "SG02DIA01", NULL);
                 }
                 /* 0x5D38 */
-                if (ST(L21_SUNSEER2_STAGE) == 2) {
+                if (ST(V_LORY_STAGE) == 2) {
                     lieu_action_register("L21D82", P_ARKHAN2, "SG02DIA01", NULL);
                 }
             }
@@ -857,11 +857,11 @@ static void trig10(void) {
     }
     ST(V_MUSIC_TRACK) = -1;
     /* 0x6251 */
-    if (ST(L21_ALERT_STAGE) == 0) {
+    if (ST(V_ALERT_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 4);
     }
     /* 0x6275 */
-    if (ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) {
+    if (ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) {
         CB->divers(DV_MUSIC, 2, 4);
     }
     /* 0x62A8 */
@@ -896,7 +896,7 @@ static void trig14(void) {
             /* 0x6434 */
             if (ST(V_GUARD_FIGHT_DONE) == 0) {
                 /* 0x6446 */
-                if (ST(L21_ALERT_STAGE) == 0) {
+                if (ST(V_ALERT_STAGE) == 0) {
                     /* 0x6458 */
                     if (ST(ST_PLAYER_WEAPON) == OB_RED_KEY) {
                         /* 0x646A */
@@ -934,7 +934,7 @@ static void trig14(void) {
                     }
                 }
                 /* 0x6587 */
-                if (ST(L21_ALERT_STAGE) == 1) {
+                if (ST(V_ALERT_STAGE) == 1) {
                     /* 0x6599 */
                     if (ST(ST_PLAYER_WEAPON) == OB_RED_KEY) {
                         /* 0x65AB */
@@ -945,7 +945,7 @@ static void trig14(void) {
                         if (ST(ST_SPECIAL_MODE) == 0) {
                             CB->animation("SP02ACT63");
                         }
-                        ST(L21_ALERT_STAGE) = 2;
+                        ST(V_ALERT_STAGE) = 2;
                         CB->evenement(1, 2000);
                         CB->dialogue("L21D61", P_ARKHAN2);
                         CB->animation("Sar_50");
@@ -960,7 +960,7 @@ static void trig14(void) {
                     }
                 }
                 /* 0x6679 */
-                if (ST(L21_ALERT_STAGE) == 2) {
+                if (ST(V_ALERT_STAGE) == 2) {
                     /* 0x668B */
                     if (ST(ST_PLAYER_WEAPON) == OB_RED_KEY) {
                         /* 0x669D */
@@ -971,7 +971,7 @@ static void trig14(void) {
                         if (ST(ST_SPECIAL_MODE) == 0) {
                             CB->animation("SP02ACT63");
                         }
-                        ST(L21_ALERT_STAGE) = 1;
+                        ST(V_ALERT_STAGE) = 1;
                         CB->animation("ar_50");
                         CB->bruitage("L21AMB4", 3825, -6073);
                         CB->animation("ar");
@@ -1019,7 +1019,7 @@ static void trig14(void) {
             /* 0x68A9 */
             if (ST(V_GUARD_FIGHT_DONE) == 0) {
                 /* 0x68BB */
-                if (ST(L21_ALERT_STAGE) == 0) {
+                if (ST(V_ALERT_STAGE) == 0) {
                     /* 0x68CD */
                     if (ST(ST_PLAYER_WEAPON) == OB_RED_KEY) {
                         /* 0x68DF */
@@ -1057,7 +1057,7 @@ static void trig14(void) {
                     }
                 }
                 /* 0x69FC */
-                if (ST(L21_ALERT_STAGE) == 1) {
+                if (ST(V_ALERT_STAGE) == 1) {
                     /* 0x6A0E */
                     if (ST(ST_PLAYER_WEAPON) == OB_RED_KEY) {
                         /* 0x6A20 */
@@ -1068,7 +1068,7 @@ static void trig14(void) {
                         if (ST(ST_SPECIAL_MODE) == 0) {
                             CB->animation("SP03ACT63");
                         }
-                        ST(L21_ALERT_STAGE) = 2;
+                        ST(V_ALERT_STAGE) = 2;
                         CB->evenement(1, 2000);
                         CB->dialogue("L21D68", P_ARKHAN3);
                         CB->animation("Sar_50");
@@ -1084,7 +1084,7 @@ static void trig14(void) {
                     }
                 }
                 /* 0x6AF6 */
-                if (ST(L21_ALERT_STAGE) == 2) {
+                if (ST(V_ALERT_STAGE) == 2) {
                     /* 0x6B08 */
                     if (ST(ST_PLAYER_WEAPON) == OB_RED_KEY) {
                         /* 0x6B1A */
@@ -1095,7 +1095,7 @@ static void trig14(void) {
                         if (ST(ST_SPECIAL_MODE) == 0) {
                             CB->animation("SP03ACT63");
                         }
-                        ST(L21_ALERT_STAGE) = 1;
+                        ST(V_ALERT_STAGE) = 1;
                         CB->animation("ar_50");
                         CB->bruitage("L21AMB4", 3825, -6073);
                         CB->animation("ar");
@@ -1172,25 +1172,25 @@ static void trig15(void) {
 static void trig16(void) {
     ST(V_MUSIC_TRACK) = -1;
     /* 0x6E40 */
-    if (ST(L21_ALERT_STAGE) == 0) {
+    if (ST(V_ALERT_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 4);
     }
     /* 0x6E64 */
-    if (ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) {
+    if (ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) {
         CB->divers(DV_MUSIC, 2, 4);
     }
     ST(ST_LEVEL) = 21;
     CB->evenement(EV_MUSIC_LOOP_A, -1);
     /* 0x6EB6 */
-    if (ST(L21_RYLSADHAR_ARRIVAL) != 5 && ST(L21_ZED_ARRIVAL) != 5) {
+    if (ST(V_EVENT_3) != 5 && ST(V_EVENT_4) != 5) {
         CB->change_piece(22, 0);
     }
     /* 0x6EE7 */
-    if (ST(L21_RYLSADHAR_ARRIVAL) == 5) {
+    if (ST(V_EVENT_3) == 5) {
         CB->change_piece(22, 1);
     }
     /* 0x6F09 */
-    if (ST(L21_ZED_ARRIVAL) == 5) {
+    if (ST(V_EVENT_4) == 5) {
         CB->change_piece(22, 2);
     }
 }
@@ -1199,11 +1199,11 @@ static void trig16(void) {
 static void trig17(void) {
     ST(V_MUSIC_TRACK) = -1;
     /* 0x6F45 */
-    if (ST(L21_ALERT_STAGE) == 0) {
+    if (ST(V_ALERT_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 4);
     }
     /* 0x6F69 */
-    if (ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) {
+    if (ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) {
         CB->divers(DV_MUSIC, 2, 4);
     }
     ST(ST_LEVEL) = 21;
@@ -1214,29 +1214,29 @@ static void trig17(void) {
 /* trigger 41 -- trig41_10001C8D */
 static void trig41(void) {
     /* 0x1C9F */
-    if (ST(L21_CAMERA_STATE) == 1 && ST(V_GUARD_FIGHT_DONE) != 2 && ST(L21_PASSAGE_OPEN) != 1) {
+    if (ST(L21_CAMERA_STATE) == 1 && ST(V_GUARD_FIGHT_DONE) != 2 && ST(V_PASSAGE_OPEN) != 1) {
         CB->change_camera(7, CAM_LOCKED);
     }
     /* 0x1CE5 */
-    if (ST(L21_ALERT_STAGE) == 0) {
+    if (ST(V_ALERT_STAGE) == 0) {
         CB->divers(DV_MUSIC, 1, 1);
         ST(V_MUSIC_TRACK) = 1;
         CB->evenement(EV_MUSIC_LOOP_A, 45000);
         ST(L21_MUSIC_START_TIME) = ST(ST_GAME_TIME);
     }
     /* 0x1D3F */
-    if ((ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) != 1) {
+    if ((ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) != 1) {
         ST(L21_MUSIC_START_TIME) = ST(ST_GAME_TIME);
         CB->divers(DV_MUSIC, 2, 1);
         ST(V_MUSIC_TRACK) = 2;
         CB->evenement(EV_MUSIC_LOOP_A, 30000);
     }
     /* 0x1DBD */
-    if ((ST(L21_ALERT_STAGE) == 1 || ST(L21_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) == 1) {
+    if ((ST(V_ALERT_STAGE) == 1 || ST(V_ALERT_STAGE) == 2) && ST(V_GUARD_FIGHT_DONE) == 1) {
         CB->divers(DV_MUSIC, 2, 1);
     }
     /* 0x1E05 */
-    if (ST(L21_THANANDAR_SCENE) == 0 && ST(V_GUARD_FIGHT_DONE) == 1 && (ST(L21_ZED_ARRIVAL) == 1 || ST(L21_RYLSADHAR_ARRIVAL) == 1)) {
+    if (ST(L21_THANANDAR_SCENE) == 0 && ST(V_GUARD_FIGHT_DONE) == 1 && (ST(V_EVENT_4) == 1 || ST(V_EVENT_3) == 1)) {
         CB->select_pile(0, 1);
         /* 0x1E57 */
         if (ST(ST_COMBAT_STANCE) == 1) {
@@ -1244,7 +1244,7 @@ static void trig41(void) {
         }
         CB->bloque(BLOQUE_ALL);
         ST(L21_THANANDAR_SCENE) = 1;
-        ST(L21_ALERT_STAGE) = 2;
+        ST(V_ALERT_STAGE) = 2;
         CB->select_pile(1, 1);
         CB->change_camera(6, CAM_LOCKED);
         CB->bruitage("L21AMB4", 3825, -6073);
@@ -1255,7 +1255,7 @@ static void trig41(void) {
     }
     /* 0x1F15 */
     if (ST(L21_AFTERMATH_STAGE) == 2 && ST(V_GUARD_FIGHT_DONE) == 2) {
-        ST(L21_ALERT_STAGE) = 2;
+        ST(V_ALERT_STAGE) = 2;
         ST(L21_AFTERMATH_STAGE) = 3;
         ST(L21_LORY_SCENE_ARMED) = 1;
         CB->select_pile(1, 1);

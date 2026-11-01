@@ -249,14 +249,14 @@ static void trig00(void) {   /* sub_100073F0 */
 
     CB->vire_col(6, 0);
 
-    if (ST(L01_EVENT_6) == 0 && ST(L01_EVENT_10) == 0 && ST(L01_RETURN_PHASE) == 0 &&
-        ST(L01_GUARDIAN4_STATE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-        ST(L01_GUARDIAN4_STATE) = 0;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0 &&
+        ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+        ST(V_GUARDIAN4_STAGE) = 0;
     }
 
-    if (ST(L01_EVENT_6) == 0 && ST(L01_EVENT_10) == 0 && ST(L01_RETURN_PHASE) == 1 && ST(L01_GUARDIAN4_STATE) == 4) {
-        ST(L01_EVENT_6) = 1;
-        ST(L01_EVENT_10) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
 
     if (ST(V_OB38A_STATE) == 0) {
@@ -284,7 +284,7 @@ static void trig00(void) {   /* sub_100073F0 */
     }
 
     if (ST(V_INTRO_STATE) != 0 && ST(V_LEFT_HOME) == 0 && ST(V_GUARD_FIGHT_DONE) == 0 &&
-        ST(L01_RETURN_PHASE) == 0 && ST(ST_LEVEL) == 2) {
+        ST(V_RETURN_PART) == 0 && ST(ST_LEVEL) == 2) {
         CB->pos_perso(ST(ST_HERO), 511, -2196, 0x80E8, 1, "ar", 6, 0);
         if (ST(ST_HERO) == P_ARKHAN0) {
             CB->ajoute_zone(4, 610, -2987, 240, 100, 1);
@@ -305,7 +305,7 @@ static void trig00(void) {   /* sub_100073F0 */
     }
 
     if (ST(V_INTRO_STATE) != 0 && ST(V_LEFT_HOME) == 1 && ST(V_GUARD_FIGHT_DONE) == 0 &&
-        ST(L01_RETURN_PHASE) == 0 && ST(ST_LEVEL) == 2) {
+        ST(V_RETURN_PART) == 0 && ST(ST_LEVEL) == 2) {
         CB->pos_perso(ST(ST_HERO), 511, -2196, 0x80E8, 1, "ar", 6, 0);
         CB->ajoute_zone(4, 610, -2987, 240, 100, 0);
         if ((i32)ST(ST_VIE(P_KABAK)) < 2) {
@@ -320,7 +320,7 @@ static void trig00(void) {   /* sub_100073F0 */
     }
 
     if (ST(V_INTRO_STATE) != 0 && ST(V_LEFT_HOME) == 1 && ST(V_GUARD_FIGHT_DONE) == 0 &&
-        ST(L01_RETURN_PHASE) == 1 && ST(ST_LEVEL) == 2) {
+        ST(V_RETURN_PART) == 1 && ST(ST_LEVEL) == 2) {
         CB->pos_perso(ST(ST_HERO), 511, -2196, 0x80E8, 1, "ar", 6, 0);
         CB->ajoute_zone(4, 610, -2987, 240, 100, 0);
         if ((i32)ST(ST_VIE(P_KABAK)) < 2) {

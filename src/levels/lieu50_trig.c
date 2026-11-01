@@ -728,17 +728,17 @@ static void trig02(void) {
                         lieu_action_register("L12D57B", P_BANDOR, "SP07DIA57", "SP07ARR01_10");
                         lieu_action_register("L12D57C", P_BANDOR, "SP07DIA60", "SP07ARR01_10");
                         ST(L50_PROOF_SHOWN) = 1;
-                        if (ST(L50_CRYSTAL_PROGRESS) == 5) {
-                            ST(L50_CRYSTAL_PROGRESS) = 5;
+                        if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                            ST(V_CRYSTAL_PROGRESS) = 5;
                         }
-                        if (ST(L50_CRYSTAL_PROGRESS) == 2) {
-                            ST(L50_CRYSTAL_PROGRESS) = 3;
+                        if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                            ST(V_CRYSTAL_PROGRESS) = 3;
                         }
-                        if (ST(L50_CRYSTAL_PROGRESS) == 1) {
-                            ST(L50_CRYSTAL_PROGRESS) = 2;
+                        if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                            ST(V_CRYSTAL_PROGRESS) = 2;
                         }
-                        if (ST(L50_CRYSTAL_PROGRESS) == 0) {
-                            ST(L50_CRYSTAL_PROGRESS) = 1;
+                        if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                            ST(V_CRYSTAL_PROGRESS) = 1;
                         }
                         if (ST(ST_PLAYER_WEAPON) != 0) {
                             CB->animation("SP02PRE73");
@@ -771,17 +771,17 @@ static void trig02(void) {
                         lieu_action_register("L12D57B", P_BANDOR, "SP07DIA57", "SP07ARR01_10");
                         lieu_action_register("L12D57C", P_BANDOR, "SP07DIA60", "SP07ARR01_10");
                         ST(L50_PROOF_SHOWN) = 1;
-                        if (ST(L50_CRYSTAL_PROGRESS) == 5) {
-                            ST(L50_CRYSTAL_PROGRESS) = 5;
+                        if (ST(V_CRYSTAL_PROGRESS) == 5) {
+                            ST(V_CRYSTAL_PROGRESS) = 5;
                         }
-                        if (ST(L50_CRYSTAL_PROGRESS) == 2) {
-                            ST(L50_CRYSTAL_PROGRESS) = 3;
+                        if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                            ST(V_CRYSTAL_PROGRESS) = 3;
                         }
-                        if (ST(L50_CRYSTAL_PROGRESS) == 1) {
-                            ST(L50_CRYSTAL_PROGRESS) = 2;
+                        if (ST(V_CRYSTAL_PROGRESS) == 1) {
+                            ST(V_CRYSTAL_PROGRESS) = 2;
                         }
-                        if (ST(L50_CRYSTAL_PROGRESS) == 0) {
-                            ST(L50_CRYSTAL_PROGRESS) = 1;
+                        if (ST(V_CRYSTAL_PROGRESS) == 0) {
+                            ST(V_CRYSTAL_PROGRESS) = 1;
                         }
                         CB->link_objet(7, "OB12", 0x1B, 1);
                         if (ST(ST_PLAYER_WEAPON) != 0) {
@@ -920,7 +920,7 @@ static void trig02(void) {
                             return;
                         }
                         if (ST(L50_LATE_TALK_STAGE) == 3) {
-                            if (ST(L50_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
+                            if (ST(V_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
                                 if (ST(ST_SPECIAL_MODE) == 1) {
                                     lieu_action_register("L12D91A", P_ARKHAN2, "SG02DIA06", NULL);
                                     lieu_action_register("L12D91B", P_ARKHAN2, "SG02DIA05", NULL);
@@ -1060,7 +1060,7 @@ static void trig02(void) {
                             return;
                         }
                         if (ST(L50_LATE_TALK_STAGE) == 3) {
-                            if (ST(L50_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
+                            if (ST(V_BUNKER_SEEN) == 1 && ST(V_EVENT15_STEP) == 0) {
                                 ST(V_EVENT15_STEP) = 1;
                                 lieu_action_register("L12D96A", P_ARKHAN3, "SG03DIA07", NULL);
                                 lieu_action_register("L12D96B", P_ARKHAN3, "SG03DIA05", NULL);

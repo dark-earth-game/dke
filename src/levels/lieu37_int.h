@@ -30,9 +30,7 @@
 #define L37_CAM1_HINT_SEEN           0x558   /* 1 = camera-1 hint L37D07/L37D08 said */
 #define L37_CAM3_HINT_SEEN           0x55C   /* 1 = camera-3 hint L37D09/L37D10 said */
 #define L37_ZONE13_EXAMINED          0x624   /* 0 = zone 13 not yet examined (plays SG00PRE08 look anim), 1 = examined (short lines L37D33/L37D34) */
-#define L37_DELIA_GONE               0xC44   /* set to 1 at INIT when Delia is dead or V_DELIA_PHASE >= 10; shared with levels 14 and 54 */
 #define L37_FIGHT_STATE              0xE2C   /* persona 38/39 fight: 0 = not started, 1 = fighting, 2 = both dead */
-#define L37_DEATH_ENDING_SKIP        0xE8C   /* engine flag: 1 = INIT skips the hero-dead ending even if ST_HERO == 4 */
 
 /* Trigger dispatch (op 3): run trigger handler `idx` (lieu37_trig.c). */
 void l37_trigger(i32 idx);

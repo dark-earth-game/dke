@@ -19,7 +19,6 @@ void l14_trigger(i32 idx);
 void l14_trig00(void);
 
 /* Level 14 script variables (low slots up to 0x188 and the 0x4xx-0x6xx ones are level-private; 0xAF8 and above are game-wide story state) */
-#define L14_FRAME_COUNTER           0x038   /* engine frame counter; (value % 20) == 0 throttles Delia's follow distance checks */
 #define L14_PROVIDER_THREAT_DONE    0x04C   /* 1 = Provider already switched to combat stance when the hero came within 250 */
 #define L14_PERSONA35_COMBAT        0x058   /* 1 = persona 35 held in combat stance by the tick while camera 6 is locked */
 #define L14_PROVIDER_GREET_ARMED    0x064   /* 1 = hero walked away from Provider (distance > 400), so he repeats L14D263 on return */
@@ -60,10 +59,6 @@ void l14_trig00(void);
 #define L14_CAMERA2_LOOT_STAGE      0x560   /* 0/1 loot-or-search state of the zone 21/30 object, reset when camera 2 is entered */
 #define L14_CELL_TALK_STAGE         0x6CC   /* 0 = first talk at trigger 16 (LCOD10/11), 1 = repeat */
 #define L14_CELL_SEARCH_STAGE       0x6FC   /* 1 -> 2 after the zone 21 object was searched (L14D269/270) */
-#define L14_GUARD_ARC_PHASE         0xAF8   /* guardian-arc stage; start points set 1 (game-wide) */
-#define L14_PLOT_B10                0xB10   /* game-wide; non-zero (with L14_FLAG_E74 == 0) sets L14_FLAG_E74 when trigger 3 runs */
-#define L14_PLOT_B38                0xB38   /* game-wide plot step; 2 -> 3 at INIT */
-#define L14_RETURN_ROOM_STEP        0xB4C   /* 0 / 1 which exit room the hero uses when leaving (same slot as L10_RETURN_ROOM_STEP) */
 #define L14_PLOT_BA8                0xBA8   /* game-wide plot step; 5 -> 6 at INIT (shared with L10, L23, L24) */
 #define L14_PROGRESS_STEP            0xBBC   /* game-wide mission step (same slot as L15_PROGRESS_STEP); 1 -> 2, 4 -> 5 if Malrot5 alive, 4 -> 8 if dead */
 #define L14_WEAPON_REACT_STAGE      0xBE0   /* 0 = first time the hero shows a weapon to Provider, 1 = repeat */
@@ -71,7 +66,6 @@ void l14_trig00(void);
 #define L14_MALROT1_STORY_STAGE     0xBEC   /* 1 = Malrot1 met, 2 = Malrot1 story told (changes his dialogue at triggers 17, 24) */
 #define L14_CAMERA2_ENTERED         0xBF4   /* game-wide; 0 = ambient anims not yet started in the camera-2 room */
 #define L14_DANRYS_PLOT_C34         0xC34   /* game-wide; 1 with Danrys dead and V_KALHI13_TALK_C == 3 triggers the Kalhi scene */
-#define L14_DELIA_PRESENT           0xC44   /* game-wide; 1 = Delia on screen at this level (start point set it); suppresses the Malrot4 first meeting */
 #define L14_MALROT4_REACT_STEP      0xCB0   /* Malrot4 reaction step 0..3 (modify_var), picks the random line */
 #define L14_MALROT4_REACT_DONE      0xCB4   /* 1 = Malrot4 reaction already done; reset when the hero is 250 away */
 #define L14_MALROT4_ENGAGED         0xCB8   /* game-wide; 1 = Malrot4 is fighting/dead */
@@ -88,10 +82,7 @@ void l14_trig00(void);
 #define L14_PLOT_E24                0xE24   /* game-wide plot step; 2 -> 3 at trigger 3 */
 #define L14_PENDING_E34             0xE34   /* pending flag cleared (1 -> 0) by the talk triggers; set by other levels */
 #define L14_FLAG_E74                0xE74   /* game-wide flag set to 1 from PLOT_B10 (shared with L2, L20, L23, L26) */
-#define L14_ENDING_OVERRIDE         0xE8C   /* game-wide; 1 = skip the hero-death ending in the tick and re-run INIT (set to 1 in L31 near the end) */
-#define L14_KALHI_QUEST_STAGE       0xE9C   /* game-wide Kalhi quest; start point 1 sets 10; becomes 40 when Provider event runs without Kalhi13 alive (shared with L10) */
 #define L14_PLOT_EB8                0xEB8   /* game-wide plot step; start point 1 sets 2, which locks Provider talk (L14_PROVIDER_LOCK) */
-#define L14_PLOT_EF8                0xEF8   /* game-wide plot step; 2 or 3 become 10 at trigger 3 */
 #define L14_PLOT_F24                0xF24   /* game-wide plot step; Dhorkan11 dead sets 1, 5 after EF8 closes, 6 -> 3 when persona 29 is dead */
 #define L14_PLOT_F28                0xF28   /* game-wide plot step; 3 -> 4 at INIT */
 #define L14_PLOT_F78                0xF78   /* game-wide flag; 0 with Dhorkan11 dead sets F24 = 1 */

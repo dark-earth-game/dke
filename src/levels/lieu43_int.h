@@ -52,6 +52,5 @@ extern i32 g_l43_flag[10];   /* dword_10015A50..A74: per-move flags; index (addr
 #define L43_GUARD_FREED            0xEC  /* 1 = both levers set (left -1, right 1): persona 40 is released and comes down, levers locked; 0 = puzzle active */
 #define L43_INTRO_DONE             0x504  /* 1 = SC20 intro and the fight with persona 40 have started */
 #define L43_STORY_STAGE            0xE3C  /* game-wide story stage; raised 0 -> 1 on the first tick */
-#define L43_NO_DEATH_ENDING        0xE8C  /* 1 = INIT skips the dead-hero ending even if the hero is dead */
 
 #endif /* DKE_LIEU43_INT_H */

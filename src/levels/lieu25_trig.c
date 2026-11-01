@@ -65,33 +65,33 @@ void l25_trig00(void) {
     /* 0x7402 */
     if (ST(ST_START_POINT(25)) == 1) {
         ST(ST_HERO) = P_ARKHAN1;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 6;
+        ST(V_RYLSADHAR_ZED_STAGE) = 6;
         ST(L25_ELAPSED_MS) = 3000;
         ST(ST_LEVEL) = 23;
     }
     /* 0x744D */
     if (ST(ST_START_POINT(25)) == 2) {
         ST(ST_HERO) = P_ARKHAN1;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 7;
+        ST(V_RYLSADHAR_ZED_STAGE) = 7;
         ST(ST_LEVEL) = 23;
     }
     /* 0x7489 */
     if (ST(ST_START_POINT(25)) == 3) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L25_ARKHAN23_PART) = 1;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 7;
+        ST(V_RETURN_PART) = 1;
+        ST(V_RYLSADHAR_ZED_STAGE) = 7;
         ST(ST_LEVEL) = 23;
     }
     /* 0x74D4 */
     if (ST(ST_START_POINT(25)) == 4) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 10;
+        ST(V_RYLSADHAR_ZED_STAGE) = 10;
         ST(ST_LEVEL) = 23;
     }
     /* 0x7510 */
     if (ST(ST_START_POINT(25)) == 5) {
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 9;
+        ST(V_RYLSADHAR_ZED_STAGE) = 9;
         ST(L25_RYLSADHAR_KALHI_STATE) = 1;
         ST(ST_LEVEL) = 23;
     }
@@ -99,7 +99,7 @@ void l25_trig00(void) {
     if (ST(ST_START_POINT(25)) == 6) {
         ST(V_GUARD_FIGHT_DONE) = 2;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L25_RYLSADHAR_ZED_STAGE) = 9;
+        ST(V_RYLSADHAR_ZED_STAGE) = 9;
         ST(L25_RYLSADHAR_KALHI_STATE) = 2;
         ST(ST_LEVEL) = 23;
         ST(L25_OB81_TAKEN) = 1;
@@ -110,7 +110,7 @@ void l25_trig00(void) {
         ST(ST_VIE(P_RYLSADHAR20)) = VIE_DEAD;
         ST(ST_HERO) = P_ARKHAN2;
         ST(V_GUARD_FIGHT_DONE) = 2;
-        ST(L25_RYLSADHAR_STAGE) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
     }
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
@@ -128,7 +128,7 @@ void l25_trig00(void) {
         CB->divers(DV_MUSIC, 1, 0);
     }
     /* 0x76F9 */
-    if (ST(L25_RYLSADHAR_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
+    if (ST(V_CRYSTAL_KEY_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
         CB->divers(DV_MUSIC, 2, 0);
     }
     CB->load_anim("225OUV03", 0);
@@ -173,16 +173,16 @@ void l25_trig00(void) {
     /* 0x7A27 */
     if (ST(ST_HERO) == P_ARKHAN1) {
         /* 0x7A39 */
-        if (ST(L25_RYLSADHAR_ZED_STAGE) == 7) {
+        if (ST(V_RYLSADHAR_ZED_STAGE) == 7) {
             CB->vire_col(8, 0);
             CB->pos_perso(P_RYLSADHAR20, 6670, -3000, 0x7530, 1, "P20ARR02", 2, 1);
         }
         /* 0x7A7D */
-        if (ST(L25_RYLSADHAR_ZED_STAGE) == 5) {
+        if (ST(V_RYLSADHAR_ZED_STAGE) == 5) {
             CB->pos_perso(P_RYLSADHAR20, 6672, -3617, 0xEDAC, 1, "P20ARR01", 2, 1);
         }
         /* 0x7AB4 */
-        if (ST(L25_RYLSADHAR_ZED_STAGE) == 6) {
+        if (ST(V_RYLSADHAR_ZED_STAGE) == 6) {
             /* 0x7AC9 */
             if (ST(L25_ELAPSED_MS) > 2000 && ST(L25_ELAPSED_MS) <= 4000) {
                 CB->pos_perso(P_RYLSADHAR20, 6754, -3414, 0x59F, 1, "P20ARR01", 2, 1);
@@ -202,7 +202,7 @@ void l25_trig00(void) {
         /* 0x7BBE */
         if (ST(ST_VIE(P_RYLSADHAR20)) != VIE_DEAD && ST(V_GUARD_FIGHT_DONE) == 0 && ST(L25_RYLSADHAR_KALHI_STATE) != 2) {
             /* 0x7BF4 */
-            if (ST(L25_RYLSADHAR_ZED_STAGE) == 7) {
+            if (ST(V_RYLSADHAR_ZED_STAGE) == 7) {
                 CB->vire_col(8, 0);
                 CB->etat_objet("OB81", 6554, -1554, -2968, 0, 0xCC00, 0x4000, -1, 3);
                 CB->ajoute_zone(17, 6608, -2980, 185, 210, 0);
@@ -210,7 +210,7 @@ void l25_trig00(void) {
                 CB->pos_perso(P_KALHI13, 4539, -3629, 0xD984, 1, "P13ARR01", 3, 651);
             }
             /* 0x7CAE */
-            if (ST(L25_RYLSADHAR_ZED_STAGE) == 9 && ST(L25_RYLSADHAR_KALHI_STATE) == 1) {
+            if (ST(V_RYLSADHAR_ZED_STAGE) == 9 && ST(L25_RYLSADHAR_KALHI_STATE) == 1) {
                 /* 0x7CD2 */
                 if (ST(ST_VIE(P_KALHI13)) < 2) {
                     CB->pos_perso(P_KALHI13, 6881, -3289, 0x9C77, 1, "P13ARR02", 3, 651);
@@ -239,19 +239,19 @@ void l25_trig00(void) {
 /* trigger 41 - sub_10007DDA - room entry: music, Rylsadhar, Kalhi13 and hero greetings */
 static void trig41(void) {
     /* 0x7DEC */
-    if (ST(ST_VIE(P_RYLSADHAR20)) == VIE_DEAD && ST(L25_RYLSADHAR_STAGE) != 5) {
+    if (ST(ST_VIE(P_RYLSADHAR20)) == VIE_DEAD && ST(V_CRYSTAL_KEY_STAGE) != 5) {
         CB->divers(DV_MUSIC, 1, 1);
     }
     /* 0x7E22 */
-    if (ST(L25_RYLSADHAR_STAGE) == 5) {
+    if (ST(V_CRYSTAL_KEY_STAGE) == 5) {
         CB->divers(DV_MUSIC, 2, 1);
     }
     /* 0x7E46 */
-    if (ST(ST_HERO) == P_ARKHAN1 && ST(L25_RYLSADHAR_ZED_STAGE) < 7) {
+    if (ST(ST_HERO) == P_ARKHAN1 && ST(V_RYLSADHAR_ZED_STAGE) < 7) {
         CB->joindre(P_RYLSADHAR20, 6670, -3050, 0x608, -1);
     }
     /* 0x7E86 */
-    if (ST(ST_HERO) > 1 && ST(L25_RYLSADHAR_ZED_STAGE) == 9 && ST(L25_RYLSADHAR_KALHI_STATE) != 2 && ST(ST_VIE(P_KALHI13)) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0) && ST(L25_KALHI13_GREETED) == 0) {
+    if (ST(ST_HERO) > 1 && ST(V_RYLSADHAR_ZED_STAGE) == 9 && ST(L25_RYLSADHAR_KALHI_STATE) != 2 && ST(ST_VIE(P_KALHI13)) == 1 && CB->divers(DV_PERSONA_PRESENT, P_KALHI13, 0) && ST(V_KALHI_KILLED) == 0) {
         CB->bloque(BLOQUE_ALL);
         CB->change_camera(1, CAM_LOCKED);
         CB->joindre_perm(-P_KALHI13, ST(ST_HERO));
@@ -274,7 +274,7 @@ static void trig41(void) {
             CB->bloque(BLOQUE_ALL);
             lieu_action_register("L25D200A", P_ARKHAN2, "SG00DIA01", NULL);
             /* 0x8011 */
-            if (ST(L25_RYLSADHAR_DIALOGUE_COUNT) < 2) {
+            if (ST(V_KALHI_RECRUIT) < 2) {
                 lieu_action_register("L25D200B", P_ARKHAN2, "SG00DIA06", NULL);
             }
             CB->bloque(BLOQUE_NONE);
@@ -284,7 +284,7 @@ static void trig41(void) {
             CB->bloque(BLOQUE_ALL);
             lieu_action_register("L25D201A", P_ARKHAN3, "SG00DIA01", NULL);
             /* 0x8074 */
-            if (ST(L25_RYLSADHAR_DIALOGUE_COUNT) < 2) {
+            if (ST(V_KALHI_RECRUIT) < 2) {
                 lieu_action_register("L25D201B", P_ARKHAN3, "SG00DIA06", NULL);
             }
             CB->bloque(BLOQUE_NONE);
@@ -297,7 +297,7 @@ static void trig02(void) {
     /* 0x9331 */
     if (ST(L25_RYLSADHAR_ALERT) == 0 && ST(ST_VIE(P_RYLSADHAR20)) != VIE_DEAD) {
         /* 0x9355 */
-        if (ST(ST_HERO) == P_ARKHAN1 && ST(L25_RYLSADHAR_ZED_STAGE) == 7 && ST(L25_RYLSADHAR_TALK_STAGE) > 0) {
+        if (ST(ST_HERO) == P_ARKHAN1 && ST(V_RYLSADHAR_ZED_STAGE) == 7 && ST(L25_RYLSADHAR_TALK_STAGE) > 0) {
             CB->divers(DV_LOOK_AT_PLAYER, P_RYLSADHAR20, 1);
             ST(L25_RYLSADHAR_WATCHING) = 1;
         }
@@ -338,7 +338,7 @@ static void trig02(void) {
         lieu_action_register("L25D27", P_RYLSADHAR20, "SP20ATT51", "SP20ARR01_100");
     }
     /* 0x95BE */
-    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_VIE(P_RYLSADHAR20)) != VIE_DEAD && ST(L25_RYLSADHAR_ZED_STAGE) == 7 && CB->direction_perso(P_RYLSADHAR20)) {
+    if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_COMBAT_STANCE) == 0 && ST(ST_VIE(P_RYLSADHAR20)) != VIE_DEAD && ST(V_RYLSADHAR_ZED_STAGE) == 7 && CB->direction_perso(P_RYLSADHAR20)) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x964B */
@@ -547,7 +547,7 @@ static void trig02(void) {
             CB->evenement(0x27, 375);
             CB->bloque(BLOQUE_ALL);
             ST(L25_RYLSADHAR_INTRO_DONE) = 10;
-            ST(L25_RYLSADHAR_ZED_STAGE) = 10;
+            ST(V_RYLSADHAR_ZED_STAGE) = 10;
             return;
         }
     }
@@ -842,7 +842,7 @@ static void trig05(void) {
             CB->divers(DV_MUSIC, 1, 4);
         }
         /* 0xB34C */
-        if (ST(L25_RYLSADHAR_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
+        if (ST(V_CRYSTAL_KEY_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
             CB->divers(DV_MUSIC, 2, 4);
         }
         ST(ST_SCRIPT_BUSY) = 1;
@@ -1232,7 +1232,7 @@ static void trig14(void) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0xC640 */
-        if (ST(L25_RYLSADHAR_STAGE) == 0) {
+        if (ST(V_CRYSTAL_KEY_STAGE) == 0) {
             /* 0xC652 */
             if (ST(ST_HERO) == P_ARKHAN1) {
                 lieu_action_register("L25D76", P_ARKHAN1, "SG01DIA02", NULL);
@@ -1258,7 +1258,7 @@ static void trig14(void) {
             return;
         }
         /* 0xC75A */
-        if (ST(L25_RYLSADHAR_STAGE) == 1 || ST(L25_RYLSADHAR_STAGE) == 2) {
+        if (ST(V_CRYSTAL_KEY_STAGE) == 1 || ST(V_CRYSTAL_KEY_STAGE) == 2) {
             /* 0xC77E */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->pos_perso(ST(ST_HERO), 6959, -3318, 0xBBDF, 1, "ar", 1, 0);
@@ -1269,7 +1269,7 @@ static void trig14(void) {
                         CB->divers(DV_MUSIC, 1, 4);
                     }
                     /* 0xC803 */
-                    if (ST(L25_RYLSADHAR_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
+                    if (ST(V_CRYSTAL_KEY_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
                         CB->divers(DV_MUSIC, 2, 4);
                     }
                     /* 0xC839 */
@@ -1325,7 +1325,7 @@ static void trig14(void) {
                         CB->divers(DV_MUSIC, 1, 4);
                     }
                     /* 0xCA9F */
-                    if (ST(L25_RYLSADHAR_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
+                    if (ST(V_CRYSTAL_KEY_STAGE) == 1 && ST(L25_RYLSADHAR_GATE_OPENED) == 0) {
                         CB->divers(DV_MUSIC, 2, 4);
                     }
                     /* 0xCAD5 */

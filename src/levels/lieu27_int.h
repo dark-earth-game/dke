@@ -43,13 +43,8 @@ extern i32 g_dest_room;
 #define L27_UNUSED_F0                      0x0F0  /* only zeroed at INIT, never read in this level */
 #define L27_PHEDORIA_HOSTILE               0x874  /* set to 5 when the hero attacks Phedoria (trigger 9) */
 #define L27_ZONE_SEEN                      0x950  /* 1 once the trigger 8/9 scene was seen */
-#define L27_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
-#define L27_RYLSADHAR_STAGE                0xB10  /* story stage of the Rylsadhar20 encounter (set in room 25); > 0 changes trigger 16 */
-#define L27_LORY_STAGE                     0xB38  /* story stage: 0 first visit (music 1), 1 later, 2 after the Lory scene */
 #define L27_PHEDORIA_STAGE                 0xB58  /* Phedoria/Lory plot stage: 4/5 = trap sprung (time-based block), 10 = start preset */
 #define L27_STORY_MARK_C48                 0xC48  /* 99 = preset, 100 = past the Lory scene (shared with L26, L28, L29) */
-#define L27_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
 #define L27_ZONE17_STAGE                   0xF34  /* trigger 17: 0 first message, 1 repeat */
-#define L27_GUARD_FIGHT_PART               0xF38  /* 1 = guard fight part already seen after V_GUARD_FIGHT_DONE == 2 */
 
 #endif /* DKE_LIEU27_INT_H */

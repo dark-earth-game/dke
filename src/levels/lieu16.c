@@ -646,7 +646,7 @@ static void tick_body(void) {
         /* 0xA5C9 */
         if (ST(ST_VIE(90)) == VIE_DEAD) {
             /* 0xA5E4 */
-            if (CB->distance(1, 33) > 150 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) < 3500 && ST(L16_DELIA_FOLLOW_ARMED) == 1 && (ST(L16_TICK_COUNTER) % 20) == 0 && CB->divers(DV_DESC_POS, P_DELIA, 3) < -2190) {
+            if (CB->distance(1, 33) > 150 && CB->divers(DV_DESC_POS, ST(ST_HERO), 1) < 3500 && ST(L16_DELIA_FOLLOW_ARMED) == 1 && (ST(V_FRAME_COUNTER) % 20) == 0 && CB->divers(DV_DESC_POS, P_DELIA, 3) < -2190) {
                 /* 0xA667 */
                 if (CB->distance(3, 1) >= 120) {
                     CB->divers(DV_RUN, P_DELIA, 0);
@@ -660,7 +660,7 @@ static void tick_body(void) {
                     CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
                 }
             }
-        } else if ((ST(L16_TICK_COUNTER) % 20) == 0) {
+        } else if ((ST(V_FRAME_COUNTER) % 20) == 0) {
             /* 0xA73A */
             if (CB->distance(3, 1) >= 120) {
                 CB->divers(DV_RUN, P_DELIA, 0);
@@ -784,7 +784,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L16_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l16_trig00();   /* 0x10013189: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

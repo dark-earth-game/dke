@@ -97,7 +97,7 @@ void l15_trig00(void) {
         ST(ST_VIE(P_KALHI13)) = 1;
         ST(L15_CRYSTAL_ROUND) = 0;
         ST(V_GUARD_FIGHT_DONE) = 0;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
         ST(L15_ROOM_ENTERED) = 1;
@@ -110,9 +110,9 @@ void l15_trig00(void) {
         ST(ST_VIE(P_DANRYS)) = 1;
         ST(ST_VIE(P_KALHI13)) = 1;
         ST(L15_CRYSTAL_ROUND) = 1;
-        ST(L15_CRYSTAL_PROGRESS) = 0;
+        ST(V_CRYSTAL_PROGRESS) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(L15_DANRYS_STATE_BE8) = 2;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
@@ -126,8 +126,8 @@ void l15_trig00(void) {
         ST(ST_VIE(P_DANRYS)) = 1;
         ST(ST_VIE(P_KALHI13)) = 1;
         ST(L15_DANRYS_STATE_BE8) = 2;
-        ST(L15_CRYSTAL_PROGRESS) = 0;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_PROGRESS) = 0;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
@@ -142,8 +142,8 @@ void l15_trig00(void) {
         ST(L15_DANRYS_PLOT_A84) = 3;
         ST(L15_DANRYS_STATE_BE8) = 2;
         ST(L15_DANRYS_STATE_BE8) = 2;
-        ST(L15_CRYSTAL_PROGRESS) = 0;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_PROGRESS) = 0;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
@@ -158,8 +158,8 @@ void l15_trig00(void) {
         ST(ST_VIE(P_DANRYS)) = VIE_DEAD;
         ST(L15_DANRYS_DEAD_SEEN) = 0;
         ST(L15_DANRYS_PLOT_A84) = 3;
-        ST(L15_CRYSTAL_PROGRESS) = 0;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_PROGRESS) = 0;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
@@ -174,10 +174,10 @@ void l15_trig00(void) {
         ST(ST_VIE(P_KALHI13)) = 1;
         ST(L15_DANRYS_DEAD_SEEN) = 0;
         ST(L15_DANRYS_PLOT_A84) = 3;
-        ST(L15_CRYSTAL_PROGRESS) = 2;
+        ST(V_CRYSTAL_PROGRESS) = 2;
         ST(L15_CRYSTAL18_GIVEN) = 1;
         ST(L15_CRYSTAL19_GIVEN) = 1;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
@@ -190,9 +190,9 @@ void l15_trig00(void) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(L15_CRYSTAL18_GIVEN) = 1;
         ST(L15_CRYSTAL19_GIVEN) = 1;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 1;
-        ST(L15_CRYSTAL_PROGRESS) = 2;
+        ST(V_CRYSTAL_PROGRESS) = 2;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_PLOT_A84) = 0;
         ST(ST_LEVEL) = 14;
@@ -203,10 +203,10 @@ void l15_trig00(void) {
     if (ST(ST_START_POINT(15)) == 10) {
         ST(L15_PROGRESS_STEP) = 9;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L15_CRYSTAL_PROGRESS) = 2;
+        ST(V_CRYSTAL_PROGRESS) = 2;
         ST(L15_CRYSTAL18_GIVEN) = 1;
         ST(L15_CRYSTAL19_GIVEN) = 1;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 1;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_PLOT_A84) = 0;
@@ -221,8 +221,8 @@ void l15_trig00(void) {
         ST(ST_VIE(P_DANRYS)) = 1;
         ST(L15_DANRYS_STATE_BE8) = 2;
         ST(L15_DANRYS_STATE_BE8) = 2;
-        ST(L15_CRYSTAL_PROGRESS) = 0;
-        ST(L15_INTRO_B10) = 1;
+        ST(V_CRYSTAL_PROGRESS) = 0;
+        ST(V_CRYSTAL_KEY_STAGE) = 1;
         ST(L15_FLAG_BE4) = 0;
         ST(V_GUARD_FIGHT_DONE) = 1;
         ST(L15_DANRYS_INTRO_STAGE) = 2;
@@ -290,13 +290,13 @@ void l15_trig00(void) {
         CB->etat_objet("OB74", 5361, -2208, 368, 0xBE00, 0x85FC, 0xFA00, -1, 0);
     }
     /* 0x81B0 */
-    if (ST(L15_CRYSTAL_PROGRESS) == 4) {
+    if (ST(V_CRYSTAL_PROGRESS) == 4) {
         ST(L15_TRADE_SCENE_STEP) = 1;
         ST(L15_TRADE_REWARD_PENDING) = 1;
     }
     /* 0x81E0 */
-    if (ST(L15_CRYSTAL_PROGRESS) == 3) {
-        ST(L15_CRYSTAL_PROGRESS) = 5;
+    if (ST(V_CRYSTAL_PROGRESS) == 3) {
+        ST(V_CRYSTAL_PROGRESS) = 5;
     }
     /* 0x8201 */
     if (ST(V_EVENT_31) == 1 && ST(L15_DANRYS_DEAD_SEEN) == 0) {
@@ -1056,7 +1056,7 @@ static void trig02(void) {
                                 }
                                 /* 0xF11A */
                                 if (ST(L15_DANRYS_TALK_STAGE_E80) == 2) {
-                                    ST(L15_CRYSTAL_PROGRESS) = 4;
+                                    ST(V_CRYSTAL_PROGRESS) = 4;
                                     ST(L15_DANRYS_CALL_DONE) = 1;
                                     ST(L15_TRADE_REWARD_PENDING) = 1;
                                     CB->animation("SP09PRE90_1500");
@@ -1212,8 +1212,8 @@ static void trig02(void) {
                                 }
                             }
                             /* 0xF80E */
-                            if (ST(L15_CRYSTAL_PROGRESS) == 2) {
-                                ST(L15_CRYSTAL_PROGRESS) = 4;
+                            if (ST(V_CRYSTAL_PROGRESS) == 2) {
+                                ST(V_CRYSTAL_PROGRESS) = 4;
                                 l15_pre_scene2(ST(ST_HERO), P_DANRYS, OB_CRYST_SLIV, 6, 2);
                                 CB->animation("SP09PRE91");
                                 lieu_action_register("L15D354", P_DANRYS, "P09DIA54", "SP09ARR01_10");
@@ -1228,7 +1228,7 @@ static void trig02(void) {
                                 return;
                             }
                             /* 0xF8FF */
-                            if (ST(L15_CRYSTAL_PROGRESS) == 5) {
+                            if (ST(V_CRYSTAL_PROGRESS) == 5) {
                                 ST(L15_DANRYS_APPROACHED) = 1;
                                 lieu_action_register("L15D354", P_DANRYS, "SP09DIA54", "SP09ARR01_10");
                                 CB->animation("SG00PRE82");
@@ -1791,7 +1791,7 @@ static void trig02(void) {
                     lieu_action_register("L15D56B", P_DANRYS, "SP09DIA57", "SP09ARR01_10");
                     lieu_action_register("L15D56C", P_DANRYS, "SP09ATT50", "SP09ARR01_10");
                     /* 0x1154C */
-                    if (ST(L15_CONVO_BC8) == 2) {
+                    if (ST(V_ARMAL_STAGE) == 2) {
                         /* 0x1155E */
                         if (ST(ST_HERO) == P_ARKHAN2) {
                             lieu_action_register("L15D457", P_ARKHAN2, "SG00DIA02", NULL);
@@ -1807,7 +1807,7 @@ static void trig02(void) {
                     return;
                 }
                 /* 0x115E2 */
-                if (ST(L15_CONVO_BC8) == 0 && ST(ST_VIE(P_ARMAL)) == 1 && ST(L15_ARMAL_STAGE) == 0 && ST(L15_DANRYS_TOPIC_58) != 2) {
+                if (ST(V_ARMAL_STAGE) == 0 && ST(ST_VIE(P_ARMAL)) == 1 && ST(L15_ARMAL_STAGE) == 0 && ST(L15_DANRYS_TOPIC_58) != 2) {
                     ST(L15_ARKHAN2_TOPIC_90) = 1;
                     ST(L15_DANRYS_TOPIC_58) = 2;
                     /* 0x11642 */
@@ -1840,8 +1840,8 @@ static void trig02(void) {
                     return;
                 }
                 /* 0x117DE */
-                if (ST(L15_CONVO_BC8) == 0 && ST(ST_VIE(P_ARMAL)) == 1 && ST(L15_ARMAL_STAGE) == 1) {
-                    ST(L15_CONVO_BC8) = 1;
+                if (ST(V_ARMAL_STAGE) == 0 && ST(ST_VIE(P_ARMAL)) == 1 && ST(L15_ARMAL_STAGE) == 1) {
+                    ST(V_ARMAL_STAGE) = 1;
                     ST(L15_ARKHAN2_TOPIC_90) = 1;
                     /* 0x11832 */
                     if (ST(ST_HERO) == P_ARKHAN2) {
@@ -1954,7 +1954,7 @@ static void trig02(void) {
                         return;
                     }
                     /* 0x11E02 */
-                    if (ST(L15_CONVO_AA0) == 1 && ST(L15_STORY_EB0) >= 2 && ST(L15_CONVO_AA4) == 0 && ST(L15_EVENT_32C) == 0 && ST(L15_EVENT_330) == 0) {
+                    if (ST(L15_CONVO_AA0) == 1 && ST(L15_STORY_EB0) >= 2 && ST(L15_CONVO_AA4) == 0 && ST(V_EVENT_3) == 0 && ST(V_EVENT_4) == 0) {
                         ST(L15_CONVO_AA4) = 1;
                         /* 0x11E6B */
                         if (ST(ST_HERO) == P_ARKHAN2) {
@@ -2639,7 +2639,7 @@ static void trig04(void) {
             /* 0x13DAA */
             if (ST(ST_PLAYER_WEAPON) == OB_CRYST_SLIV) {
                 /* 0x13DBC */
-                if (ST(L15_CRYSTAL_PROGRESS) <= 1) {
+                if (ST(V_CRYSTAL_PROGRESS) <= 1) {
                     /* 0x13DCE */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L15D465A", P_ARKHAN2, "SG00DIA06", NULL);
@@ -2655,7 +2655,7 @@ static void trig04(void) {
                     return;
                 }
                 /* 0x13E68 */
-                if (ST(L15_CRYSTAL_PROGRESS) == 2) {
+                if (ST(V_CRYSTAL_PROGRESS) == 2) {
                     /* 0x13E7A */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L15D419", P_ARKHAN2, "SG00DIA06", NULL);
@@ -2672,7 +2672,7 @@ static void trig04(void) {
                     return;
                 }
                 /* 0x13F0D */
-                if (ST(L15_CRYSTAL_PROGRESS) >= 3) {
+                if (ST(V_CRYSTAL_PROGRESS) >= 3) {
                     /* 0x13F1F */
                     if (ST(ST_HERO) == P_ARKHAN2) {
                         lieu_action_register("L15D89A", P_ARKHAN2, "SG00DIA06", NULL);

@@ -55,7 +55,7 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x8049 */
-    if (ST(ST_HERO) == P_ARKHAN1 && ST(L07_ZED_SCENE_OFF) == 0 && ST(V_ZED_BRIEFING) == 3 && ST(ST_SCRIPT_BUSY) == 0 && ST(L07_ZED_BRIEFING) == 0) {
+    if (ST(ST_HERO) == P_ARKHAN1 && ST(V_ARKHAN1_PROGRESS) == 0 && ST(V_ZED_BRIEFING) == 3 && ST(ST_SCRIPT_BUSY) == 0 && ST(L07_ZED_BRIEFING) == 0) {
         /* 0x809D */
         if (ST(V_ENGAGED_PERSONA) == P_ZED27) {
             /* 0x80AC */
@@ -216,7 +216,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 0x8937 */
-    if (ST(ST_VIE(P_ZED27)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN1 && ST(L07_ZED_SCENE_OFF) == 0 && ST(V_ZED_BRIEFING) == 3 && ST(L07_ZED_BRIEFING) == 0) {
+    if (ST(ST_VIE(P_ZED27)) != VIE_DEAD && ST(ST_HERO) == P_ARKHAN1 && ST(V_ARKHAN1_PROGRESS) == 0 && ST(V_ZED_BRIEFING) == 3 && ST(L07_ZED_BRIEFING) == 0) {
         /* 0x8991 */
         if (ST(V_EVENT_1) == 1 && CB->divers(DV_IN_ZONE, P_ZED27, 39) && !CB->divers(DV_IN_ZONE, ST(ST_HERO), 2) && (!CB->divers(DV_IN_ZONE, ST(ST_HERO), 39) || CB->divers(DV_ANGLE_TO, P_ZED27, ST(ST_HERO)) > 0x4000) && ST(V_ENGAGED_PERSONA) == 0) {
             ST(V_EVENT_1) = 0;
@@ -768,7 +768,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L07_FORCE_DEFAULT_INIT) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l07_trig00();   /* 0x1000E4E9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

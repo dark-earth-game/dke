@@ -46,7 +46,7 @@ static void tick_body(void) {
     if (ST(V_EVENT_1) == 1) {
         ST(V_EVENT_1) = 0;
         /* 0x806E */
-        if (ST(L49_PLATE_USED) == 1) {
+        if (ST(V_BUNKER_SEEN) == 1) {
             /* 0x8080 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 CB->animation("Sar_50");
@@ -581,7 +581,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L49_ENDING_PLAYED) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l49_trig00();   /* 0x1000C5D9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

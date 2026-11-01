@@ -13,7 +13,6 @@
 
 /* Script variables of this room (state block offsets, ST()); the low slots
  * are scratch space the level reuses for itself, named per level. */
-#define L54_ENGINE_TICK              0x038  /* engine frame counter; tick uses it modulo 20 to pace Delia run/walk checks */
 #define L54_PROVIDER_WARN_ARMED      0x064  /* 1 = Provider may warn Arkhan2 (L14D263) when he comes near; 0 after the warning, re-armed when hero is >400 away */
 #define L54_GAMEOVER_QUEUED          0x068  /* 1 once hero is dead (ST_HERO==4) and game-over event 44 was queued */
 #define L54_DELIA_HIT_MARK           0x06C  /* modify_var +1 when Delia is struck the first time (L10D95); never read */
@@ -44,9 +43,6 @@
 #define L54_ZONE18_SEEN              0x174  /* zone 18 object: 0 = first look (silent), 1 = repeat dialogue L14D100/101 */
 #define L54_ZONE38_SEEN              0x178  /* zone 38 object (Provider corpse area): 0 = first, 1 = LCOD10 follow-up */
 #define L54_PASSAGE25_OPEN           0x188  /* 1 = arrived from level 46, collision 25 removed (persistent) */
-#define L54_EVENT6_STATE             0x338  /* op-4 event 6 slot (V_EVENT_n style); seeded 1 by start point 102 */
-#define L54_EVENT10_STATE            0x348  /* op-4 event 10 slot (V_EVENT_n style); seeded 1 by start point 102 */
-#define L54_EVENT14_STATE            0x358  /* op-4 event 14 slot (V_EVENT_n style); seeded 2 by start point 102 */
 #define L54_GUARDS_HOSTILE           0x4CC  /* 1 = guards (Malrot4/Malrot1) are in fight mode; INIT re-places them near the entry used */
 #define L54_PROVIDER_POSTFIGHT_TALK  0x538  /* 1 = Provider has a post-fight conversation pending (L14D243..257); set by INIT when L54_POST_FIGHT_STAGE==2, 0 once told */
 #define L54_MOTOR_REFUELED           0x560  /* 1 = jerrycan fuel poured into the motor this visit (L14D269); cleared when camera 2 is re-entered */
@@ -63,16 +59,9 @@
 #define L54_FLAG_0948                0x948  /* story flag, only seeded 1 by start point 102 here */
 #define L54_FLAG_0A5C                0xA5C  /* story flag, only seeded 2 by start point 102 here */
 #define L54_FLAG_0AE4                0xAE4  /* story flag, only seeded 1 by start point 102 here */
-#define L54_FLAG_0AF4                0xAF4  /* story flag, only seeded 3 by start point 102 here */
-#define L54_FLAG_0AF8                0xAF8  /* story flag, set 1 by start points 1, 2, 6, 102 */
-#define L54_FLAG_0B10                0xB10  /* story flag; non-zero makes INIT set L54_FLAG_0E74 */
-#define L54_FLAG_0B38                0xB38  /* story stage, INIT advances 2 -> 3 */
-#define L54_FLAG_0B40                0xB40  /* story flag, only seeded 3 by start point 102 here */
 #define L54_FLAG_0B44                0xB44  /* story flag, only seeded 2 by start point 102 here */
-#define L54_EXIT10_ENTRY             0xB4C  /* which entry of level 10 trigger 8 uses: 0 -> 1, 1 -> 2, 2 -> 3 (change_piece(10, n)); INIT sets 1 when Delia is at phase 3 */
 #define L54_FLAG_0B54                0xB54  /* story flag, only seeded 3 by start point 102 here */
 #define L54_FLAG_0B84                0xB84  /* story flag, only seeded 1 by start point 102 here */
-#define L54_FLAG_0B98                0xB98  /* story flag, only seeded 4 by start point 102 here */
 #define L54_FLAG_0BA8                0xBA8  /* story stage, INIT advances 5 -> 6 */
 #define L54_MALROT5_STAGE            0xBBC  /* Malrot5 chain: 1 -> 2, 4 -> 5 (Malrot5 alive) or 8 (dead), 7 -> 8 on leaving through trigger 8 */
 #define L54_FLAG_0BD0                0xBD0  /* story flag, only seeded 2 by start point 102 here */
@@ -81,7 +70,6 @@
 #define L54_MALROT4_AMBUSH           0xBE8  /* 0 = no ambush yet, >=1 = Malrot4 ambush active (Provider follows hero), 3 -> 4 when leaving by trigger 5 */
 #define L54_MALROT1_TRUST            0xBEC  /* Malrot1 stage: 0 = hostile talk, 1 = told secret (L14D119), 2 = gourd given (L14D175) */
 #define L54_MOTOR_STOPPED            0xBF4  /* 1 = motor stopped (anims paused, ambience L14AMB1/2), 0 = running after refuel (L14AMB3/4) */
-#define L54_GUARD35_PURSUIT          0xC44  /* 1 = Guard 35 chases the hero across rooms (start point 5); suppresses the Malrot guards */
 #define L54_MALROT4_WAYPOINT         0xCB0  /* Malrot4 patrol waypoint: 1 = pick, 2/3/4 = at one of the 3 posts, 10 = recalled */
 #define L54_MALROT4_CHASE            0xCB4  /* 1 = Malrot4 notices hero at zone 2; cleared when hero is >200 away */
 #define L54_MALROT4_APPROACH         0xCB8  /* Malrot4 approach: 0 not yet, 1 = ready (taunt/talk allowed) */
@@ -102,18 +90,15 @@
 #define L54_FLAG_0E24                0xE24  /* story stage, INIT advances 2 -> 3 */
 #define L54_FLAG_0E34                0xE34  /* story flag, cleared (1 -> 0) when leaving by triggers 5, 7, 8 */
 #define L54_FLAG_0E3C                0xE3C  /* story flag, only seeded 1 by start point 102 here */
-#define L54_FLAG_0E74                0xE74  /* set 1 by INIT when L54_FLAG_0B10 is non-zero */
-#define L54_FLAG_0E78                0xE78  /* story value, only seeded 9 by start point 102 here */
+#define L54_FLAG_0E74                0xE74  /* set 1 by INIT when V_CRYSTAL_KEY_STAGE is non-zero */
 #define L54_FLAG_0E7C                0xE7C  /* story value, only seeded 3 by start point 102 here */
 #define L54_FLAG_0E90                0xE90  /* story value, only seeded 100 by start point 102 here */
-#define L54_KALHI13_STAGE            0xE9C  /* Kalhi13 stage: 10 = arrives in room 10 (start point 1, hero position, event 40), 40 = appeared */
 #define L54_FLAG_0EA0                0xEA0  /* story flag, only seeded 1 by start point 102 here */
 #define L54_FLAG_0EB0                0xEB0  /* story flag, only seeded 1 by start point 102 here */
 #define L54_POST_FIGHT_STAGE         0xEB8  /* 2 (start point 1) = Provider post-fight conversation pending, see L54_PROVIDER_POSTFIGHT_TALK */
 #define L54_FLAG_0EF0                0xEF0  /* story flag, only seeded 1 by start point 102 here */
-#define L54_FLAG_0EF8                0xEF8  /* story stage; INIT turns 2/3 into 10 and sets L54_FLAG_0F24 = 5 */
 #define L54_FLAG_0F14                0xF14  /* story flag, only seeded 2 by start point 102 here */
-#define L54_FLAG_0F24                0xF24  /* 1 when Dhorkan11 is dead, 5 after L54_FLAG_0EF8 stage 2/3 */
+#define L54_FLAG_0F24                0xF24  /* 1 when Dhorkan11 is dead, 5 after V_CHASE_ROUTE stage 2/3 */
 #define L54_FLAG_0F28                0xF28  /* story stage, INIT advances 3 -> 4 */
 #define L54_FLAG_0F3C                0xF3C  /* story flag, only seeded 2 by start point 102 here */
 

@@ -101,8 +101,8 @@ void l13_trig00(void) {
     ST(L13_AMBIENT_ANIM_ON) = 0;
     ST(V_WEAPON_WARNED) = 0;
     /* 0x7784 */
-    if (ST(L13_BUNKER_SEEN) == 1) {
-        ST(L13_BUNKER_SEEN) = 2;
+    if (ST(V_BUNKER_SEEN) == 1) {
+        ST(V_BUNKER_SEEN) = 2;
     }
 }
 

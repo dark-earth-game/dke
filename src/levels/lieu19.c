@@ -275,7 +275,7 @@ static void tick_body(void) {
             CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 1, "P10ARR01", 0xC, 0);
         }
         /* 0x8FDF */
-        if (ST(L19_DELIA_FOLLOWING) == 1 && (ST(L19_TICK_COUNTER) % 20) == 0) {
+        if (ST(L19_DELIA_FOLLOWING) == 1 && (ST(V_FRAME_COUNTER) % 20) == 0) {
             /* 0x9012 */
             if (CB->distance(12, 1) >= 180) {
                 CB->divers(DV_RUN, P_DELIA, 0);
@@ -388,7 +388,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L19_DEATH_ENDING_DONE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l19_trig00();   /* 0x1000DE19: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

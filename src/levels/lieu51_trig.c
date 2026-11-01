@@ -111,7 +111,7 @@ void l51_trig00(void) {
     CB->ajoute_zone(36, 3475, -2022, 630, 385, 0);
     CB->ajoute_zone(37, 4676, -3090, 260, 260, 0);
     CB->ajoute_zone(38, 3400, -850, 100, 150, 0);
-    ST(L51_EXIT_STAGE) = 3;
+    ST(V_ROUTE_STAGE) = 3;
     /* 0x788E */
     if (ST(L51_PULLEY_STATE) < 2) {
         CB->etat_objet("OB48", 5196, -782, -1170, 0x2A00, 0x6E00, 0xD2F8, -1, 0);

@@ -160,7 +160,7 @@ static void tick_body(void) {
         CB->select_pile(0, 1);
     }
     /* 36072 */
-    if (ST(L23_RYLSADHAR_SCENE_STEP) == 1 && ST(L23_RYLSADHAR_ZED_STAGE) == 2 && ST(ST_HERO) == P_ARKHAN1 && CB->distance(4, 2) <= 150) {
+    if (ST(L23_RYLSADHAR_SCENE_STEP) == 1 && ST(V_RYLSADHAR_ZED_STAGE) == 2 && ST(ST_HERO) == P_ARKHAN1 && CB->distance(4, 2) <= 150) {
         CB->bloque(BLOQUE_ALL);
         CB->stop_joindre(-P_RYLSADHAR20);
         CB->pos_perso(P_RYLSADHAR20, 6463, -3671, 0xBE84, 1, "P20ARR01", -1, 0);
@@ -168,7 +168,7 @@ static void tick_body(void) {
         CB->animation("SP20ARR01_50");
         CB->evenement(33, 475);
         CB->animation("P20OUV01");
-        ST(L23_RYLSADHAR_ZED_STAGE) = 6;
+        ST(V_RYLSADHAR_ZED_STAGE) = 6;
         ST(L23_LEAVE_TIME) = ST(ST_GAME_TIME);
         CB->animation("P20MAR02");
         CB->evenement(1, 475);
@@ -178,7 +178,7 @@ static void tick_body(void) {
         CB->modify_var(&ST(L23_RYLSADHAR_SCENE_STEP), 4);
     }
     /* 36401 */
-    if (ST(L23_RYLSADHAR_SCENE_STEP) == 4 && ST(ST_HERO) == P_ARKHAN1 && ST(L23_ARKHAN23_PART) == 0) {
+    if (ST(L23_RYLSADHAR_SCENE_STEP) == 4 && ST(ST_HERO) == P_ARKHAN1 && ST(V_RETURN_PART) == 0) {
         ST(L23_RYLSADHAR_SCENE_STEP) = 5;
         CB->bruitage("L23BO1", 6464, -3652);
         CB->change_camera(0, CAM_LOCKED);
@@ -602,7 +602,7 @@ static void tick_body(void) {
             CB->select_pile(1, 1);
             CB->evenement(27, 1250);
             /* 42256 */
-            if (ST(L23_KALHI_PART_STEP) == 2) {
+            if (ST(V_ROUTE_STAGE) == 2) {
                 CB->animation("223OUV07");
             } else {
                 /* 42290 */
@@ -665,7 +665,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L23_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l23_trig00();   /* 0x1000CDD9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

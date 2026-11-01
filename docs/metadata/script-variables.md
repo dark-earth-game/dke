@@ -116,6 +116,34 @@ was confirmed. Offsets the engine writes for the scripts:
 | `V_HUD_TIMER_MS` | `0xF5C` | countdown in ms, event 0x12 subtracts 0x1388 per step with HUD refresh; L1/L2 |
 | `V_SAVED_HERO` | `0xF68` | hero persona saved when the Kalhi event started (compared to ST_HERO); L2 |
 | `V_G23_FIGHT_ON` | `0xF74` | 1 once Guardian23 is fighting (at GAR01 spot); reset when he dies; L1 |
+| `V_FRAME_COUNTER` | `0x038` | engine frame counter; scripts pace follow/patrol checks with % 20 or % 100 |
+| `V_EVENT_3` | `0x32C` | op-4 event 3 slot, also a story flag: Thanandar infected the father (L39D24) / Rylsadhar route (L20-L22); L5, L15, L18, L20-L22, L32, L39, L46 |
+| `V_EVENT_4` | `0x330` | op-4 event 4 slot, also a story flag: Thanandar infected Zed (L39D25) / Zed route (L20-L22); same levels as V_EVENT_3 |
+| `V_EVENT_6` | `0x338` | op-4 event 6 slot; guard-pair progress 0/1/2 with V_GUARDIAN4_STAGE, L8 arena round (0,1,2,0x63) |
+| `V_EVENT_10` | `0x348` | op-4 event 10 slot; set with V_EVENT_6 once V_GUARDIAN4_STAGE reaches 4 |
+| `V_EVENT_14` | `0x358` | op-4 event 14 slot; seeded by start points |
+| `V_ARKHAN1_PROGRESS` | `0xAF4` | Arkhan1 exploration step 0..3; L2 tests < 3, L10 advances it through the Lory/Rylsadhar and Zed scenes |
+| `V_RETURN_PART` | `0xAF8` | 0 = Arkhan1 chapter, 1 = the return part as Arkhan2/3; set by start points, read by guard, fight and Kalhi scenes |
+| `V_CRYSTAL_KEY_STAGE` | `0xB10` | OB75 Rylsadhar's Crystal Key: the engine sets 2 when OB02+OB12+OB18+OB19 combine (inventory auto-combine); L25 sets 1 and 5 |
+| `V_LORY_STAGE` | `0xB38` | Lory / Archivist room stage 0..3; written by L27/L28 start points |
+| `V_ALERT_STAGE` | `0xB3C` | 0 = calm (music 1), 1/2 = alarm (music 2); L18, L20, L21 |
+| `V_KALHI_RECRUIT` | `0xB40` | Kalhi recruitment stage 0..4, 3 = recruited; L2-L4, L10, L33 |
+| `V_ROUTE_STAGE` | `0xB4C` | stage 0..3 choosing the exit / return room variant (room 10 or 51); L33 sets 2 from SC15 |
+| `V_GUARDIAN4_STAGE` | `0xB98` | Guardian3/4 encounter 0..5 (0/2 on the Arkhan1 path, 4 = done); INIT resets it to 0 while Guardian4 lives |
+| `V_ARMAL_STAGE` | `0xBC8` | Armal stage 0/1/2 (written in L18); L16/L19 Malrot and Delia lines depend on it |
+| `V_GUARDIAN8_STAGE` | `0xC08` | Guardian8: 2 = present, 3 = killed (L10 turns 3 into 10) |
+| `V_BUNKER_SEEN` | `0xC20` | bunker entrance in the Darklands: 1 = seen (L49, plate used), 2 = told (L13/L53) |
+| `V_DELIA_GONE` | `0xC44` | 1 = Delia dead or her escort over (V_DELIA_PHASE >= 10); set in L37, read in L14/L54 |
+| `V_SORDOS_DUEL` | `0xE20` | Sordos / Thanandar24 duel: 2 = decided (L34); L31/L32 start the chase only below 2 |
+| `V_KALHI_KILLED` | `0xE58` | set when Kalhi13 / Kalhi33 is killed (1, or 10) |
+| `V_RYLSADHAR_ZED_STAGE` | `0xE78` | Rylsadhar/Zed storyline: 1 start, 2 waiting, 7 at post, 9 Kalhi done, 10 Zed84, 100 past |
+| `V_CHASE_STATE` | `0xE8C` | chase to room 32: 0 none, 1 requested, 2 running, 10 over; every INIT also runs the normal setup when 1 even if ST_HERO is 4 |
+| `V_KONKALITE2_FIGHT` | `0xE98` | Konkalite2 fight: 0/1 start, 20-22 hit variants, 56 won, 60 cleared, 65 already done (INIT maps 60 to 65) |
+| `V_KALHI_PHASE` | `0xE9C` | Kalhi escort phase, encoded like V_DELIA_PHASE: 3 following, 7 guiding, 8 waiting, 10 gone (L8 also 5/6) |
+| `V_ZED84_TALK_STAGE` | `0xEC8` | Zed84 meeting stage 0..3 at the Arkhan1 start |
+| `V_CRYSTAL_PROGRESS` | `0xED0` | crystal quest step 0..3, 5 = done; advanced when the hero shows proof |
+| `V_CHASE_ROUTE` | `0xEF8` | chase route: 1 or 11 = chase to room 32 requested; L34 also 0 and 2 |
+| `V_PASSAGE_OPEN` | `0xF38` | 1 = the way on is open after the guard fight; L10, L20, L21, L27, L29 |
 
 ## Timer events
 

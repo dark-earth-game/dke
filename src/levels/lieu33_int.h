@@ -20,7 +20,6 @@ void l33_trig00(void);
 
 /* Script variables: slots of the shared state block this level uses as its own
  * (the low slots are scratch and mean something different in every level). */
-#define L33_FRAME_COUNTER                  0x038  /* engine frame counter, used modulo 20 to re-aim Kalhi at the hero */
 #define L33_GUARDIAN15_ESCORT              0x04C  /* 1 while Guardian15 escorts the hero (cleared when it ends) */
 #define L33_GUARDIAN15_FOLLOW_DONE         0x050  /* 1 once the Guardian15 follow-up was done */
 #define L33_ZONE_TRIGGER1_HIT              0x064  /* 1 once trigger 1 was entered (Zed84 meeting condition) */
@@ -52,8 +51,6 @@ void l33_trig00(void);
 #define L33_GUARDIAN15_SCENE_DONE          0x100  /* 1 once the Guardian15 aftermath scene ran */
 #define L33_UNUSED_114                     0x114  /* only zeroed at INIT, never read in this level */
 #define L33_KALHI_GUIDE_ANIM_SAVED         0x12C  /* copy of KALHI_GUIDE_ANIM kept across room visits */
-#define L33_GUARD_PAIR_STEP_A              0x338  /* guard-pair progress (event 6 slot, see L23) */
-#define L33_GUARD_PAIR_STEP_B              0x348  /* guard-pair progress (event 10 slot, see L23) */
 #define L33_ZONE34_SEEN                    0x4E8  /* 1 once the trigger 34 object was inspected */
 #define L33_PROGRESS_6DC                   0x6DC  /* 4 -> 5 once B40 == 4 (Kalhi door progress) */
 #define L33_ZONE12_STAGE_A                 0x7D4  /* trigger 12: 0 first, 1, 2 */
@@ -62,22 +59,13 @@ void l33_trig00(void);
 #define L33_ZONE31_STAGE                   0x7FC  /* trigger 31: 0 first, 1 repeated */
 #define L33_KALHI_HINT_COUNT               0x948  /* idle-hint line counter 0..2 */
 #define L33_STORY_MARK_A84                 0xA84  /* set to 3 by trigger 31 */
-#define L33_ARKHAN1_PROGRESS               0xAF4  /* Arkhan1 exploration: 1 started, 2 near zone 19, 3 Zed84 placed */
-#define L33_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
-#define L33_HERO_MEETING_STATE             0xB40  /* 0 none, 4 .., 99 meeting finished (pairs with BD0) */
-#define L33_KALHI_PART_STEP                0xB4C  /* Arkhan2/3 story step; 2 set by the room 51 cinematic SC15 */
 #define L33_ARKHAN23_SUBSTEP               0xB54  /* Arkhan2/3 sub-step: 3 set at start points, 4 = hero came back */
 #define L33_ARKHAN23_STEP                  0xBA8  /* Arkhan2/3 storyline step (4 -> 5) */
 #define L33_HERO_MEETING_STATE_B           0xBD0  /* pairs with B40; 99 = finished, 2 set by trigger 6 */
 #define L33_RYLSADHAR_GATE_OPENED          0xBE4  /* room 26 gate event done (set in room 25) */
-#define L33_STORY_MARK_C08                 0xC08  /* 3 -> 10 progress mark */
 #define L33_DELIA_SCENE_DONE               0xE48  /* 1 once the Delia scene at triggers 1/2 ran */
-#define L33_KALHI_FOLLOW_MODE              0xE58  /* 0 none, 1 guide, 2 following, 10 hostile */
-#define L33_RYLSADHAR_ZED_STAGE            0xE78  /* 1 once Rylsadhar20 appeared (Arkhan1 stage; see L23) */
 #define L33_LORY_APPEARED                  0xE7C  /* 1 once Lory appeared at the zone 20 marker */
-#define L33_KALHI_ESCORT_PHASE             0xE9C  /* Kalhi escort: 7 guiding, 8 waiting at the gate, 10 aborted/hostile (same encoding as V_DELIA_PHASE) */
 #define L33_ESCORT_EVENT_B8                0xEB8  /* 2 = escort event finished (blocks the Guardian15 approach) */
-#define L33_ZED84_TALK_STAGE               0xEC8  /* Zed84 talk at the Arkhan1 start: 0 none, 1 ready, 2 talking, 3 finished */
 #define L33_KALHI_SEEN                     0xEF0  /* 1 once Kalhi was seen guiding */
 #define L33_GUARDIAN15_STATE               0xEF4  /* 0 fresh, 2 beaten, 3 engaged by the escort */
 #define L33_ZONE_SCENE_F14                 0xF14  /* 1 pending, 2 done */

@@ -42,8 +42,8 @@ void l46_trig00(void) {
     if (ST(ST_START_POINT(46)) == 1) {
         ST(ST_HERO) = P_ARKHAN2;
         ST(ST_LEVEL) = 6;
-        ST(L46_EXIT_STAGE) = 3;
-        ST(L46_RYL21_SKIP) = 0x1C;
+        ST(V_ROUTE_STAGE) = 3;
+        ST(V_EVENT_3) = 0x1C;
     }
     ST(L46_BODY_SEARCHED) = 0;
     ST(L46_CAM2_LOCKED) = 0;
@@ -76,15 +76,15 @@ void l46_trig00(void) {
         CB->pos_perso(ST(ST_HERO), 3021, 515, 0x9C40, 1, "ar", 6, 0);
     }
     /* 0x75F3 */
-    if (ST(L46_RYL21_SKIP) == 0 && ST(L46_RYL21_AMBUSH_DONE) == 0) {
+    if (ST(V_EVENT_3) == 0 && ST(V_EVENT_4) == 0) {
         CB->pos_perso(P_RYLSADHAR21, 1820, -150, 0x9470, 1, "P21ARR01", 3, 0);
     }
     /* 0x763C */
-    if (ST(L46_RYL21_AMBUSH_DONE) != 0) {
+    if (ST(V_EVENT_4) != 0) {
         CB->pos_perso(P_RYLSADHAR21, 1820, -150, 0x9470, 1, "P21cad", 3, 0);
     }
     /* 0x7673 */
-    if (ST(L46_EXIT_STAGE) <= 2) {
+    if (ST(V_ROUTE_STAGE) <= 2) {
         CB->vire_col(0xC, 0);
     } else {
         CB->ajoute_zone(4, 2778, -251, 210, 200, 1);

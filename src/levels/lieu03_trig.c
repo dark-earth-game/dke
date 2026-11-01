@@ -65,7 +65,7 @@ void l03_trig00(void) {
     if (ST(ST_START_POINT(3)) == 1) {
         ST(ST_LEVEL) = 4;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L03_KALHI_RECRUIT) = 3;
+        ST(V_KALHI_RECRUIT) = 3;
         ST(ST_VIE(P_KALHI33)) = 0;
         ST(ST_VIE(P_KALHI13)) = 1;
     }
@@ -73,7 +73,7 @@ void l03_trig00(void) {
     if (ST(ST_START_POINT(3)) == 2) {
         ST(ST_LEVEL) = 4;
         ST(ST_HERO) = P_ARKHAN2;
-        ST(L03_KALHI_RECRUIT) = 3;
+        ST(V_KALHI_RECRUIT) = 3;
         ST(ST_VIE(P_KALHI13)) = 0;
         ST(ST_VIE(P_KALHI33)) = 1;
     }
@@ -155,13 +155,13 @@ void l03_trig00(void) {
     /* 0x79B2 */
     if (ST(ST_LEVEL) == 4) {
         /* 0x79C4 */
-        if (ST(L03_KALHI_RECRUIT) != 3 || (ST(L03_KALHI_RECRUIT) == 3 && ST(L03_KALHI_COMPANION) != 0)) {
+        if (ST(V_KALHI_RECRUIT) != 3 || (ST(V_KALHI_RECRUIT) == 3 && ST(V_KALHI_PHASE) != 0)) {
             CB->pos_perso(ST(ST_HERO), -1845, -1890, 0xEE48, 1, "ar", 8, 0);
         }
         /* 0x7A25 */
-        if (ST(L03_KALHI_RECRUIT) == 3 && ST(L03_KALHI_COMPANION) == 0) {
+        if (ST(V_KALHI_RECRUIT) == 3 && ST(V_KALHI_PHASE) == 0) {
             /* 0x7A49 */
-            if (ST(L03_COMPANION_KILLED) == 1 && (ST(ST_VIE(P_KALHI13)) == VIE_DEAD || ST(ST_VIE(P_KALHI33)) == VIE_DEAD)) {
+            if (ST(V_KALHI_KILLED) == 1 && (ST(ST_VIE(P_KALHI13)) == VIE_DEAD || ST(ST_VIE(P_KALHI33)) == VIE_DEAD)) {
                 CB->pos_perso(ST(ST_HERO), -1845, -1890, 0xEE48, 1, "ar", 8, 0);
             }
             /* 0x7AAA */
@@ -180,7 +180,7 @@ void l03_trig00(void) {
         }
     }
     /* 0x7B91 */
-    if (ST(L03_KALHI_COMPANION) == 1 && ST(ST_VIE(P_KALHI13)) == 1) {
+    if (ST(V_KALHI_PHASE) == 1 && ST(ST_VIE(P_KALHI13)) == 1) {
         /* 0x7BB2 */
         if (ST(ST_LEVEL) == 45) {
             CB->pos_perso(P_KALHI13, -1875, -898, 0xFE43, 1, "P13ARR01", 4, 1);
@@ -193,7 +193,7 @@ void l03_trig00(void) {
         ST(L03_KALHI13_CHATTER) = 1;
     }
     /* 0x7C35 */
-    if (ST(L03_KALHI_COMPANION) == 2) {
+    if (ST(V_KALHI_PHASE) == 2) {
         /* 0x7C47 */
         if (ST(ST_VIE(P_KALHI13)) == 1) {
             CB->pos_perso(P_KALHI13, -1930, -1400, 0xCB20, 1, "P13ARR03", 4, 1);
@@ -245,13 +245,13 @@ void l03_trig00(void) {
         CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 2, "P10cad", 0xC, 0);
     }
     /* 0x7F7F */
-    if (ST(L03_EVENT_6) == 0 && ST(L03_EVENT_10) == 0 && ST(L03_RETURN_PHASE) == 0 && ST(L03_GUARDIAN4_STATE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
-        ST(L03_GUARDIAN4_STATE) = 0;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 0 && ST(V_GUARDIAN4_STAGE) == 2 && ST(ST_VIE(P_GUARDIAN4)) != VIE_DEAD) {
+        ST(V_GUARDIAN4_STAGE) = 0;
     }
     /* 0x7FE8 */
-    if (ST(L03_EVENT_6) == 0 && ST(L03_EVENT_10) == 0 && ST(L03_RETURN_PHASE) == 1 && ST(L03_GUARDIAN4_STATE) == 4) {
-        ST(L03_EVENT_6) = 1;
-        ST(L03_EVENT_10) = 1;
+    if (ST(V_EVENT_6) == 0 && ST(V_EVENT_10) == 0 && ST(V_RETURN_PART) == 1 && ST(V_GUARDIAN4_STAGE) == 4) {
+        ST(V_EVENT_6) = 1;
+        ST(V_EVENT_10) = 1;
     }
     ST(ST_START_POINT(3)) = 0;
     /* 0x805D */
@@ -286,8 +286,8 @@ static void trig01(void) {
         CB->modify_var(&ST(V_KALHI_ROUTE), 1);
     }
     /* 0x9A43 */
-    if (ST(L03_KALHI_COMPANION) == 1) {
-        ST(L03_KALHI_COMPANION) = 3;
+    if (ST(V_KALHI_PHASE) == 1) {
+        ST(V_KALHI_PHASE) = 3;
         /* 0x9A64 */
         if (ST(L03_KALHI33_ROUTE) == 0 && ST(ST_VIE(P_KALHI13)) == 1) {
             ST(L03_KALHI33_ROUTE) = 2;
@@ -329,7 +329,7 @@ static void trig02(void) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             /* 0x9C16 */
-            if (ST(L03_KALHI_COMPANION) == 1 && (ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1)) {
+            if (ST(V_KALHI_PHASE) == 1 && (ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1)) {
                 ST(L03_KALHI13_FOLLOW) = 0xA;
                 ST(V_SAVED_HERO) = ST(ST_HERO);
                 /* 0x9C77 */
@@ -361,7 +361,7 @@ static void trig02(void) {
             CB->anim_objet("IM02", 3, 0x3C, 0x5DC, 0);
             ST(ST_LEVEL) = 3;
             /* 0x9D8C */
-            if (ST(L03_KALHI_RECRUIT) < 4) {
+            if (ST(V_KALHI_RECRUIT) < 4) {
                 CB->change_piece(4, 0);
             } else {
                 CB->change_piece(4, 1);
@@ -397,7 +397,7 @@ static void trig03(void) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             /* 0x9EEA */
-            if (ST(L03_KALHI_COMPANION) == 1 && (ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1)) {
+            if (ST(V_KALHI_PHASE) == 1 && (ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1)) {
                 ST(L03_KALHI13_FOLLOW) = 0xA;
                 ST(V_SAVED_HERO) = ST(ST_HERO);
                 /* 0x9F4B */
@@ -678,7 +678,7 @@ static void trig04(void) {
             }
             /* 0xAB99 */
             if (ST(V_KALHI13_TALK_C) == 2) {
-                ST(L03_KALHI_COMPANION) = 2;
+                ST(V_KALHI_PHASE) = 2;
                 lieu_action_register("L04D43", P_KALHI13, "P13GAR26_10", "SP13GAR02_10");
                 CB->bloque(BLOQUE_NONE);
                 CB->combat(P_KALHI13, 0);
@@ -930,7 +930,7 @@ static void trig05(void) {
             }
             /* 0xB6F3 */
             if (ST(V_KALHI13_TALK_C) == 2) {
-                ST(L03_KALHI_COMPANION) = 2;
+                ST(V_KALHI_PHASE) = 2;
                 lieu_action_register("L03D528", P_KALHI33, "P33GAR26", "SP33GAR02_10");
                 CB->bloque(BLOQUE_NONE);
                 ST(V_ENGAGED_PERSONA) = P_KALHI33;
@@ -963,8 +963,8 @@ static void trig06(void) {
         CB->animation("Sar_10");
     }
     /* 0xB82C */
-    if (ST(L03_KALHI_COMPANION) == 1) {
-        ST(L03_KALHI_COMPANION) = 3;
+    if (ST(V_KALHI_PHASE) == 1) {
+        ST(V_KALHI_PHASE) = 3;
         /* 0xB84D */
         if (ST(L03_KALHI33_ROUTE) == 0 && ST(ST_VIE(P_KALHI13)) == 1) {
             ST(L03_KALHI33_ROUTE) = 2;
@@ -1312,7 +1312,7 @@ static void trig14(void) {
 /* trigger 41 — sub_10008051 — hero switch: replay the greeting lines */
 static void trig41(void) {
     /* 0x806E */
-    if (ST(V_SAVED_HERO) != ST(ST_HERO) && (ST(V_DELIA_PHASE) == 9 || (ST(L03_KALHI_COMPANION) == 1 && (ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1)))) {
+    if (ST(V_SAVED_HERO) != ST(ST_HERO) && (ST(V_DELIA_PHASE) == 9 || (ST(V_KALHI_PHASE) == 1 && (ST(ST_VIE(P_KALHI13)) == 1 || ST(ST_VIE(P_KALHI33)) == 1)))) {
         CB->bloque(BLOQUE_ALL);
         ST(ST_SCRIPT_BUSY) = 1;
         /* 0x80DF */
@@ -1323,12 +1323,12 @@ static void trig41(void) {
                 lieu_action_register("LCOD48", P_DELIA, "SP10DIA54", "SP10ARR01_10");
             }
             /* 0x8139 */
-            if (ST(L03_KALHI_COMPANION) == 1 && ST(ST_VIE(P_KALHI13)) == 1) {
+            if (ST(V_KALHI_PHASE) == 1 && ST(ST_VIE(P_KALHI13)) == 1) {
                 CB->joindre(-P_KALHI13, 0, 0, 0, ST(ST_HERO));
                 lieu_action_register("LCOD49", P_KALHI13, "SP13DIA54", "SP13ARR01_10");
             }
             /* 0x8193 */
-            if (ST(L03_KALHI_COMPANION) == 1 && ST(ST_VIE(P_KALHI33)) == 1) {
+            if (ST(V_KALHI_PHASE) == 1 && ST(ST_VIE(P_KALHI33)) == 1) {
                 CB->joindre(-P_KALHI33, 0, 0, 0, ST(ST_HERO));
                 lieu_action_register("LCOD49", P_KALHI33, "SP33DIA54", "SP33ARR01_10");
             }
@@ -1349,12 +1349,12 @@ static void trig41(void) {
                 lieu_action_register("LCOD44", P_DELIA, "SP10DIA54", "SP10ARR01_10");
             }
             /* 0x8297 */
-            if (ST(L03_KALHI_COMPANION) == 1 && ST(ST_VIE(P_KALHI13)) == 1) {
+            if (ST(V_KALHI_PHASE) == 1 && ST(ST_VIE(P_KALHI13)) == 1) {
                 CB->joindre(-P_KALHI13, 0, 0, 0, ST(ST_HERO));
                 lieu_action_register("LCOD45", P_KALHI13, "SP13DIA54", "SP13ARR01_10");
             }
             /* 0x82F1 */
-            if (ST(L03_KALHI_COMPANION) == 1 && ST(ST_VIE(P_KALHI33)) == 1) {
+            if (ST(V_KALHI_PHASE) == 1 && ST(ST_VIE(P_KALHI33)) == 1) {
                 CB->joindre(-P_KALHI33, 0, 0, 0, ST(ST_HERO));
                 lieu_action_register("LCOD45", P_KALHI33, "SP33DIA54", "SP33ARR01_10");
             }

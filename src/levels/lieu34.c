@@ -29,7 +29,7 @@ static c8 g_txt[256];   /* debug sprintf buffer, 0x1001B740 */
  * `return` == original `jmp` to the epilogue.
  * ---------------------------------------------------------------------- */
 static void tick_body(void) {
-    snprintf(g_txt, sizeof(g_txt), "F58:%d", ST(L34_CHASE_ROUTE));
+    snprintf(g_txt, sizeof(g_txt), "F58:%d", ST(V_CHASE_ROUTE));
     CB->print_msg(g_txt, 0, 240);
     snprintf(g_txt, sizeof(g_txt), "combat_on:%d", ST(V_ENGAGED_PERSONA));
     CB->print_msg(g_txt, 0, 248);
@@ -57,10 +57,10 @@ static void tick_body(void) {
         if (ST(L34_SORDOS_SCENE_KIND) == 1) {
             /* 0x7F36: the Gork / Konkalite11 compare chain (0x7F65..0x7FC6)
              * reaches the body unless both have VIE >= 2 */
-            if (ST(L34_CHASE_STATE) == 0 && ST(L34_SORDOS_DUEL_STATE) < 2 && ST(L34_STORY_PART) == 10 &&
+            if (ST(V_CHASE_STATE) == 0 && ST(V_SORDOS_DUEL) < 2 && ST(L34_STORY_PART) == 10 &&
                 !(ST(ST_VIE(P_GORK)) >= 2 && ST(ST_VIE(P_KONKALITE11)) >= 2)) {
-                ST(L34_CHASE_STATE) = 1;
-                ST(L34_CHASE_ROUTE) = 1;
+                ST(V_CHASE_STATE) = 1;
+                ST(V_CHASE_ROUTE) = 1;
                 CB->bloque(BLOQUE_ALL);
                 lieu_action_register("L34D04A", P_SORDOS, "SP23DIA01", "SP23GAR03");
                 CB->dialogue("L34D04B", P_SORDOS);
@@ -100,10 +100,10 @@ static void tick_body(void) {
         /* 0x8157 */
         if (ST(L34_SORDOS_SCENE_KIND) == 2) {
             /* 0x816E: same Gork / Konkalite11 chain (0x8192..0x81F3) */
-            if (ST(L34_CHASE_STATE) == 0 && ST(L34_STORY_PART) == 2 &&
+            if (ST(V_CHASE_STATE) == 0 && ST(L34_STORY_PART) == 2 &&
                 !(ST(ST_VIE(P_GORK)) >= 2 && ST(ST_VIE(P_KONKALITE11)) >= 2)) {
-                ST(L34_CHASE_STATE) = 1;
-                ST(L34_CHASE_ROUTE) = 1;
+                ST(V_CHASE_STATE) = 1;
+                ST(V_CHASE_ROUTE) = 1;
                 CB->bloque(BLOQUE_ALL);
                 lieu_action_register("L34D04A", P_SORDOS, "SP23DIA01", "SP23GAR03");
                 CB->dialogue("L34D04B", P_SORDOS);
@@ -142,7 +142,7 @@ static void tick_body(void) {
         }
     }
     /* 0x8384 */
-    if (ST(L34_CHASE_ROUTE) == 0 && ST(L34_SORDOS_ENGAGED) == 0 && ST(L34_STORY_PART) == 2 && CB->divers(DV_PERSONA_PRESENT, P_SORDOS, 0)) {
+    if (ST(V_CHASE_ROUTE) == 0 && ST(L34_SORDOS_ENGAGED) == 0 && ST(L34_STORY_PART) == 2 && CB->divers(DV_PERSONA_PRESENT, P_SORDOS, 0)) {
         /* 0x83D6 */
         if (ST(L34_SORDOS_ATTACK_STEP) == 0 && (CB->distance(1, 3) <= 600 || (ST(V_PLAYER_STRIKE) == 1 && CB->divers(DV_CAN_FIGHT, 9, 2)))) {
             ST(L34_SORDOS_ATTACK_STEP) = 1;
@@ -198,14 +198,14 @@ static void tick_body(void) {
         }
     }
     /* 0x869E */
-    if (ST(L34_CHASE_ROUTE) == 0 && ST(V_ENGAGED_PERSONA) != 0) {
+    if (ST(V_CHASE_ROUTE) == 0 && ST(V_ENGAGED_PERSONA) != 0) {
         /* 0x86C0 */
         if (ST(L34_SORDOS_SCENE_KIND) == 1) {
             /* 0x86D2 */
             if (ST(V_ENGAGED_PERSONA) == P_SORDOS) {
                 /* 0x86E1 */
                 if (ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(ST_VIE(P_THANANDAR24)) != VIE_DEAD) {
-                    ST(L34_SORDOS_DUEL_STATE) = 2;
+                    ST(V_SORDOS_DUEL) = 2;
                     ST(V_ENGAGED_PERSONA) = P_THANANDAR24;
                     CB->stop_joindre(-P_THANANDAR24);
                     CB->animation("SP24GAR01");
@@ -213,8 +213,8 @@ static void tick_body(void) {
                 }
                 /* 0x8742 */
                 if (ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(ST_VIE(P_THANANDAR24)) == VIE_DEAD) {
-                    ST(L34_SORDOS_DUEL_STATE) = 2;
-                    ST(L34_CHASE_ROUTE) = 2;
+                    ST(V_SORDOS_DUEL) = 2;
+                    ST(V_CHASE_ROUTE) = 2;
                     ST(V_ENGAGED_PERSONA) = 0;
                     CB->change_camera(CAM_ANY, CAM_AUTO);
                 }
@@ -222,7 +222,7 @@ static void tick_body(void) {
             /* 0x87A0 */
             if (ST(V_ENGAGED_PERSONA) == P_THANANDAR24 && ST(ST_VIE(P_THANANDAR24)) == VIE_DEAD) {
                 ST(L34_STORY_PART) = 10;
-                ST(L34_CHASE_ROUTE) = 2;
+                ST(V_CHASE_ROUTE) = 2;
                 ST(V_ENGAGED_PERSONA) = 0;
                 CB->change_camera(CAM_ANY, CAM_AUTO);
             }
@@ -230,9 +230,9 @@ static void tick_body(void) {
             if (ST(V_ENGAGED_PERSONA) == 0x914) {
                 /* 0x880D */
                 if (ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(ST_VIE(P_THANANDAR24)) == VIE_DEAD) {
-                    ST(L34_SORDOS_DUEL_STATE) = 2;
+                    ST(V_SORDOS_DUEL) = 2;
                     ST(L34_STORY_PART) = 10;
-                    ST(L34_CHASE_ROUTE) = 2;
+                    ST(V_CHASE_ROUTE) = 2;
                     ST(V_ENGAGED_PERSONA) = 0;
                     CB->change_camera(CAM_ANY, CAM_AUTO);
                 }
@@ -245,15 +245,15 @@ static void tick_body(void) {
                 /* 0x88C5 */
                 if (ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(ST_VIE(P_THANANDAR24)) != VIE_DEAD) {
                     ST(L34_SORDOS_ENGAGED) = 10;
-                    ST(L34_SORDOS_DUEL_STATE) = 2;
+                    ST(V_SORDOS_DUEL) = 2;
                     ST(V_ENGAGED_PERSONA) = P_THANANDAR24;
                 }
             }
         }
         /* 0x8910 */
         if (ST(L34_SORDOS_SCENE_KIND) == 2 && ST(ST_VIE(P_SORDOS)) == VIE_DEAD) {
-            ST(L34_SORDOS_DUEL_STATE) = 2;
-            ST(L34_CHASE_ROUTE) = 3;
+            ST(V_SORDOS_DUEL) = 2;
+            ST(V_CHASE_ROUTE) = 3;
             ST(V_ENGAGED_PERSONA) = 0;
             CB->animation("Sar_50");
             /* 0x896E */
@@ -265,17 +265,17 @@ static void tick_body(void) {
     }
     /* 0x89A3 */
     if (ST(V_ENGAGED_PERSONA) != 0 && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(ST_VIE(P_THANANDAR24)) == VIE_DEAD && ST(L34_SORDOS_SCENE_KIND) == 1 && CB->divers(DV_PERSONA_PRESENT, P_THANANDAR24, 0)) {
-        ST(L34_SORDOS_DUEL_STATE) = 2;
+        ST(V_SORDOS_DUEL) = 2;
         ST(L34_STORY_PART) = 10;
-        ST(L34_CHASE_ROUTE) = 2;
+        ST(V_CHASE_ROUTE) = 2;
         ST(V_ENGAGED_PERSONA) = 0;
         CB->animation("Sar_50");
         CB->change_camera(CAM_ANY, CAM_AUTO);
     }
     /* 0x8A56 */
-    if ((ST(L34_CHASE_ROUTE) == 1 || ST(L34_CHASE_ROUTE) == 11) && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0) {
-        ST(L34_SORDOS_DUEL_STATE) = 2;
-        ST(L34_CHASE_ROUTE) = 2;
+    if ((ST(V_CHASE_ROUTE) == 1 || ST(V_CHASE_ROUTE) == 11) && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0) {
+        ST(V_SORDOS_DUEL) = 2;
+        ST(V_CHASE_ROUTE) = 2;
         ST(V_ENGAGED_PERSONA) = 0;
         CB->animation("Sar_50");
         /* 0x8AD5 */
@@ -285,9 +285,9 @@ static void tick_body(void) {
         CB->change_camera(CAM_ANY, CAM_AUTO);
     }
     /* 0x8B0A */
-    if (ST(L34_CHASE_ROUTE) == 2 && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0 && ST(L34_SORDOS_SCENE_KIND) == 2) {
-        ST(L34_SORDOS_DUEL_STATE) = 2;
-        ST(L34_CHASE_ROUTE) = 3;
+    if (ST(V_CHASE_ROUTE) == 2 && ST(ST_VIE(P_SORDOS)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0 && ST(L34_SORDOS_SCENE_KIND) == 2) {
+        ST(V_SORDOS_DUEL) = 2;
+        ST(V_CHASE_ROUTE) = 3;
         ST(V_ENGAGED_PERSONA) = 0;
         CB->animation("Sar_50");
         /* 0x8B89 */
@@ -404,7 +404,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(L34_CHASE_STATE) == 1) {
+    if (ST(ST_HERO) != 4 || ST(V_CHASE_STATE) == 1) {
         l34_trig00();   /* 0x1000C369: call sub_10001073 -> trig00_100073F0 */
         return 0;
     }

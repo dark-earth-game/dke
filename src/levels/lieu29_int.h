@@ -36,9 +36,6 @@ void l29_trig00(void);
 #define L29_UNUSED_B8                      0x0B8  /* only zeroed at INIT, never read in this level */
 #define L29_LORY_CRY_TARGET                0x0BC  /* battle cry target: 99 reset, P_LORY once the shout hit Lory */
 #define L29_LORY_STRIKE_WARNED             0x164  /* trigger 3: 1 once Lory was warned about the strike */
-#define L29_ARKHAN23_PART                  0xAF8  /* 0 = Arkhan1 chapter, 1 = Arkhan2/3 chapter started */
-#define L29_LORY_TALK_DONE                 0xB10  /* set to 1 after the Lory pre-scene in trigger 2 */
-#define L29_LORY_STAGE                     0xB38  /* story stage in the Lory room: 0 first visit, 1 returning, 3 finished (shared with L26-L28) */
 #define L29_PHEDORIA_STAGE                 0xB58  /* Phedoria/Lory plot stage: 10 = Lory and Phedoria present */
 #define L29_STORY_MARK_C48                 0xC48  /* 99 = preset, 100 = past (shared with L26-L28) */
 #define L29_LORY_TALK_STAGE                0xCA0  /* trigger 2 conversation with Lory: 0 first, 1 talked, 2 follow-up */
@@ -46,7 +43,5 @@ void l29_trig00(void);
 #define L29_LORY_ITEM_STAGE_B              0xCAC  /* trigger 2 third branch: 0 first, 1 repeated */
 #define L29_ZONE9_STAGE                    0xD2C  /* trigger 9 scene (special mode): 0 first, 1 repeated */
 #define L29_PHEDORIA_SCENE_STAGE           0xE04  /* Phedoria follow stage: 0 not met, 1 met, 2 leaving, 3 gone to room 27 */
-#define L29_CHASE_STATE                   0xE8C  /* Gork/Sordos chase state (set by rooms 31/32): 1 = chase running, INIT then skips the hero-dead ending */
-#define L29_GUARD_FIGHT_PART               0xF38  /* 0 = first part of the guard fight, >= 1 later part */
 
 #endif /* DKE_LIEU29_INT_H */
