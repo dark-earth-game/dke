@@ -61,25 +61,25 @@ static void tick_body(void) {
     /* 0x7DC2 */
     if (ST(V_DELIA_PHASE) == 10 && ST(ST_VIE(P_DELIA)) == 1 && ST(ST_SCRIPT_BUSY) == 0) {
         /* 0x7DFE */
-        if (CB->distance(7, 1) < 140 && ST(0x74) == 0) {
+        if (CB->distance(7, 1) < 140 && ST(L45_DELIA_STOPPED) == 0) {
             /* 0x7E28 */
             if (CB->divers(DV_RUN, P_DELIA, 1) == 1) {
                 CB->divers(DV_RUN, P_DELIA, 0);
             }
-            ST(0x74) = 1;
+            ST(L45_DELIA_STOPPED) = 1;
             CB->joindre(-P_DELIA, 0, 0, 0, ST(ST_HERO));
         }
         /* 0x7E72 */
-        if (ST(0x70) == 1 && (ST(0x38) % 20) == 0) {
+        if (ST(L45_DELIA_FOLLOW) == 1 && (ST(L45_FRAME_COUNTER) % 20) == 0) {
             /* 0x7EA5 */
             if (CB->distance(7, 1) >= 180) {
-                ST(0x74) = 0;
+                ST(L45_DELIA_STOPPED) = 0;
                 CB->divers(DV_RUN, P_DELIA, 0);
                 CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
             }
             /* 0x7EFE */
             if (CB->distance(7, 1) >= 300) {
-                ST(0x74) = 0;
+                ST(L45_DELIA_STOPPED) = 0;
                 CB->divers(DV_RUN, P_DELIA, 1);
                 CB->joindre(-P_DELIA, -1, -1, -1, ST(ST_HERO));
             }
@@ -157,7 +157,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L45_DEATH_ENDING_DONE) == 1) {
         l45_trig00();   /* 0x1000A929: call sub_10001073 -> sub_100073F0 */
         return 0;
     }

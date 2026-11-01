@@ -57,7 +57,7 @@ void l45_trig00(void) {
     if (ST(ST_START_POINT(45)) == 1) {
         ST(ST_HERO) = P_ARKHAN1;
         ST(ST_LEVEL) = 3;
-        ST(0x5B8) = 0;
+        ST(L45_DOOR_STATE) = 0;
     }
     /* 0x743E */
     if (ST(ST_START_POINT(45)) == 2) {
@@ -75,8 +75,8 @@ void l45_trig00(void) {
     ST(ST_SCRIPT_BUSY) = 0;
     ST(V_PRE90_OBJECT) = 0;
     ST(V_LAST_WEAPON) = 0;
-    ST(0x70) = 0;
-    ST(0x74) = 0;
+    ST(L45_DELIA_FOLLOW) = 0;
+    ST(L45_DELIA_STOPPED) = 0;
     ST(V_EVENT_0) = 0;
     ST(V_EVENT_1) = 0;
     ST(V_EVENT_2) = 0;
@@ -94,8 +94,8 @@ void l45_trig00(void) {
     CB->etat_objet("IM23", -2030, 38, -393, 0, 0, 0, 0, 3);
     CB->bruitage("L45AMB1", -1, -1);
     /* 0x7699 */
-    if (ST(ST_HERO) >= 2 && ST(0xB84) == 0) {
-        ST(0xB84) = 1;
+    if (ST(ST_HERO) >= 2 && ST(L45_OB33_STAGE) == 0) {
+        ST(L45_OB33_STAGE) = 1;
     }
     /* 0x76C9 */
     if (ST(ST_LEVEL) == 3) {
@@ -107,7 +107,7 @@ void l45_trig00(void) {
     }
     /* 0x7751 */
     if (ST(ST_VIE(P_DELIA)) != VIE_DEAD && (ST(V_DELIA_PHASE) == 9 || ST(V_DELIA_PHASE) == 10)) {
-        ST(0x70) = 1;
+        ST(L45_DELIA_FOLLOW) = 1;
         CB->pos_perso(P_DELIA, -1911, -373, 0x2CD, 1, "P10ARR01", 1, 0);
     }
     /* 0x77B8 */
@@ -115,37 +115,37 @@ void l45_trig00(void) {
         CB->pos_perso(P_DELIA, CB->divers(DV_DESC_POS, P_DELIA, 0), CB->divers(DV_DESC_POS, P_DELIA, 1), CB->divers(DV_DESC_POS, P_DELIA, 2), 2, "P10cad", 1, 0);
     }
     /* 0x781A */
-    if (ST(0x5D8) == 0) {
+    if (ST(L45_OB24A_TAKEN) == 0) {
         ST(0x140) = 3;
         CB->etat_objet("OB24A", -1744, 158, -216, 0x4000, 0, 0x53F8, -1, 3);
     }
     /* 0x7865 */
     if (ST(ST_HERO) >= 2) {
         /* 0x7877 */
-        if (ST(0xB80) == 0) {
+        if (ST(L45_OB08_TAKEN) == 0) {
             CB->ajoute_zone(4, -2147, -232, 50, 150, 0);
             CB->etat_objet("OB08A", -2200, 20, -277, 0, 0, 0, -1, 0);
             CB->etat_objet("OB08B", -2200, 20, -244, 0, 0, 0, -1, 0);
             CB->etat_objet("OB08C", -2200, 20, -210, 0, 0, 0, -1, 0);
         }
         /* 0x790A */
-        if (ST(0xB80) == 1) {
+        if (ST(L45_OB08_TAKEN) == 1) {
             CB->ajoute_zone(4, -2147, -232, 50, 150, 0);
             CB->etat_objet("OB08B", -2200, 20, -244, 0, 0, 0, -1, 0);
             CB->etat_objet("OB08C", -2200, 20, -210, 0, 0, 0, -1, 0);
         }
         /* 0x797C */
-        if (ST(0xB80) == 2) {
+        if (ST(L45_OB08_TAKEN) == 2) {
             CB->ajoute_zone(4, -2147, -232, 50, 150, 0);
             CB->etat_objet("OB08C", -2200, 20, -210, 0, 0, 0, -1, 0);
         }
         /* 0x79CD */
-        if (ST(0xB84) == 1) {
+        if (ST(L45_OB33_STAGE) == 1) {
             CB->etat_objet("OB33A", -1750, 153, 95, 0, 0, 0, -1, 3);
             CB->etat_objet("OB33B", -1750, 153, 0, 0, 0, 0, -1, 3);
         }
         /* 0x7A21 */
-        if (ST(0xB84) == 2) {
+        if (ST(L45_OB33_STAGE) == 2) {
             CB->etat_objet("OB33B", -1750, 153, 0, 0, 0, 0, -1, 3);
         }
     }
@@ -203,7 +203,7 @@ static void trig01(void) {
         if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0) {
             /* 0x822A */
             if (ST(ST_VIE(P_DELIA)) < 2) {
-                ST(0x70) = 10;
+                ST(L45_DELIA_FOLLOW) = 10;
                 CB->stop_joindre(-P_DELIA);
                 ST(ST_SCRIPT_BUSY) = 1;
                 CB->bloque(BLOQUE_ALL);
@@ -220,7 +220,7 @@ static void trig01(void) {
                     lieu_action_register("L45D17", P_DELIA, "SP10DIA50", "SP10ARR01_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
-                    CB->modify_var(&ST(0x70), 1);
+                    CB->modify_var(&ST(L45_DELIA_FOLLOW), 1);
                 }
                 /* 0x834C */
                 if (ST(ST_PLAYER_WEAPON) != 0 && !CB->divers(DV_CAN_FIGHT, 0, 2) && ST(ST_PLAYER_WEAPON) != ST(V_LAST_WEAPON)) {
@@ -238,7 +238,7 @@ static void trig01(void) {
                     CB->animation("Sar_10");
                     CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                     CB->bloque(BLOQUE_NONE);
-                    CB->modify_var(&ST(0x70), 1);
+                    CB->modify_var(&ST(L45_DELIA_FOLLOW), 1);
                 }
             }
             /* 0x8455 */
@@ -277,7 +277,7 @@ static void trig01(void) {
         if (ST(V_PLAYER_STRIKE) > 1 && ST(ST_SCRIPT_BUSY) == 0 && ST(V_ENGAGED_PERSONA) == 0 && ST(ST_VIE(P_DELIA)) == 1) {
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
-            ST(0x70) = 10;
+            ST(L45_DELIA_FOLLOW) = 10;
             ST(V_PLAYER_STRIKE) = -1;
             CB->select_pile(1, 2);
             CB->evenement(0, -1);
@@ -293,7 +293,7 @@ static void trig01(void) {
             CB->select_pile(1, 2);
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
-            ST(0x70) = 10;
+            ST(L45_DELIA_FOLLOW) = 10;
             ST(V_PLAYER_STRIKE) = -1;
             CB->evenement(0, -1);
             CB->stop_joindre(-P_DELIA);
@@ -315,7 +315,7 @@ static void trig01(void) {
                 CB->dialogue("L45D04", P_DELIA);
                 CB->animation("Sar_10");
                 CB->bloque(BLOQUE_NONE);
-                CB->modify_var(&ST(0x70), 1);
+                CB->modify_var(&ST(L45_DELIA_FOLLOW), 1);
                 CB->modify_var(&ST(ST_SCRIPT_BUSY), 0);
                 CB->select_pile(0, 1);
                 return;
@@ -360,7 +360,7 @@ static void trig03(void) {
         /* 0x8939 */
         if (ST(ST_PLAYER_WEAPON) != 16) {
             /* 0x894B */
-            if (ST(0x5B8) == 0 || ST(0x5B8) == 1) {
+            if (ST(L45_DOOR_STATE) == 0 || ST(L45_DOOR_STATE) == 1) {
                 /* 0x896F */
                 if (ST(ST_HERO) == P_ARKHAN1) {
                     CB->animation("SG01OUV04");
@@ -385,7 +385,7 @@ static void trig03(void) {
                 return;
             }
             /* 0x8A40 */
-            if (ST(0x5B8) == 2) {
+            if (ST(L45_DOOR_STATE) == 2) {
                 /* 0x8A52 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     CB->animation("SG02OUV04");
@@ -407,8 +407,8 @@ static void trig03(void) {
         /* 0x8AFF */
         if (ST(ST_PLAYER_WEAPON) == 16) {
             /* 0x8B11 */
-            if (ST(0x5B8) == 1) {
-                ST(0x5B8) = 2;
+            if (ST(L45_DOOR_STATE) == 1) {
+                ST(L45_DOOR_STATE) = 2;
                 /* 0x8B32 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     CB->animation("SG02OUV10");
@@ -432,7 +432,7 @@ static void trig03(void) {
                 return;
             }
             /* 0x8C38 */
-            if (ST(0x5B8) == 2) {
+            if (ST(L45_DOOR_STATE) == 2) {
                 /* 0x8C4A */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     CB->animation("SG02OUV04");
@@ -468,8 +468,8 @@ static void trig04(void) {
                 CB->evenement(9, 1200000);
             }
             /* 0x8D8D */
-            if (ST(0xB80) == 0) {
-                ST(0xB80) = 1;
+            if (ST(L45_OB08_TAKEN) == 0) {
+                ST(L45_OB08_TAKEN) = 1;
                 CB->animation("SG00PRE08");
                 CB->bruitage("L45B03", -2017, -340);
                 CB->etat_objet("OB08A", -1, -1, -1, -1, -1, -1, -3, 0);
@@ -479,8 +479,8 @@ static void trig04(void) {
                 return;
             }
             /* 0x8E15 */
-            if (ST(0xB80) == 1) {
-                ST(0xB80) = 2;
+            if (ST(L45_OB08_TAKEN) == 1) {
+                ST(L45_OB08_TAKEN) = 2;
                 CB->animation("SG00PRE08");
                 CB->bruitage("L45B03", -2037, -340);
                 CB->etat_objet("OB08B", -1, -1, -1, -1, -1, -1, -3, 0);
@@ -490,8 +490,8 @@ static void trig04(void) {
                 return;
             }
             /* 0x8E9D */
-            if (ST(0xB80) == 2) {
-                ST(0xB80) = 3;
+            if (ST(L45_OB08_TAKEN) == 2) {
+                ST(L45_OB08_TAKEN) = 3;
                 CB->animation("SG00PRE08");
                 CB->bruitage("L45B03", -2057, -340);
                 CB->etat_objet("OB08C", -1, -1, -1, -1, -1, -1, -3, 0);
@@ -501,7 +501,7 @@ static void trig04(void) {
                 return;
             }
             /* 0x8F25 */
-            if (ST(0xB80) == 3) {
+            if (ST(L45_OB08_TAKEN) == 3) {
                 /* 0x8F37 */
                 if (ST(ST_HERO) == P_ARKHAN2) {
                     lieu_action_register("L45D07", P_ARKHAN2, "SP02ATT60", "Sar_10");
@@ -529,7 +529,7 @@ static void trig05(void) {
         ST(ST_SCRIPT_BUSY) = 1;
         CB->bloque(BLOQUE_ALL);
         /* 0x9016 */
-        if (ST(0xB84) == 0) {
+        if (ST(L45_OB33_STAGE) == 0) {
             ST(V_DLG_RANDOM) = CB->random(2);
             /* 0x903F */
             if (ST(V_DLG_RANDOM) == 0) {
@@ -557,8 +557,8 @@ static void trig05(void) {
             return;
         }
         /* 0x9108 */
-        if (ST(0xB84) == 1) {
-            ST(0xB84) = 2;
+        if (ST(L45_OB33_STAGE) == 1) {
+            ST(L45_OB33_STAGE) = 2;
             CB->animation("SG00PRE06");
             CB->bruitage("L45B04", -1820, -20);
             CB->etat_objet("OB33A", -1, -1, -1, -1, -1, -1, -3, 0);
@@ -568,8 +568,8 @@ static void trig05(void) {
             return;
         }
         /* 0x918D */
-        if (ST(0xB84) == 2) {
-            ST(0xB84) = 3;
+        if (ST(L45_OB33_STAGE) == 2) {
+            ST(L45_OB33_STAGE) = 3;
             CB->animation("SG00PRE06");
             CB->bruitage("L45B04", -1820, -40);
             CB->etat_objet("OB33B", -1, -1, -1, -1, -1, -1, -3, 0);
@@ -579,7 +579,7 @@ static void trig05(void) {
             return;
         }
         /* 0x9212 */
-        if (ST(0xB84) == 3) {
+        if (ST(L45_OB33_STAGE) == 3) {
             /* 0x9224 */
             if (ST(ST_HERO) == P_ARKHAN2) {
                 lieu_action_register("L45D200", P_ARKHAN2, "SG00DIA01", NULL);
@@ -633,8 +633,8 @@ static void trig08(void) {
     /* 0x93D3 */
     if (ST(ST_ACTION_KEY) == 1 && ST(ST_SCRIPT_BUSY) == 0 && CB->direction_spec(0xC738)) {
         /* 0x9407 */
-        if (ST(0x5D8) == 0) {
-            ST(0x5D8) = 1;
+        if (ST(L45_OB24A_TAKEN) == 0) {
+            ST(L45_OB24A_TAKEN) = 1;
             CB->bloque(BLOQUE_ALL);
             ST(ST_SCRIPT_BUSY) = 1;
             CB->animation("SG00PRE05");
@@ -646,7 +646,7 @@ static void trig08(void) {
             return;
         }
         /* 0x94A0 */
-        if (ST(0x5D8) == 1) {
+        if (ST(L45_OB24A_TAKEN) == 1) {
             ST(ST_SCRIPT_BUSY) = 1;
             CB->bloque(BLOQUE_ALL);
             ST(V_DLG_RANDOM) = CB->random(2);
