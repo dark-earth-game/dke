@@ -33,8 +33,8 @@ static void tick_body(void) {
     snprintf(g_txt, sizeof(g_txt), "y:%d", t1);
     CB->print_msg(g_txt, 0, 240);
     /* 0x81DD */
-    if (ST(ST_HERO) == 4 && ST(0xB8) == 0) {
-        ST(0xB8) = 1;
+    if (ST(ST_HERO) == 4 && ST(L30_DEATH_HANDLED) == 0) {
+        ST(L30_DEATH_HANDLED) = 1;
         CB->evenement(EV_END_GAME, 3000);
     }
     /* 0x8220 */
@@ -68,34 +68,34 @@ static void tick_body(void) {
         CB->divers_empile(DV_END_GAME, 0, 0);
     }
     /* 0x833F */
-    if (ST(0x100) == 1 && ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) < -2830) {
+    if (ST(L30_CAMERA_SWITCH_PENDING) == 1 && ST(ST_HERO) != 4 && CB->divers(DV_DESC_POS, ST(ST_HERO), 3) < -2830) {
         CB->select_pile(0, 2);
-        ST(0x100) = 0;
+        ST(L30_CAMERA_SWITCH_PENDING) = 0;
         ST(ST_SCRIPT_BUSY) = 0;
         CB->bloque(BLOQUE_NONE);
         CB->change_piece(35, 0);
         return;
     }
     /* 0x83C8 */
-    if (ST(0xE98) < 60) {
+    if (ST(L30_KONKALITE_FIGHT_STAGE) < 60) {
         /* 0x83DA */
-        if (ST(ST_VIE(P_KONKALITE2)) == VIE_DEAD && ST(0xBC) == 0) {
-            ST(0xBC) = 1;
+        if (ST(ST_VIE(P_KONKALITE2)) == VIE_DEAD && ST(L30_KONKALITE2_DEAD_HANDLED) == 0) {
+            ST(L30_KONKALITE2_DEAD_HANDLED) = 1;
             CB->vire_col(39, 0);
         }
         /* 0x841A */
-        if (ST(0xDB8) == 1 && ST(ST_LOCKED_CAMERA) == 3 && ST(0xE98) != 56) {
-            ST(0xDB8) = 2;
-            ST(0x8C4) = ST(ST_VIE(P_KONKALITE2));
+        if (ST(L30_CAMERA_AREA_STATE) == 1 && ST(ST_LOCKED_CAMERA) == 3 && ST(L30_KONKALITE_FIGHT_STAGE) != 56) {
+            ST(L30_CAMERA_AREA_STATE) = 2;
+            ST(L30_KONKALITE2_SAVED_LIFE) = ST(ST_VIE(P_KONKALITE2));
             CB->pos_perso(P_KONKALITE2, -1, -1, -1, 4, "", -1, 0);
             /* 0x8495 */
-            if (ST(0x914) != 2) {
+            if (ST(L30_KONKALITE5_BEATEN) != 2) {
                 CB->pos_perso(P_KONKALITE5, 5042, 3740, 0xE753, 1, "P75GAR03", 2, 0);
             } else {
                 CB->pos_perso(P_KONKALITE5, 0, 0, 0, 2, "P75CAD", 2, 0);
             }
             /* 0x84ED */
-            if (ST(0x904) != 2) {
+            if (ST(L30_KONKALITE94_BEATEN) != 2) {
                 CB->pos_perso(94, 4750, 3731, 0xD051, 1, "P94GAR03", 3, 0);
             } else {
                 CB->pos_perso(94, 0, 0, 0, 2, "P94CAD", 3, 0);
@@ -103,14 +103,14 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x8552 */
-        if (ST(0xDB8) == 2 && ST(ST_LOCKED_CAMERA) == 4 && ST(0xE98) != 56) {
-            ST(0xDB8) = 1;
-            ST(0xDBC) = 1;
+        if (ST(L30_CAMERA_AREA_STATE) == 2 && ST(ST_LOCKED_CAMERA) == 4 && ST(L30_KONKALITE_FIGHT_STAGE) != 56) {
+            ST(L30_CAMERA_AREA_STATE) = 1;
+            ST(L30_CAMERA_AREA_VISITED) = 1;
             ST(V_ENGAGED_PERSONA) = 0;
             CB->pos_perso(P_KONKALITE5, -1, -1, -1, 4, "", -1, 0);
             CB->pos_perso(94, -1, -1, -1, 4, "", -1, 0);
             /* 0x85F0 */
-            if (ST(0x8C4) < 2) {
+            if (ST(L30_KONKALITE2_SAVED_LIFE) < 2) {
                 CB->pos_perso(P_KONKALITE2, 4375, 5873, 0x937F, 1, "P72GAR03", 0xA, 0);
                 CB->combat(P_KONKALITE2, 1);
             } else {
@@ -118,8 +118,8 @@ static void tick_body(void) {
             }
         }
         /* 0x8658 */
-        if (ST(0xDBC) == 0 && ST(0xDB8) != 1 && ST(ST_LOCKED_CAMERA) == 4 && ST(0xE98) != 56) {
-            ST(0xDBC) = 1;
+        if (ST(L30_CAMERA_AREA_VISITED) == 0 && ST(L30_CAMERA_AREA_STATE) != 1 && ST(ST_LOCKED_CAMERA) == 4 && ST(L30_KONKALITE_FIGHT_STAGE) != 56) {
+            ST(L30_CAMERA_AREA_VISITED) = 1;
             /* 0x86AF */
             if (ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD) {
                 CB->select_pile(1, 1);
@@ -138,8 +138,8 @@ static void tick_body(void) {
             CB->select_pile(0, 1);
         }
         /* 0x878C */
-        if (ST(0xDBC) == 1 && ST(ST_LOCKED_CAMERA) == 2 && ST(0xE98) != 56) {
-            ST(0xDBC) = 0;
+        if (ST(L30_CAMERA_AREA_VISITED) == 1 && ST(ST_LOCKED_CAMERA) == 2 && ST(L30_KONKALITE_FIGHT_STAGE) != 56) {
+            ST(L30_CAMERA_AREA_VISITED) = 0;
             /* 0x87D1 */
             if (ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD) {
                 CB->select_pile(1, 1);
@@ -161,10 +161,10 @@ static void tick_body(void) {
         }
     }
     /* 0x8874 */
-    if (ST(0xE98) == 1) {
+    if (ST(L30_KONKALITE_FIGHT_STAGE) == 1) {
         /* 0x8883 */
-        if (ST(0x64) == 0 && CB->distance(1, 2) < 1200 && ST(ST_LOCKED_CAMERA) == 0) {
-            ST(0x64) = 1;
+        if (ST(L30_CAMERA_NEAR_ONCE) == 0 && CB->distance(1, 2) < 1200 && ST(ST_LOCKED_CAMERA) == 0) {
+            ST(L30_CAMERA_NEAR_ONCE) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->bruitage("L30B02", 2852, 2762);
             CB->evenement(1, 1500);
@@ -183,8 +183,8 @@ static void tick_body(void) {
             CB->bloque(BLOQUE_NONE);
         }
         /* 0x8968 */
-        if (ST(0x68) == 0 && CB->distance(1, 2) <= 500 && ST(ST_LOCKED_CAMERA) == 1 && ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0) {
-            ST(0x68) = 1;
+        if (ST(L30_KONKALITE5_ALERT_ONCE) == 0 && CB->distance(1, 2) <= 500 && ST(ST_LOCKED_CAMERA) == 1 && ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD && ST(V_ENGAGED_PERSONA) == 0) {
+            ST(L30_KONKALITE5_ALERT_ONCE) = 1;
             CB->select_pile(2, 1);
             CB->combat(94, 0);
             CB->combat(P_KONKALITE5, 0);
@@ -196,25 +196,25 @@ static void tick_body(void) {
         }
     }
     /* 0x8A3C */
-    if (ST(0xE98) < 60 && ST(V_ENGAGED_PERSONA) != 0) {
+    if (ST(L30_KONKALITE_FIGHT_STAGE) < 60 && ST(V_ENGAGED_PERSONA) != 0) {
         /* 0x8A5D */
-        if (ST(ST_VIE(P_KONKALITE5)) == VIE_DEAD && ST(0x914) == 0) {
-            ST(0x914) = 2;
+        if (ST(ST_VIE(P_KONKALITE5)) == VIE_DEAD && ST(L30_KONKALITE5_BEATEN) == 0) {
+            ST(L30_KONKALITE5_BEATEN) = 2;
             ST(V_ENGAGED_PERSONA) = 94;
         }
         /* 0x8A9C */
-        if (ST(ST_VIE(94)) == VIE_DEAD && ST(0x904) == 0) {
-            ST(0x904) = 2;
+        if (ST(ST_VIE(94)) == VIE_DEAD && ST(L30_KONKALITE94_BEATEN) == 0) {
+            ST(L30_KONKALITE94_BEATEN) = 2;
             ST(V_ENGAGED_PERSONA) = P_KONKALITE5;
         }
         /* 0x8ADB */
         if (ST(ST_VIE(P_KONKALITE5)) == VIE_DEAD && ST(ST_VIE(94)) == VIE_DEAD && ST(V_ENGAGED_PERSONA) != 0) {
             ST(V_ENGAGED_PERSONA) = 0;
-            ST(0xE98) = 56;
+            ST(L30_KONKALITE_FIGHT_STAGE) = 56;
         }
     }
     /* 0x8B29 */
-    if (ST(0xE98) < 60) {
+    if (ST(L30_KONKALITE_FIGHT_STAGE) < 60) {
         /* 0x8B43 */
         if (CB->divers(DV_WAS_HIT, P_KONKALITE5, 0) && ST(ST_VIE(P_KONKALITE5)) != VIE_DEAD) {
             CB->select_pile(1, 2);
@@ -336,10 +336,10 @@ static void tick_body(void) {
         }
     }
     /* 0x916E */
-    if (ST(0xE98) < 60) {
+    if (ST(L30_KONKALITE_FIGHT_STAGE) < 60) {
         /* 0x9180 */
-        if (ST(0xDB8) == 0 && ST(ST_LOCKED_CAMERA) == 5) {
-            ST(0xDB8) = 1;
+        if (ST(L30_CAMERA_AREA_STATE) == 0 && ST(ST_LOCKED_CAMERA) == 5) {
+            ST(L30_CAMERA_AREA_STATE) = 1;
             CB->bloque(BLOQUE_ALL);
             CB->evenement(0, 200);
         }
@@ -360,15 +360,15 @@ static void tick_body(void) {
             CB->animation("SP72ARR01");
             CB->joindre(P_KONKALITE2, 0, 0, 0, ST(ST_HERO));
             CB->animation("SP72GAR26");
-            CB->modify_var(&ST(0x88), 1);
+            CB->modify_var(&ST(L30_GORK_WALK_STEP), 1);
             lieu_action_register("L30D02", P_KONKALITE2, "P72GAR03", "SP72GAR03");
             CB->combat(P_KONKALITE2, 1);
             CB->vire_col(39, 1);
             CB->bloque(BLOQUE_NONE);
         }
         /* 0x9380 */
-        if (ST(0x88) == 1 && !CB->on_joindre(P_GORK)) {
-            ST(0x88) = 0;
+        if (ST(L30_GORK_WALK_STEP) == 1 && !CB->on_joindre(P_GORK)) {
+            ST(L30_GORK_WALK_STEP) = 0;
             CB->select_pile(1, 1);
             CB->pos_perso(P_GORK, -1, -1, -1, 4, "", -1, 0);
             CB->select_pile(0, 1);
@@ -405,7 +405,7 @@ static i32 init(i32 reload_flag) {
     CB->evenement(39, -1);
     CB->evenement(41, -1);
 
-    if (ST(ST_HERO) != 4 || ST(0xE8C) == 1) {
+    if (ST(ST_HERO) != 4 || ST(L30_CHASE_STATE) == 1) {
         l30_trig00();   /* 0x1000CFF9: call sub_10001073 -> sub_100073F0 */
         return 0;
     }
