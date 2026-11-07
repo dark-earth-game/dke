@@ -55,8 +55,8 @@ address in a comment.
 
 ### 3. Level `.DAT` options and render modes
 
-- Finish `sub_457DD0` in `scene_load_dat_config`: clipz, coloured lights, flash, env, multiclip.
-- Environment tint `envred/envgreen/envblue`: 0040B550, 0040C010.
+- Done (`src/envfx.c`): flash 0042F565/0046BE40 and environment tint 0040C010, applied to the frame at blit time.
+- Still to parse and use in `scene_load_dat_config`: clipzperso/clipzvague/multiclip (levels 38, 39), coloured lights `ncolorlight` (level 13).
 - Underwater and flash modes: 0042F31B, 00430081, 0042F565, 0042FADF. These add bubbles, a wavy full-screen distortion
   and a palette flicker. `g_render_mode_flag` is never set.
 - Low-detail actor path when multiclip is nonzero: 0042A5E3, 0042B63D, 0042B0A6.

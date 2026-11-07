@@ -121,6 +121,7 @@ void gamma_update_palette(i32 *r, i32 *g, i32 *b, i32 brightness, i32 contrast, 
 static b8 s_bypass;
 
 void gamma_bypass(b8 on) { s_bypass = on; }
+b8 gamma_bypassed(void) { return s_bypass; }
 
 b8 gamma_active(void) {
     return !s_bypass && g_gamecfg.colour_chosen &&

@@ -32,3 +32,6 @@ void gamma_copy_pixels(u32 *dst, const u32 *src, i32 n);
 /* Movies are not palette driven in the port; they bypass the correction
  * (the original corrects them in ls_set_movie_correction instead). */
 void gamma_bypass(b8 on);
+
+/* True while movies bypass the frame corrections (also used by envfx). */
+b8   gamma_bypassed(void);

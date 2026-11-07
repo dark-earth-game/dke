@@ -43,6 +43,7 @@
  */
 
 #include "gamma.h"
+#include "envfx.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -403,6 +404,50 @@ static i32 parse_dat_int(const c8 *buf, const c8 *key, i32 *out) {
     return 1;
 }
 
+/* True if "key :" appears anywhere in buf (parse_dat_int stops at the first
+ * textual match, which may be a longer key such as "flashred0"). */
+static i32 dat_has_key(const c8 *buf, const c8 *key) {
+    size_t kl = strlen(key);
+    for (const c8 *p = strstr(buf, key); p; p = strstr(p + 1, key)) {
+        const c8 *q = p + kl;
+        while (*q == ' ' || *q == '\t') q++;
+        if (*q == ':') return 1;
+    }
+    return 0;
+}
+
+/* sub_457DD0 tail: env tint and flash keys -> envfx (0x40C010, 0x46BE40). */
+static void scene_parse_envfx(const c8 *buf) {
+    envfx_config_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    i32 n = g_scene_cfg.ncamera;
+    if (n > ENVFX_MAX_CAMERAS) n = ENVFX_MAX_CAMERAS;
+    cfg.ncamera = n;
+    cfg.flash_present = dat_has_key(buf, "flash");
+    static const c8 *const env_k[3] = { "envred%d", "envgreen%d", "envblue%d" };
+    static const c8 *const fl_k[3]  = { "flashred%d", "flashgreen%d", "flashblue%d" };
+    for (i32 c = 0; c < n; c++) {
+        c8 key[24];
+        for (i32 k = 0; k < 3; k++) {
+            snprintf(key, sizeof(key), env_k[k], c);
+            parse_dat_int(buf, key, &cfg.env[c][k]);
+            if (cfg.flash_present) {
+                snprintf(key, sizeof(key), fl_k[k], c);
+                parse_dat_int(buf, key, &cfg.flash_rgb[c][k]);
+            }
+        }
+        cfg.flash_freq[c] = 255;
+        cfg.flash_rand[c] = 255;
+        if (cfg.flash_present) {
+            snprintf(key, sizeof(key), "flashfreq%d", c);
+            parse_dat_int(buf, key, &cfg.flash_freq[c]);
+            snprintf(key, sizeof(key), "flashrand%d", c);
+            parse_dat_int(buf, key, &cfg.flash_rand[c]);
+        }
+    }
+    envfx_configure(&cfg);
+}
+
 /*
  * scene_load_dat_config — read L<lvl>.DAT into memory and pull out the
  * per-camera zbuffer + light fields plus global ambient / multilights.
@@ -410,6 +455,7 @@ static i32 parse_dat_int(const c8 *buf, const c8 *key, i32 *out) {
  * back to defaults.
  */
 static void scene_load_dat_config(i32 level_id) {
+    envfx_configure(NULL);          /* clear tint/flash of the previous level */
     const c8 *base = (state && state->game_path) ? state->game_path : ".";
     c8 vpath[64];
     snprintf(vpath, sizeof(vpath), "DATAS>L%02d>%c%02d.DAT",
@@ -459,6 +505,7 @@ static void scene_load_dat_config(i32 level_id) {
     }
 
     g_scene_cfg.loaded = 1;
+    scene_parse_envfx(buf);
     free(buf);
 
     print("scene: DAT loaded — ncamera=%d ambient=(%d,%d,%d) multilights=%d\n",
@@ -553,6 +600,7 @@ static i32 scene_load_camera_backdrop(i32 level_id, i32 camera) {
     g_scene_z_bmap   = zb;
     g_scene_bg_level = level_id;
     g_scene_camera   = camera;
+    envfx_set_camera(camera);                      /* 0x46BE40, 0x40C010 */
     anim2d_load_camera(level_id, camera);          /* sub_4130FB */
     sfx_camera_changed();                          /* sub_46E883 tail */
 
@@ -2957,6 +3005,7 @@ static i32 scene_autowalk_on(void) {
 }
 
 i32 scene_render(system_t *sys) {
+    envfx_tick(system_get_gametime());             /* 0x42F565 */
     if (!state) return 0;
 
     /* Per-frame LIEU scripting (native hand-port; level 1 only for now),
